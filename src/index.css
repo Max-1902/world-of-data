@@ -1,0 +1,376 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0a0a0a;
+  --surface: #111111;
+  --border:  #1e1e1e;
+  --text1:   #e8e8e8;
+  --text2:   #6b6b6b;
+  --accent:  #00ff88;
+  --red:     #ff3344;
+  --amber:   #ffaa00;
+  /* legacy aliases used by components */
+  --pri:   #00ff88;
+  --pri06: rgba(0,255,136,0.06);
+  --pri10: rgba(0,255,136,0.10);
+  --pri15: rgba(0,255,136,0.15);
+  --pri25: rgba(0,255,136,0.25);
+  --pri40: rgba(0,255,136,0.40);
+  --blue:  #44aaff;
+  --b1:    #1e1e1e;
+  --b2:    #2a2a2a;
+  --t0:    #3a3a3a;
+  --t1:    #6b6b6b;
+  --t2:    #e8e8e8;
+  --t3:    #e8e8e8;
+  --panel: #111111;
+  --bg2:   #111111;
+}
+
+html, body, #root {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: 'Inter', -apple-system, sans-serif;
+  color: var(--text1);
+}
+
+/* ── Dashboard layout ───────────────────────────── */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.area-topbar { flex: 0 0 32px; }
+.area-map    { flex: 1 1 0; min-height: 0; position: relative; }
+
+/* ── Right Panel / Dock ────────────────────────────── */
+.right-panel::-webkit-scrollbar { width: 2px; }
+
+.dock-panel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.dock-panel.collapsed {
+  height: auto;
+}
+
+.dock-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px;
+  height: 22px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  user-select: none;
+}
+
+.dock-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ── Panel shell ────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border-color: var(--border);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  min-height: 22px;
+  background: var(--surface);
+}
+
+.panel-title {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+
+.panel-title::before {
+  content: none;
+}
+
+/* ── TopBar ─────────────────────────────────────── */
+.topbar {
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  gap: 8px;
+  z-index: 20;
+  position: relative;
+  overflow: hidden;
+}
+
+.topbar::after {
+  display: none;
+}
+
+/* ── Button ───────────────────────────────────── */
+.cy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.1s;
+  border: 1px solid transparent;
+  color: var(--text2);
+  background: transparent;
+  white-space: nowrap;
+}
+
+.cy-btn::before { display: none; }
+
+.cy-btn:hover { color: var(--text1); border-color: var(--border); }
+.cy-btn.active { color: var(--accent); border-color: var(--border); }
+
+/* ── news-tab alias ─────────────────────────────── */
+.news-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.1s;
+  border: 1px solid transparent;
+  color: var(--text2);
+  background: transparent;
+  white-space: nowrap;
+}
+.news-tab::before { display: none; }
+.news-tab:hover { color: var(--text1); border-color: var(--border); }
+.news-tab.active { color: var(--accent); border-color: var(--border); }
+
+/* ── View-mode strip ────────────────────────────── */
+.vm-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: color 0.1s;
+  color: var(--text2);
+  background: transparent;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.vm-btn:hover { color: var(--text1); }
+.vm-btn.active { color: var(--accent); border-color: var(--border); }
+
+/* ── HUD divider ────────────────────────────────── */
+.hud-sep {
+  width: 1px; height: 16px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Threat badge ───────────────────────────────── */
+.threat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  border: 1px solid;
+}
+
+/* ── LIVE badge — text label, no blob ──────────── */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+}
+
+/* ── Scrollbar ──────────────────────────────────── */
+::-webkit-scrollbar { width: 2px; height: 2px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); }
+::-webkit-scrollbar-thumb:hover { background: var(--text2); }
+
+/* ── Status labels replace colored dots ──────────── */
+.live-dot {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 7px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  /* no width/height/border-radius — it's a text label now */
+  width: auto; height: auto;
+  border-radius: 0;
+  background: none;
+  animation: none;
+  color: var(--text2);
+}
+.live-dot::before { content: 'LIVE'; }
+.live-dot.grn { color: var(--accent); }
+.live-dot.grn::before { content: 'LIVE'; }
+.live-dot.red { color: var(--red); background: none; }
+.live-dot.red::before { content: 'CRIT'; }
+.live-dot.blue { color: #44aaff; background: none; }
+.live-dot.blue::before { content: 'SYS'; }
+.live-dot.yellow { color: #ccaa00; background: none; }
+.live-dot.yellow::before { content: 'WARN'; }
+.live-dot.orange { color: var(--amber); background: none; }
+.live-dot.orange::before { content: 'HIGH'; }
+
+/* ── Scanlines — removed ──────────────────────────── */
+.scanlines::after { display: none; }
+
+/* ── Ticker ─────────────────────────────────────── */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-track {
+  display: flex;
+  animation: ticker-scroll 55s linear infinite;
+  white-space: nowrap;
+}
+.ticker-track:hover { animation-play-state: paused; cursor: default; }
+
+/* ── Intel row (article / event) ──────────────────── */
+.intel-row {
+  display: flex;
+  gap: 6px;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--border);
+  text-decoration: none;
+  transition: background 0.1s;
+  border-left: 2px solid transparent;
+  cursor: pointer;
+}
+.intel-row:hover { background: #161616; border-left-color: var(--border); }
+
+/* ── Layer row ──────────────────────────────────── */
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-left: 2px solid transparent;
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 9px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+.layer-row:hover { background: #161616; color: var(--text1); }
+.layer-row.on    { border-left-color: var(--accent); color: var(--text1); }
+
+/* ── Search wrap ────────────────────────────────── */
+.search-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  min-height: 26px;
+}
+.search-wrap:focus-within {
+  border-bottom-color: var(--accent);
+}
+
+/* ── Risk bar ───────────────────────────────────── */
+.risk-bar {
+  height: 1px;
+  background: var(--border);
+  margin-top: 2px;
+  position: relative;
+}
+.risk-fill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  transition: width 0.6s;
+}
+
+/* ── Map popup ──────────────────────────────────── */
+.mapboxgl-popup-content {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  font-family: 'JetBrains Mono', monospace !important;
+  min-width: 180px;
+}
+.mapboxgl-popup-tip { display: none !important; }
+.mapboxgl-popup-close-button { color: var(--text2) !important; font-size: 14px !important; top: 2px !important; right: 4px !important; }
+.mapboxgl-popup-close-button:hover { color: var(--text1) !important; background: none !important; }
+
+/* ── Vision filters ─────────────────────────────── */
+.map-nightvision .mapboxgl-canvas { filter: grayscale(100%) brightness(0.85) contrast(1.3) sepia(30%) hue-rotate(80deg) saturate(350%); }
+.map-bw .mapboxgl-canvas          { filter: grayscale(100%) contrast(1.25) brightness(0.88); }
+.map-infrared .mapboxgl-canvas    { filter: grayscale(100%) sepia(100%) hue-rotate(300deg) saturate(500%) brightness(0.75) contrast(1.5); }
+.map-snow .mapboxgl-canvas        { filter: brightness(1.55) saturate(0.15) contrast(1.05) hue-rotate(185deg); }
+.map-thermal .mapboxgl-canvas     { filter: grayscale(100%) sepia(100%) hue-rotate(320deg) saturate(900%) brightness(0.72) contrast(1.7); }
+
+/* ── Defcon badge ───────────────────────────────── */
+.defcon-badge {
+  display: flex; align-items: center; gap: 4px;
+  padding: 1px 8px;
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  border: 1px solid currentColor;
+}
