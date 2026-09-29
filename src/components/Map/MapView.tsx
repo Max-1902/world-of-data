@@ -2479,7 +2479,7 @@ export default function MapView({
     }
     const zoneFeatures: GeoJSON.Feature[] = CHOKEPOINTS.map(c => ({
       type: 'Feature',
-      geometry: { type: 'Polygon', coordinates: [c.zone] },
+      geometry: { type: 'MultiPolygon', coordinates: c.zone },
       properties: {
         name: c.name, dailyTransits: c.dailyTransits,
         pctWorldTrade: c.pctWorldTrade, pctOilTrade: c.pctOilTrade ?? null,
