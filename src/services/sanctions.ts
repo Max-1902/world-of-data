@@ -245,7 +245,7 @@ export async function fetchSanctionsNews(country?: string): Promise<{ title: str
   const q = country
     ? `sanctions "${country}" economy OFAC sourcelang:english`
     : 'economic sanctions OFAC treasury designation sourcelang:english'
-  const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(q)}&mode=artlist&maxrecords=30&format=json&sort=DateDesc`
+  const url = `/api/gdelt/v2/doc/doc?query=${encodeURIComponent(q)}&mode=artlist&maxrecords=30&format=json&sort=DateDesc`
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
     if (!res.ok) return []

@@ -43,12 +43,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/aisstream/, '/v0/stream'),
       },
-      // Finnish AIS (digitraffic) — proxy to avoid CORS
-      '/api/digitraffic': {
-        target: 'https://meri.digitraffic.fi',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/digitraffic/, ''),
-      },
       // Aircraft database — hexdb.io (free, no auth)
       '/api/hexdb': {
         target: 'https://hexdb.io',
@@ -60,6 +54,29 @@ export default defineConfig({
         target: 'https://api.planespotters.net',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/planespotters/, ''),
+      },
+      // The Guardian Content API — no CORS headers
+      '/api/guardian': {
+        target: 'https://content.guardianapis.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/guardian/, ''),
+      },
+      // ACLED — OAuth token + read API, neither sends CORS headers
+      '/api/acled-token': {
+        target: 'https://acleddata.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/acled-token/, '/oauth/token'),
+      },
+      '/api/acled': {
+        target: 'https://acleddata.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/acled/, '/api/acled'),
+      },
+      // GDELT — no CORS headers on either the doc or geo endpoints
+      '/api/gdelt': {
+        target: 'https://api.gdeltproject.org',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/gdelt/, '/api'),
       },
     },
   },

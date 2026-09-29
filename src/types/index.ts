@@ -84,8 +84,14 @@ export interface PanelState {
   airspace:       boolean
   humanitarian:   boolean
   vessels:        boolean
-  oilgas:         boolean
+  oil:            boolean
+  gas:            boolean
   gpsjam:         boolean
+  ports:          boolean
+  pipelines:      boolean
+  chokepoints:    boolean
+  supplychain:    boolean
+  shippingRoutes: boolean
 }
 
 export interface MapMarker {

@@ -1,8 +1,16 @@
 /**
- * Vessel tracking — Digitraffic AIS (Finnish Transport Infrastructure Agency)
- * REST polling with 30s interval. Coverage: Baltic Sea & Northern Europe.
- * Vessel metadata (names, ship types) loaded separately and cached.
+ * Vessel tracking via AISStream.io WebSocket
+ * Real-time global AIS vessel positions.
+ * https://aisstream.io/documentation
+ *
+ * Requires VITE_AISSTREAM_KEY in .env
  */
+
+const AISSTREAM_KEY = import.meta.env.VITE_AISSTREAM_KEY || ''
+// Browser WS connections to aisstream.io are blocked — must go through Vite proxy
+const AISSTREAM_URL = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/api/aisstream`
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 export interface Vessel {
   mmsi: number
@@ -15,6 +23,7 @@ export interface Vessel {
   navStatus: number
   shipType: number   // AIS ship type code (0-99)
   timestamp: string
+  destination?: string
 }
 
 export type VesselType = 'cargo' | 'tanker' | 'passenger' | 'fishing' | 'military' | 'tug' | 'other'
@@ -60,111 +69,138 @@ export const VESSEL_TYPE_LABELS: Record<VesselType, string> = {
   other:     'Other',
 }
 
-// ── Vessel metadata cache ────────────────────────────────────────────────────
-let vesselMeta: Map<number, { name: string; shipType: number }> | null = null
-let metaLoading = false
+// ── In-memory store ──────────────────────────────────────────────────────────
+const vesselStore = new Map<number, Vessel>()
+const metaCache = new Map<number, { name: string; shipType: number; destination: string }>()
 
-async function loadVesselMeta(): Promise<Map<number, { name: string; shipType: number }>> {
-  if (vesselMeta) return vesselMeta
-  if (metaLoading) return new Map()
-  metaLoading = true
-  try {
-    const res = await fetch('/api/digitraffic/api/ais/v1/vessels', {
-      signal: AbortSignal.timeout(25000),
-      headers: { 'Accept-Encoding': 'gzip' },
-    })
-    if (!res.ok) { metaLoading = false; return new Map() }
-    const arr = await res.json() as Array<{ mmsi: number; name: string; shipType: number }>
-    vesselMeta = new Map(arr.map(v => [v.mmsi, { name: v.name, shipType: v.shipType }]))
-    console.log(`[AIS] Cached ${vesselMeta.size} vessel metadata records`)
-    return vesselMeta
-  } catch {
-    metaLoading = false
-    return new Map()
+// ── AISStream WebSocket ──────────────────────────────────────────────────────
+
+function connectAISStreamWS(): (() => void) | null {
+  if (!AISSTREAM_KEY) {
+    console.warn('[AIS] No VITE_AISSTREAM_KEY set — vessel tracking disabled')
+    return null
   }
-}
 
-// ── Fetch vessel positions ───────────────────────────────────────────────────
-async function fetchVesselPositions(): Promise<Vessel[]> {
-  const [locRes, meta] = await Promise.all([
-    fetch('/api/digitraffic/api/ais/v1/locations', {
-      signal: AbortSignal.timeout(20000),
-      headers: { 'Accept-Encoding': 'gzip' },
-    }),
-    loadVesselMeta(),
-  ])
-  if (!locRes.ok) { console.warn('[AIS] HTTP', locRes.status); return [] }
+  let ws: WebSocket | null = null
+  let closed = false
+  let reconnectTimer: number | null = null
+  let msgCount = 0
 
-  const json = await locRes.json()
-  const features = json.features as Array<{
-    mmsi: number
-    geometry: { coordinates: [number, number] }
-    properties: {
-      mmsi: number; sog: number; cog: number; navStat: number
-      heading: number; timestampExternal: string
+  function connect() {
+    if (closed) return
+    msgCount = 0
+    console.log('[AIS] Attempting AISStream WebSocket…')
+    try { ws = new WebSocket(AISSTREAM_URL) } catch (e) {
+      console.error('[AIS] WebSocket constructor failed:', e)
+      return
     }
-  }>
-  if (!Array.isArray(features)) return []
 
-  const vessels: Vessel[] = []
-  for (const f of features) {
-    const coords = f.geometry?.coordinates
-    if (!coords) continue
-    const lng = coords[0]
-    const lat = coords[1]
-    // Skip null-island and invalid
-    if (lng === 0 && lat === 0) continue
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) continue
+    ws.onopen = () => {
+      console.log('[AIS] AISStream connected — subscribing')
+      ws!.send(JSON.stringify({
+        APIkey: AISSTREAM_KEY,
+        BoundingBoxes: [[[-180, -90], [180, 90]]],
+        FilterMessageTypes: ['PositionReport', 'ShipStaticData'],
+      }))
+      setTimeout(() => {
+        if (msgCount === 0 && !closed) {
+          console.warn('[AIS] No messages received after 10s — check API key')
+        }
+      }, 10000)
+    }
 
-    const mmsi = f.mmsi || f.properties.mmsi
-    const info = meta.get(mmsi)
-    const rawHeading = f.properties.heading
-    const heading = (rawHeading === 511 || rawHeading > 360) ? f.properties.cog : rawHeading
+    ws.onmessage = (event) => {
+      try {
+        const msg = JSON.parse(typeof event.data === 'string' ? event.data : '')
+        if (msg.error || msg.ERROR) {
+          console.error('[AIS] AISStream error response:', msg.error || msg.ERROR)
+          return
+        }
+        msgCount++
+        if (msgCount === 1) console.log('[AIS] First AISStream message received — stream active')
+        if (msgCount % 1000 === 0) console.log(`[AIS] AISStream: ${msgCount} messages, ${vesselStore.size} vessels tracked`)
 
-    vessels.push({
-      mmsi,
-      name: info?.name || '',
-      latitude: lat,
-      longitude: lng,
-      cog: f.properties.cog ?? 0,
-      sog: f.properties.sog ?? 0,
-      heading: heading ?? 0,
-      navStatus: f.properties.navStat ?? 0,
-      shipType: info?.shipType ?? 0,
-      timestamp: f.properties.timestampExternal
-        ? new Date(Number(f.properties.timestampExternal)).toISOString()
-        : new Date().toISOString(),
-    })
+        const type = msg.MessageType
+        if (type === 'PositionReport') {
+          const meta = msg.MetaData
+          const pos = msg.Message?.PositionReport
+          if (!meta || !pos) return
+          const mmsi = meta.MMSI
+          const lat = pos.Latitude ?? meta.latitude
+          const lng = pos.Longitude ?? meta.longitude
+          if (lat == null || lng == null || (lat === 0 && lng === 0)) return
+          if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return
+          const rawH = pos.TrueHeading
+          const heading = (rawH === 511 || rawH > 360) ? (pos.Cog ?? 0) : rawH
+          const cached = metaCache.get(mmsi)
+          vesselStore.set(mmsi, {
+            mmsi,
+            name: meta.ShipName?.trim() || cached?.name || '',
+            latitude: lat, longitude: lng,
+            cog: pos.Cog ?? 0, sog: pos.Sog ?? 0, heading: heading ?? 0,
+            navStatus: pos.NavigationalStatus ?? 0,
+            shipType: cached?.shipType ?? 0,
+            timestamp: meta.time_utc || new Date().toISOString(),
+            destination: cached?.destination,
+          })
+        } else if (type === 'ShipStaticData') {
+          const meta = msg.MetaData
+          const data = msg.Message?.ShipStaticData
+          if (!meta || !data) return
+          metaCache.set(meta.MMSI, {
+            name: data.Name?.trim() || '', shipType: data.Type ?? 0,
+            destination: data.Destination?.trim() || '',
+          })
+          const existing = vesselStore.get(meta.MMSI)
+          if (existing) {
+            existing.name = data.Name?.trim() || existing.name
+            existing.shipType = data.Type ?? existing.shipType
+            existing.destination = data.Destination?.trim() || existing.destination
+          }
+        }
+      } catch { /* skip malformed */ }
+    }
+
+    ws.onerror = (e) => {
+      console.error('[AIS] WebSocket error:', e)
+    }
+    ws.onclose = (e) => {
+      console.warn(`[AIS] WebSocket closed: code=${e.code} reason="${e.reason}"`)
+      if (!closed) {
+        console.log('[AIS] Reconnecting in 10s…')
+        reconnectTimer = window.setTimeout(connect, 10000)
+      }
+    }
   }
-  return vessels
+
+  connect()
+  return () => {
+    closed = true
+    if (ws) { ws.close(); ws = null }
+    if (reconnectTimer) clearTimeout(reconnectTimer)
+  }
 }
 
 // ── Public API ───────────────────────────────────────────────────────────────
+
 export function connectAISStream(onUpdate: (vessels: Vessel[]) => void): () => void {
   let closed = false
-  let timer: number | null = null
 
-  // Pre-load metadata
-  loadVesselMeta()
+  // AISStream WebSocket — sole data source
+  const wsCleanup = connectAISStreamWS()
 
-  async function poll() {
+  // Push snapshots to React every 5 seconds
+  const snapshotTimer = window.setInterval(() => {
     if (closed) return
-    try {
-      const vessels = await fetchVesselPositions()
-      if (vessels.length > 0 && !closed) {
-        console.log(`[AIS] ${vessels.length} vessels`)
-        onUpdate(vessels)
-      }
-    } catch (e) {
-      console.warn('[AIS] fetch error:', e)
-    }
-    if (!closed) timer = window.setTimeout(poll, 30_000)
-  }
-
-  poll()
+    const snapshot = Array.from(vesselStore.values())
+    if (snapshot.length > 0) onUpdate(snapshot)
+  }, 5000)
 
   return () => {
     closed = true
-    if (timer) clearTimeout(timer)
+    clearInterval(snapshotTimer)
+    wsCleanup?.()
+    vesselStore.clear()
+    metaCache.clear()
   }
 }

@@ -1,4 +1,5 @@
 import type { CrisisEvent, Flight } from '../types'
+import type { TrajectoryEntry } from '../utils/trajectory'
 
 const BASE = '/api/openrouter'
 
@@ -78,7 +79,7 @@ export async function streamAI(
 }
 
 // ── Context builder ────────────────────────────────────────────────────────
-export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[]): string {
+export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = []): string {
   const now      = new Date().toUTCString()
   const critical = crises.filter(c => c.severity === 'critical')
   const high     = crises.filter(c => c.severity === 'high')
@@ -97,6 +98,11 @@ export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[]):
     .map(([c, n]) => `${c} (${n})`)
     .join(', ')
 
+  const risingTrend = trajectories.filter(t => t.trend === 'rising')
+  const trajectoryLines = trajectories.map(t =>
+    `  • ${t.country}: ${t.trend.toUpperCase()} (velocity ${t.velocity}/100) — ${t.reason}`
+  ).join('\n')
+
   return `\
 === WORLD SURVEILLANCE DASHBOARD — LIVE CONTEXT ===
 Timestamp (UTC): ${now}
@@ -106,6 +112,10 @@ ACTIVE CONFLICTS & CRISES
   Critical: ${critical.length} | High: ${high.length} | Other: ${crises.length - critical.length - high.length}
   Most affected countries: ${topCountries || 'none'}
 ${topCrises ? '\nTop critical events:\n' + topCrises : ''}
+${trajectories.length > 0 ? `
+TRAJECTORY SIGNALS (rule-based, last 3d vs prior 7d — computed locally, not model-generated)
+  ${risingTrend.length} of ${trajectories.length} tracked regions trending upward
+${trajectoryLines}` : ''}
 
 AIR TRAFFIC
   Airborne flights tracked: ${flights.length.toLocaleString()}

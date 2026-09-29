@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import type { CrisisEvent, PanelState, Flight } from '../../types'
-import { PanelContent, PANEL_META, type PanelId } from '../panels/PanelContent'
+import { PANEL_MAP } from '../../panels/registry'
+import type { PanelProps } from '../../panels/types'
 
 const MAX_SLOTS = 6
 const MIN_H     = 80
@@ -118,32 +119,35 @@ export default function ObserveTray({ ids, crises, flights, panelState, onToggle
     window.addEventListener('mouseup', onUp)
   }
 
+  const panelProps: PanelProps = contentProps as PanelProps
+
   function renderSlot(id: string) {
-    const meta = PANEL_META[id as PanelId]
-    if (!meta) return null
+    const def = PANEL_MAP.get(id)
+    if (!def) return null
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: '#111111' }}>
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--surface)', borderRadius: 'var(--r-md)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
         <div style={{
-          height: 20, flexShrink: 0,
-          display: 'flex', alignItems: 'center', gap: 4,
-          padding: '0 6px',
-          borderBottom: '1px solid #1e1e1e',
+          height: 30, flexShrink: 0,
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '0 10px',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--surface2)',
           userSelect: 'none',
         }}>
-          {meta.dotColor && <span className={`live-dot ${meta.dotColor}`} />}
-          <span className="panel-title" style={{ flex: 1 }}>{meta.title}</span>
+          {def.dotColor && <span className={`live-dot ${def.dotColor}`} />}
+          <span className="panel-title" style={{ flex: 1 }}>{def.title}</span>
           <button
             onClick={() => onClose(id)}
             title="Return to dock"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3a3a3a', fontSize: 10, lineHeight: 1, padding: '0 2px' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ff3344' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#3a3a3a' }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 12, lineHeight: 1, padding: '2px 4px', borderRadius: 'var(--r-sm)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-soft)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
           >
             x
           </button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-          <PanelContent id={id as PanelId} {...contentProps} />
+          {def.render(panelProps)}
         </div>
       </div>
     )
@@ -165,11 +169,12 @@ export default function ObserveTray({ ids, crises, flights, panelState, onToggle
         position: 'absolute',
         bottom: 0, left: 0, right: 0,
         zIndex: 30,
-        height: hasSlots ? h : 22,
+        height: hasSlots ? h : 26,
         display: 'flex',
         flexDirection: 'column',
-        background: '#0a0a0a',
-        borderTop: dragHover ? '1px solid #00ff88' : '1px solid #1e1e1e',
+        background: 'var(--bg)',
+        borderTop: dragHover ? '1px solid var(--accent)' : '1px solid var(--border)',
+        boxShadow: 'var(--shadow-md)',
         transition: hasSlots ? 'none' : 'height 0.15s',
       }}
     >
@@ -186,20 +191,20 @@ export default function ObserveTray({ ids, crises, flights, panelState, onToggle
 
       {/* header */}
       <div style={{
-        height: 22, flexShrink: 0,
+        height: 26, flexShrink: 0,
         display: 'flex', alignItems: 'center', gap: 6,
-        padding: '0 8px',
-        borderBottom: hasSlots ? '1px solid #1e1e1e' : 'none',
-        background: '#111111',
+        padding: '0 10px',
+        borderBottom: hasSlots ? '1px solid var(--border)' : 'none',
+        background: 'var(--surface)',
       }}>
-        <span style={{ fontSize: 8, fontWeight: 400, letterSpacing: '.14em', color: '#6b6b6b' }}>
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '.08em', color: 'var(--text3)' }}>
           OBSERVE
         </span>
-        <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 8, color: '#3a3a3a' }}>
+        <span style={{ fontSize: 10, color: 'var(--text3)' }}>
           {slots.length}/{MAX_SLOTS}
         </span>
         {!hasSlots && dragHover && (
-          <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 7, color: '#00ff88', marginLeft: 'auto' }}>
+          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--accent)', marginLeft: 'auto' }}>
             DROP HERE
           </span>
         )}
@@ -219,13 +224,12 @@ export default function ObserveTray({ ids, crises, flights, panelState, onToggle
             return (
               <div
                 key={ri}
-                style={{ flex: `${flex} 1 0%`, minHeight: 0, display: 'flex', position: 'relative', borderBottom: '1px solid #1e1e1e' }}
+                style={{ flex: `${flex} 1 0%`, minHeight: 0, display: 'flex', position: 'relative', borderBottom: '1px solid var(--border)', padding: 4, gap: 4 }}
               >
                 {/* left panel */}
                 <div style={{
                   width: hasRight ? `${split * 100}%` : '100%',
                   display: 'flex',
-                  borderRight: hasRight ? '1px solid #1e1e1e' : undefined,
                 }}>
                   {renderSlot(row[0])}
                 </div>
@@ -242,6 +246,7 @@ export default function ObserveTray({ ids, crises, flights, panelState, onToggle
                       left: `calc(${split * 100}% - 2px)`,
                       top: 0, bottom: 0, width: 5,
                       cursor: 'col-resize', zIndex: 10,
+                      borderRadius: 'var(--r-sm)',
                     }}
                   />
                 )}

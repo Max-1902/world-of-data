@@ -20,7 +20,7 @@ export default {
         },
       },
       fontFamily: {
-        mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+        mono: ['IBM Plex Mono', 'monospace'],
       },
     },
   },

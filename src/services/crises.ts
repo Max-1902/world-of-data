@@ -4,8 +4,8 @@ import type { CrisisEvent } from '../types'
 // Docs: https://apidocs.acleddata.com/
 const ACLED_EMAIL = import.meta.env.VITE_ACLED_EMAIL || ''
 const ACLED_PASSWORD = import.meta.env.VITE_ACLED_PASSWORD || ''
-const ACLED_TOKEN_URL = 'https://acleddata.com/oauth/token'
-const ACLED_API = 'https://acleddata.com/api/acled/read'
+const ACLED_TOKEN_URL = '/api/acled-token'
+const ACLED_API = '/api/acled/read'
 
 // Token cache — valid for 24 h; reuse to avoid hammering the auth endpoint
 let _token: string | null = null
@@ -117,7 +117,7 @@ export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
 }
 
 // GDELT GEO 2.0 — free, no key
-const GDELT_GEO = 'https://api.gdeltproject.org/api/v2/geo/geo'
+const GDELT_GEO = '/api/gdelt/v2/geo/geo'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type GDELTFeature = any

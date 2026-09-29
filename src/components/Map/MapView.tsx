@@ -12,6 +12,8 @@ import {
 import {
   SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2,
 } from '../../services/sanctions'
+import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from '../../services/ports'
+import { GAS_PIPELINES, PIPELINE_STATUS_COLORS, PIPELINE_STATUS_LABELS } from '../../services/pipelines'
 import {
   detectFlightType, countFlightTypes, headingToCompass,
   FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS,
@@ -27,6 +29,9 @@ import {
   type OilGasMetric,
 } from '../../services/oilgas'
 import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from '../../services/gpsjam'
+import { CHOKEPOINTS, CHOKEPOINT_COLORS } from '../../services/chokepoints'
+import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../services/supplychain'
+import { SHIPPING_ROUTES } from '../../services/shippingRoutes'
 import {
   UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS,
   CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS,
@@ -35,14 +40,92 @@ import {
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
-// ── CSS filter per vision mode (applied to .mapboxgl-canvas) ────────────────
+// ── Vision mode CSS canvas filters ──────────────────────────────────────────
+// Pure CSS filters work reliably on WebGL canvases (SVG url() filters do NOT
+// render properly on <canvas> in most browsers — they produce blank/broken output).
+// The distinctive look of each mode comes from the filter + colored overlays.
 const CANVAS_FILTERS: Partial<Record<MapViewMode, string>> = {
-  dark:        'brightness(0.42) contrast(1.15)',
-  nightvision: 'brightness(0.82) contrast(1.35) hue-rotate(80deg) saturate(420%) sepia(28%)',
-  bw:          'grayscale(100%) contrast(1.3) brightness(0.85)',
-  infrared:    'grayscale(100%) sepia(100%) hue-rotate(300deg) saturate(520%) brightness(0.72) contrast(1.55)',
-  snow:        'brightness(1.6) saturate(0.12) contrast(1.08) hue-rotate(185deg)',
-  thermal:     'grayscale(100%) sepia(100%) hue-rotate(320deg) saturate(950%) brightness(0.7) contrast(1.75)',
+  dark:        'brightness(0.35) contrast(1.4) saturate(0.3)',
+  nightvision: 'brightness(0.75) contrast(1.7) saturate(0)',
+  bw:          'grayscale(100%) contrast(1.3) brightness(0.95)',
+  infrared:    'brightness(1.15) contrast(1.5) saturate(0) invert(1)',
+  snow:        'brightness(1.5) contrast(1.15) saturate(0.25) sepia(0.08)',
+  thermal:     'brightness(0.9) contrast(1.7) saturate(0)',
+  // Crisp, high-clarity satellite-imagery look — punchier than the neutral globe default
+  satellite:   'brightness(1.05) contrast(1.25) saturate(1.3)',
+  // Flattened, cartographic look — desaturated and brightened to read like a vector road map
+  standard:    'brightness(1.2) contrast(0.92) saturate(0.35)',
+}
+
+// Overlay configs per mode — multiple overlay layers for realistic look
+interface VisionOverlay {
+  layers: {
+    background?: string
+    mixBlendMode?: string
+    opacity?: number
+    boxShadow?: string
+  }[]
+  scanlines?: boolean
+  noise?: { opacity: number; blend: string }
+}
+const VISION_OVERLAYS: Partial<Record<MapViewMode, VisionOverlay>> = {
+  nightvision: {
+    layers: [
+      // P43 phosphor green tint
+      { background: 'rgba(0,255,16,0.2)', mixBlendMode: 'multiply', opacity: 1 },
+      // Green color cast
+      { background: 'rgba(0,200,0,0.25)', mixBlendMode: 'color', opacity: 1 },
+      // Tube vignette — softer so center stays readable
+      { background: 'radial-gradient(circle at center, transparent 45%, rgba(0,6,0,0.3) 65%, rgba(0,2,0,0.6) 85%, rgba(0,0,0,0.85) 100%)' },
+      { boxShadow: 'inset 0 0 120px 30px rgba(0,0,0,0.5)' },
+    ],
+    scanlines: true,
+    noise: { opacity: 0.05, blend: 'overlay' },
+  },
+  infrared: {
+    layers: [
+      // Warm amber on bright (hot) regions
+      { background: 'rgba(255,190,100,0.1)', mixBlendMode: 'screen', opacity: 1 },
+      // Light cool blue in shadows
+      { background: 'linear-gradient(180deg, rgba(0,15,50,0.08) 0%, rgba(0,8,30,0.12) 100%)', mixBlendMode: 'multiply', opacity: 1 },
+      // Gentle sensor vignette
+      { background: 'radial-gradient(circle at center, transparent 55%, rgba(0,0,0,0.3) 85%, rgba(0,0,0,0.55) 100%)' },
+      { boxShadow: 'inset 0 0 80px 20px rgba(0,0,0,0.35)' },
+    ],
+    noise: { opacity: 0.03, blend: 'overlay' },
+  },
+  thermal: {
+    layers: [
+      // Iron palette: violet/blue shadows → red/orange mids → yellow peaks
+      { background: 'linear-gradient(180deg, rgba(80,0,180,0.15) 0%, rgba(20,0,80,0.18) 100%)', mixBlendMode: 'screen', opacity: 1 },
+      // Red/orange color cast
+      { background: 'rgba(255,50,0,0.15)', mixBlendMode: 'color', opacity: 1 },
+      // Yellow center hotspot
+      { background: 'radial-gradient(ellipse at 50% 45%, rgba(255,240,0,0.07) 0%, transparent 50%)', mixBlendMode: 'screen', opacity: 1 },
+      // Moderate vignette
+      { background: 'radial-gradient(circle at center, transparent 50%, rgba(0,0,10,0.35) 80%, rgba(0,0,0,0.6) 100%)' },
+      { boxShadow: 'inset 0 0 100px 25px rgba(0,0,10,0.4)' },
+    ],
+    noise: { opacity: 0.04, blend: 'overlay' },
+  },
+  snow: {
+    layers: [
+      // Light blue-white wash
+      { background: 'rgba(210,230,255,0.15)', mixBlendMode: 'screen', opacity: 1 },
+      // Subtle desaturation so markers pop
+      { background: 'rgba(230,238,250,0.1)', mixBlendMode: 'saturation', opacity: 1 },
+      // Very light edge shading
+      { background: 'radial-gradient(circle at center, transparent 65%, rgba(160,180,210,0.12) 90%, rgba(120,140,180,0.2) 100%)' },
+      { boxShadow: 'inset 0 0 60px 15px rgba(180,200,230,0.1)' },
+    ],
+  },
+  dark: {
+    layers: [
+      // Moderate vignette — keep center bright enough to read
+      { background: 'radial-gradient(circle at center, transparent 45%, rgba(0,0,0,0.35) 75%, rgba(0,0,0,0.6) 100%)' },
+      { boxShadow: 'inset 0 0 100px 30px rgba(0,0,0,0.4)' },
+    ],
+  },
 }
 
 const CRISIS_COLORS: Record<string, string> = {
@@ -77,11 +160,35 @@ interface Props {
   showHumanitarian:   boolean
   vessels:            Vessel[]
   showVessels:        boolean
-  showOilGas:         boolean
+  showOil:            boolean
+  showGas:            boolean
   showGPSJam:         boolean
+  showPorts:          boolean
+  showPipelines:      boolean
+  showChokepoints:    boolean
+  showSupplyChain:    boolean
+  showShippingRoutes: boolean
   flyToQuery?:        string
   geoFlyTo?:          string
   onCountryClick?:    (country: string) => void
+  reticleColor?:      string
+  panelState?:        import('../../types').PanelState
+  onToggleLayer?:     (id: keyof import('../../types').PanelState) => void
+}
+
+// ── Geodesic destination point: given [lng,lat], bearing (deg), distance (km) ──
+function destinationPoint(lng: number, lat: number, bearingDeg: number, distKm: number): [number, number] {
+  const R = 6371
+  const brng = (bearingDeg * Math.PI) / 180
+  const lat1 = (lat * Math.PI) / 180
+  const lon1 = (lng * Math.PI) / 180
+  const dR = distKm / R
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dR) + Math.cos(lat1) * Math.sin(dR) * Math.cos(brng))
+  const lon2 = lon1 + Math.atan2(
+    Math.sin(brng) * Math.sin(dR) * Math.cos(lat1),
+    Math.cos(dR) - Math.sin(lat1) * Math.sin(lat2),
+  )
+  return [(lon2 * 180) / Math.PI, (lat2 * 180) / Math.PI]
 }
 
 // ── Build GeoJSON for all (optionally filtered) flights ──────────────────────
@@ -183,10 +290,10 @@ function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta): strin
   const spdKts = p.velocity ? Math.round(Number(p.velocity) * 1.944) : null
   const hdg    = p.heading != null ? `${Math.round(Number(p.heading))}° ${headingToCompass(Number(p.heading))}` : '—'
   const status = p.on_ground ? 'ON GROUND' : 'AIRBORNE'
-  const statusColor = p.on_ground ? '#ffcc00' : '#00ff88'
+  const statusColor = p.on_ground ? '#d97706' : '#16a34a'
 
   const row = (label: string, val: string) =>
-    `<tr><td style="color:#4a6a50;font-size:8px;letter-spacing:.1em;padding:2px 8px 2px 0;text-transform:uppercase;white-space:nowrap;">${label}</td><td style="color:#c0dcc4;text-align:right;">${val}</td></tr>`
+    `<tr><td style="color:#6b7280;font-size:10px;letter-spacing:.1em;padding:2px 8px 2px 0;text-transform:uppercase;white-space:nowrap;">${label}</td><td style="color:#14161a;text-align:right;">${val}</td></tr>`
 
   // Aircraft info section (from hexdb)
   let aircraftSection = ''
@@ -194,19 +301,19 @@ function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta): strin
     const parts: string[] = []
     if (meta.type || meta.icaoType) {
       const label = meta.type || meta.icaoType || ''
-      parts.push(`<span style="color:#c0dcc4;font-size:10px;font-weight:600;">${label}</span>`)
+      parts.push(`<span style="color:#14161a;font-size:11px;font-weight:600;">${label}</span>`)
     }
     if (meta.manufacturer) {
-      parts.push(`<span style="color:#4a6a50;font-size:8px;letter-spacing:.05em;">${meta.manufacturer}</span>`)
+      parts.push(`<span style="color:#6b7280;font-size:10px;letter-spacing:.05em;">${meta.manufacturer}</span>`)
     }
     if (meta.owner) {
-      parts.push(`<span style="color:#00ff88;font-size:9px;">${meta.owner}</span>`)
+      parts.push(`<span style="color:#16a34a;font-size:10px;">${meta.owner}</span>`)
     }
     if (meta.registration) {
-      parts.push(`<span style="color:#4a6a50;font-size:9px;letter-spacing:.06em;">${meta.registration}</span>`)
+      parts.push(`<span style="color:#6b7280;font-size:10px;letter-spacing:.06em;">${meta.registration}</span>`)
     }
     if (parts.length) {
-      aircraftSection = `<div style="display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid #141e16;margin-bottom:4px;">${parts.join('')}</div>`
+      aircraftSection = `<div style="display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid #e5e7eb;margin-bottom:4px;">${parts.join('')}</div>`
     }
   }
 
@@ -214,26 +321,26 @@ function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta): strin
   let photoSection = ''
   if (meta?.photoUrl) {
     photoSection = `
-      <div style="margin-top:6px;border-top:1px solid #141e16;padding-top:6px;">
-        <img src="${meta.photoUrl}" style="width:100%;height:auto;display:block;border:1px solid #141e16;opacity:0.92;" onerror="this.style.display='none'" />
-        ${meta.photographer ? `<div style="font-size:7px;color:#2a3e2e;letter-spacing:.06em;margin-top:2px;text-align:right;">photo: ${meta.photographer}</div>` : ''}
+      <div style="margin-top:6px;border-top:1px solid #e5e7eb;padding-top:6px;">
+        <img src="${meta.photoUrl}" style="width:100%;height:auto;display:block;border:1px solid #e5e7eb;opacity:0.96;" onerror="this.style.display='none'" />
+        ${meta.photographer ? `<div style="font-size:9px;color:#9ca3af;letter-spacing:.06em;margin-top:2px;text-align:right;">photo: ${meta.photographer}</div>` : ''}
       </div>`
   }
 
   // Loading indicator when meta hasn't arrived yet
   const loadingSection = meta === undefined
-    ? `<div id="flight-meta-loading" style="padding:4px 0;font-size:8px;color:#2a3e2e;letter-spacing:.1em;text-align:center;">LOADING AIRCRAFT DATA…</div>`
+    ? `<div id="flight-meta-loading" style="padding:4px 0;font-size:10px;color:#9ca3af;letter-spacing:.1em;text-align:center;">LOADING AIRCRAFT DATA…</div>`
     : ''
 
   return `
-    <div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:220px;max-width:280px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #141e16;">
-        <span style="font-size:15px;font-weight:800;color:#c0dcc4;letter-spacing:.06em;">${cs}</span>
-        <span style="font-size:8px;font-weight:700;letter-spacing:.1em;color:${typeColor};border:1px solid ${typeColor}55;padding:1px 6px;">${typeLabel.toUpperCase()}</span>
+    <div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:280px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #e5e7eb;">
+        <span style="font-size:15px;font-weight:800;color:#14161a;letter-spacing:.06em;font-family:monospace;">${cs}</span>
+        <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${typeColor};border:1px solid ${typeColor}55;padding:1px 6px;">${typeLabel.toUpperCase()}</span>
       </div>
       ${aircraftSection}
       ${loadingSection}
-      <table style="width:100%;border-collapse:collapse;font-size:10px;">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;">
         ${row('ICAO24',    String(p.icao24    || '—'))}
         ${row('COUNTRY',   String(p.country   || '—'))}
         ${row('ALTITUDE',  altM  ? `${altM.toLocaleString()} m / ${altFt!.toLocaleString()} ft` : '—')}
@@ -267,29 +374,146 @@ function addAirplaneImage(map: mapboxgl.Map) {
   map.addImage('airplane-sdf', ctx.getImageData(0, 0, size, size), { sdf: true })
 }
 
-// ── Ship SDF icon (vessel silhouette pointing up/north) ─────────────────────
-function addShipImage(map: mapboxgl.Map) {
-  const size = 24
-  const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = size
-  const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, size, size)
-  ctx.fillStyle = '#fff'
-  // Ship hull silhouette pointing north (bow at top)
-  ctx.beginPath()
-  ctx.moveTo(12, 1)   // bow tip
-  ctx.lineTo(18, 8)   // starboard bow
-  ctx.lineTo(19, 18)  // starboard hull
-  ctx.lineTo(17, 22)  // starboard stern
-  ctx.lineTo(7, 22)   // port stern
-  ctx.lineTo(5, 18)   // port hull
-  ctx.lineTo(6, 8)    // port bow
-  ctx.closePath()
-  ctx.fill()
-  // Bridge/superstructure
-  ctx.fillRect(9, 12, 6, 5)
-  map.addImage('ship-sdf', ctx.getImageData(0, 0, size, size), { sdf: true })
+// ── Vessel SDF icons — one per vessel type, sized small→large ────────────────
+function addVesselImages(map: mapboxgl.Map) {
+  // Helper: create SDF image from a drawing function
+  function makeSDF(name: string, size: number, draw: (ctx: CanvasRenderingContext2D, s: number) => void) {
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = size
+    const ctx = canvas.getContext('2d')!
+    ctx.fillStyle = '#000'
+    ctx.fillRect(0, 0, size, size)
+    ctx.fillStyle = '#fff'
+    draw(ctx, size)
+    map.addImage(name, ctx.getImageData(0, 0, size, size), { sdf: true })
+  }
+
+  // Cargo — large boxy freighter (28px)
+  makeSDF('vessel-cargo', 28, (ctx, s) => {
+    ctx.beginPath()
+    ctx.moveTo(14, 1)    // bow
+    ctx.lineTo(21, 7)
+    ctx.lineTo(22, 22)
+    ctx.lineTo(20, 26)
+    ctx.lineTo(8, 26)
+    ctx.lineTo(6, 22)
+    ctx.lineTo(7, 7)
+    ctx.closePath()
+    ctx.fill()
+    // Containers on deck
+    ctx.fillRect(9, 10, 10, 3)
+    ctx.fillRect(9, 14, 10, 3)
+    ctx.fillRect(9, 18, 10, 3)
+    // Bridge
+    ctx.fillRect(10, 22, 8, 3)
+  })
+
+  // Tanker — long hull with rounded bow (28px)
+  makeSDF('vessel-tanker', 28, (ctx) => {
+    ctx.beginPath()
+    ctx.moveTo(14, 1)
+    ctx.lineTo(20, 6)
+    ctx.lineTo(21, 24)
+    ctx.lineTo(18, 27)
+    ctx.lineTo(10, 27)
+    ctx.lineTo(7, 24)
+    ctx.lineTo(8, 6)
+    ctx.closePath()
+    ctx.fill()
+    // Deck pipes
+    ctx.fillRect(12, 8, 4, 14)
+    // Bridge at stern
+    ctx.fillRect(10, 23, 8, 3)
+  })
+
+  // Passenger — cruise ship with multiple decks (26px)
+  makeSDF('vessel-passenger', 26, (ctx) => {
+    ctx.beginPath()
+    ctx.moveTo(13, 1)
+    ctx.lineTo(19, 6)
+    ctx.lineTo(20, 20)
+    ctx.lineTo(18, 24)
+    ctx.lineTo(8, 24)
+    ctx.lineTo(6, 20)
+    ctx.lineTo(7, 6)
+    ctx.closePath()
+    ctx.fill()
+    // Multiple deck lines
+    ctx.clearRect(8, 9, 10, 1)
+    ctx.clearRect(8, 13, 10, 1)
+    ctx.clearRect(8, 17, 10, 1)
+    // Funnel
+    ctx.fillRect(11, 2, 4, 4)
+  })
+
+  // Fishing — small boat with mast (20px)
+  makeSDF('vessel-fishing', 20, (ctx) => {
+    ctx.beginPath()
+    ctx.moveTo(10, 2)   // bow
+    ctx.lineTo(15, 6)
+    ctx.lineTo(16, 15)
+    ctx.lineTo(14, 18)
+    ctx.lineTo(6, 18)
+    ctx.lineTo(4, 15)
+    ctx.lineTo(5, 6)
+    ctx.closePath()
+    ctx.fill()
+    // Mast/boom
+    ctx.fillRect(9, 3, 2, 10)
+    // Outrigger lines
+    ctx.fillRect(5, 7, 10, 1)
+  })
+
+  // Military — sleek warship (26px)
+  makeSDF('vessel-military', 26, (ctx) => {
+    ctx.beginPath()
+    ctx.moveTo(13, 0)   // sharp bow
+    ctx.lineTo(18, 7)
+    ctx.lineTo(19, 20)
+    ctx.lineTo(17, 24)
+    ctx.lineTo(9, 24)
+    ctx.lineTo(7, 20)
+    ctx.lineTo(8, 7)
+    ctx.closePath()
+    ctx.fill()
+    // Superstructure
+    ctx.fillRect(10, 10, 6, 6)
+    // Forward gun
+    ctx.fillRect(12, 4, 2, 5)
+    // Radar mast
+    ctx.fillRect(12, 8, 2, 2)
+  })
+
+  // Tug — small stubby vessel (18px)
+  makeSDF('vessel-tug', 18, (ctx) => {
+    ctx.beginPath()
+    ctx.moveTo(9, 2)    // bow
+    ctx.lineTo(14, 5)
+    ctx.lineTo(14, 14)
+    ctx.lineTo(12, 16)
+    ctx.lineTo(6, 16)
+    ctx.lineTo(4, 14)
+    ctx.lineTo(4, 5)
+    ctx.closePath()
+    ctx.fill()
+    // Wheelhouse
+    ctx.fillRect(6, 6, 6, 5)
+  })
+
+  // Other — generic small boat (20px)
+  makeSDF('vessel-other', 20, (ctx) => {
+    ctx.beginPath()
+    ctx.moveTo(10, 2)
+    ctx.lineTo(15, 6)
+    ctx.lineTo(15, 16)
+    ctx.lineTo(13, 18)
+    ctx.lineTo(7, 18)
+    ctx.lineTo(5, 16)
+    ctx.lineTo(5, 6)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillRect(8, 8, 4, 4)
+  })
 }
 
 export default function MapView({
@@ -300,13 +524,17 @@ export default function MapView({
   fires, showWildfires,
   showMilitary, showNuclear, showSanctions,
   showCameras, showInfrastructure, showAirspace, showHumanitarian,
-  vessels, showVessels, showOilGas, showGPSJam,
+  vessels, showVessels, showOil, showGas, showGPSJam, showPorts, showPipelines,
+  showChokepoints, showSupplyChain, showShippingRoutes,
   flyToQuery, geoFlyTo, onCountryClick,
+  reticleColor = '#00ff88',
+  panelState, onToggleLayer,
 }: Props) {
   const containerRef   = useRef<HTMLDivElement>(null)
   const mapRef         = useRef<mapboxgl.Map | null>(null)
   const markersRef     = useRef<mapboxgl.Marker[]>([])
   const layersReadyRef = useRef(false)
+  const [mapReady, setMapReady] = useState(false)
   const popupRef       = useRef<mapboxgl.Popup | null>(null)
   const flightDataRef  = useRef<Flight[]>([])
   const onCountryClickRef = useRef(onCountryClick)
@@ -317,6 +545,7 @@ export default function MapView({
   const [filterTypes, setFilterTypes] = useState<Set<FlightType>>(new Set(ALL_TYPES))
   const [showFilter,  setShowFilter]  = useState(false)
   const [showReticle, setShowReticle] = useState(true)
+  const [showOverlays, setShowOverlays] = useState(false)
 
   // Flight counts for the breakdown bar
   const typeCounts = countFlightTypes(flights)
@@ -399,8 +628,6 @@ export default function MapView({
     map.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-right')
 
     map.on('load', () => {
-      layersReadyRef.current = true
-
       // ── Terrain (3D relief like Google Earth) ────────────────────────────
       map.addSource('mapbox-dem', {
         type: 'raster-dem',
@@ -443,7 +670,7 @@ export default function MapView({
 
       // ── Add airplane SDF image ───────────────────────────────────────────
       addAirplaneImage(map)
-      addShipImage(map)
+      addVesselImages(map)
 
       // ── Flight GeoJSON source ────────────────────────────────────────────
       map.addSource('flights', {
@@ -584,14 +811,14 @@ export default function MapView({
         const frp  = Number(props.frp || 0)
         const conf = String(props.confidence || 'nominal')
         const html = `
-          <div style="font-family:monospace;font-size:10px;color:#e0eeff;line-height:1.6;min-width:160px">
-            <div style="font-size:11px;font-weight:700;color:#ff6600;letter-spacing:.1em;margin-bottom:4px">🔥 ACTIVE FIRE</div>
-            <div><span style="color:#4a6a50">FRP:</span> <b style="color:#ff6600">${frp.toFixed(1)} MW</b></div>
-            <div><span style="color:#4a6a50">Confidence:</span> <span style="color:${conf==='high'?'#ff2200':conf==='low'?'#ff9900':'#ff6600'}">${conf.toUpperCase()}</span></div>
-            <div><span style="color:#4a6a50">Satellite:</span> ${String(props.satellite||'')}</div>
-            <div><span style="color:#4a6a50">Detected:</span> ${String(props.date||'')} ${String(props.time||'').replace(/(\d{2})(\d{2})/, '$1:$2')} UTC</div>
-            <div><span style="color:#4a6a50">Day/Night:</span> ${props.daynight === 'D' ? '☀ Day' : '🌙 Night'}</div>
-            <div style="margin-top:4px;font-size:8px;color:#2a3e2e">${coords[1].toFixed(4)}°, ${coords[0].toFixed(4)}°</div>
+          <div style="font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;line-height:1.6;min-width:160px">
+            <div style="font-size:12px;font-weight:700;color:#ea580c;letter-spacing:.1em;margin-bottom:4px">🔥 ACTIVE FIRE</div>
+            <div><span style="color:#6b7280">FRP:</span> <b style="color:#ea580c">${frp.toFixed(1)} MW</b></div>
+            <div><span style="color:#6b7280">Confidence:</span> <span style="color:${conf==='high'?'#dc2626':conf==='low'?'#d97706':'#ea580c'}">${conf.toUpperCase()}</span></div>
+            <div><span style="color:#6b7280">Satellite:</span> ${String(props.satellite||'')}</div>
+            <div><span style="color:#6b7280">Detected:</span> ${String(props.date||'')} ${String(props.time||'').replace(/(\d{2})(\d{2})/, '$1:$2')} UTC</div>
+            <div><span style="color:#6b7280">Day/Night:</span> ${props.daynight === 'D' ? '☀ Day' : '🌙 Night'}</div>
+            <div style="margin-top:4px;font-size:10px;color:#9ca3af;font-family:monospace;">${coords[1].toFixed(4)}°, ${coords[0].toFixed(4)}°</div>
           </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '260px', className: 'cy-popup' })
@@ -645,19 +872,19 @@ export default function MapView({
         const c = SANCTIONS_BY_ISO2[iso2]
         if (!c) return
         const sevColor = SANCTION_COLORS[c.severity as keyof typeof SANCTION_COLORS] || '#888'
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:230px;max-width:280px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #141e16;">
-            <span style="font-size:13px;font-weight:800;color:#c0dcc4;">${c.name}</span>
-            <span style="font-size:7.5px;font-weight:700;letter-spacing:.1em;color:${sevColor};border:1px solid ${sevColor}55;padding:1px 5px;">${c.severity.toUpperCase()}</span>
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:280px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
+            <span style="font-size:13px;font-weight:800;color:#14161a;">${c.name}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${sevColor};border:1px solid ${sevColor}55;padding:1px 5px;">${c.severity.toUpperCase()}</span>
           </div>
-          <div style="font-size:8.5px;color:#6a8aaa;line-height:1.55;margin-bottom:7px;">${c.summary}</div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.55;margin-bottom:7px;">${c.summary}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:5px;">
-            ${c.regimes.map((r: string) => `<span style="font-size:7px;border:1px solid #0a3050;color:#00ff88;padding:0 4px;">${r}</span>`).join('')}
+            ${c.regimes.map((r: string) => `<span style="font-size:10px;border:1px solid #16a34a55;background:rgba(22,163,74,0.08);color:#16a34a;padding:0 4px;">${r}</span>`).join('')}
           </div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;">
-            ${c.categories.map((cat: string) => `<span style="font-size:7px;border:1px solid #2a1520;color:#ff8844;padding:0 4px;">${cat.replace('_',' ')}</span>`).join('')}
+            ${c.categories.map((cat: string) => `<span style="font-size:10px;border:1px solid #ea580c55;background:rgba(234,88,12,0.08);color:#ea580c;padding:0 4px;">${cat.replace('_',' ')}</span>`).join('')}
           </div>
-          ${c.since ? `<div style="margin-top:5px;font-size:7.5px;color:#2a3e2e;">Since: ${c.since}${c.totalDesignations ? ` · ~${c.totalDesignations.toLocaleString()} designations` : ''}</div>` : ''}
+          ${c.since ? `<div style="margin-top:5px;font-size:10px;color:#9ca3af;">Since: ${c.since}${c.totalDesignations ? ` · ~${c.totalDesignations.toLocaleString()} designations` : ''}</div>` : ''}
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '300px', className: 'cy-popup' })
@@ -708,19 +935,19 @@ export default function MapView({
         const p    = e.features[0].properties as Record<string, unknown>
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const color  = String(p.color || '#888')
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:230px;max-width:290px;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #141e16;gap:6px;">
-            <span style="font-size:11px;font-weight:800;color:#c0dcc4;line-height:1.3;">${p.name}</span>
-            <span style="font-size:7px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.typeLabel}</span>
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:290px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;gap:6px;">
+            <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">${p.name}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.typeLabel}</span>
           </div>
-          <div style="display:flex;gap:8px;margin-bottom:6px;font-size:8px;">
-            <span style="color:#4a6a50;">🏳 <b style="color:#8aac90">${p.operator}</b></span>
-            <span style="color:#4a6a50;">📍 <b style="color:#6a8aaa">${p.host}</b></span>
-            ${p.personnel ? `<span style="color:#4a6a50;">👥 <b style="color:#6a8aaa">${Number(p.personnel).toLocaleString()}</b></span>` : ''}
+          <div style="display:flex;gap:8px;margin-bottom:6px;font-size:10px;">
+            <span style="color:#6b7280;">🏳 <b style="color:#14161a">${p.operator}</b></span>
+            <span style="color:#6b7280;">📍 <b style="color:#2563eb">${p.host}</b></span>
+            ${p.personnel ? `<span style="color:#6b7280;">👥 <b style="color:#2563eb">${Number(p.personnel).toLocaleString()}</b></span>` : ''}
           </div>
-          <div style="font-size:8.5px;color:#6a8aaa;line-height:1.55;margin-bottom:6px;">${p.notes}</div>
-          ${p.nuclear ? `<div style="font-size:7.5px;color:#ff4444;border:1px solid #ff444433;padding:2px 6px;display:inline-flex;align-items:center;gap:4px;">☢ NUCLEAR-CAPABLE / NUCLEAR WEAPONS STORAGE</div>` : ''}
-          ${p.since ? `<div style="margin-top:4px;font-size:7.5px;color:#2a3e2e;">Established: ${p.since} · ${String(p.status||'').toUpperCase()}</div>` : ''}
+          <div style="font-size:11px;color:#6b7280;line-height:1.55;margin-bottom:6px;">${p.notes}</div>
+          ${p.nuclear ? `<div style="font-size:10px;color:#dc2626;border:1px solid #dc262633;background:rgba(220,38,38,0.08);padding:2px 6px;display:inline-flex;align-items:center;gap:4px;">☢ NUCLEAR-CAPABLE / NUCLEAR WEAPONS STORAGE</div>` : ''}
+          ${p.since ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">Established: ${p.since} · ${String(p.status||'').toUpperCase()}</div>` : ''}
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
@@ -731,6 +958,131 @@ export default function MapView({
       })
       map.on('mouseenter', 'military-circles', () => { map.getCanvas().style.cursor = 'crosshair' })
       map.on('mouseleave', 'military-circles', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Ports GeoJSON source ────────────────────────────────────────────
+      map.addSource('ports', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer({
+        id: 'port-circles', type: 'circle', source: 'ports',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 3, 5, 5, 8, 7, 12, 10],
+          'circle-color': ['get', 'color'],
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': 'rgba(255,255,255,0.2)',
+        },
+        layout: { visibility: 'none' },
+      })
+      map.addLayer({
+        id: 'port-labels', type: 'symbol', source: 'ports', minzoom: 5,
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': 9,
+          'text-offset': [0, 1.4],
+          'text-optional': true,
+          'text-allow-overlap': false,
+        } as Record<string, unknown>,
+        paint: {
+          'text-color': ['get', 'color'],
+          'text-halo-color': 'rgba(0,0,0,0.8)',
+          'text-halo-width': 1.2,
+        },
+      } as Parameters<typeof map.addLayer>[0])
+
+      map.on('click', 'port-circles', (e) => {
+        if (!e.features?.[0]) return
+        const p = e.features[0].properties as Record<string, unknown>
+        const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
+        const color = String(p.color || '#00ccff')
+        const teu = p.annualTEU ? `<span style="color:#6b7280;">📦 <b style="color:#2563eb">${Number(p.annualTEU).toLocaleString()}K TEU/yr</b></span>` : ''
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:290px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;gap:6px;">
+            <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">⚓ ${p.name}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.typeLabel}</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:6px;font-size:10px;flex-wrap:wrap;">
+            <span style="color:#6b7280;">🏳 <b style="color:#14161a">${p.country}</b></span>
+            ${teu}
+          </div>
+          <div style="font-size:11px;color:#14161a;margin-bottom:4px;">🏭 <b>${p.topIndustry}</b></div>
+          ${p.notes ? `<div style="font-size:10px;color:#6b7280;margin-top:4px;">${p.notes}</div>` : ''}
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
+          .setLngLat(coords)
+          .setHTML(html)
+          .addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'port-circles', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'port-circles', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Gas Pipelines GeoJSON source ────────────────────────────────────
+      map.addSource('pipelines', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer({
+        id: 'pipeline-lines', type: 'line', source: 'pipelines',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 1, 1.2, 4, 2, 7, 3.5, 10, 5],
+          'line-opacity': 0.8,
+        },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+          visibility: 'none',
+        },
+      })
+      map.addLayer({
+        id: 'pipeline-labels', type: 'symbol', source: 'pipelines', minzoom: 4,
+        layout: {
+          'symbol-placement': 'line-center',
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 4, 8, 8, 10, 12, 12],
+          'text-allow-overlap': false,
+          'text-optional': true,
+          visibility: 'none',
+        } as Record<string, unknown>,
+        paint: {
+          'text-color': ['get', 'color'],
+          'text-halo-color': 'rgba(0,0,0,0.85)',
+          'text-halo-width': 1.5,
+        },
+      } as Parameters<typeof map.addLayer>[0])
+
+      map.on('click', 'pipeline-lines', (e) => {
+        if (!e.features?.[0]) return
+        const p = e.features[0].properties as Record<string, unknown>
+        const color = String(p.color || '#44ddaa')
+        const cap = p.capacityBcmYr ? `<span style="color:#6b7280;">⛽ <b style="color:#2563eb">${p.capacityBcmYr} bcm/yr</b></span>` : ''
+        const len = p.lengthKm ? `<span style="color:#6b7280;">📏 <b style="color:#2563eb">${Number(p.lengthKm).toLocaleString()} km</b></span>` : ''
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:240px;max-width:310px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;gap:6px;">
+            <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">${p.name}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.statusLabel}</span>
+          </div>
+          <div style="font-size:11px;color:#6b7280;margin-bottom:5px;">${p.countries}</div>
+          <div style="display:flex;gap:8px;margin-bottom:5px;font-size:10px;flex-wrap:wrap;">
+            ${cap}${len}
+            ${p.operator ? `<span style="color:#6b7280;">🏢 <b style="color:#2563eb">${p.operator}</b></span>` : ''}
+          </div>
+          ${p.notes ? `<div style="font-size:10px;color:#6b7280;line-height:1.5;">${p.notes}</div>` : ''}
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '330px', className: 'cy-popup' })
+          .setLngLat(e.lngLat)
+          .setHTML(html)
+          .addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'pipeline-lines', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'pipeline-lines', () => { map.getCanvas().style.cursor = '' })
 
       // ── Nuclear power plants GeoJSON source ──────────────────────────────
       map.addSource('nuclear-plants', {
@@ -773,19 +1125,19 @@ export default function MapView({
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const color  = String(p.color || '#ffdd00')
         const statusLabel: Record<string, string> = { operating:'OPERATING', under_construction:'UNDER CONSTRUCTION', shutdown:'SHUTDOWN', planned:'PLANNED' }
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:230px;max-width:290px;">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #141e16;gap:6px;">
-            <span style="font-size:11px;font-weight:800;color:#c0dcc4;line-height:1.3;">${p.name}</span>
-            <span style="font-size:7px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${statusLabel[String(p.status)] ?? p.status}</span>
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:290px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;gap:6px;">
+            <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">${p.name}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${statusLabel[String(p.status)] ?? p.status}</span>
           </div>
-          <div style="display:flex;gap:8px;margin-bottom:6px;font-size:8px;">
-            <span style="color:#4a6a50;">🌍 <b style="color:#8aac90">${p.country}</b></span>
-            <span style="color:#4a6a50;">⚛ <b style="color:#ffdd00">${p.type}</b></span>
-            <span style="color:#4a6a50;">🔢 <b style="color:#6a8aaa">${p.reactors} reactor${Number(p.reactors) !== 1 ? 's' : ''}</b></span>
+          <div style="display:flex;gap:8px;margin-bottom:6px;font-size:10px;">
+            <span style="color:#6b7280;">🌍 <b style="color:#14161a">${p.country}</b></span>
+            <span style="color:#6b7280;">⚛ <b style="color:#d97706">${p.type}</b></span>
+            <span style="color:#6b7280;">🔢 <b style="color:#2563eb">${p.reactors} reactor${Number(p.reactors) !== 1 ? 's' : ''}</b></span>
           </div>
-          ${p.capacity ? `<div style="font-size:8px;color:#4a6a50;margin-bottom:5px;">Capacity: <b style="color:#8aac90">${Number(p.capacity).toLocaleString()} MWe</b></div>` : ''}
-          <div style="font-size:8.5px;color:#6a8aaa;line-height:1.55;margin-bottom:4px;">${p.notes}</div>
-          ${p.since ? `<div style="font-size:7.5px;color:#2a3e2e;">First unit: ${p.since}</div>` : ''}
+          ${p.capacity ? `<div style="font-size:10px;color:#6b7280;margin-bottom:5px;">Capacity: <b style="color:#14161a">${Number(p.capacity).toLocaleString()} MWe</b></div>` : ''}
+          <div style="font-size:11px;color:#6b7280;line-height:1.55;margin-bottom:4px;">${p.notes}</div>
+          ${p.since ? `<div style="font-size:10px;color:#9ca3af;">First unit: ${p.since}</div>` : ''}
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
@@ -836,7 +1188,7 @@ export default function MapView({
           'line-color': ['match', ['get', 'status'],
             'closed',     '#ff1a3e',
             'restricted', '#ff8800',
-            '#00ff8822',
+            'rgba(0,255,136,0.13)',
           ],
           'line-width': ['match', ['get', 'status'], 'closed', 1.5, 'restricted', 1, 0.4],
           'line-dasharray': ['match', ['get', 'status'], 'normal', ['literal', [2, 4]], ['literal', [1, 0]]],
@@ -850,24 +1202,6 @@ export default function MapView({
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
       })
-      map.addSource('pipelines', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      })
-      map.addLayer({
-        id: 'pipeline-lines', type: 'line', source: 'pipelines',
-        paint: {
-          'line-color':   ['get', 'color'],
-          'line-width':   ['interpolate', ['linear'], ['zoom'], 2, 1, 6, 2, 10, 3],
-          'line-opacity': 0.75,
-          'line-dasharray': ['match', ['get', 'status'],
-            'suspended',          ['literal', [4, 4]],
-            'under_construction', ['literal', [2, 3]],
-            ['literal', [1, 0]],
-          ],
-        },
-        layout: { visibility: 'none' },
-      } as Parameters<typeof map.addLayer>[0])
       map.addLayer({
         id: 'infra-circles', type: 'circle', source: 'infrastructure',
         paint: {
@@ -902,17 +1236,17 @@ export default function MapView({
         const p     = e.features[0].properties as Record<string, unknown>
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const color  = String(p.color || '#00ff88')
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:230px;max-width:290px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #141e16;">
-            <span style="font-size:11px;font-weight:800;color:#c0dcc4;">${p.icon} ${p.name}</span>
-            <span style="font-size:7px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;">${p.typeLabel}</span>
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:290px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
+            <span style="font-size:12px;font-weight:800;color:#14161a;">${p.icon} ${p.name}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;">${p.typeLabel}</span>
           </div>
-          <div style="font-size:8.5px;color:#6a8aaa;line-height:1.5;">
-            <div><span style="color:#4a6a50;">Country:</span> ${p.country}</div>
-            ${p.capacity ? `<div><span style="color:#4a6a50;">Capacity:</span> <b style="color:${color};">${p.capacity}</b></div>` : ''}
-            ${p.river    ? `<div><span style="color:#4a6a50;">River:</span> ${p.river}</div>` : ''}
-            ${p.notes    ? `<div style="margin-top:4px;font-size:7.5px;color:#4a6a50;">${p.notes}</div>` : ''}
-            <div style="margin-top:4px;font-size:7px;color:#${p.status === 'operational' ? '00ff88' : p.status === 'under_construction' ? 'ffaa00' : 'ff4444'};">● ${String(p.status).replace('_',' ').toUpperCase()}</div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.5;">
+            <div><span style="color:#9ca3af;">Country:</span> ${p.country}</div>
+            ${p.capacity ? `<div><span style="color:#9ca3af;">Capacity:</span> <b style="color:${color};">${p.capacity}</b></div>` : ''}
+            ${p.river    ? `<div><span style="color:#9ca3af;">River:</span> ${p.river}</div>` : ''}
+            ${p.notes    ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
+            <div style="margin-top:4px;font-size:10px;color:#${p.status === 'operational' ? '16a34a' : p.status === 'under_construction' ? 'd97706' : 'dc2626'};">● ${String(p.status).replace('_',' ').toUpperCase()}</div>
           </div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
@@ -926,17 +1260,17 @@ export default function MapView({
       map.on('click', 'pipeline-lines', (e) => {
         if (!e.features?.[0]) return
         const p     = e.features[0].properties as Record<string, unknown>
-        const color  = String(p.color || '#ff8800')
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:220px;max-width:280px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #141e16;">
-            <span style="font-size:11px;font-weight:800;color:#c0dcc4;">⬡ ${p.name}</span>
-            <span style="font-size:7px;color:${color};border:1px solid ${color}55;padding:1px 5px;">${String(p.type).toUpperCase()}</span>
+        const color  = String(p.color || '#ea580c')
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:280px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
+            <span style="font-size:12px;font-weight:800;color:#14161a;">⬡ ${p.name}</span>
+            <span style="font-size:10px;color:${color};border:1px solid ${color}55;padding:1px 5px;">${String(p.type).toUpperCase()}</span>
           </div>
-          <div style="font-size:8.5px;color:#6a8aaa;line-height:1.6;">
-            <div><span style="color:#4a6a50;">Route:</span> ${p.from} → ${p.to}</div>
-            ${p.capacity ? `<div><span style="color:#4a6a50;">Capacity:</span> ${p.capacity}</div>` : ''}
-            ${p.notes    ? `<div style="margin-top:4px;font-size:7.5px;color:#4a6a50;">${p.notes}</div>` : ''}
-            <div style="margin-top:4px;font-size:7px;color:#${p.status === 'operational' ? '00ff88' : p.status === 'under_construction' ? 'ffaa00' : 'ff4444'};">● ${String(p.status).replace('_',' ').toUpperCase()}</div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.6;">
+            <div><span style="color:#9ca3af;">Route:</span> ${p.from} → ${p.to}</div>
+            ${p.capacity ? `<div><span style="color:#9ca3af;">Capacity:</span> ${p.capacity}</div>` : ''}
+            ${p.notes    ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
+            <div style="margin-top:4px;font-size:10px;color:#${p.status === 'operational' ? '16a34a' : p.status === 'under_construction' ? 'd97706' : 'dc2626'};">● ${String(p.status).replace('_',' ').toUpperCase()}</div>
           </div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
@@ -978,7 +1312,41 @@ export default function MapView({
         paint: { 'text-color': '#00aaff', 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': 1.2 },
       } as Parameters<typeof map.addLayer>[0])
 
-      // Border Crossings – colored by status
+      // Border Crossings – exact crossing path (the physical road/axis across the border)
+      map.addSource('humanitarian-crossing-paths', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      // Wide soft glow underlay
+      map.addLayer({
+        id: 'humanitarian-crossing-path-glow', type: 'line', source: 'humanitarian-crossing-paths',
+        paint: {
+          'line-color':   ['get', 'statusColor'],
+          'line-width':   ['interpolate', ['linear'], ['zoom'], 4, 3, 8, 6, 12, 10],
+          'line-opacity': 0.18,
+          'line-blur':    3,
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
+      })
+      // Crisp dashed crossing axis
+      map.addLayer({
+        id: 'humanitarian-crossing-path', type: 'line', source: 'humanitarian-crossing-paths',
+        paint: {
+          'line-color':     ['get', 'statusColor'],
+          'line-width':     ['interpolate', ['linear'], ['zoom'], 4, 1.4, 8, 2.2, 12, 3],
+          'line-opacity':   0.95,
+          'line-dasharray': ['match', ['get', 'status'], 'closed', ['literal', [1, 1.4]], ['literal', [3, 1.6]]],
+        },
+        layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
+      })
+      // Perpendicular "gate" ticks marking the actual border line at each crossing
+      map.addSource('humanitarian-crossing-gates', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      map.addLayer({
+        id: 'humanitarian-crossing-gate', type: 'line', source: 'humanitarian-crossing-gates',
+        paint: {
+          'line-color': ['get', 'statusColor'],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 4, 1.6, 8, 2.4, 12, 3.2],
+          'line-opacity': 0.9,
+        },
+        layout: { 'line-cap': 'round', visibility: 'none' },
+      })
       map.addLayer({
         id: 'humanitarian-crossings', type: 'circle', source: 'humanitarian-crossings',
         paint: {
@@ -1052,14 +1420,20 @@ export default function MapView({
         matchExpr.push(iso3, `rgba(${r},${g},${b},0.45)`)
       }
       matchExpr.push('rgba(0,0,0,0)')  // default — transparent
+      if (!map.getSource('humanitarian-boundaries')) {
+        map.addSource('humanitarian-boundaries', {
+          type: 'vector',
+          url:  'mapbox://mapbox.country-boundaries-v1',
+        })
+      }
       map.addLayer({
         id: 'humanitarian-choropleth',
         type: 'fill',
-        source: 'composite',
+        source: 'humanitarian-boundaries',
         'source-layer': 'country_boundaries',
         paint: { 'fill-color': matchExpr as unknown as mapboxgl.Expression },
         layout: { visibility: 'none' },
-      }, 'humanitarian-offices')  // insert below existing humanitarian layers
+      } as Parameters<typeof map.addLayer>[0], 'humanitarian-offices')  // insert below existing humanitarian layers
 
       // Choropleth country border outlines
       const outlineMatch: (string | number | string[])[] = ['match', ['get', 'iso_3166_1_alpha_3']]
@@ -1068,11 +1442,11 @@ export default function MapView({
       map.addLayer({
         id: 'humanitarian-choropleth-line',
         type: 'line',
-        source: 'composite',
+        source: 'humanitarian-boundaries',
         'source-layer': 'country_boundaries',
         paint: { 'line-color': outlineMatch as unknown as mapboxgl.Expression, 'line-width': 1 },
         layout: { visibility: 'none' },
-      }, 'humanitarian-offices')
+      } as Parameters<typeof map.addLayer>[0], 'humanitarian-offices')
 
       // ── Heatmap: displacement intensity from camp populations ──────────
       map.addSource('humanitarian-heatmap', {
@@ -1219,10 +1593,10 @@ export default function MapView({
         if (!e.features?.[0]) return
         const p = e.features[0].properties as Record<string, unknown>
         const fmtN = (n: number) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(0) + 'K' : n.toString()
-        const html = `<div style="padding:8px 10px;font-family:monospace;background:rgba(8,14,10,0.97);">
-          <div style="font-size:10px;font-weight:800;color:#ffcc00;margin-bottom:4px;">${p.label}</div>
-          <div style="font-size:9px;color:#00ff88;font-weight:700;">${fmtN(Number(p.count))} displaced</div>
-          <div style="margin-top:4px;font-size:6.5px;color:#1a2e1e;">SOURCE: UNHCR GLOBAL TRENDS 2023</div>
+        const html = `<div style="padding:8px 10px;font-family:'Inter',-apple-system,sans-serif;">
+          <div style="font-size:11px;font-weight:800;color:#d97706;margin-bottom:4px;">${p.label}</div>
+          <div style="font-size:11px;color:#16a34a;font-weight:700;">${fmtN(Number(p.count))} displaced</div>
+          <div style="margin-top:4px;font-size:9px;color:#9ca3af;">SOURCE: UNHCR GLOBAL TRENDS 2023</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '240px', className: 'cy-popup' })
@@ -1239,11 +1613,11 @@ export default function MapView({
         const d = COUNTRY_DISPLACEMENT[iso3]
         if (!d) return
         const fmtN = (n: number) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(0) + 'K' : n.toString()
-        const html = `<div style="padding:8px 10px;font-family:monospace;background:rgba(8,14,10,0.97);">
-          <div style="font-size:10px;font-weight:800;color:#c0dcc4;margin-bottom:4px;">${iso3}</div>
-          ${d.hosting ? `<div style="font-size:8px;color:#00aaff;">HOSTING: <b>${fmtN(d.hosting)}</b></div>` : ''}
-          ${d.origin ? `<div style="font-size:8px;color:#ff8844;">ORIGIN: <b>${fmtN(d.origin)}</b></div>` : ''}
-          <div style="font-size:8px;color:#ffcc00;font-weight:700;">TOTAL: ${fmtN(d.hosting + d.origin)}</div>
+        const html = `<div style="padding:8px 10px;font-family:'Inter',-apple-system,sans-serif;">
+          <div style="font-size:11px;font-weight:800;color:#14161a;margin-bottom:4px;">${iso3}</div>
+          ${d.hosting ? `<div style="font-size:10px;color:#2563eb;">HOSTING: <b>${fmtN(d.hosting)}</b></div>` : ''}
+          ${d.origin ? `<div style="font-size:10px;color:#ea580c;">ORIGIN: <b>${fmtN(d.origin)}</b></div>` : ''}
+          <div style="font-size:10px;color:#d97706;font-weight:700;">TOTAL: ${fmtN(d.hosting + d.origin)}</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '220px', className: 'cy-popup' })
@@ -1272,17 +1646,17 @@ export default function MapView({
         if (!e.features?.[0]) return
         const p = e.features[0].properties as Record<string, string>
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:210px;">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #141e16;">
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:210px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
             <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></div>
-            <span style="font-size:10px;font-weight:800;color:#c0dcc4;">UNHCR ${p.city}</span>
+            <span style="font-size:11px;font-weight:800;color:#14161a;">UNHCR ${p.city}</span>
           </div>
-          <div style="font-size:8px;color:#6a8aaa;line-height:1.6;">
-            <div><span style="color:#4a6a50;">Office:</span> ${p.name}</div>
-            <div><span style="color:#4a6a50;">Country:</span> ${p.country}</div>
-            <div><span style="color:#4a6a50;">Type:</span> <b style="color:#00aaff;">${p.officeType.toUpperCase()}</b></div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.6;">
+            <div><span style="color:#9ca3af;">Office:</span> ${p.name}</div>
+            <div><span style="color:#9ca3af;">Country:</span> ${p.country}</div>
+            <div><span style="color:#9ca3af;">Type:</span> <b style="color:#2563eb;">${p.officeType.toUpperCase()}</b></div>
           </div>
-          <div style="margin-top:5px;font-size:6.5px;color:#1a2e1e;">SOURCE: UNHCR PRESENCE MAP · unhcr.org</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: UNHCR PRESENCE MAP · unhcr.org</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '280px', className: 'cy-popup' })
@@ -1297,16 +1671,16 @@ export default function MapView({
         const p = e.features[0].properties as Record<string, string>
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const statusLabel = p.status.toUpperCase()
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:210px;">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #141e16;">
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:210px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
             <div style="width:8px;height:8px;border-radius:50%;background:${p.statusColor};flex-shrink:0;"></div>
-            <span style="font-size:10px;font-weight:800;color:#c0dcc4;">${p.name}</span>
+            <span style="font-size:11px;font-weight:800;color:#14161a;">${p.name}</span>
           </div>
-          <div style="font-size:8px;color:#6a8aaa;line-height:1.6;">
-            <div><span style="color:#4a6a50;">Countries:</span> ${p.country1} ↔ ${p.country2}</div>
-            <div><span style="color:#4a6a50;">Status:</span> <b style="color:${p.statusColor};">${statusLabel}</b></div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.6;">
+            <div><span style="color:#9ca3af;">Countries:</span> ${p.country1} ↔ ${p.country2}</div>
+            <div><span style="color:#9ca3af;">Status:</span> <b style="color:${p.statusColor};">${statusLabel}</b></div>
           </div>
-          <div style="margin-top:5px;font-size:6.5px;color:#1a2e1e;">SOURCE: UNHCR BORDER CROSSING POINTS</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: UNHCR BORDER CROSSING POINTS</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '280px', className: 'cy-popup' })
@@ -1316,24 +1690,48 @@ export default function MapView({
       map.on('mouseenter', 'humanitarian-crossings', () => { map.getCanvas().style.cursor = 'crosshair' })
       map.on('mouseleave', 'humanitarian-crossings', () => { map.getCanvas().style.cursor = '' })
 
+      map.on('click', 'humanitarian-crossing-path', (e) => {
+        if (!e.features?.[0]) return
+        const p = e.features[0].properties as Record<string, string>
+        const statusLabel = p.status.toUpperCase()
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:210px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
+            <div style="width:8px;height:8px;border-radius:50%;background:${p.statusColor};flex-shrink:0;"></div>
+            <span style="font-size:11px;font-weight:800;color:#14161a;">${p.name}</span>
+          </div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.6;">
+            <div><span style="color:#9ca3af;">Countries:</span> ${p.country1} ↔ ${p.country2}</div>
+            <div><span style="color:#9ca3af;">Status:</span> <b style="color:${p.statusColor};">${statusLabel}</b></div>
+            <div><span style="color:#9ca3af;">Crossing axis:</span> mapped to true bearing</div>
+          </div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: UNHCR BORDER CROSSING POINTS</div>
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '280px', className: 'cy-popup' })
+          .setLngLat(e.lngLat).setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'humanitarian-crossing-path', () => { map.getCanvas().style.cursor = 'crosshair' })
+      map.on('mouseleave', 'humanitarian-crossing-path', () => { map.getCanvas().style.cursor = '' })
+
       map.on('click', 'humanitarian-camps', (e) => {
         if (!e.features?.[0]) return
         const p = e.features[0].properties as Record<string, unknown>
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const pop = Number(p.pop ?? 0)
         const fmt = (n: number) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(0) + 'K' : n.toString()
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:220px;">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #141e16;">
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
             <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></div>
-            <span style="font-size:10px;font-weight:800;color:#c0dcc4;">${p.name}</span>
+            <span style="font-size:11px;font-weight:800;color:#14161a;">${p.name}</span>
           </div>
-          <div style="font-size:8px;color:#6a8aaa;line-height:1.6;">
-            <div><span style="color:#4a6a50;">Country:</span> ${p.country}</div>
-            <div><span style="color:#4a6a50;">Population:</span> <b style="color:${p.color};">${fmt(pop)} people</b></div>
-            <div><span style="color:#4a6a50;">Type:</span> ${String(p.campType).replace('_', ' ').toUpperCase()}</div>
-            ${p.notes ? `<div style="margin-top:3px;font-size:7.5px;color:#4a6a50;">${p.notes}</div>` : ''}
+          <div style="font-size:11px;color:#6b7280;line-height:1.6;">
+            <div><span style="color:#9ca3af;">Country:</span> ${p.country}</div>
+            <div><span style="color:#9ca3af;">Population:</span> <b style="color:${p.color};">${fmt(pop)} people</b></div>
+            <div><span style="color:#9ca3af;">Type:</span> ${String(p.campType).replace('_', ' ').toUpperCase()}</div>
+            ${p.notes ? `<div style="margin-top:3px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
           </div>
-          <div style="margin-top:5px;font-size:6.5px;color:#1a2e1e;">SOURCE: UNHCR POPULATION REFERENCE POINTS</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: UNHCR POPULATION REFERENCE POINTS</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '290px', className: 'cy-popup' })
@@ -1343,84 +1741,67 @@ export default function MapView({
       map.on('mouseenter', 'humanitarian-camps', () => { map.getCanvas().style.cursor = 'crosshair' })
       map.on('mouseleave', 'humanitarian-camps', () => { map.getCanvas().style.cursor = '' })
 
-      // ── Vessels (AIS) ─────────────────────────────────────────────────
+      // ── Vessels (AIS) — no clustering, per-type icons like flights ─────
       map.addSource('vessels', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
-        cluster: true,
-        clusterMaxZoom: 8,
-        clusterRadius: 40,
       })
-      // Cluster circles (shown at low zoom)
-      map.addLayer({
-        id: 'vessel-clusters',
-        type: 'circle',
-        source: 'vessels',
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': ['step', ['get', 'point_count'], '#00cc88', 50, '#00aaff', 200, '#ff6600', 1000, '#ff2244'],
-          'circle-radius': ['step', ['get', 'point_count'], 10, 50, 14, 200, 18, 1000, 24],
-          'circle-opacity': 0.75,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#000',
-        },
-        layout: { visibility: 'none' },
-      })
-      map.addLayer({
-        id: 'vessel-cluster-count',
-        type: 'symbol',
-        source: 'vessels',
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': ['get', 'point_count_abbreviated'],
-          'text-size': 10,
-          'text-font': ['DIN Pro Medium', 'Arial Unicode MS Bold'],
-          visibility: 'none',
-        },
-        paint: { 'text-color': '#fff' },
-      })
-      // Individual vessel icons (shown when unclustered)
+
+      // Vessel icon layer — visible at ALL zoom levels, per-type icon + color
       map.addLayer({
         id: 'vessel-icons',
         type: 'symbol',
         source: 'vessels',
-        filter: ['!', ['has', 'point_count']],
         layout: {
-          'icon-image': 'ship-sdf',
-          'icon-size': ['interpolate', ['linear'], ['zoom'], 5, 0.4, 10, 0.65, 14, 0.9],
-          'icon-rotate': ['get', 'heading'],
+          'icon-image': ['match', ['get', 'vesselType'],
+            'cargo',     'vessel-cargo',
+            'tanker',    'vessel-tanker',
+            'passenger', 'vessel-passenger',
+            'fishing',   'vessel-fishing',
+            'military',  'vessel-military',
+            'tug',       'vessel-tug',
+            'vessel-other',
+          ],
+          'icon-rotate':           ['get', 'heading'],
           'icon-rotation-alignment': 'map',
-          'icon-allow-overlap': true,
+          // Scale from tiny at globe view up to full-size at street zoom (match flights)
+          'icon-size':             ['interpolate', ['linear'], ['zoom'],
+            1, 0.14,
+            3, 0.20,
+            5, 0.32,
+            7, 0.55,
+            10, 0.82,
+            13, 1.2,
+          ],
+          'icon-allow-overlap':    true,
           'icon-ignore-placement': true,
-          'text-field': ['step', ['zoom'], '', 9, ['get', 'name']],
-          'text-size': 9,
-          'text-offset': [0, 1.4],
-          'text-anchor': 'top',
-          'text-optional': true,
+          // Vessel name label only at zoom ≥ 8
+          'text-field':  ['step', ['zoom'], '', 8,
+            ['case', ['==', ['get', 'name'], ''], '', ['get', 'name']],
+          ],
+          'text-font':   ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size':   ['interpolate', ['linear'], ['zoom'], 8, 8, 12, 11],
+          'text-offset': [0, 1.6],
+          'text-optional':      true,
+          'text-allow-overlap': false,
           visibility: 'none',
-        },
+        } as Record<string, unknown>,
         paint: {
-          'icon-color': ['get', 'color'],
-          'icon-opacity': 0.9,
+          'icon-color': ['match', ['get', 'vesselType'],
+            'cargo',     VESSEL_TYPE_COLORS.cargo,
+            'tanker',    VESSEL_TYPE_COLORS.tanker,
+            'passenger', VESSEL_TYPE_COLORS.passenger,
+            'fishing',   VESSEL_TYPE_COLORS.fishing,
+            'military',  VESSEL_TYPE_COLORS.military,
+            'tug',       VESSEL_TYPE_COLORS.tug,
+            VESSEL_TYPE_COLORS.other,
+          ],
+          'icon-opacity': ['interpolate', ['linear'], ['zoom'], 1, 0.75, 4, 0.88, 7, 0.95],
           'text-color': '#c0dcc4',
-          'text-halo-color': '#000',
-          'text-halo-width': 1,
-        },
+          'text-halo-color': 'rgba(0,0,0,0.75)',
+          'text-halo-width': 1.2,
+        } as Record<string, unknown>,
       })
-      // Cluster click → zoom in
-      map.on('click', 'vessel-clusters', (e) => {
-        const features = map.queryRenderedFeatures(e.point, { layers: ['vessel-clusters'] })
-        if (!features.length) return
-        const clusterId = features[0].properties?.cluster_id
-        const src = map.getSource('vessels') as mapboxgl.GeoJSONSource
-        src.getClusterExpansionZoom(clusterId, (_err, zoom) => {
-          const coords = (features[0].geometry as GeoJSON.Point).coordinates as [number, number]
-          map.easeTo({ center: coords, zoom: zoom ?? (map.getZoom() + 2) })
-        })
-        ;(map as any).__markFeatureClick?.()
-      })
-      map.on('mouseenter', 'vessel-clusters', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'vessel-clusters', () => { map.getCanvas().style.cursor = '' })
 
       // Vessel click popup
       map.on('click', 'vessel-icons', (e) => {
@@ -1429,26 +1810,27 @@ export default function MapView({
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const sog = parseFloat(p.sog || '0').toFixed(1)
         const cog = parseFloat(p.cog || '0').toFixed(0)
-        const html = `<div style="padding:10px;font-family:monospace;background:rgba(8,14,10,0.97);min-width:220px;">
-          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #141e16;">
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
             <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></div>
-            <span style="font-size:10px;font-weight:800;color:#c0dcc4;">${p.name || 'UNKNOWN'}</span>
-            <span style="font-size:7px;color:#4a6a50;margin-left:auto;">${p.vesselType?.toUpperCase()}</span>
+            <span style="font-size:11px;font-weight:800;color:#14161a;">${p.name || 'UNKNOWN'}</span>
+            <span style="font-size:10px;color:#9ca3af;margin-left:auto;">${p.vesselType?.toUpperCase()}</span>
           </div>
-          <div style="font-size:8px;color:#6a8aaa;line-height:1.6;">
-            <div><span style="color:#4a6a50;">MMSI:</span> ${p.mmsi}</div>
-            <div><span style="color:#4a6a50;">Speed:</span> <b style="color:#00ff88;">${sog} kn</b></div>
-            <div><span style="color:#4a6a50;">Course:</span> ${cog}°</div>
-            <div><span style="color:#4a6a50;">Heading:</span> ${p.heading}°</div>
+          <div style="font-size:11px;color:#6b7280;line-height:1.6;">
+            <div><span style="color:#9ca3af;">MMSI:</span> ${p.mmsi}</div>
+            <div><span style="color:#9ca3af;">Speed:</span> <b style="color:#16a34a;">${sog} kn</b></div>
+            <div><span style="color:#9ca3af;">Course:</span> ${cog}°</div>
+            <div><span style="color:#9ca3af;">Heading:</span> ${p.heading}°</div>
+            ${p.destination ? `<div><span style="color:#9ca3af;">Dest:</span> ${p.destination}</div>` : ''}
           </div>
-          <div style="margin-top:5px;font-size:6.5px;color:#1a2e1e;">SOURCE: AIS VESSEL TRACKING</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: AIS VESSEL TRACKING</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '290px', className: 'cy-popup' })
           .setLngLat(coords).setHTML(html).addTo(map)
         ;(map as any).__markFeatureClick?.()
       })
-      map.on('mouseenter', 'vessel-icons', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseenter', 'vessel-icons', () => { map.getCanvas().style.cursor = 'crosshair' })
       map.on('mouseleave', 'vessel-icons', () => { map.getCanvas().style.cursor = '' })
 
       // ── GPS Jamming interference zones ───────────────────────────────────
@@ -1553,20 +1935,20 @@ export default function MapView({
         const p = e.features[0].properties as Record<string, unknown>
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const sevColor = String(p.color || '#ff2244')
-        const html = `<div style="font-family:'JetBrains Mono',monospace;background:rgba(8,14,10,0.97);padding:10px 12px;min-width:220px;">
+        const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:220px;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
             <div style="width:8px;height:8px;border-radius:50%;background:${sevColor};box-shadow:0 0 8px ${sevColor}88;"></div>
-            <span style="font-size:11px;font-weight:700;color:${sevColor};letter-spacing:.06em;">${p.name}</span>
+            <span style="font-size:12px;font-weight:700;color:${sevColor};letter-spacing:.06em;">${p.name}</span>
           </div>
-          <div style="font-size:7.5px;color:#4a6a50;letter-spacing:.12em;margin-bottom:6px;">${String(p.region).toUpperCase()} · ${p.typeLabel}</div>
-          <div style="display:grid;grid-template-columns:70px 1fr;gap:3px 8px;font-size:8px;">
-            <span style="color:#4a6a50;">Severity</span><span style="color:${sevColor};font-weight:700;">${String(p.severity).toUpperCase()}</span>
-            <span style="color:#4a6a50;">Type</span><span style="color:#8aac90;">${p.typeLabel}</span>
-            <span style="color:#4a6a50;">Radius</span><span style="color:#8aac90;">${p.radius} km</span>
-            <span style="color:#4a6a50;">Status</span><span style="color:${p.active === 'true' || p.active === true ? '#00ff88' : '#4a6a50'};">${p.active === 'true' || p.active === true ? 'ACTIVE' : 'INACTIVE'}</span>
+          <div style="font-size:10px;color:#9ca3af;letter-spacing:.12em;margin-bottom:6px;">${String(p.region).toUpperCase()} · ${p.typeLabel}</div>
+          <div style="display:grid;grid-template-columns:70px 1fr;gap:3px 8px;font-size:11px;">
+            <span style="color:#9ca3af;">Severity</span><span style="color:${sevColor};font-weight:700;">${String(p.severity).toUpperCase()}</span>
+            <span style="color:#9ca3af;">Type</span><span style="color:#14161a;">${p.typeLabel}</span>
+            <span style="color:#9ca3af;">Radius</span><span style="color:#14161a;">${p.radius} km</span>
+            <span style="color:#9ca3af;">Status</span><span style="color:${p.active === 'true' || p.active === true ? '#16a34a' : '#9ca3af'};">${p.active === 'true' || p.active === true ? 'ACTIVE' : 'INACTIVE'}</span>
           </div>
-          <div style="margin-top:6px;font-size:7.5px;color:#4a6a50;line-height:1.5;">${p.notes}</div>
-          <div style="margin-top:5px;font-size:6.5px;color:#1a2e1e;letter-spacing:.08em;">SOURCE: ${p.source}</div>
+          <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">${p.notes}</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ${p.source}</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
@@ -1582,20 +1964,20 @@ export default function MapView({
         if (!e.features?.[0]) return
         const p = e.features[0].properties as Record<string, unknown>
         const sevColor = String(p.color || '#ff2244')
-        const html = `<div style="font-family:'JetBrains Mono',monospace;background:rgba(8,14,10,0.97);padding:10px 12px;min-width:220px;">
+        const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:220px;">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
             <div style="width:8px;height:8px;border-radius:50%;background:${sevColor};box-shadow:0 0 8px ${sevColor}88;"></div>
-            <span style="font-size:11px;font-weight:700;color:${sevColor};letter-spacing:.06em;">${p.name}</span>
+            <span style="font-size:12px;font-weight:700;color:${sevColor};letter-spacing:.06em;">${p.name}</span>
           </div>
-          <div style="font-size:7.5px;color:#4a6a50;letter-spacing:.12em;margin-bottom:6px;">${String(p.region).toUpperCase()} · ${p.typeLabel}</div>
-          <div style="display:grid;grid-template-columns:70px 1fr;gap:3px 8px;font-size:8px;">
-            <span style="color:#4a6a50;">Severity</span><span style="color:${sevColor};font-weight:700;">${String(p.severity).toUpperCase()}</span>
-            <span style="color:#4a6a50;">Type</span><span style="color:#8aac90;">${p.typeLabel}</span>
-            <span style="color:#4a6a50;">Radius</span><span style="color:#8aac90;">${p.radius} km</span>
-            <span style="color:#4a6a50;">Status</span><span style="color:${p.active === 'true' || p.active === true ? '#00ff88' : '#4a6a50'};">${p.active === 'true' || p.active === true ? 'ACTIVE' : 'INACTIVE'}</span>
+          <div style="font-size:10px;color:#9ca3af;letter-spacing:.12em;margin-bottom:6px;">${String(p.region).toUpperCase()} · ${p.typeLabel}</div>
+          <div style="display:grid;grid-template-columns:70px 1fr;gap:3px 8px;font-size:11px;">
+            <span style="color:#9ca3af;">Severity</span><span style="color:${sevColor};font-weight:700;">${String(p.severity).toUpperCase()}</span>
+            <span style="color:#9ca3af;">Type</span><span style="color:#14161a;">${p.typeLabel}</span>
+            <span style="color:#9ca3af;">Radius</span><span style="color:#14161a;">${p.radius} km</span>
+            <span style="color:#9ca3af;">Status</span><span style="color:${p.active === 'true' || p.active === true ? '#16a34a' : '#9ca3af'};">${p.active === 'true' || p.active === true ? 'ACTIVE' : 'INACTIVE'}</span>
           </div>
-          <div style="margin-top:6px;font-size:7.5px;color:#4a6a50;line-height:1.5;">${p.notes}</div>
-          <div style="margin-top:5px;font-size:6.5px;color:#1a2e1e;letter-spacing:.08em;">SOURCE: ${p.source}</div>
+          <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">${p.notes}</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ${p.source}</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
@@ -1603,53 +1985,53 @@ export default function MapView({
         ;(map as any).__markFeatureClick?.()
       })
 
-      // ── Oil & Gas 3D extruded bars ──────────────────────────────────────
-      map.addSource('oilgas-bars', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      })
-      // 3D extruded cylinders — height encodes the metric value
-      map.addLayer({
-        id: 'oilgas-extrusion',
-        type: 'fill-extrusion',
-        source: 'oilgas-bars',
-        paint: {
-          'fill-extrusion-color': ['get', 'color'],
-          'fill-extrusion-height': ['get', 'height'],
-          'fill-extrusion-base': 0,
-          'fill-extrusion-opacity': 0.82,
-        },
-        layout: { visibility: 'none' },
-      })
-      // Labels at base
-      map.addLayer({
-        id: 'oilgas-labels',
-        type: 'symbol',
-        source: 'oilgas-bars',
-        layout: {
-          'text-field': ['get', 'label'],
-          'text-size': ['interpolate', ['linear'], ['zoom'], 2, 7, 6, 9, 10, 11],
-          'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
-          'text-offset': [0, 0],
-          'text-anchor': 'center',
-          'text-allow-overlap': false,
-          'text-optional': true,
-          visibility: 'none',
-        },
-        paint: {
-          'text-color': ['get', 'color'],
-          'text-halo-color': 'rgba(0,0,0,0.9)',
-          'text-halo-width': 1.5,
-        },
-      })
-      // Click handler for oil/gas bars
-      map.on('click', 'oilgas-extrusion', (e) => {
+      // ── Oil & Gas 3D extruded bars (separate layers, side by side) ────
+      for (const kind of ['oil', 'gas'] as const) {
+        map.addSource(`${kind}-bars`, {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] },
+        })
+        map.addLayer({
+          id: `${kind}-extrusion`,
+          type: 'fill-extrusion',
+          source: `${kind}-bars`,
+          paint: {
+            'fill-extrusion-color': ['get', 'color'],
+            'fill-extrusion-height': ['get', 'height'],
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': 0.82,
+          },
+          layout: { visibility: 'none' },
+        })
+        map.addLayer({
+          id: `${kind}-labels`,
+          type: 'symbol',
+          source: `${kind}-bars`,
+          layout: {
+            'text-field': ['get', 'label'],
+            'text-size': ['interpolate', ['linear'], ['zoom'], 2, 7, 6, 9, 10, 11],
+            'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
+            'text-offset': [0, 0],
+            'text-anchor': 'center',
+            'text-allow-overlap': false,
+            'text-optional': true,
+            visibility: 'none',
+          },
+          paint: {
+            'text-color': ['get', 'color'],
+            'text-halo-color': 'rgba(0,0,0,0.9)',
+            'text-halo-width': 1.5,
+          },
+        })
+      }
+
+      // Click handler for oil or gas bars (shared popup showing all 4 metrics)
+      function oilgasClickHandler(e: mapboxgl.MapLayerMouseEvent) {
         if (!e.features?.[0]) return
         const p = e.features[0].properties as Record<string, unknown>
         const country = OIL_GAS_DATA.find(c => c.iso2 === p.iso2)
         if (!country) return
 
-        // Build mini bar chart for all 4 metrics
         const metrics: OilGasMetric[] = ['oilReserves', 'gasReserves', 'oilProduction', 'gasProduction']
         const maxVals = metrics.map(m => getMaxValue(m))
         const bars = metrics.map((m, i) => {
@@ -1658,87 +2040,254 @@ export default function MapView({
           const rank = [...OIL_GAS_DATA].sort((a, b) => b[m] - a[m]).findIndex(c => c.iso2 === country.iso2) + 1
           return `
             <div style="margin:3px 0;">
-              <div style="display:flex;justify-content:space-between;font-size:7.5px;margin-bottom:1px;">
+              <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:1px;">
                 <span style="color:${METRIC_COLORS[m]};font-weight:700;">${METRIC_LABELS[m]}</span>
-                <span style="color:#8aac90;">#${rank} of ${OIL_GAS_DATA.filter(c => c[m] > 0).length}</span>
+                <span style="color:#9ca3af;">#${rank} of ${OIL_GAS_DATA.filter(c => c[m] > 0).length}</span>
               </div>
-              <div style="background:#141e16;height:10px;position:relative;border:1px solid #162030;">
+              <div style="background:#fafbfc;height:10px;position:relative;border:1px solid #e5e7eb;">
                 <div style="position:absolute;top:0;left:0;height:100%;width:${pct}%;background:${METRIC_COLORS[m]};opacity:0.7;"></div>
-                <span style="position:absolute;right:3px;top:0;font-size:7px;color:#c0dcc4;line-height:10px;">${formatValue(val, m)}</span>
+                <span style="position:absolute;right:3px;top:0;font-size:10px;color:#14161a;line-height:10px;">${formatValue(val, m)}</span>
               </div>
             </div>`
         }).join('')
 
-        // Region totals for context
         const regionTotals = getRegionTotals('oilReserves')
-        const countryRegion = country.region
-        const regionRank = regionTotals.findIndex(r => r.region === countryRegion) + 1
+        const regionRank = regionTotals.findIndex(r => r.region === country.region) + 1
 
-        const html = `<div style="font-family:'JetBrains Mono',monospace;background:rgba(8,14,10,0.97);padding:10px 12px;min-width:260px;">
+        const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:260px;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <span style="font-size:12px;font-weight:700;color:#ff8800;letter-spacing:.08em;">${country.name}</span>
-            <span style="font-size:7px;color:#4a6a50;border:1px solid #162030;padding:0 4px;letter-spacing:.1em;">${country.iso2}</span>
+            <span style="font-size:12px;font-weight:700;color:#ea580c;letter-spacing:.08em;">${country.name}</span>
+            <span style="font-size:10px;color:#6b7280;border:1px solid #e5e7eb;padding:0 4px;letter-spacing:.1em;">${country.iso2}</span>
           </div>
-          <div style="font-size:7px;color:#4a6a50;letter-spacing:.12em;margin-bottom:6px;">${country.region.toUpperCase()} · REGION RANK #${regionRank}</div>
+          <div style="font-size:10px;color:#9ca3af;letter-spacing:.12em;margin-bottom:6px;">${country.region.toUpperCase()} · REGION RANK #${regionRank}</div>
           ${bars}
-          <div style="margin-top:6px;font-size:6.5px;color:#1a2e1e;letter-spacing:.08em;">SOURCE: EIA / OPEC / BP STATISTICAL REVIEW 2023</div>
+          <div style="margin-top:6px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: EIA / OPEC / BP STATISTICAL REVIEW 2023</div>
         </div>`
 
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' })
           .setLngLat([country.lng, country.lat]).setHTML(html).addTo(map)
         ;(map as any).__markFeatureClick?.()
-      })
-      map.on('mouseenter', 'oilgas-extrusion', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'oilgas-extrusion', () => { map.getCanvas().style.cursor = '' })
-
-      // ── Country click target layer (always present, near-invisible) ────
-      // Ensure the sanctions-countries vector source exists
-      if (!map.getSource('sanctions-countries')) {
-        map.addSource('sanctions-countries', {
-          type: 'vector',
-          url: 'mapbox://mapbox.country-boundaries-v1',
-        })
       }
-      map.addLayer({
-        id: 'country-click-target',
-        type: 'fill',
-        source: 'sanctions-countries',
-        'source-layer': 'country_boundaries',
-        paint: { 'fill-color': '#000000', 'fill-opacity': 0.005 },
-      })
-      // Move it to very bottom so it doesn't cover other features visually
-      const allLayerIds = (map.getStyle().layers ?? []).map(l => l.id)
-      const firstNonBg = allLayerIds.find(id => id !== 'country-click-target' && id !== 'background')
-      if (firstNonBg) map.moveLayer('country-click-target', firstNonBg)
+      map.on('click', 'oil-extrusion', oilgasClickHandler)
+      map.on('click', 'gas-extrusion', oilgasClickHandler)
+      map.on('mouseenter', 'oil-extrusion', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'oil-extrusion', () => { map.getCanvas().style.cursor = '' })
+      map.on('mouseenter', 'gas-extrusion', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'gas-extrusion', () => { map.getCanvas().style.cursor = '' })
 
-      // Use a flag to track if a feature popup was just shown
+      // ── Chokepoints GeoJSON source ──────────────────────────────────────
+      map.addSource('chokepoints', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer({
+        id: 'chokepoint-zones', type: 'fill', source: 'chokepoints',
+        paint: {
+          'fill-color': CHOKEPOINT_COLORS.zone,
+          'fill-opacity': 0.12,
+        },
+        layout: { visibility: 'none' },
+      })
+      map.addLayer({
+        id: 'chokepoint-borders', type: 'line', source: 'chokepoints',
+        paint: {
+          'line-color': CHOKEPOINT_COLORS.zoneBorder,
+          'line-width': 2,
+          'line-opacity': 0.7,
+          'line-dasharray': [4, 2],
+        },
+        layout: { visibility: 'none' },
+      })
+      map.addSource('chokepoint-labels', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer({
+        id: 'chokepoint-label-layer', type: 'symbol', source: 'chokepoint-labels',
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 2, 9, 6, 12],
+          'text-allow-overlap': true,
+          visibility: 'none',
+        } as Record<string, unknown>,
+        paint: {
+          'text-color': '#ff4466',
+          'text-halo-color': 'rgba(0,0,0,0.9)',
+          'text-halo-width': 1.5,
+        },
+      } as Parameters<typeof map.addLayer>[0])
+
+      map.on('click', 'chokepoint-zones', (e) => {
+        if (!e.features?.[0]) return
+        const p = e.features[0].properties as Record<string, unknown>
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:250px;max-width:320px;">
+          <div style="font-size:12px;font-weight:800;color:#dc2626;margin-bottom:6px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">${p.name}</div>
+          <div style="display:grid;grid-template-columns:90px 1fr;gap:3px 8px;font-size:11px;">
+            <span style="color:#9ca3af;">Daily Transits</span><span style="color:#ea580c;font-weight:700;">${p.dailyTransits} vessels</span>
+            <span style="color:#9ca3af;">World Trade</span><span style="color:#d97706;font-weight:700;">${p.pctWorldTrade}%</span>
+            ${p.pctOilTrade ? `<span style="color:#9ca3af;">Oil Trade</span><span style="color:#ea580c;font-weight:700;">${p.pctOilTrade}%</span>` : ''}
+            <span style="color:#9ca3af;">Controlled By</span><span style="color:#14161a;">${p.controlledBy}</span>
+          </div>
+          <div style="margin-top:6px;font-size:11px;color:#6b7280;"><b>Key goods:</b> ${p.keyGoods}</div>
+          <div style="margin-top:4px;font-size:11px;color:#dc2626;"><b>Risks:</b> ${p.risks}</div>
+          ${p.notes ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: IMF PORTWATCH · UNCTAD</div>
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '340px', className: 'cy-popup' })
+          .setLngLat(e.lngLat).setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'chokepoint-zones', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'chokepoint-zones', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Supply Chain Facilities GeoJSON source ────────────────────────────
+      map.addSource('supplychain', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer({
+        id: 'supplychain-circles', type: 'circle', source: 'supplychain',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 3.5, 5, 5, 8, 7, 12, 10],
+          'circle-color': ['get', 'color'],
+          'circle-opacity': 0.85,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': 'rgba(255,255,255,0.25)',
+        },
+        layout: { visibility: 'none' },
+      })
+      map.addLayer({
+        id: 'supplychain-labels', type: 'symbol', source: 'supplychain', minzoom: 4,
+        layout: {
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': 9,
+          'text-offset': [0, 1.4],
+          'text-optional': true,
+          'text-allow-overlap': false,
+          visibility: 'none',
+        } as Record<string, unknown>,
+        paint: {
+          'text-color': ['get', 'color'],
+          'text-halo-color': 'rgba(0,0,0,0.8)',
+          'text-halo-width': 1.2,
+        },
+      } as Parameters<typeof map.addLayer>[0])
+
+      map.on('click', 'supplychain-circles', (e) => {
+        if (!e.features?.[0]) return
+        const p = e.features[0].properties as Record<string, unknown>
+        const color = String(p.color || '#00ccff')
+        const share = p.globalShare ? `<span style="color:#d97706;font-weight:700;">${p.globalShare}% global share</span>` : ''
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:240px;max-width:310px;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;gap:6px;">
+            <span style="font-size:12px;font-weight:800;color:${color};line-height:1.3;">${p.name}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.typeLabel}</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:5px;font-size:10px;flex-wrap:wrap;">
+            <span style="color:#6b7280;">🏢 <b style="color:#14161a">${p.operator}</b></span>
+            <span style="color:#6b7280;">🏳 <b style="color:#14161a">${p.country}</b></span>
+          </div>
+          <div style="font-size:11px;color:#14161a;margin-bottom:4px;">⚙ <b>${p.product}</b></div>
+          ${share ? `<div style="font-size:11px;margin-bottom:4px;">${share}</div>` : ''}
+          ${p.notes ? `<div style="font-size:10px;color:#6b7280;margin-top:4px;">${p.notes}</div>` : ''}
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: SEMICONDUCTOR INDUSTRY ASSOCIATION · USGS</div>
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '330px', className: 'cy-popup' })
+          .setLngLat((e.features[0].geometry as GeoJSON.Point).coordinates as [number, number])
+          .setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'supplychain-circles', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'supplychain-circles', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Shipping Routes GeoJSON source ────────────────────────────────────
+      map.addSource('shipping-routes', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer({
+        id: 'shipping-route-lines', type: 'line', source: 'shipping-routes',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['interpolate', ['linear'], ['zoom'], 1, 1, 3, 2, 6, 3, 10, 4],
+          'line-opacity': 0.6,
+        },
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+          visibility: 'none',
+        },
+      })
+      map.addLayer({
+        id: 'shipping-route-labels', type: 'symbol', source: 'shipping-routes', minzoom: 3,
+        layout: {
+          'symbol-placement': 'line-center',
+          'text-field': ['get', 'name'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 3, 8, 6, 10, 10, 12],
+          'text-allow-overlap': false,
+          'text-optional': true,
+          visibility: 'none',
+        } as Record<string, unknown>,
+        paint: {
+          'text-color': ['get', 'color'],
+          'text-halo-color': 'rgba(0,0,0,0.85)',
+          'text-halo-width': 1.5,
+        },
+      } as Parameters<typeof map.addLayer>[0])
+
+      map.on('click', 'shipping-route-lines', (e) => {
+        if (!e.features?.[0]) return
+        const p = e.features[0].properties as Record<string, unknown>
+        const color = String(p.color || '#00aaff')
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:300px;">
+          <div style="font-size:12px;font-weight:800;color:${color};margin-bottom:6px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">${p.name}</div>
+          <div style="font-size:11px;color:#d97706;font-weight:700;margin-bottom:5px;">${p.annualTonnageMt}M tonnes/year</div>
+          <div style="font-size:11px;color:#14161a;"><b>Key goods:</b> ${p.keyGoods}</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: UNCTAD REVIEW OF MARITIME TRANSPORT</div>
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' })
+          .setLngLat(e.lngLat).setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'shipping-route-lines', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'shipping-route-lines', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Country click — reverse geocode any click on the map ─────────
       let featureClickedFlag = false
+      let featureClickTimer: ReturnType<typeof setTimeout> | null = null
       map.on('click', (e) => {
-        // Defer to next microtask so layer-specific handlers run first
-        setTimeout(() => {
+        if (featureClickTimer) clearTimeout(featureClickTimer)
+        featureClickTimer = setTimeout(() => {
           if (featureClickedFlag) {
             featureClickedFlag = false
             return
           }
-          // Query the always-present country layer for country under cursor
-          if (onCountryClickRef.current) {
-            const features = map.queryRenderedFeatures(e.point, { layers: ['country-click-target'] })
-            if (features.length > 0) {
-              const props = features[0].properties
-              const name = props?.name_en ?? props?.name ?? props?.iso_3166_1
-              if (name) {
-                onCountryClickRef.current(name)
-                return
+          if (!onCountryClickRef.current) return
+          // Reverse geocode — works for every click on land
+          fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${e.lngLat.lng},${e.lngLat.lat}.json?types=country&access_token=${mapboxgl.accessToken}`)
+            .then(r => r.json())
+            .then(json => {
+              const countryName = json.features?.[0]?.text || json.features?.[0]?.place_name
+              if (countryName && onCountryClickRef.current) {
+                onCountryClickRef.current(countryName)
               }
-            }
-          }
-          // close popup when clicking empty space
-          popupRef.current?.remove()
-        }, 0)
+            })
+            .catch(() => {})
+        }, 150)
       })
-      // Helper: mark that a feature was clicked (called by layer-specific handlers)
       ;(map as any).__markFeatureClick = () => { featureClickedFlag = true }
+
+      // Mark layers ready AFTER all sources/layers are added
+      layersReadyRef.current = true
+      // Force re-render so useEffects that depend on layersReadyRef pick up the initial state
+      setMapReady(true)
     })
 
     return () => {
@@ -1789,8 +2338,8 @@ export default function MapView({
     if (!src) return
 
     const vis = showVessels ? 'visible' : 'none'
-    for (const lid of ['vessel-icons', 'vessel-clusters', 'vessel-cluster-count']) {
-      mapRef.current.setLayoutProperty(lid, 'visibility', vis)
+    if (mapRef.current.getLayer('vessel-icons')) {
+      mapRef.current.setLayoutProperty('vessel-icons', 'visibility', vis)
     }
 
     if (!showVessels) {
@@ -1811,11 +2360,12 @@ export default function MapView({
           navStatus: v.navStatus,
           vesselType: vt,
           color: VESSEL_TYPE_COLORS[vt],
+          destination: v.destination || '',
         },
       }
     })
     src.setData({ type: 'FeatureCollection', features })
-  }, [vessels, showVessels])
+  }, [vessels, showVessels, mapReady])
 
   // ── Sanctions layer visibility ─────────────────────────────────────────────
   useEffect(() => {
@@ -1824,7 +2374,7 @@ export default function MapView({
     const vis = showSanctions ? 'visible' : 'none'
     if (map.getLayer('sanctions-fill'))    map.setLayoutProperty('sanctions-fill',    'visibility', vis)
     if (map.getLayer('sanctions-outline')) map.setLayoutProperty('sanctions-outline', 'visibility', vis)
-  }, [showSanctions])
+  }, [showSanctions, mapReady])
 
   // ── Military facilities GeoJSON ───────────────────────────────────────────
   useEffect(() => {
@@ -1854,7 +2404,144 @@ export default function MapView({
       },
     }))
     src.setData({ type: 'FeatureCollection', features })
-  }, [showMilitary])
+  }, [showMilitary, mapReady])
+
+  // ── Ports GeoJSON ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const src = map.getSource('ports') as mapboxgl.GeoJSONSource | undefined
+    if (!src) return
+    const vis = showPorts ? 'visible' : 'none'
+    if (map.getLayer('port-circles')) map.setLayoutProperty('port-circles', 'visibility', vis)
+    if (map.getLayer('port-labels'))  map.setLayoutProperty('port-labels',  'visibility', vis)
+    if (!showPorts) { src.setData({ type: 'FeatureCollection', features: [] }); return }
+    const features: GeoJSON.Feature[] = PORTS.map(p => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+      properties: {
+        name:        p.name,
+        country:     p.country,
+        type:        p.type,
+        typeLabel:   PORT_TYPE_LABELS[p.type],
+        color:       PORT_TYPE_COLORS[p.type],
+        topIndustry: p.topIndustry,
+        annualTEU:   p.annualTEU ?? null,
+        notes:       p.notes ?? '',
+      },
+    }))
+    src.setData({ type: 'FeatureCollection', features })
+  }, [showPorts, mapReady])
+
+  // ── Gas Pipelines GeoJSON ───────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const src = map.getSource('pipelines') as mapboxgl.GeoJSONSource | undefined
+    if (!src) return
+    const vis = showPipelines ? 'visible' : 'none'
+    if (map.getLayer('pipeline-lines'))  map.setLayoutProperty('pipeline-lines',  'visibility', vis)
+    if (map.getLayer('pipeline-labels')) map.setLayoutProperty('pipeline-labels', 'visibility', vis)
+    if (!showPipelines) { src.setData({ type: 'FeatureCollection', features: [] }); return }
+    const features: GeoJSON.Feature[] = GAS_PIPELINES.map(p => ({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: p.path },
+      properties: {
+        name:           p.name,
+        countries:      p.countries,
+        status:         p.status,
+        statusLabel:    PIPELINE_STATUS_LABELS[p.status],
+        color:          PIPELINE_STATUS_COLORS[p.status],
+        capacityBcmYr:  p.capacityBcmYr ?? null,
+        lengthKm:       p.lengthKm ?? null,
+        operator:       p.operator ?? '',
+        notes:          p.notes ?? '',
+      },
+    }))
+    src.setData({ type: 'FeatureCollection', features })
+  }, [showPipelines, mapReady])
+
+  // ── Chokepoints GeoJSON ───────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const src = map.getSource('chokepoints') as mapboxgl.GeoJSONSource | undefined
+    const labelSrc = map.getSource('chokepoint-labels') as mapboxgl.GeoJSONSource | undefined
+    if (!src || !labelSrc) return
+    const vis = showChokepoints ? 'visible' : 'none'
+    if (map.getLayer('chokepoint-zones'))       map.setLayoutProperty('chokepoint-zones',       'visibility', vis)
+    if (map.getLayer('chokepoint-borders'))     map.setLayoutProperty('chokepoint-borders',     'visibility', vis)
+    if (map.getLayer('chokepoint-label-layer')) map.setLayoutProperty('chokepoint-label-layer', 'visibility', vis)
+    if (!showChokepoints) {
+      src.setData({ type: 'FeatureCollection', features: [] })
+      labelSrc.setData({ type: 'FeatureCollection', features: [] })
+      return
+    }
+    const zoneFeatures: GeoJSON.Feature[] = CHOKEPOINTS.map(c => ({
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [c.zone] },
+      properties: {
+        name: c.name, dailyTransits: c.dailyTransits,
+        pctWorldTrade: c.pctWorldTrade, pctOilTrade: c.pctOilTrade ?? null,
+        keyGoods: c.keyGoods.join(', '), risks: c.risks.join(', '),
+        controlledBy: c.controlledBy, notes: c.notes ?? '',
+      },
+    }))
+    const labelFeatures: GeoJSON.Feature[] = CHOKEPOINTS.map(c => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
+      properties: { name: c.name },
+    }))
+    src.setData({ type: 'FeatureCollection', features: zoneFeatures })
+    labelSrc.setData({ type: 'FeatureCollection', features: labelFeatures })
+  }, [showChokepoints, mapReady])
+
+  // ── Supply Chain Facilities GeoJSON ───────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const src = map.getSource('supplychain') as mapboxgl.GeoJSONSource | undefined
+    if (!src) return
+    const vis = showSupplyChain ? 'visible' : 'none'
+    if (map.getLayer('supplychain-circles')) map.setLayoutProperty('supplychain-circles', 'visibility', vis)
+    if (map.getLayer('supplychain-labels'))  map.setLayoutProperty('supplychain-labels',  'visibility', vis)
+    if (!showSupplyChain) { src.setData({ type: 'FeatureCollection', features: [] }); return }
+    const features: GeoJSON.Feature[] = SUPPLY_CHAIN_FACILITIES.map(f => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [f.lng, f.lat] },
+      properties: {
+        name: f.name, type: f.type,
+        typeLabel: FACILITY_TYPE_LABELS[f.type],
+        color: FACILITY_TYPE_COLORS[f.type],
+        operator: f.operator, country: f.country,
+        product: f.product, globalShare: f.globalShare ?? null,
+        notes: f.notes ?? '',
+      },
+    }))
+    src.setData({ type: 'FeatureCollection', features })
+  }, [showSupplyChain, mapReady])
+
+  // ── Shipping Routes GeoJSON ───────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const src = map.getSource('shipping-routes') as mapboxgl.GeoJSONSource | undefined
+    if (!src) return
+    const vis = showShippingRoutes ? 'visible' : 'none'
+    if (map.getLayer('shipping-route-lines'))  map.setLayoutProperty('shipping-route-lines',  'visibility', vis)
+    if (map.getLayer('shipping-route-labels')) map.setLayoutProperty('shipping-route-labels', 'visibility', vis)
+    if (!showShippingRoutes) { src.setData({ type: 'FeatureCollection', features: [] }); return }
+    const features: GeoJSON.Feature[] = SHIPPING_ROUTES.map(r => ({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: r.path },
+      properties: {
+        name: r.name, color: r.color,
+        annualTonnageMt: r.annualTonnageMt,
+        keyGoods: r.keyGoods.join(', '),
+      },
+    }))
+    src.setData({ type: 'FeatureCollection', features })
+  }, [showShippingRoutes, mapReady])
 
   // ── Nuclear power plants GeoJSON ──────────────────────────────────────────
   useEffect(() => {
@@ -1882,7 +2569,7 @@ export default function MapView({
       },
     }))
     src.setData({ type: 'FeatureCollection', features })
-  }, [showNuclear])
+  }, [showNuclear, mapReady])
 
   // ── Airspace closure overlay ──────────────────────────────────────────────
   useEffect(() => {
@@ -1963,7 +2650,7 @@ export default function MapView({
       },
     }))
     pipelineSrc.setData({ type: 'FeatureCollection', features: pipeFeatures })
-  }, [showInfrastructure])
+  }, [showInfrastructure, mapReady])
 
   // ── Humanitarian (UNHCR) layers ───────────────────────────────────────────
   useEffect(() => {
@@ -1971,6 +2658,7 @@ export default function MapView({
     if (!map || !layersReadyRef.current) return
     const HUM_LAYERS = [
       'humanitarian-offices', 'humanitarian-offices-labels',
+      'humanitarian-crossing-path-glow', 'humanitarian-crossing-path', 'humanitarian-crossing-gate',
       'humanitarian-crossings', 'humanitarian-crossings-labels',
       'humanitarian-camps', 'humanitarian-camps-labels',
       'humanitarian-choropleth', 'humanitarian-choropleth-line',
@@ -1982,7 +2670,7 @@ export default function MapView({
     const vis = showHumanitarian ? 'visible' : 'none'
     HUM_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis) })
     if (!showHumanitarian) {
-      ;(['humanitarian-offices', 'humanitarian-crossings', 'humanitarian-camps',
+      ;(['humanitarian-offices', 'humanitarian-crossings', 'humanitarian-crossing-paths', 'humanitarian-crossing-gates', 'humanitarian-camps',
         'humanitarian-heatmap', 'humanitarian-flows', 'humanitarian-clusters',
       ] as const).forEach(srcId => {
         const src = map.getSource(srcId) as mapboxgl.GeoJSONSource | undefined
@@ -2011,6 +2699,38 @@ export default function MapView({
         geometry: { type: 'Point' as const, coordinates: [c.lng, c.lat] },
         properties: { name: c.name, country1: c.country1, country2: c.country2, status: c.status, statusColor: CROSSING_STATUS_COLORS[c.status] },
       })),
+    })
+
+    // Populate exact crossing paths — a short geodesic segment along the true
+    // crossing axis (country1 → country2), plus a perpendicular gate tick at the border.
+    const CROSSING_HALF_LEN_KM = 1.4
+    const GATE_HALF_LEN_KM = 0.55
+    const pathSrc  = map.getSource('humanitarian-crossing-paths') as mapboxgl.GeoJSONSource | undefined
+    const gateSrc  = map.getSource('humanitarian-crossing-gates') as mapboxgl.GeoJSONSource | undefined
+    pathSrc?.setData({
+      type: 'FeatureCollection',
+      features: BORDER_CROSSINGS.map(c => {
+        const from = destinationPoint(c.lng, c.lat, (c.bearing + 180) % 360, CROSSING_HALF_LEN_KM)
+        const to   = destinationPoint(c.lng, c.lat, c.bearing, CROSSING_HALF_LEN_KM)
+        return {
+          type: 'Feature' as const,
+          geometry: { type: 'LineString' as const, coordinates: [from, [c.lng, c.lat], to] },
+          properties: { name: c.name, country1: c.country1, country2: c.country2, status: c.status, statusColor: CROSSING_STATUS_COLORS[c.status] },
+        }
+      }),
+    })
+    gateSrc?.setData({
+      type: 'FeatureCollection',
+      features: BORDER_CROSSINGS.map(c => {
+        const perp = (c.bearing + 90) % 360
+        const from = destinationPoint(c.lng, c.lat, perp, GATE_HALF_LEN_KM)
+        const to   = destinationPoint(c.lng, c.lat, (perp + 180) % 360, GATE_HALF_LEN_KM)
+        return {
+          type: 'Feature' as const,
+          geometry: { type: 'LineString' as const, coordinates: [from, to] },
+          properties: { name: c.name, status: c.status, statusColor: CROSSING_STATUS_COLORS[c.status] },
+        }
+      }),
     })
 
     // Populate camps
@@ -2088,7 +2808,7 @@ export default function MapView({
       })),
     ]
     clusterSrc?.setData({ type: 'FeatureCollection', features: allPoints })
-  }, [showHumanitarian])
+  }, [showHumanitarian, mapReady])
 
   // ── Animate flow-line dashes & cluster pulse ─────────────────────────────
   useEffect(() => {
@@ -2107,74 +2827,85 @@ export default function MapView({
     }
     raf = requestAnimationFrame(animate)
     return () => cancelAnimationFrame(raf)
-  }, [showHumanitarian])
+  }, [showHumanitarian, mapReady])
 
-  // ── Oil & Gas 3D bars update ──────────────────────────────────────────────
-  const oilgasMetricRef = useRef<OilGasMetric>('oilReserves')
-
+  // ── Oil & Gas 3D bars update (separate layers, side by side) ─────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layersReadyRef.current) return
-    const src = map.getSource('oilgas-bars') as mapboxgl.GeoJSONSource | undefined
-    if (!src) return
 
-    const vis = showOilGas ? 'visible' : 'none'
-    if (map.getLayer('oilgas-extrusion')) map.setLayoutProperty('oilgas-extrusion', 'visibility', vis)
-    if (map.getLayer('oilgas-labels')) map.setLayoutProperty('oilgas-labels', 'visibility', vis)
+    const eitherOn = showOil || showGas
 
-    if (!showOilGas) {
-      src.setData({ type: 'FeatureCollection', features: [] })
-      return
+    // Toggle visibility per layer
+    for (const kind of ['oil', 'gas'] as const) {
+      const on = kind === 'oil' ? showOil : showGas
+      const vis = on ? 'visible' : 'none'
+      if (map.getLayer(`${kind}-extrusion`)) map.setLayoutProperty(`${kind}-extrusion`, 'visibility', vis)
+      if (map.getLayer(`${kind}-labels`)) map.setLayoutProperty(`${kind}-labels`, 'visibility', vis)
+      if (!on) {
+        const src = map.getSource(`${kind}-bars`) as mapboxgl.GeoJSONSource | undefined
+        if (src) src.setData({ type: 'FeatureCollection', features: [] })
+      }
     }
 
-    // Tilt map for 3D view when oil/gas is enabled
+    if (!eitherOn) return
+
+    // fill-extrusion doesn't render on globe projection — switch to mercator
+    if ((map.getProjection?.()?.name ?? map.getProjection?.()) === 'globe') {
+      map.setProjection('mercator')
+    }
+    // Tilt map for 3D view
     if (map.getPitch() < 30) {
       map.easeTo({ pitch: 45, duration: 800 })
     }
 
-    const metric = oilgasMetricRef.current
-    const maxVal = getMaxValue(metric)
-    if (maxVal === 0) return
+    // Both bars shown side-by-side need to know if the other is also on
+    const bothOn = showOil && showGas
+    // Offset: when both are on, shift oil left and gas right by 0.45°
+    const offset = bothOn ? 0.45 : 0
 
-    // Build polygon features (small squares at country centroid, extruded to height)
-    const features: GeoJSON.Feature[] = OIL_GAS_DATA
-      .filter(c => c[metric] > 0)
-      .map(c => {
-        const val = c[metric]
-        // Height: log scale so small producers are still visible
-        // Max height ~500000m for globe view readability
-        const normalised = Math.log10(val + 1) / Math.log10(maxVal + 1)
-        const height = normalised * 500000
+    function buildFeatures(metric: OilGasMetric, side: 'left' | 'right' | 'center'): GeoJSON.Feature[] {
+      const maxVal = getMaxValue(metric)
+      if (maxVal === 0) return []
+      const barWidth = bothOn ? 0.3 : 0.4
+      const lngShift = side === 'left' ? -offset : side === 'right' ? offset : 0
 
-        // Small square polygon around centroid (~0.8° side)
-        const s = 0.4
-        const lng = c.lng
-        const lat = c.lat
-        const ring: [number, number][] = [
-          [lng - s, lat - s],
-          [lng + s, lat - s],
-          [lng + s, lat + s],
-          [lng - s, lat + s],
-          [lng - s, lat - s],
-        ]
+      return OIL_GAS_DATA
+        .filter(c => c[metric] > 0)
+        .map(c => {
+          const val = c[metric]
+          const normalised = Math.log10(val + 1) / Math.log10(maxVal + 1)
+          const height = normalised * 500000
+          const lng = c.lng + lngShift
+          const lat = c.lat
+          const s = barWidth
+          const ring: [number, number][] = [
+            [lng - s, lat - s], [lng + s, lat - s],
+            [lng + s, lat + s], [lng - s, lat + s],
+            [lng - s, lat - s],
+          ]
+          return {
+            type: 'Feature' as const,
+            geometry: { type: 'Polygon' as const, coordinates: [ring] },
+            properties: {
+              iso2: c.iso2, name: c.name, value: val, height,
+              color: METRIC_COLORS[metric],
+              label: `${c.iso2} ${formatValue(val, metric)}`,
+              region: c.region,
+            },
+          }
+        })
+    }
 
-        return {
-          type: 'Feature' as const,
-          geometry: { type: 'Polygon' as const, coordinates: [ring] },
-          properties: {
-            iso2: c.iso2,
-            name: c.name,
-            value: val,
-            height,
-            color: METRIC_COLORS[metric],
-            label: `${c.iso2} ${formatValue(val, metric)}`,
-            region: c.region,
-          },
-        }
-      })
-
-    src.setData({ type: 'FeatureCollection', features })
-  }, [showOilGas])
+    if (showOil) {
+      const src = map.getSource('oil-bars') as mapboxgl.GeoJSONSource | undefined
+      if (src) src.setData({ type: 'FeatureCollection', features: buildFeatures('oilReserves', bothOn ? 'left' : 'center') })
+    }
+    if (showGas) {
+      const src = map.getSource('gas-bars') as mapboxgl.GeoJSONSource | undefined
+      if (src) src.setData({ type: 'FeatureCollection', features: buildFeatures('gasReserves', bothOn ? 'right' : 'center') })
+    }
+  }, [showOil, showGas, mapReady])
 
   // ── GPS Jamming zones update ──────────────────────────────────────────────
   useEffect(() => {
@@ -2233,7 +2964,7 @@ export default function MapView({
 
     src.setData({ type: 'FeatureCollection', features: pointFeatures })
     areaSrc.setData({ type: 'FeatureCollection', features: areaFeatures })
-  }, [showGPSJam])
+  }, [showGPSJam, mapReady])
 
   // ── Resize Mapbox when deepstate split activates / deactivates ───────────
   useEffect(() => {
@@ -2283,29 +3014,35 @@ export default function MapView({
         el.addEventListener('mouseenter', () => {
           el.style.background = 'rgba(0,255,136,0.28)'
           el.style.boxShadow  = '0 0 12px rgba(0,255,136,0.7)'
-          el.style.transform  = 'scale(1.25)'
         })
         el.addEventListener('mouseleave', () => {
           el.style.background = 'rgba(0,255,136,0.12)'
           el.style.boxShadow  = '0 0 6px rgba(0,255,136,0.35)'
-          el.style.transform  = ''
         })
 
         el.addEventListener('click', (e) => {
           e.stopPropagation()
+          ;(map as any).__markFeatureClick?.()
           // Fly to camera location
           map.flyTo({ center: [cam.lng, cam.lat], zoom: 14, pitch: 45, duration: 1500 })
 
-          // Open camera stream in a sized popup window (SkylineWebcams blocks iframes with X-Frame-Options)
-          const w = Math.min(960, Math.round(window.innerWidth * 0.7))
-          const h = Math.min(640, Math.round(window.innerHeight * 0.75))
-          const left = Math.round((window.innerWidth - w) / 2) + (window.screenX || 0)
-          const top = Math.round((window.innerHeight - h) / 2) + (window.screenY || 0)
-          window.open(
-            cam.url,
-            'cam-viewer',
-            `width=${w},height=${h},left=${left},top=${top},toolbar=no,menubar=no,location=no,status=no,resizable=yes,scrollbars=yes`
-          )
+          // Show camera info popup — opens live feed in new window (iframe blocked by source)
+          const html = `<div style="padding:0;font-family:'Inter',-apple-system,sans-serif;width:260px;">
+            <div style="padding:8px 10px;">
+              <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:2px;">📷 ${cam.name}</div>
+              <div style="font-size:10px;color:#6b7280;margin-bottom:6px;">${cam.city}, ${cam.country}</div>
+              <div style="font-size:9px;color:#9ca3af;margin-bottom:8px;font-family:monospace;">${cam.lat.toFixed(4)}, ${cam.lng.toFixed(4)}</div>
+              <a href="${cam.url}" target="_blank" rel="noopener"
+                style="display:block;text-align:center;font-size:10px;font-weight:700;color:#16a34a;text-decoration:none;border:1px solid #16a34a44;padding:5px 0;background:rgba(22,163,74,0.08);letter-spacing:.06em;">
+                OPEN LIVE FEED ↗
+              </a>
+            </div>
+          </div>`
+          if (popupRef.current) popupRef.current.remove()
+          popupRef.current = new mapboxgl.Popup({ maxWidth: '400px', className: 'cy-popup cam-popup', closeButton: true })
+            .setLngLat([cam.lng, cam.lat])
+            .setHTML(html)
+            .addTo(map)
         })
 
         const marker = new mapboxgl.Marker({ element: el, anchor: 'center', draggable: false })
@@ -2322,14 +3059,70 @@ export default function MapView({
       cameraMarkersRef.current.forEach(m => m.remove())
       cameraMarkersRef.current = []
     }
-  }, [showCameras])
+  }, [showCameras, mapReady])
 
-  // ── Vision mode → CSS filter on canvas + 3D city mode ───────────────────
+  // ── Vision mode → CSS filter on canvas + multi-layer overlays + 3D city ───
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layersReadyRef.current) return
     const canvas = map.getCanvas()
     if (canvas) canvas.style.filter = CANVAS_FILTERS[viewMode] || ''
+
+    const container = containerRef.current
+    if (container) {
+      // Clean up previous overlays
+      container.querySelectorAll('.sv-vision-overlay, .sv-scanlines, .sv-noise').forEach(el => {
+        const raf = (el as HTMLElement).dataset.raf
+        if (raf) cancelAnimationFrame(Number(raf))
+        el.remove()
+      })
+
+      const cfg = VISION_OVERLAYS[viewMode]
+      if (cfg) {
+        // Stack multiple overlay layers for realistic composite
+        for (const layer of cfg.layers) {
+          const el = document.createElement('div')
+          el.className = 'sv-vision-overlay'
+          el.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:5;transition:opacity .3s;`
+          if (layer.background) el.style.background = layer.background
+          if (layer.boxShadow)  el.style.boxShadow = layer.boxShadow
+          if (layer.mixBlendMode) el.style.mixBlendMode = layer.mixBlendMode
+          el.style.opacity = String(layer.opacity ?? 1)
+          container.appendChild(el)
+        }
+
+        // CRT phosphor scan lines (nightvision)
+        if (cfg.scanlines) {
+          const sl = document.createElement('div')
+          sl.className = 'sv-scanlines'
+          sl.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:6;
+            background:repeating-linear-gradient(
+              to bottom,
+              transparent 0px, transparent 1.5px,
+              rgba(0,20,0,0.15) 1.5px, rgba(0,20,0,0.15) 3px
+            );opacity:0.6;`
+          container.appendChild(sl)
+        }
+
+        // Animated sensor noise grain
+        if (cfg.noise) {
+          const ns = document.createElement('div')
+          ns.className = 'sv-noise'
+          ns.style.cssText = `position:absolute;inset:0;pointer-events:none;z-index:7;
+            opacity:${cfg.noise.opacity};mix-blend-mode:${cfg.noise.blend};
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            background-size:128px 128px;`
+          let frame = 0
+          const animNoise = () => {
+            frame = (frame + 1) % 128
+            ns.style.backgroundPosition = `${frame}px ${(frame * 0.7) | 0}px`
+            ns.dataset.raf = String(requestAnimationFrame(animNoise))
+          }
+          animNoise()
+          container.appendChild(ns)
+        }
+      }
+    }
 
     // 3D city view: tilt + show building extrusions
     if (viewMode === 'city3d') {
@@ -2341,6 +3134,17 @@ export default function MapView({
       map.easeTo({ pitch: 0, duration: 600 })
       if (map.getLayer('3d-buildings')) {
         map.setLayoutProperty('3d-buildings', 'visibility', 'none')
+      }
+    }
+
+    return () => {
+      // Cleanup animated noise RAF
+      if (container) {
+        container.querySelectorAll('.sv-noise').forEach(el => {
+          const raf = (el as HTMLElement).dataset.raf
+          if (raf) cancelAnimationFrame(Number(raf))
+        })
+        container.querySelectorAll('.sv-vision-overlay, .sv-scanlines, .sv-noise').forEach(el => el.remove())
       }
     }
   }, [viewMode])
@@ -2367,12 +3171,12 @@ export default function MapView({
       const size  = SEV_SIZE[c.severity]  || 8
       const el    = document.createElement('div')
       el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:${color};border:1px solid rgba(255,255,255,0.3);cursor:pointer;box-shadow:0 0 ${size + 4}px ${color}66;`
-      const popup = `<div style="padding:9px;font-family:monospace;background:rgba(8,14,10,0.97);font-size:10px;color:#8aac90;line-height:1.5;">
-        <b style="color:${color};font-size:12px;">${c.title}</b><br>
-        <span style="color:#4a6a50;font-size:8px;letter-spacing:.1em;">${c.country} · ${new Date(c.date).toLocaleDateString()}</span>
-        ${c.fatalities ? `<br><span style="color:#ff1a3e;">⚠ ${c.fatalities} fatalities</span>` : ''}
-        ${c.description ? `<br><span style="opacity:.8;font-size:9px;">${c.description.slice(0,140)}…</span>` : ''}
-        <br><span style="color:#2a3e2e;font-size:8px;">src: ${c.source}</span></div>`
+      const popup = `<div style="padding:9px;font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;line-height:1.5;">
+        <b style="color:${color};font-size:13px;">${c.title}</b><br>
+        <span style="color:#6b7280;font-size:10px;letter-spacing:.1em;">${c.country} · ${new Date(c.date).toLocaleDateString()}</span>
+        ${c.fatalities ? `<br><span style="color:#dc2626;">⚠ ${c.fatalities} fatalities</span>` : ''}
+        ${c.description ? `<br><span style="opacity:.85;font-size:10px;">${c.description.slice(0,140)}…</span>` : ''}
+        <br><span style="color:#9ca3af;font-size:10px;">src: ${c.source}</span></div>`
       el.addEventListener('click', () => onCrisisClick(c))
       addMarker(el, c.longitude, c.latitude, popup)
     })
@@ -2383,10 +3187,10 @@ export default function MapView({
       const color = mag >= 7 ? '#ff0022' : mag >= 6 ? '#ff6600' : mag >= 5 ? '#ffcc00' : '#88aaff'
       const el    = document.createElement('div')
       el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;border:2px solid ${color};background:transparent;cursor:pointer;box-shadow:0 0 ${size}px ${color}44;`
-      const popup = `<div style="padding:9px;font-family:monospace;background:rgba(8,14,10,0.97);font-size:10px;color:#8aac90;">
+      const popup = `<div style="padding:9px;font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;">
         <b style="color:${color};">M${mag.toFixed(1)} Earthquake</b><br>
         ${eq.place}<br>
-        <span style="color:#4a6a50;font-size:8px;">${new Date(eq.time).toLocaleString()} · Depth: ${eq.depth}km</span></div>`
+        <span style="color:#6b7280;font-size:10px;">${new Date(eq.time).toLocaleString()} · Depth: ${eq.depth}km</span></div>`
       addMarker(el, eq.longitude, eq.latitude, popup)
     })
 
@@ -2394,7 +3198,7 @@ export default function MapView({
       newsArticles.filter((a) => a.latitude && a.longitude).forEach((a) => {
         const el = document.createElement('div')
         el.style.cssText = 'width:7px;height:7px;background:#aa44ff;transform:rotate(45deg);box-shadow:0 0 4px #aa44ff66;cursor:pointer;'
-        addMarker(el, a.longitude!, a.latitude!, `<div style="padding:8px;font-family:monospace;background:rgba(8,14,10,0.97);font-size:10px;color:#8aac90;max-width:220px;">${a.title}</div>`)
+        addMarker(el, a.longitude!, a.latitude!, `<div style="padding:8px;font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;max-width:220px;">${a.title}</div>`)
       })
     }
 
@@ -2559,38 +3363,131 @@ export default function MapView({
         </div>
       )}
 
+      {/* ── Overlay layer toggles (below flight filter) ────────────────── */}
+      {!deepstateMode && panelState && onToggleLayer && (
+        <div style={{ position:'absolute', top: showFlights ? 82 : 52, left:10, zIndex:29 }}
+          onMouseDown={e => e.stopPropagation()}
+          onPointerDown={e => e.stopPropagation()}
+        >
+          <button
+            onClick={() => setShowOverlays(v => !v)}
+            style={{
+              display:'flex', alignItems:'center', gap:5,
+              padding:'3px 10px', fontSize:8.5, fontWeight:700,
+              letterSpacing:'.14em', textTransform:'uppercase',
+              border:`1px solid ${showOverlays ? '#44aaff55' : '#141e16'}`,
+              background: showOverlays ? 'rgba(68,170,255,0.1)' : 'rgba(8,14,10,0.88)',
+              color: showOverlays ? '#44aaff' : '#4a6a50',
+              cursor:'pointer', transition:'all .15s', fontFamily:'monospace',
+              backdropFilter:'blur(8px)',
+            }}
+          >
+            ◈ OVERLAYS
+            <span style={{ fontSize:7, color: showOverlays ? '#44aaff88' : '#2a3e2e' }}>
+              {Object.values(panelState).filter(Boolean).length}
+            </span>
+          </button>
+
+          {showOverlays && (
+            <div style={{
+              marginTop:3,
+              background:'rgba(8,14,10,0.96)',
+              border:'1px solid #141e16', borderLeft:'2px solid #44aaff44',
+              backdropFilter:'blur(10px)',
+              width:200,
+              boxShadow:'0 4px 20px rgba(0,0,0,0.7)',
+              maxHeight: 360, overflowY: 'auto',
+            }}>
+              {([
+                { key: 'flights',        label: 'FLIGHTS',        icon: '✈', color: '#00ff88' },
+                { key: 'crises',         label: 'CRISES',         icon: '⚠', color: '#ff6600' },
+                { key: 'vessels',        label: 'VESSELS',        icon: '⚓', color: '#00aaff' },
+                { key: 'wildfires',      label: 'WILDFIRES',      icon: '🔥', color: '#ff4400' },
+                { key: 'news',           label: 'NEWS',           icon: '◉', color: '#cccccc' },
+                { key: 'stocks',         label: 'MARKETS',        icon: '$', color: '#00ff88' },
+                { key: 'military',       label: 'MILITARY',       icon: '⚔', color: '#ff2244' },
+                { key: 'nuclear',        label: 'NUCLEAR',        icon: '☢', color: '#ffcc00' },
+                { key: 'sanctions',      label: 'SANCTIONS',      icon: '⛔', color: '#ff3344' },
+                { key: 'cameras',        label: 'CAMERAS',        icon: '◎', color: '#aa88ff' },
+                { key: 'infrastructure', label: 'INFRA',          icon: '⚡', color: '#ff8800' },
+                { key: 'airspace',       label: 'AIRSPACE',       icon: '◇', color: '#44aaff' },
+                { key: 'humanitarian',   label: 'HUMANITARIAN',   icon: '♥', color: '#ff6688' },
+                { key: 'oil',            label: 'OIL',             icon: '▲', color: '#ff6600' },
+                { key: 'gas',            label: 'GAS',             icon: '▲', color: '#00aaff' },
+                { key: 'ports',          label: 'PORTS',          icon: '⚓', color: '#00ccff' },
+                { key: 'pipelines',      label: 'PIPELINES',      icon: '═', color: '#44ddaa' },
+                { key: 'gpsjam',         label: 'GPS JAM',        icon: '◌', color: '#ff3344' },
+                { key: 'chokepoints',    label: 'CHOKEPOINTS',    icon: '⊘', color: '#ff4466' },
+                { key: 'supplychain',    label: 'SUPPLY CHAIN',   icon: '◆', color: '#00ccff' },
+                { key: 'shippingRoutes', label: 'SHIPPING',       icon: '≈', color: '#44ff88' },
+              ] as { key: keyof import('../../types').PanelState; label: string; icon: string; color: string }[]).map(item => {
+                const on = panelState[item.key]
+                return (
+                  <button
+                    key={item.key}
+                    onClick={(e) => { e.stopPropagation(); onToggleLayer(item.key) }}
+                    style={{
+                      display:'flex', alignItems:'center', gap:6, width:'100%',
+                      padding:'5px 8px', fontSize:8, fontWeight:600,
+                      letterSpacing:'.08em', textAlign:'left',
+                      border:'none', borderBottom:'1px solid #0a120c',
+                      background: on ? item.color + '0c' : 'transparent',
+                      color: on ? item.color : '#2a3e2e',
+                      cursor:'pointer', transition:'all .12s', fontFamily:'monospace',
+                    }}
+                    onMouseEnter={e => { if (!on) (e.currentTarget as HTMLButtonElement).style.color = '#4a6a50' }}
+                    onMouseLeave={e => { if (!on) (e.currentTarget as HTMLButtonElement).style.color = '#2a3e2e' }}
+                  >
+                    <span style={{ width:14, textAlign:'center', fontSize:9 }}>{item.icon}</span>
+                    <span style={{ flex:1 }}>{item.label}</span>
+                    <span style={{
+                      width:6, height:6, borderRadius:'50%',
+                      background: on ? item.color : '#1a1a1a',
+                      border: `1px solid ${on ? item.color + '88' : '#2a2a2a'}`,
+                      transition:'all .15s',
+                    }} />
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* ── Targeting reticle ─────────────────────────────────────────── */}
       {showReticle && !deepstateMode && (
         <div style={{ position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', width:88, height:88, pointerEvents:'none', zIndex:10 }}>
           <svg width="88" height="88" viewBox="0 0 88 88">
-            <circle cx="44" cy="44" r="41" fill="none" stroke="#00ff88" strokeWidth=".5" opacity=".3"/>
-            <circle cx="44" cy="44" r="3"  fill="none" stroke="#00ff88" strokeWidth=".8" opacity=".65"/>
-            <line x1="0"  y1="44" x2="32" y2="44" stroke="#00ff88" strokeWidth=".5" opacity=".45"/>
-            <line x1="56" y1="44" x2="88" y2="44" stroke="#00ff88" strokeWidth=".5" opacity=".45"/>
-            <line x1="44" y1="0"  x2="44" y2="32" stroke="#00ff88" strokeWidth=".5" opacity=".45"/>
-            <line x1="44" y1="56" x2="44" y2="88" stroke="#00ff88" strokeWidth=".5" opacity=".45"/>
-            <path d="M 8 8 L 8 19 M 8 8 L 19 8"   stroke="#00ff88" strokeWidth=".9" fill="none" opacity=".55"/>
-            <path d="M 80 8 L 80 19 M 80 8 L 69 8" stroke="#00ff88" strokeWidth=".9" fill="none" opacity=".55"/>
-            <path d="M 8 80 L 8 69 M 8 80 L 19 80" stroke="#00ff88" strokeWidth=".9" fill="none" opacity=".55"/>
-            <path d="M 80 80 L 80 69 M 80 80 L 69 80" stroke="#00ff88" strokeWidth=".9" fill="none" opacity=".55"/>
+            <circle cx="44" cy="44" r="41" fill="none" stroke={reticleColor} strokeWidth=".5" opacity=".3"/>
+            <circle cx="44" cy="44" r="3"  fill="none" stroke={reticleColor} strokeWidth=".8" opacity=".65"/>
+            <line x1="0"  y1="44" x2="32" y2="44" stroke={reticleColor} strokeWidth=".5" opacity=".45"/>
+            <line x1="56" y1="44" x2="88" y2="44" stroke={reticleColor} strokeWidth=".5" opacity=".45"/>
+            <line x1="44" y1="0"  x2="44" y2="32" stroke={reticleColor} strokeWidth=".5" opacity=".45"/>
+            <line x1="44" y1="56" x2="44" y2="88" stroke={reticleColor} strokeWidth=".5" opacity=".45"/>
+            <path d="M 8 8 L 8 19 M 8 8 L 19 8"   stroke={reticleColor} strokeWidth=".9" fill="none" opacity=".55"/>
+            <path d="M 80 8 L 80 19 M 80 8 L 69 8" stroke={reticleColor} strokeWidth=".9" fill="none" opacity=".55"/>
+            <path d="M 8 80 L 8 69 M 8 80 L 19 80" stroke={reticleColor} strokeWidth=".9" fill="none" opacity=".55"/>
+            <path d="M 80 80 L 80 69 M 80 80 L 69 80" stroke={reticleColor} strokeWidth=".9" fill="none" opacity=".55"/>
           </svg>
         </div>
       )}
 
-      {/* ── Reticle toggle ────────────────────────────────────────────── */}
+      {/* ── Reticle toggle (top-left) ─────────────────────────────────── */}
       {!deepstateMode && (
-        <div style={{ position:'absolute', bottom:10, right:10, zIndex:20, display:'flex', flexDirection:'column', gap:4 }}>
+        <div style={{ position:'absolute', top:10, left:10, zIndex:20 }}>
           <button
             onClick={() => setShowReticle(v => !v)}
             style={{
-              background: showReticle ? 'rgba(0,255,136,0.1)' : 'rgba(0,0,0,0.5)',
-              border:`1px solid ${showReticle ? '#00ff8844' : '#141e16'}`,
-              color: showReticle ? '#00ff88' : '#2a3e2e',
-              padding:'3px 8px', fontSize:8, fontFamily:'monospace',
-              fontWeight:700, letterSpacing:'.12em', cursor:'pointer', transition:'all .15s',
+              background: showReticle ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
+              border:`1px solid ${showReticle ? reticleColor + '44' : '#1e1e1e'}`,
+              color: showReticle ? reticleColor : '#3a3a3a',
+              padding:'3px 8px', fontSize:8, fontFamily:'IBM Plex Mono, monospace',
+              fontWeight:500, letterSpacing:'.1em', cursor:'pointer', transition:'all .15s',
             }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = reticleColor }}
+            onMouseLeave={e => { if (!showReticle) (e.currentTarget as HTMLButtonElement).style.color = '#3a3a3a' }}
           >
-            ⊕ RETICLE
+            RETICLE
           </button>
         </div>
       )}

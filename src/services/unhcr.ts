@@ -40,6 +40,7 @@ export interface BorderCrossing {
   lat:      number
   lng:      number
   status:   CrossingStatus
+  bearing:  number   // compass heading (deg) of the crossing road/axis, country1 → country2
 }
 
 export type CampType = 'camp' | 'settlement' | 'informal' | 'poc_site' | 'transit'
@@ -199,47 +200,47 @@ export const UNHCR_OFFICES: UNHCROffice[] = [
 // ── Border Crossing Points ────────────────────────────────────────────────────
 export const BORDER_CROSSINGS: BorderCrossing[] = [
   // Syria region
-  { id:'BAB_HAWA',    name:'Bab al-Hawa',             country1:'Syria',       country2:'Turkey',      lat:36.6133, lng:36.7575,  status:'open'       },
-  { id:'BAB_SALAM',   name:'Bab al-Salameh',           country1:'Syria',       country2:'Turkey',      lat:36.6388, lng:37.1231,  status:'open'       },
-  { id:'NASSIB',      name:'Nassib / Jaber',           country1:'Syria',       country2:'Jordan',      lat:33.0082, lng:36.0079,  status:'open'       },
-  { id:'MASNAA',      name:'Masnaa',                   country1:'Syria',       country2:'Lebanon',     lat:33.6722, lng:35.9058,  status:'restricted' },
-  { id:'AL_TANF',     name:'Al-Tanf / Turaybil',       country1:'Syria',       country2:'Iraq',        lat:33.5270, lng:38.6400,  status:'restricted' },
+  { id:'BAB_HAWA',    name:'Bab al-Hawa',             country1:'Syria',       country2:'Turkey',      lat:36.6133, lng:36.7575,  status:'open',       bearing:5   },
+  { id:'BAB_SALAM',   name:'Bab al-Salameh',           country1:'Syria',       country2:'Turkey',      lat:36.6388, lng:37.1231,  status:'open',       bearing:355 },
+  { id:'NASSIB',      name:'Nassib / Jaber',           country1:'Syria',       country2:'Jordan',      lat:33.0082, lng:36.0079,  status:'open',       bearing:190 },
+  { id:'MASNAA',      name:'Masnaa',                   country1:'Syria',       country2:'Lebanon',     lat:33.6722, lng:35.9058,  status:'restricted', bearing:260 },
+  { id:'AL_TANF',     name:'Al-Tanf / Turaybil',       country1:'Syria',       country2:'Iraq',        lat:33.5270, lng:38.6400,  status:'restricted', bearing:100 },
   // Gaza / Palestine
-  { id:'RAFAH',       name:'Rafah',                    country1:'Gaza',        country2:'Egypt',       lat:31.2822, lng:34.2436,  status:'closed'     },
-  { id:'KEREM_SHLM',  name:'Kerem Shalom/Karem Abu Salem', country1:'Israel', country2:'Gaza',         lat:31.2193, lng:34.3293,  status:'restricted' },
-  { id:'EREZ',        name:'Erez / Beit Hanoun',       country1:'Israel',      country2:'Gaza',        lat:31.5194, lng:34.5080,  status:'closed'     },
+  { id:'RAFAH',       name:'Rafah',                    country1:'Gaza',        country2:'Egypt',       lat:31.2822, lng:34.2436,  status:'closed',     bearing:220 },
+  { id:'KEREM_SHLM',  name:'Kerem Shalom/Karem Abu Salem', country1:'Israel', country2:'Gaza',         lat:31.2193, lng:34.3293,  status:'restricted', bearing:315 },
+  { id:'EREZ',        name:'Erez / Beit Hanoun',       country1:'Israel',      country2:'Gaza',        lat:31.5194, lng:34.5080,  status:'closed',     bearing:250 },
   // Afghanistan-Pakistan
-  { id:'TORKHAM',     name:'Torkham',                  country1:'Afghanistan', country2:'Pakistan',    lat:34.0900, lng:71.1100,  status:'restricted' },
-  { id:'CHAMAN',      name:'Chaman / Spin Boldak',     country1:'Pakistan',    country2:'Afghanistan', lat:30.9200, lng:66.4500,  status:'restricted' },
+  { id:'TORKHAM',     name:'Torkham',                  country1:'Afghanistan', country2:'Pakistan',    lat:34.0900, lng:71.1100,  status:'restricted', bearing:130 },
+  { id:'CHAMAN',      name:'Chaman / Spin Boldak',     country1:'Pakistan',    country2:'Afghanistan', lat:30.9200, lng:66.4500,  status:'restricted', bearing:310 },
   // South Sudan / Uganda
-  { id:'NIMULE',      name:'Nimule',                   country1:'S. Sudan',    country2:'Uganda',      lat:3.5988,  lng:32.0582,  status:'open'       },
-  { id:'METEMA',      name:'Metema / Gallabat',        country1:'Ethiopia',    country2:'Sudan',       lat:12.9568, lng:36.2029,  status:'open'       },
+  { id:'NIMULE',      name:'Nimule',                   country1:'S. Sudan',    country2:'Uganda',      lat:3.5988,  lng:32.0582,  status:'open',       bearing:170 },
+  { id:'METEMA',      name:'Metema / Gallabat',        country1:'Ethiopia',    country2:'Sudan',       lat:12.9568, lng:36.2029,  status:'open',       bearing:280 },
   // Chad-Sudan (humanitarian crisis)
-  { id:'ADRE',        name:'Adre',                     country1:'Chad',        country2:'Sudan',       lat:13.4678, lng:22.1957,  status:'restricted' },
-  { id:'TINE',        name:'Tine',                     country1:'Chad',        country2:'Sudan',       lat:14.9600, lng:21.7700,  status:'restricted' },
+  { id:'ADRE',        name:'Adre',                     country1:'Chad',        country2:'Sudan',       lat:13.4678, lng:22.1957,  status:'restricted', bearing:95  },
+  { id:'TINE',        name:'Tine',                     country1:'Chad',        country2:'Sudan',       lat:14.9600, lng:21.7700,  status:'restricted', bearing:80  },
   // Myanmar-Bangladesh
-  { id:'TEKNAF',      name:'Teknaf / Naf River',       country1:'Bangladesh',  country2:'Myanmar',     lat:20.8648, lng:92.3063,  status:'closed'     },
-  { id:'SHAHPORI',    name:'Shahpori Island',           country1:'Bangladesh',  country2:'Myanmar',     lat:20.9360, lng:92.3020,  status:'closed'     },
+  { id:'TEKNAF',      name:'Teknaf / Naf River',       country1:'Bangladesh',  country2:'Myanmar',     lat:20.8648, lng:92.3063,  status:'closed',     bearing:105 },
+  { id:'SHAHPORI',    name:'Shahpori Island',           country1:'Bangladesh',  country2:'Myanmar',     lat:20.9360, lng:92.3020,  status:'closed',     bearing:120 },
   // Libya crossing points (Mediterranean corridor)
-  { id:'RAS_JDIR',    name:'Ras Jdir',                 country1:'Libya',       country2:'Tunisia',     lat:33.1408, lng:11.5286,  status:'open'       },
-  { id:'SALLOUM',     name:'Salloum / Musaed',         country1:'Egypt',       country2:'Libya',       lat:31.5347, lng:25.1624,  status:'open'       },
+  { id:'RAS_JDIR',    name:'Ras Jdir',                 country1:'Libya',       country2:'Tunisia',     lat:33.1408, lng:11.5286,  status:'open',       bearing:290 },
+  { id:'SALLOUM',     name:'Salloum / Musaed',         country1:'Egypt',       country2:'Libya',       lat:31.5347, lng:25.1624,  status:'open',       bearing:250 },
   // Colombia-Venezuela (Venezuelan mass exodus)
-  { id:'CUCUTA',      name:'Cúcuta / San Antonio',     country1:'Colombia',    country2:'Venezuela',   lat:7.8891,  lng:-72.5027, status:'open'       },
-  { id:'PARAGUACHON', name:'Paraguachón',               country1:'Colombia',    country2:'Venezuela',   lat:11.5200, lng:-72.4400, status:'open'       },
+  { id:'CUCUTA',      name:'Cúcuta / San Antonio',     country1:'Colombia',    country2:'Venezuela',   lat:7.8891,  lng:-72.5027, status:'open',       bearing:70  },
+  { id:'PARAGUACHON', name:'Paraguachón',               country1:'Colombia',    country2:'Venezuela',   lat:11.5200, lng:-72.4400, status:'open',       bearing:60  },
   // Ukraine-Poland (largest refugee exodus in Europe)
-  { id:'MEDYKA',      name:'Medyka / Shehyni',         country1:'Poland',      country2:'Ukraine',     lat:49.8179, lng:22.8439,  status:'open'       },
-  { id:'KORCZOWA',    name:'Korczowa / Krakovets',     country1:'Poland',      country2:'Ukraine',     lat:49.9888, lng:22.7833,  status:'open'       },
-  { id:'SIRET',       name:'Siret / Porubnoe',         country1:'Romania',     country2:'Ukraine',     lat:47.9430, lng:25.9290,  status:'open'       },
-  { id:'PALANCA',     name:'Palanca',                  country1:'Moldova',     country2:'Ukraine',     lat:45.9060, lng:29.7100,  status:'open'       },
+  { id:'MEDYKA',      name:'Medyka / Shehyni',         country1:'Poland',      country2:'Ukraine',     lat:49.8179, lng:22.8439,  status:'open',       bearing:95  },
+  { id:'KORCZOWA',    name:'Korczowa / Krakovets',     country1:'Poland',      country2:'Ukraine',     lat:49.9888, lng:22.7833,  status:'open',       bearing:100 },
+  { id:'SIRET',       name:'Siret / Porubnoe',         country1:'Romania',     country2:'Ukraine',     lat:47.9430, lng:25.9290,  status:'open',       bearing:15  },
+  { id:'PALANCA',     name:'Palanca',                  country1:'Moldova',     country2:'Ukraine',     lat:45.9060, lng:29.7100,  status:'open',       bearing:50  },
   // Iran-Afghanistan
-  { id:'ISLAM_QALA',  name:'Islam Qala',               country1:'Afghanistan', country2:'Iran',        lat:34.6600, lng:61.2700,  status:'restricted' },
-  { id:'ZARANJ',      name:'Zaranj / Milak',           country1:'Afghanistan', country2:'Iran',        lat:30.9644, lng:61.8738,  status:'restricted' },
+  { id:'ISLAM_QALA',  name:'Islam Qala',               country1:'Afghanistan', country2:'Iran',        lat:34.6600, lng:61.2700,  status:'restricted', bearing:280 },
+  { id:'ZARANJ',      name:'Zaranj / Milak',           country1:'Afghanistan', country2:'Iran',        lat:30.9644, lng:61.8738,  status:'restricted', bearing:270 },
   // Kenya-South Sudan
-  { id:'NADAPAL',     name:'Nadapal',                  country1:'Kenya',       country2:'S. Sudan',    lat:4.6550,  lng:35.7660,  status:'open'       },
+  { id:'NADAPAL',     name:'Nadapal',                  country1:'Kenya',       country2:'S. Sudan',    lat:4.6550,  lng:35.7660,  status:'open',       bearing:340 },
   // Niger-Mali (Sahel)
-  { id:'TILLABERY',   name:'Tillabéry',                country1:'Niger',       country2:'Mali',        lat:14.2088, lng:1.4518,   status:'restricted' },
+  { id:'TILLABERY',   name:'Tillabéry',                country1:'Niger',       country2:'Mali',        lat:14.2088, lng:1.4518,   status:'restricted', bearing:280 },
   // DRC corridors
-  { id:'BUNAGANA',    name:'Bunagana',                 country1:'DRC',         country2:'Uganda',      lat:-1.2611, lng:29.4614,  status:'restricted' },
+  { id:'BUNAGANA',    name:'Bunagana',                 country1:'DRC',         country2:'Uganda',      lat:-1.2611, lng:29.4614,  status:'restricted', bearing:100 },
 ]
 
 // ── Population Reference Points / Major Refugee Camps (Admin2 level) ─────────

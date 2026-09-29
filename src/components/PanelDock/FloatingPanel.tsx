@@ -52,18 +52,18 @@ export default function FloatingPanel({ id, index, crises, flights, panelState, 
     <div style={{
       position: 'absolute', left: pos.x, top: pos.y, width: size.w, height: size.h,
       zIndex: 50, display: 'flex', flexDirection: 'column',
-      border: '1px solid var(--b2)', background: 'rgba(8,14,10,0.97)',
-      boxShadow: '0 4px 24px rgba(0,0,0,0.7), 0 0 0 1px var(--pri10)',
-      backdropFilter: 'blur(8px)',
+      border: '1px solid var(--border)', background: 'var(--surface)',
+      borderRadius: 'var(--r-lg)', overflow: 'hidden',
+      boxShadow: 'var(--shadow-lg)',
     }}>
       {/* Header — draggable */}
       <div
         onMouseDown={onDragDown}
         style={{
-          height: 24, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4,
-          padding: '0 8px', cursor: 'grab', userSelect: 'none',
-          borderBottom: '1px solid var(--b1)',
-          background: 'linear-gradient(90deg, var(--pri06) 0%, transparent 70%)',
+          height: 32, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6,
+          padding: '0 10px', cursor: 'grab', userSelect: 'none',
+          borderBottom: '1px solid var(--border)',
+          background: 'var(--surface2)',
         }}
       >
         {meta.dotColor && <span className={`live-dot ${meta.dotColor}`} />}
@@ -71,16 +71,16 @@ export default function FloatingPanel({ id, index, crises, flights, panelState, 
         <button
           onClick={onClose}
           title="Dock back to right panel"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2a3e2e', fontSize: 11, lineHeight: 1, padding: '0 2px', transition: 'color .12s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ff6666' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#2a3e2e' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, lineHeight: 1, padding: '2px 4px', borderRadius: 'var(--r-sm)', transition: 'color .12s, background .12s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-soft)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)'; (e.currentTarget as HTMLButtonElement).style.background = 'transparent' }}
         >
           ✕
         </button>
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, background: 'var(--surface)' }}>
         <PanelContent id={id} crises={crises} flights={flights} panelState={panelState} onToggleLayer={onToggleLayer} deepstateMode={deepstateMode} onDeepstateToggle={onDeepstateToggle} onGeoSearch={onGeoSearch} />
       </div>
 
@@ -88,9 +88,10 @@ export default function FloatingPanel({ id, index, crises, flights, panelState, 
       <div
         onMouseDown={onResizeDown}
         style={{
-          position: 'absolute', bottom: 0, right: 0, width: 12, height: 12,
+          position: 'absolute', bottom: 0, right: 0, width: 14, height: 14,
           cursor: 'nwse-resize',
-          background: 'linear-gradient(135deg, transparent 50%, rgba(0,255,136,0.2) 50%)',
+          background: 'linear-gradient(135deg, transparent 50%, var(--border-strong) 50%)',
+          borderBottomRightRadius: 'var(--r-lg)',
         }}
       />
     </div>
