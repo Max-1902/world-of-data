@@ -1,17 +1,22 @@
 /**
  * Shared panel content components — used by both PanelDock and CornerWidget
  */
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { ExternalLink, RefreshCw, TrendingUp, TrendingDown, Send, Square } from 'lucide-react'
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
+import { ExternalLink, RefreshCw, TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { CrisisEvent, NewsArticle, PanelState, Stock, Flight } from '../../types'
-import { fetchRSSFeed, searchGDELTNews, searchGuardian, searchNYT, searchNewsAPI, fetchAllCrisisWatch, CRISISWATCH_FEEDS, type CrisisWatchEntry } from '../../services/news'
+import { fetchRSSFeed, searchGDELTNews, searchGuardian, searchNYT, searchNewsAPI, fetchAllCrisisWatch, CRISISWATCH_FEEDS, type CrisisWatchEntry, COUNTRY_NEWS_SOURCES, fetchCountryNews } from '../../services/news'
 import { fetchMultipleQuotes } from '../../services/stocks'
 import { fetchOutageEvents, type OutageEvent } from '../../services/outages'
-import { SANCTIONED_COUNTRIES, SANCTION_COLORS, type SanctionedCountry } from '../../services/sanctions'
+import { SANCTIONED_COUNTRIES, SANCTION_COLORS, fetchSanctionsNews, type SanctionedCountry } from '../../services/sanctions'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from '../../services/military'
 import { analyzeAirspace, type NOTAMAlert, type FIRStatus } from '../../services/notam'
 import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, type DSMessage } from '../../services/openrouter'
+import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
+import { TRADE_PROFILES } from '../../services/tradeStats'
+import { fetchCountryEcon, formatEconValue, groupIndicators, type CountryEconData } from '../../services/worldbank'
+import { onGlobalReload } from '../../utils/reloadBus'
+import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
 import {
   UNHCR_GLOBAL_2023, TOP_HOSTING, TOP_ORIGINS, UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS,
   CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS,
@@ -27,7 +32,7 @@ export type PanelId =
   | 'crypto' | 'forex' | 'bonds' | 'exchanges'
   | 'markets'
   | 'drugs' | 'sanctions' | 'military' | 'nuclear' | 'airspace' | 'cnn'
-  | 'outages' | 'brief' | 'crisiswatch' | 'analyst' | 'humanitarian'
+  | 'outages' | 'brief' | 'crisiswatch' | 'analyst' | 'humanitarian' | 'webcams'
 
 export const PANEL_META: Record<PanelId, { title: string; dotColor?: string; width: number; desc: string }> = {
   news:        { title: 'Signals',       dotColor: 'grn',    width: 240, desc: 'Aggregated open-source reporting' },
@@ -57,13 +62,14 @@ export const PANEL_META: Record<PanelId, { title: string; dotColor?: string; wid
   crisiswatch: { title: 'Crisis Monitor',dotColor: 'orange', width: 290, desc: 'ICG conflict tracking — 70+ states' },
   analyst:     { title: 'Analysis',      dotColor: 'blue',   width: 360, desc: 'AI-assisted situational assessment' },
   humanitarian:{ title: 'Humanitarian',  dotColor: 'blue',   width: 320, desc: 'UNHCR displacement & border status' },
+  webcams:     { title: 'US Webcams',    dotColor: 'grn',    width: 320, desc: 'SkylineWebcams & EarthCam — live US grid' },
 }
 
 export const DEFAULT_ORDER: PanelId[] = [
   'news', 'crisiswatch', 'layers', 'intel', 'humanitarian', 'risk', 'threat',
   'markets',
   'analyst',
-  'drugs', 'sanctions', 'military', 'nuclear', 'airspace', 'cnn',
+  'drugs', 'sanctions', 'military', 'nuclear', 'airspace', 'cnn', 'webcams',
   'outages',
 ]
 
@@ -82,21 +88,27 @@ export const SECTORS: Record<string, string[]> = {
 
 // ── Map layer configs ──────────────────────────────────────────────────────────
 export const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string; tag: string }[] = [
-  { id: 'flights',   label: 'AIR TRAFFIC',          color: '#00ff88', tag: 'AIR' },
-  { id: 'crises',    label: 'CONFLICT ZONES',       color: '#ff1a3e', tag: 'GEO' },
-  { id: 'wildfires', label: 'WILDFIRES',             color: '#ff6600', tag: 'FIRE' },
-  { id: 'military',  label: 'MILITARY INSTALLATIONS',color: '#00cc55', tag: 'MIL' },
-  { id: 'nuclear',   label: 'NUCLEAR SITES',         color: '#ffdd00', tag: 'NUC' },
-  { id: 'sanctions', label: 'SANCTIONED STATES',     color: '#ff1a3e', tag: 'SAN' },
+  { id: 'flights',   label: 'AIR TRAFFIC',          color: 'var(--accent)', tag: 'AIR' },
+  { id: 'crises',    label: 'CONFLICT ZONES',       color: 'var(--red)', tag: 'GEO' },
+  { id: 'wildfires', label: 'WILDFIRES',             color: 'var(--amber)', tag: 'FIRE' },
+  { id: 'military',  label: 'MILITARY INSTALLATIONS',color: 'var(--green)', tag: 'MIL' },
+  { id: 'nuclear',   label: 'NUCLEAR SITES',         color: 'var(--amber)', tag: 'NUC' },
+  { id: 'sanctions', label: 'SANCTIONED STATES',     color: 'var(--red)', tag: 'SAN' },
   { id: 'news',      label: 'MEDIA SIGNALS',         color: '#aa44ff', tag: 'SIG' },
-  { id: 'stocks',    label: 'FINANCIAL CENTRES',     color: '#00ff88', tag: 'FIN' },
-  { id: 'cameras',        label: 'LIVE CAMERAS',          color: '#00ff88', tag: 'CAM' },
-  { id: 'infrastructure', label: 'CRITICAL INFRASTRUCTURE',color: '#ff8800', tag: 'CI' },
-  { id: 'airspace',       label: 'AIRSPACE RESTRICTIONS', color: '#ff1a3e', tag: 'FIR' },
-  { id: 'humanitarian',  label: 'HUMANITARIAN OPS',      color: '#00aaff', tag: 'HUM' },
-  { id: 'vessels',       label: 'MARITIME TRAFFIC',       color: '#00cc88', tag: 'AIS' },
-  { id: 'oilgas',        label: 'OIL & GAS RESERVES',     color: '#ff8800', tag: 'O&G' },
-  { id: 'gpsjam',        label: 'GPS INTERFERENCE',        color: '#ff2244', tag: 'GPS' },
+  { id: 'stocks',    label: 'FINANCIAL CENTRES',     color: 'var(--accent)', tag: 'FIN' },
+  { id: 'cameras',        label: 'LIVE CAMERAS',          color: 'var(--accent)', tag: 'CAM' },
+  { id: 'infrastructure', label: 'CRITICAL INFRASTRUCTURE',color: 'var(--amber)', tag: 'CI' },
+  { id: 'airspace',       label: 'AIRSPACE RESTRICTIONS', color: 'var(--red)', tag: 'FIR' },
+  { id: 'humanitarian',  label: 'HUMANITARIAN OPS',      color: 'var(--accent)', tag: 'HUM' },
+  { id: 'vessels',       label: 'MARITIME TRAFFIC',       color: 'var(--green)', tag: 'AIS' },
+  { id: 'oil',            label: 'OIL RESERVES',            color: 'var(--amber)', tag: 'OIL' },
+  { id: 'gas',            label: 'GAS RESERVES',            color: 'var(--accent)', tag: 'GAS' },
+  { id: 'ports',          label: 'GLOBAL PORTS',             color: 'var(--accent)', tag: 'PRT' },
+  { id: 'pipelines',     label: 'GAS PIPELINES',            color: '#44ddaa', tag: 'GAS' },
+  { id: 'chokepoints',   label: 'CHOKEPOINTS',              color: 'var(--red)', tag: 'TRD' },
+  { id: 'supplychain',   label: 'SUPPLY CHAIN',             color: 'var(--accent)', tag: 'TRD' },
+  { id: 'shippingRoutes',label: 'SHIPPING ROUTES',          color: 'var(--accent)', tag: 'TRD' },
+  { id: 'gpsjam',        label: 'GPS INTERFERENCE',        color: 'var(--red)', tag: 'GPS' },
 ]
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
@@ -111,7 +123,7 @@ export function safeTimeAgo(d: string) {
 }
 
 const SEV_COLORS: Record<string, string> = {
-  critical: '#ff1a3e', high: '#ff6600', medium: '#ffaa00', low: '#2a3e2e',
+  critical: 'var(--red)', high: 'var(--amber)', medium: 'var(--amber)', low: 'var(--text3)',
 }
 
 export function computeCountryRisk(crises: CrisisEvent[]) {
@@ -127,10 +139,10 @@ export function computeCountryRisk(crises: CrisisEvent[]) {
 }
 
 export function riskColor(score: number) {
-  if (score >= 40) return '#ff1a3e'
-  if (score >= 20) return '#ff6600'
-  if (score >= 10) return '#ffaa00'
-  return '#00ff88'
+  if (score >= 40) return 'var(--red)'
+  if (score >= 20) return 'var(--amber)'
+  if (score >= 10) return 'var(--amber)'
+  return 'var(--accent)'
 }
 
 export function computeThreatScore(crises: CrisisEvent[], flights: Flight[]) {
@@ -140,19 +152,6 @@ export function computeThreatScore(crises: CrisisEvent[], flights: Flight[]) {
   }, 0)
   return Math.min(100, Math.round(base / 8 + (flights.length > 5000 ? 5 : 0)))
 }
-
-// ── News tabs ──────────────────────────────────────────────────────────────────
-const NEWS_TABS = [
-  { id: 'BBC',         label: 'BBC', color: '#BB1919', fn: () => fetchRSSFeed('https://feeds.bbci.co.uk/news/world/rss.xml', 'BBC News') },
-  { id: 'Reuters',     label: 'RTR', color: '#FF8000', fn: () => fetchRSSFeed('https://feeds.reuters.com/reuters/worldNews', 'Reuters') },
-  { id: 'DW',          label: 'DW',  color: '#0095B5', fn: () => fetchRSSFeed('https://rss.dw.com/xml/rss-en-world', 'DW News') },
-  { id: 'AlJazeera',   label: 'AJZ', color: '#cc9900', fn: () => fetchRSSFeed('https://www.aljazeera.com/xml/rss/all.xml', 'Al Jazeera') },
-  { id: 'France24',    label: 'F24', color: '#003087', fn: () => fetchRSSFeed('https://www.france24.com/en/rss', 'France 24') },
-  { id: 'Guardian',    label: 'GRD', color: '#005689', fn: () => searchGuardian('world politics conflict') },
-  { id: 'NYT',         label: 'NYT', color: '#555',    fn: () => searchNYT('world news') },
-  { id: 'GDELT',       label: 'GDL', color: '#7744cc', fn: () => searchGDELTNews('war conflict crisis protest') },
-  { id: 'CrisisWatch', label: 'CW',  color: '#ff6600', fn: () => fetchRSSFeed('https://www.crisisgroup.org/rss/crisiswatch', 'CrisisWatch') },
-]
 
 // ── Panel sub-components ───────────────────────────────────────────────────────
 
@@ -165,30 +164,30 @@ export function ArticleRow({ a }: { a: NewsArticle }) {
       onClick={() => setOpen(v => !v)}
     >
       <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
-        <div style={{ width: 2, background: open ? 'rgba(0,255,136,0.35)' : '#141e16', flexShrink: 0, alignSelf: 'stretch', transition: 'background .15s' }} />
+        <div style={{ width: 2, background: open ? 'var(--accent)' : 'var(--border)', flexShrink: 0, alignSelf: 'stretch', transition: 'background .15s' }} />
         <div style={{ flex: 1, minWidth: 0, padding: '5px 8px' }}>
-          <div style={{ fontSize: '10px', color: '#8aac90', lineHeight: 1.45, marginBottom: 3,
+          <div style={{ fontSize: '12.5px', color: 'var(--text1)', lineHeight: 1.45, marginBottom: 3,
             ...(open ? {} : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>
             {a.title}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '7.5px', color: '#4a6a50', fontWeight: 600, letterSpacing: '.05em' }}>{a.source}</span>
-            {a.category && <span style={{ fontSize: '7px', color: '#2a3e2e', letterSpacing: '.06em', textTransform: 'uppercase', border: '1px solid #141e16', padding: '0 3px' }}>{a.category}</span>}
-            <span style={{ fontSize: '7.5px', color: '#1a2e1e', marginLeft: 'auto' }}>{safeTimeAgo(a.publishedAt)}</span>
+            <span style={{ fontSize: '10px', color: 'var(--text2)', fontWeight: 600, letterSpacing: '.05em' }}>{a.source}</span>
+            {a.category && <span style={{ fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.06em', textTransform: 'uppercase', border: '1px solid var(--border)', padding: '0 3px' }}>{a.category}</span>}
+            <span style={{ fontSize: '10px', color: 'var(--text3)', marginLeft: 'auto' }}>{safeTimeAgo(a.publishedAt)}</span>
           </div>
         </div>
       </div>
       {open && (
-        <div style={{ width: '100%', borderTop: '1px solid #0d120e', padding: '6px 10px 8px', background: 'rgba(0,255,136,0.02)' }}
+        <div style={{ width: '100%', borderTop: '1px solid var(--border)', padding: '6px 10px 8px', background: 'var(--accent-soft)' }}
           onClick={e => e.stopPropagation()}>
           {a.imageUrl && (
             <img src={a.imageUrl} alt="" style={{ width: '100%', maxHeight: 90, objectFit: 'cover', marginBottom: 6, opacity: 0.85 }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
           )}
           {a.description && (
-            <div style={{ fontSize: '9px', color: '#6a8aaa', lineHeight: 1.55, marginBottom: 6 }}>{a.description}</div>
+            <div style={{ fontSize: '11.5px', color: 'var(--text2)', lineHeight: 1.55, marginBottom: 6 }}>{a.description}</div>
           )}
           <a href={a.url} target="_blank" rel="noopener noreferrer"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '8px', color: '#00ff88', letterSpacing: '.08em', textDecoration: 'none', textTransform: 'uppercase', padding: '3px 7px', border: '1px solid rgba(0,255,136,0.25)', background: 'rgba(0,255,136,0.05)' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '10.5px', color: 'var(--accent)', letterSpacing: '.08em', textDecoration: 'none', textTransform: 'uppercase', padding: '3px 7px', border: '1px solid var(--accent)', background: 'var(--accent-soft)' }}>
             <ExternalLink size={8} /> OPEN ARTICLE
           </a>
         </div>
@@ -198,36 +197,43 @@ export function ArticleRow({ a }: { a: NewsArticle }) {
 }
 
 export function NewsPanel() {
-  const [activeTab, setActiveTab] = useState('BBC')
+  const [country, setCountry]     = useState('US')
   const [articles, setArticles]   = useState<NewsArticle[]>([])
   const [loading, setLoading]     = useState(false)
 
-  const loadTab = useCallback(async (tabId: string) => {
-    const tab = NEWS_TABS.find(t => t.id === tabId)
-    if (!tab) return
+  const loadCountry = useCallback(async (code: string) => {
     setLoading(true); setArticles([])
-    try { setArticles(await tab.fn()) } finally { setLoading(false) }
+    try { setArticles(await fetchCountryNews(code)) } finally { setLoading(false) }
   }, [])
 
-  useEffect(() => { loadTab(activeTab) }, [activeTab, loadTab])
+  useEffect(() => { loadCountry(country) }, [country, loadCountry])
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16', flexWrap: 'wrap' }}>
-        {NEWS_TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
-            className={`news-tab ${activeTab === t.id ? 'active' : ''}`}
-            style={activeTab === t.id ? { color: t.color, borderColor: t.color + '44' } : {}}
-          >{t.label}</button>
-        ))}
-        <button onClick={() => loadTab(activeTab)} disabled={loading}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2a3e2e', opacity: loading ? 0.3 : 1, marginLeft: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 6px', borderBottom: '1px solid var(--border)' }}>
+        <select
+          value={country}
+          onChange={e => setCountry(e.target.value)}
+          className="news-country-select"
+          style={{
+            background: 'var(--surface2)', color: 'var(--text1)', border: '1px solid var(--border)',
+            fontSize: '11.5px', letterSpacing: '.06em', textTransform: 'uppercase',
+            padding: '2px 4px', cursor: 'pointer', outline: 'none',
+          }}
+        >
+          {COUNTRY_NEWS_SOURCES.map(c => (
+            <option key={c.code} value={c.code}>{c.label}</option>
+          ))}
+        </select>
+        <span style={{ fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.08em' }}>TOP 5 SOURCES</span>
+        <button onClick={() => loadCountry(country)} disabled={loading}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: loading ? 0.3 : 1, marginLeft: 'auto' }}>
           <RefreshCw size={9} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {loading && <div style={{ padding: '8px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.12em' }}>// LOADING…</div>}
-        {!loading && articles.length === 0 && <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO DATA</div>}
+        {loading && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// LOADING…</div>}
+        {!loading && articles.length === 0 && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO DATA</div>}
         {articles.map(a => <ArticleRow key={a.id} a={a} />)}
       </div>
     </>
@@ -236,28 +242,28 @@ export function NewsPanel() {
 
 function CrisisRow({ c }: { c: CrisisEvent }) {
   const [open, setOpen] = useState(false)
-  const col = SEV_COLORS[c.severity] || '#2a3e2e'
+  const col = SEV_COLORS[c.severity] || 'var(--text3)'
   return (
     <div className="intel-row" style={{ alignItems: 'flex-start', cursor: 'pointer', flexDirection: 'column', padding: 0 }} onClick={() => setOpen(v => !v)}>
       <div style={{ display: 'flex', alignItems: 'flex-start', width: '100%' }}>
         <div style={{ width: 2, alignSelf: 'stretch', flexShrink: 0, background: col, boxShadow: `0 0 4px ${col}66` }} />
         <div style={{ flex: 1, minWidth: 0, padding: '5px 8px' }}>
-          <div style={{ fontSize: '10px', color: '#8aac90', lineHeight: 1.4, ...(!open ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}) }}>{c.title}</div>
-          <div style={{ display: 'flex', gap: 5, fontSize: '8px', color: '#2a3e2e', marginTop: 2 }}>
-            <span style={{ color: col, fontSize: '7px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', border: `1px solid ${col}44`, padding: '0 3px' }}>{c.severity}</span>
+          <div style={{ fontSize: '12.5px', color: 'var(--text1)', lineHeight: 1.4, ...(!open ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}) }}>{c.title}</div>
+          <div style={{ display: 'flex', gap: 5, fontSize: '10.5px', color: 'var(--text3)', marginTop: 2 }}>
+            <span style={{ color: col, fontSize: '9.5px', fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', border: `1px solid ${col}44`, padding: '0 3px' }}>{c.severity}</span>
             <span>{c.country}</span>
-            {c.fatalities ? <span style={{ color: '#ff1a3e' }}>⚠ {c.fatalities}</span> : null}
+            {c.fatalities ? <span style={{ color: 'var(--red)' }}>⚠ {c.fatalities}</span> : null}
           </div>
         </div>
       </div>
       {open && (
-        <div style={{ width: '100%', borderTop: '1px solid #0d120e', padding: '6px 10px 8px', background: 'rgba(255,26,62,0.02)' }}
+        <div style={{ width: '100%', borderTop: '1px solid var(--border)', padding: '6px 10px 8px', background: 'var(--red-soft)' }}
           onClick={e => e.stopPropagation()}>
-          {c.description && <div style={{ fontSize: '9px', color: '#6a8aaa', lineHeight: 1.55, marginBottom: 5 }}>{c.description}</div>}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '7.5px', color: '#4a6a50' }}>
+          {c.description && <div style={{ fontSize: '11.5px', color: 'var(--text2)', lineHeight: 1.55, marginBottom: 5 }}>{c.description}</div>}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: '10px', color: 'var(--text2)' }}>
             {c.type && <span style={{ textTransform: 'uppercase', letterSpacing: '.06em' }}>{c.type}</span>}
             {c.date && <span>{new Date(c.date).toLocaleDateString()}</span>}
-            {c.source && <span style={{ color: '#2a3e2e' }}>{c.source}</span>}
+            {c.source && <span style={{ color: 'var(--text3)' }}>{c.source}</span>}
           </div>
         </div>
       )}
@@ -284,13 +290,13 @@ export function IntelPanel({ crises }: { crises: CrisisEvent[] }) {
 
   return (
     <>
-      <div style={{ display: 'flex', gap: 2, padding: '3px 8px', borderBottom: '1px solid #141e16' }}>
+      <div style={{ display: 'flex', gap: 2, padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
         {INTEL_TABS_LIST.map(t => (
           <button key={t} onClick={() => setTab(t)} className={`news-tab ${tab === t ? 'active' : ''}`}>{t.toUpperCase()}</button>
         ))}
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {filtered.length === 0 && <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO EVENTS</div>}
+        {filtered.length === 0 && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO EVENTS</div>}
         {filtered.map(c => <CrisisRow key={c.id} c={c} />)}
       </div>
     </>
@@ -305,18 +311,18 @@ export function LayersPanel({ panelState, onToggleLayer, deepstateMode, onDeepst
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
       <button onClick={onDeepstateToggle} style={{
         width: '100%', padding: '5px 10px', display: 'flex', alignItems: 'center', gap: 8,
-        background: deepstateMode ? 'rgba(255,26,62,0.1)' : 'transparent',
-        border: 'none', borderBottom: '1px solid #141e16',
-        borderLeft: `2px solid ${deepstateMode ? '#ff1a3e' : 'transparent'}`,
+        background: deepstateMode ? 'var(--red-soft)' : 'transparent',
+        border: 'none', borderBottom: '1px solid var(--border)',
+        borderLeft: `2px solid ${deepstateMode ? 'var(--red)' : 'transparent'}`,
         cursor: 'pointer', textAlign: 'left',
       }}>
-        <div style={{ width: 10, height: 10, flexShrink: 0, border: `1px solid ${deepstateMode ? '#ff1a3e' : '#141e16'}`, background: deepstateMode ? '#ff1a3e22' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {deepstateMode && <div style={{ width: 4, height: 4, background: '#ff1a3e' }} />}
+        <div style={{ width: 10, height: 10, flexShrink: 0, border: `1px solid ${deepstateMode ? 'var(--red)' : 'var(--border)'}`, background: deepstateMode ? 'var(--red)22' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {deepstateMode && <div style={{ width: 4, height: 4, background: 'var(--red)' }} />}
         </div>
-        <span style={{ fontSize: '7.5px', fontWeight: 700, letterSpacing: '.1em', color: deepstateMode ? '#ff1a3e' : '#2a3e2e', border: `1px solid ${deepstateMode ? '#ff1a3e44' : '#141e16'}`, padding: '0 3px', lineHeight: '14px', flexShrink: 0 }}>WAR</span>
+        <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '.1em', color: deepstateMode ? 'var(--red)' : 'var(--text3)', border: `1px solid ${deepstateMode ? 'var(--red)44' : 'var(--border)'}`, padding: '0 3px', lineHeight: '14px', flexShrink: 0 }}>WAR</span>
         <div>
-          <div style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: deepstateMode ? '#ff1a3e' : '#2a3e2e' }}>DeepState Ukraine</div>
-          <div style={{ fontSize: '7.5px', color: '#1a2e1e' }}>battlefield overlay</div>
+          <div style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '.08em', textTransform: 'uppercase', color: deepstateMode ? 'var(--red)' : 'var(--text3)' }}>DeepState Ukraine</div>
+          <div style={{ fontSize: '10px', color: 'var(--text3)' }}>battlefield overlay</div>
         </div>
       </button>
       {LAYERS_CONFIG.map(layer => {
@@ -324,13 +330,13 @@ export function LayersPanel({ panelState, onToggleLayer, deepstateMode, onDeepst
         return (
           <button key={layer.id} onClick={() => onToggleLayer(layer.id)}
             className={`layer-row ${on ? 'on' : ''}`}
-            style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', color: on ? layer.color : '#2a3e2e' }}
+            style={{ width: '100%', textAlign: 'left', background: 'none', border: 'none', color: on ? layer.color : 'var(--text3)' }}
           >
-            <div style={{ width: 10, height: 10, flexShrink: 0, border: `1px solid ${on ? layer.color : '#141e16'}`, background: on ? layer.color + '22' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 10, height: 10, flexShrink: 0, border: `1px solid ${on ? layer.color : 'var(--border)'}`, background: on ? layer.color + '22' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {on && <div style={{ width: 4, height: 4, background: layer.color }} />}
             </div>
-            <span style={{ fontSize: '7.5px', fontWeight: 700, letterSpacing: '0.1em', color: on ? layer.color + 'aa' : '#141e16', border: `1px solid ${on ? layer.color + '44' : '#141e16'}`, padding: '0 3px', lineHeight: '14px', flexShrink: 0 }}>{layer.tag}</span>
-            <span style={{ fontSize: '9px', fontWeight: 600, letterSpacing: '.08em' }}>{layer.label}</span>
+            <span style={{ fontSize: '10px', fontWeight: 700, letterSpacing: '0.1em', color: on ? layer.color + 'aa' : 'var(--border)', border: `1px solid ${on ? layer.color + '44' : 'var(--border)'}`, padding: '0 3px', lineHeight: '14px', flexShrink: 0 }}>{layer.tag}</span>
+            <span style={{ fontSize: '11.5px', fontWeight: 600, letterSpacing: '.08em' }}>{layer.label}</span>
           </button>
         )
       })}
@@ -358,11 +364,11 @@ export function RiskPanel({ crises }: { crises: CrisisEvent[] }) {
     <div style={{ flex: 1, overflowY: 'auto' }}>
       {risks.length === 0 && (
         <div style={{ padding: '12px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-          <div style={{ fontSize: 8, color: '#2a3e2e', letterSpacing: '.1em' }}>AWAITING CRISIS DATA</div>
+          <div style={{ fontSize: 10.5, color: 'var(--text3)', letterSpacing: '.1em' }}>AWAITING CRISIS DATA</div>
           {[1, 2, 3, 4].map(i => (
             <div key={i} style={{ width: '100%', display: 'flex', gap: 6, padding: '4px 10px', opacity: 0.3 }}>
-              <div style={{ width: 20, height: 10, background: '#141e16', borderRadius: 2 }} />
-              <div style={{ flex: 1, height: 4, background: '#141e16', borderRadius: 2, marginTop: 3 }} />
+              <div style={{ width: 20, height: 10, background: 'var(--border)', borderRadius: 2 }} />
+              <div style={{ flex: 1, height: 4, background: 'var(--border)', borderRadius: 2, marginTop: 3 }} />
             </div>
           ))}
         </div>
@@ -374,46 +380,45 @@ export function RiskPanel({ crises }: { crises: CrisisEvent[] }) {
         const label = riskLabel(r.score)
         return (
           <div key={r.country} style={{
-            padding: '5px 10px', borderBottom: '1px solid #0d120e',
+            padding: '5px 10px', borderBottom: '1px solid var(--border)',
             borderLeft: `2px solid ${color}44`,
             transition: 'all .12s',
           }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,255,136,0.03)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
           >
             {/* Top row: rank, country, score badge */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-              <span style={{ fontSize: 7, color: '#1a2e1e', width: 12, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: '#c0dcc4', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 9.5, color: 'var(--text3)', width: 12, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {r.country}
               </span>
               <span style={{
-                fontSize: 7, fontWeight: 800, color, letterSpacing: '.08em',
+                fontSize: 9.5, fontWeight: 800, color, letterSpacing: '.08em',
                 background: `${color}14`, border: `1px solid ${color}33`,
                 padding: '1px 5px', borderRadius: 2, flexShrink: 0,
               }}>{label}</span>
-              <span style={{ fontSize: 10, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', minWidth: 22, textAlign: 'right', flexShrink: 0 }}>
+              <span style={{ fontSize: 12.5, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', minWidth: 22, textAlign: 'right', flexShrink: 0 }}>
                 {r.score}
               </span>
             </div>
 
             {/* Risk bar */}
-            <div style={{ marginLeft: 18, height: 3, background: '#141e16', borderRadius: 2, marginBottom: 3, overflow: 'hidden' }}>
-              <div style={{
-                width: `${Math.min(100, pct)}%`, height: '100%',
+            <div className="risk-bar" style={{ marginLeft: 18, marginBottom: 4 }}>
+              <div className="risk-fill" style={{
+                width: `${Math.min(100, pct)}%`,
                 background: `linear-gradient(90deg, ${color}88, ${color})`,
-                borderRadius: 2, transition: 'width .6s ease',
               }} />
             </div>
 
             {/* Event type breakdown chips */}
             <div style={{ marginLeft: 18, display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 6.5, color: '#4a6a50' }}>{r.events} events</span>
+              <span style={{ fontSize: 9, color: 'var(--text2)' }}>{r.events} events</span>
               {Object.entries(types).map(([type, count]) => (
                 <span key={type} style={{
-                  fontSize: 6, padding: '0 3px',
-                  color: SEV_COLORS[type === 'war' ? 'critical' : type === 'conflict' ? 'high' : type === 'terrorism' ? 'high' : 'medium'] ?? '#4a6a50',
-                  border: '1px solid #141e16', borderRadius: 1, letterSpacing: '.05em',
+                  fontSize: 8.5, padding: '0 3px',
+                  color: SEV_COLORS[type === 'war' ? 'critical' : type === 'conflict' ? 'high' : type === 'terrorism' ? 'high' : 'medium'] ?? 'var(--text2)',
+                  border: '1px solid var(--border)', borderRadius: 1, letterSpacing: '.05em',
                 }}>
                   {type.toUpperCase().slice(0, 3)} ×{count}
                 </span>
@@ -431,7 +436,7 @@ export function ThreatPanel({ crises, flights }: { crises: CrisisEvent[]; flight
   const R = 31, CX = 40, CY = 40
   const arc   = 2 * Math.PI * R * (score / 100)
   const total = 2 * Math.PI * R
-  const color = score >= 80 ? '#ff1a3e' : score >= 60 ? '#ff4400' : score >= 40 ? '#ffaa00' : score >= 20 ? '#ffcc00' : '#00ff88'
+  const color = score >= 80 ? 'var(--red)' : score >= 60 ? 'var(--red)' : score >= 40 ? 'var(--amber)' : score >= 20 ? 'var(--amber)' : 'var(--accent)'
   const label = score >= 80 ? 'CRITICAL' : score >= 60 ? 'ELEVATED' : score >= 40 ? 'HIGH' : score >= 20 ? 'MODERATE' : 'NORMAL'
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 8 }}>
@@ -439,22 +444,22 @@ export function ThreatPanel({ crises, flights }: { crises: CrisisEvent[]; flight
         <svg width="80" height="80" viewBox="0 0 80 80">
           {Array.from({ length: 10 }).map((_, i) => {
             const a = (i / 10) * 2 * Math.PI - Math.PI / 2
-            return <line key={i} x1={CX + 36 * Math.cos(a)} y1={CY + 36 * Math.sin(a)} x2={CX + 39 * Math.cos(a)} y2={CY + 39 * Math.sin(a)} stroke="#141e16" strokeWidth="1" />
+            return <line key={i} x1={CX + 36 * Math.cos(a)} y1={CY + 36 * Math.sin(a)} x2={CX + 39 * Math.cos(a)} y2={CY + 39 * Math.sin(a)} stroke="var(--border)" strokeWidth="1" />
           })}
-          <circle cx={CX} cy={CY} r={R} fill="none" stroke="#141e16" strokeWidth="5" />
+          <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--border)" strokeWidth="5" />
           <circle cx={CX} cy={CY} r={R} fill="none" stroke={color} strokeWidth="5"
             strokeDasharray={`${arc} ${total}`} strokeLinecap="butt"
             transform={`rotate(-90 ${CX} ${CY})`}
             style={{ filter: `drop-shadow(0 0 4px ${color}88)`, transition: 'all 1s' }} />
-          <circle cx={CX} cy={CY} r={23} fill="none" stroke="#0d120e" strokeWidth="1" />
+          <circle cx={CX} cy={CY} r={23} fill="none" stroke="var(--border)" strokeWidth="1" />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <span style={{ fontSize: 20, fontWeight: 800, color, lineHeight: 1 }}>{score}</span>
         </div>
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '.15em', color }}>{label}</div>
-        <div style={{ fontSize: '8px', color: '#2a3e2e', letterSpacing: '.1em', marginTop: 1 }}>// TREND STABLE</div>
+        <div style={{ fontSize: '12.5px', fontWeight: 800, letterSpacing: '.15em', color }}>{label}</div>
+        <div style={{ fontSize: '10.5px', color: 'var(--text3)', letterSpacing: '.1em', marginTop: 1 }}>// TREND STABLE</div>
       </div>
     </div>
   )
@@ -463,17 +468,17 @@ export function ThreatPanel({ crises, flights }: { crises: CrisisEvent[]; flight
 export function StockRow({ s }: { s: Stock }) {
   const pos = s.changePercent >= 0
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 10px', borderBottom: '1px solid #141e16', borderLeft: '2px solid transparent', transition: 'all .1s' }}
-      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,255,136,0.04)'; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'rgba(0,255,136,0.18)' }}
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 10px', borderBottom: '1px solid var(--border)', borderLeft: '2px solid transparent', transition: 'all .1s' }}
+      onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)'; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'var(--accent)' }}
       onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ''; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'transparent' }}
     >
       <div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: '#c0dcc4' }}>{s.symbol}</div>
-        <div style={{ fontSize: '7.5px', color: '#2a3e2e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 80 }}>{s.exchange || s.name}</div>
+        <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text1)' }}>{s.symbol}</div>
+        <div style={{ fontSize: '10px', color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 80 }}>{s.exchange || s.name}</div>
       </div>
       <div style={{ textAlign: 'right' }}>
-        <div style={{ fontSize: '10px', color: '#8aac90', fontVariantNumeric: 'tabular-nums' }}>${s.price.toFixed(2)}</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end', fontSize: '8px', color: pos ? '#00ff88' : '#ff1a3e' }}>
+        <div style={{ fontSize: '12.5px', color: 'var(--text1)', fontVariantNumeric: 'tabular-nums' }}>${s.price.toFixed(2)}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end', fontSize: '10.5px', color: pos ? 'var(--accent)' : 'var(--red)' }}>
           {pos ? <TrendingUp size={7} /> : <TrendingDown size={7} />}
           {pos ? '+' : ''}{s.changePercent.toFixed(2)}%
         </div>
@@ -491,24 +496,25 @@ export function StockList({ symbols }: { symbols: string[] }) {
 
   useEffect(() => {
     if (!hasFinnhub) return
-    setLoading(true)
-    fetchMultipleQuotes(symbols).then(setStocks).finally(() => setLoading(false))
-    const timer = window.setInterval(() => { fetchMultipleQuotes(symbols).then(setStocks) }, 60_000)
-    return () => clearInterval(timer)
+    const load = () => { setLoading(true); fetchMultipleQuotes(symbols).then(setStocks).finally(() => setLoading(false)) }
+    load()
+    const timer = window.setInterval(load, 60_000)
+    const unsub = onGlobalReload(load)
+    return () => { clearInterval(timer); unsub() }
   }, [key, retryCount]) // eslint-disable-line
 
   if (!hasFinnhub) return (
     <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      <div style={{ fontSize: 8, color: '#2a3e2e', letterSpacing: '.1em', textAlign: 'center' }}>MARKET DATA UNAVAILABLE</div>
-      <div style={{ fontSize: 7, color: '#1a2e1e', textAlign: 'center', lineHeight: 1.6 }}>
+      <div style={{ fontSize: 10.5, color: 'var(--text3)', letterSpacing: '.1em', textAlign: 'center' }}>MARKET DATA UNAVAILABLE</div>
+      <div style={{ fontSize: 9.5, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6 }}>
         Add VITE_FINNHUB_KEY to .env<br />to enable live market feeds
       </div>
       {/* Skeleton rows */}
       {symbols.slice(0, 4).map((sym, i) => (
         <div key={i} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', opacity: 0.3 }}>
-          <div style={{ fontSize: 8, color: '#2a3e2e', width: 36, fontWeight: 700 }}>{sym}</div>
-          <div style={{ flex: 1, height: 3, background: '#141e16', borderRadius: 2 }} />
-          <div style={{ width: 40, height: 8, background: '#141e16', borderRadius: 2 }} />
+          <div style={{ fontSize: 10.5, color: 'var(--text3)', width: 36, fontWeight: 700 }}>{sym}</div>
+          <div style={{ flex: 1, height: 3, background: 'var(--border)', borderRadius: 2 }} />
+          <div style={{ width: 40, height: 8, background: 'var(--border)', borderRadius: 2 }} />
         </div>
       ))}
     </div>
@@ -516,27 +522,27 @@ export function StockList({ symbols }: { symbols: string[] }) {
   if (loading && stocks.length === 0) return (
     <div style={{ padding: '8px 10px' }}>
       {symbols.slice(0, 6).map((sym, i) => (
-        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: '1px solid #0d120e' }}>
-          <div style={{ fontSize: 8, color: '#2a3e2e', width: 36, fontWeight: 700 }}>{sym}</div>
+        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 10.5, color: 'var(--text3)', width: 36, fontWeight: 700 }}>{sym}</div>
           <div style={{ flex: 1 }}>
-            <div style={{ height: 3, background: '#141e16', borderRadius: 2, width: `${60 + (i * 7) % 30}%`, animation: 'pulse 1.5s ease-in-out infinite', opacity: 0.5 }} />
+            <div style={{ height: 3, background: 'var(--border)', borderRadius: 2, width: `${60 + (i * 7) % 30}%`, animation: 'pulse 1.5s ease-in-out infinite', opacity: 0.5 }} />
           </div>
-          <div style={{ width: 44, height: 8, background: '#141e16', borderRadius: 2, animation: 'pulse 1.5s ease-in-out infinite', opacity: 0.4 }} />
+          <div style={{ width: 44, height: 8, background: 'var(--border)', borderRadius: 2, animation: 'pulse 1.5s ease-in-out infinite', opacity: 0.4 }} />
         </div>
       ))}
     </div>
   )
   if (!loading && stocks.length === 0) return (
     <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <div style={{ fontSize: 8, color: '#2a3e2e', letterSpacing: '.1em' }}>DATA FEED INTERRUPTED</div>
-      <div style={{ fontSize: 7, color: '#1a2e1e', textAlign: 'center', lineHeight: 1.5 }}>
+      <div style={{ fontSize: 10.5, color: 'var(--text3)', letterSpacing: '.1em' }}>DATA FEED INTERRUPTED</div>
+      <div style={{ fontSize: 9.5, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.5 }}>
         Market data temporarily unavailable.<br />Finnhub may be rate-limiting.
       </div>
       <button
         onClick={() => setRetryCount(c => c + 1)}
         style={{
-          background: 'rgba(0,170,255,0.08)', border: '1px solid #00aaff33',
-          color: '#00aaff', cursor: 'pointer', fontSize: 7.5, padding: '3px 12px',
+          background: 'var(--accent-soft)', border: '1px solid var(--accent)33',
+          color: 'var(--accent)', cursor: 'pointer', fontSize: 10, padding: '3px 12px',
           letterSpacing: '.1em', fontWeight: 700, fontFamily: 'inherit',
         }}
       >↻ RETRY</button>
@@ -561,10 +567,10 @@ const LOOKBACK_OPTIONS = [
 ]
 
 function outageScoreColor(score: number): string {
-  if (score >= 500) return '#ff1a3e'
-  if (score >= 200) return '#ff6600'
-  if (score >= 50)  return '#ffaa00'
-  return '#00ff88'
+  if (score >= 500) return 'var(--red)'
+  if (score >= 200) return 'var(--amber)'
+  if (score >= 50)  return 'var(--amber)'
+  return 'var(--accent)'
 }
 
 function formatDuration(secs: number): string {
@@ -605,7 +611,8 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
   // Auto-refresh every 5 minutes
   useEffect(() => {
     const t = window.setInterval(load, 5 * 60_000)
-    return () => clearInterval(t)
+    const unsub = onGlobalReload(load)
+    return () => { clearInterval(t); unsub() }
   }, [load])
 
   const filtered = tab === 'All'
@@ -620,7 +627,7 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
   return (
     <>
       {/* Lookback + refresh row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
         {LOOKBACK_OPTIONS.map(o => (
           <button key={o.label} onClick={() => setLookback(o.hours)}
             className={`news-tab ${lookback === o.hours ? 'active' : ''}`}>
@@ -628,13 +635,13 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
           </button>
         ))}
         <button onClick={load} disabled={loading} title="Refresh"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2a3e2e', opacity: loading ? 0.3 : 1, marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: loading ? 0.3 : 1, marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
           <RefreshCw size={9} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       {/* Type filter tabs */}
-      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16' }}>
+      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>
         {OUTAGE_TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`news-tab ${tab === t ? 'active' : ''}`}>
@@ -642,7 +649,7 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
           </button>
         ))}
         {lastFetch && (
-          <span style={{ marginLeft: 'auto', fontSize: '7px', color: '#1a2e1e', alignSelf: 'center', letterSpacing: '.06em' }}>
+          <span style={{ marginLeft: 'auto', fontSize: '9.5px', color: 'var(--text3)', alignSelf: 'center', letterSpacing: '.06em' }}>
             {formatDistanceToNow(new Date(lastFetch), { addSuffix: true })}
           </span>
         )}
@@ -651,13 +658,13 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
       {/* Event list */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {loading && events.length === 0 && (
-          <div style={{ padding: '8px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.12em' }}>// QUERYING IODA…</div>
+          <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// QUERYING IODA…</div>
         )}
         {!loading && error && (
-          <div style={{ padding: '8px 10px', fontSize: '9px', color: '#ff1a3e66', letterSpacing: '.08em' }}>// {error}</div>
+          <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--red)66', letterSpacing: '.08em' }}>// {error}</div>
         )}
         {!loading && !error && filtered.length === 0 && (
-          <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO OUTAGES DETECTED</div>
+          <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO OUTAGES DETECTED</div>
         )}
         {filtered.map(ev => (
           <div
@@ -673,32 +680,32 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
               boxShadow: `0 0 4px ${outageScoreColor(ev.score)}66`,
             }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '10px', color: '#8aac90', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
+              <div style={{ fontSize: '12.5px', color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
                 {ev.entityName}
               </div>
-              <div style={{ display: 'flex', gap: 5, fontSize: '7.5px', color: '#2a3e2e', marginTop: 1, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 5, fontSize: '10px', color: 'var(--text3)', marginTop: 1, flexWrap: 'wrap' }}>
                 <span style={{
                   color: outageScoreColor(ev.score),
                   border: `1px solid ${outageScoreColor(ev.score)}44`,
                   padding: '0 3px', fontWeight: 700, letterSpacing: '.08em',
-                  textTransform: 'uppercase', fontSize: '7px',
+                  textTransform: 'uppercase', fontSize: '9.5px',
                 }}>
                   {ev.score >= 500 ? 'CRITICAL' : ev.score >= 200 ? 'MAJOR' : ev.score >= 50 ? 'MODERATE' : 'MINOR'}
                 </span>
-                <span style={{ color: '#1a2e1e', textTransform: 'uppercase', fontSize: '7px', letterSpacing: '.06em' }}>{ev.entityType}</span>
+                <span style={{ color: 'var(--text3)', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '.06em' }}>{ev.entityType}</span>
                 {ev.duration > 0 && (
-                  <span style={{ color: '#2a3e2e' }}>⏱ {formatDuration(ev.duration)}</span>
+                  <span style={{ color: 'var(--text3)' }}>⏱ {formatDuration(ev.duration)}</span>
                 )}
                 {ev.start > 0 && (
-                  <span style={{ color: '#1a2e1e' }}>{formatOutageTime(ev.start)}</span>
+                  <span style={{ color: 'var(--text3)' }}>{formatOutageTime(ev.start)}</span>
                 )}
               </div>
             </div>
             <div style={{ flexShrink: 0, textAlign: 'right', paddingLeft: 4 }}>
-              <div style={{ fontSize: '10px', fontVariantNumeric: 'tabular-nums', color: outageScoreColor(ev.score), fontWeight: 700 }}>
+              <div style={{ fontSize: '12.5px', fontVariantNumeric: 'tabular-nums', color: outageScoreColor(ev.score), fontWeight: 700 }}>
                 {ev.score}
               </div>
-              <div style={{ fontSize: '7px', color: '#1a2e1e' }}>score</div>
+              <div style={{ fontSize: '9.5px', color: 'var(--text3)' }}>score</div>
             </div>
           </div>
         ))}
@@ -709,11 +716,11 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
 
 // ── CrisisWatch Panel ─────────────────────────────────────────────────────────
 const TREND_META: Record<CrisisWatchEntry['trend'], { label: string; color: string; icon: string }> = {
-  deteriorated: { label: 'DETERIORATED', color: '#ff1a3e', icon: '▼' },
-  alert:        { label: 'ALERT',        color: '#ff6600', icon: '⚠' },
-  unchanged:    { label: 'UNCHANGED',    color: '#ffcc00', icon: '●' },
-  improved:     { label: 'IMPROVED',     color: '#00ff88', icon: '▲' },
-  unknown:      { label: 'MONITOR',      color: '#4a6a50', icon: '○' },
+  deteriorated: { label: 'DETERIORATED', color: 'var(--red)', icon: '▼' },
+  alert:        { label: 'ALERT',        color: 'var(--amber)', icon: '⚠' },
+  unchanged:    { label: 'UNCHANGED',    color: 'var(--amber)', icon: '●' },
+  improved:     { label: 'IMPROVED',     color: 'var(--accent)', icon: '▲' },
+  unknown:      { label: 'MONITOR',      color: 'var(--text2)', icon: '○' },
 }
 
 const CW_REGIONS = ['All', ...CRISISWATCH_FEEDS.map(f => f.region)] as const
@@ -741,7 +748,8 @@ export function CrisisWatchPanel() {
   // Refresh every 60 min (ICG publishes monthly)
   useEffect(() => {
     const t = window.setInterval(load, 60 * 60_000)
-    return () => clearInterval(t)
+    const unsub = onGlobalReload(load)
+    return () => { clearInterval(t); unsub() }
   }, [load])
 
   const filtered = entries.filter(e => {
@@ -759,9 +767,9 @@ export function CrisisWatchPanel() {
   return (
     <>
       {/* Header: trend filter pills */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
         <button onClick={() => setFilter('All')}
-          className={`news-tab ${filter === 'All' ? 'active' : ''}`}>ALL <span style={{ fontSize: '7px', color: '#2a3e2e' }}>{entries.length}</span>
+          className={`news-tab ${filter === 'All' ? 'active' : ''}`}>ALL <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{entries.length}</span>
         </button>
         {(['deteriorated', 'alert', 'improved', 'unchanged'] as const).map(t => {
           const m = TREND_META[t]
@@ -770,18 +778,18 @@ export function CrisisWatchPanel() {
               className={`news-tab ${filter === t ? 'active' : ''}`}
               style={filter === t ? { color: m.color, borderColor: m.color + '44' } : {}}
             >
-              {m.icon} <span style={{ fontSize: '7px', color: filter === t ? m.color : '#2a3e2e' }}>{counts[t] ?? 0}</span>
+              {m.icon} <span style={{ fontSize: '9.5px', color: filter === t ? m.color : 'var(--text3)' }}>{counts[t] ?? 0}</span>
             </button>
           )
         })}
         <button onClick={load} disabled={loading} title="Refresh"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2a3e2e', opacity: loading ? 0.3 : 1, marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: loading ? 0.3 : 1, marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
           <RefreshCw size={9} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
 
       {/* Region tabs */}
-      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
         {CW_REGIONS.map(r => (
           <button key={r} onClick={() => setRegion(r)}
             className={`news-tab ${region === r ? 'active' : ''}`}
@@ -790,7 +798,7 @@ export function CrisisWatchPanel() {
           </button>
         ))}
         {lastFetch && (
-          <span style={{ marginLeft: 'auto', fontSize: '7px', color: '#1a2e1e', alignSelf: 'center', whiteSpace: 'nowrap', letterSpacing: '.05em' }}>
+          <span style={{ marginLeft: 'auto', fontSize: '9.5px', color: 'var(--text3)', alignSelf: 'center', whiteSpace: 'nowrap', letterSpacing: '.05em' }}>
             {formatDistanceToNow(new Date(lastFetch), { addSuffix: true })}
           </span>
         )}
@@ -799,10 +807,10 @@ export function CrisisWatchPanel() {
       {/* Entry list */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {loading && filtered.length === 0 && (
-          <div style={{ padding: '8px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.12em' }}>// FETCHING ICG FEEDS…</div>
+          <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// FETCHING ICG FEEDS…</div>
         )}
         {!loading && filtered.length === 0 && (
-          <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO ENTRIES MATCHED</div>
+          <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO ENTRIES MATCHED</div>
         )}
         {filtered.map(e => {
           const m = TREND_META[e.trend]
@@ -811,16 +819,16 @@ export function CrisisWatchPanel() {
               className="intel-row" style={{ alignItems: 'flex-start', textDecoration: 'none' }}>
               <div style={{ width: 2, alignSelf: 'stretch', flexShrink: 0, background: m.color, boxShadow: `0 0 4px ${m.color}66` }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '10px', color: '#8aac90', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                <div style={{ fontSize: '12.5px', color: 'var(--text1)', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                   {e.title}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
-                  <span style={{ fontSize: '7px', fontWeight: 700, color: m.color, border: `1px solid ${m.color}44`, padding: '0 3px', letterSpacing: '.08em', flexShrink: 0 }}>
+                  <span style={{ fontSize: '9.5px', fontWeight: 700, color: m.color, border: `1px solid ${m.color}44`, padding: '0 3px', letterSpacing: '.08em', flexShrink: 0 }}>
                     {m.icon} {m.label}
                   </span>
-                  <span style={{ fontSize: '7.5px', color: '#2a3e2e', letterSpacing: '.04em' }}>{e.source}</span>
-                  <span style={{ fontSize: '7px', color: '#1a2e1e', marginLeft: 'auto', flexShrink: 0 }}>{safeTimeAgo(e.publishedAt)}</span>
-                  <ExternalLink size={7} style={{ color: '#1a2e1e', flexShrink: 0 }} />
+                  <span style={{ fontSize: '10px', color: 'var(--text3)', letterSpacing: '.04em' }}>{e.source}</span>
+                  <span style={{ fontSize: '9.5px', color: 'var(--text3)', marginLeft: 'auto', flexShrink: 0 }}>{safeTimeAgo(e.publishedAt)}</span>
+                  <ExternalLink size={7} style={{ color: 'var(--text3)', flexShrink: 0 }} />
                 </div>
               </div>
             </a>
@@ -870,10 +878,9 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
       searchGDELTNews(q),
       searchNewsAPI(q),
       fetchRSSFeed('https://feeds.bbci.co.uk/news/world/rss.xml', 'BBC News'),
-      fetchRSSFeed('https://feeds.reuters.com/reuters/worldNews', 'Reuters'),
       fetchRSSFeed('https://rss.dw.com/xml/rss-en-world', 'DW News'),
       fetchRSSFeed('https://www.aljazeera.com/xml/rss/all.xml', 'Al Jazeera'),
-      fetchRSSFeed('https://www.crisisgroup.org/rss/crisiswatch', 'CrisisWatch'),
+      fetchRSSFeed('https://www.crisisgroup.org/rss.xml', 'CrisisWatch'),
       fetchRSSFeed('https://www.crisisgroup.org/rss/1',  'ICG Africa'),
       fetchRSSFeed('https://www.crisisgroup.org/rss/30', 'ICG Asia'),
       fetchRSSFeed('https://www.crisisgroup.org/rss/56', 'ICG Europe'),
@@ -904,17 +911,17 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
   }, [q])
 
   if (!q) {
-    return <div style={{ padding: '12px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.1em', textAlign: 'center' }}>// TYPE A SEARCH QUERY TO ANALYZE</div>
+    return <div style={{ padding: '12px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em', textAlign: 'center' }}>// TYPE A SEARCH QUERY TO ANALYZE</div>
   }
 
   return (
     <>
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16' }}>
+      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>
         {BRIEF_TABS.map(t => (
           <button key={t} onClick={() => setTab(t)} className={`news-tab ${tab === t ? 'active' : ''}`}>
             {t}
-            <span style={{ marginLeft: 3, fontSize: '7px', color: '#2a3e2e' }}>
+            <span style={{ marginLeft: 3, fontSize: '9.5px', color: 'var(--text3)' }}>
               {t === 'INTEL' ? filteredCrises.length
                : t === 'NEWS' ? news.length
                : t === 'AIR'  ? filteredFlights.length
@@ -928,16 +935,16 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'INTEL' && (
           filteredCrises.length === 0
-            ? <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO EVENTS MATCHED</div>
+            ? <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO EVENTS MATCHED</div>
             : filteredCrises.slice(0, 40).map(c => (
               <div key={c.id} className="intel-row" style={{ alignItems: 'flex-start' }}>
-                <div style={{ width: 2, alignSelf: 'stretch', flexShrink: 0, background: SEV_COLORS[c.severity] || '#2a3e2e', boxShadow: `0 0 4px ${SEV_COLORS[c.severity] || '#2a3e2e'}66` }} />
+                <div style={{ width: 2, alignSelf: 'stretch', flexShrink: 0, background: SEV_COLORS[c.severity] || 'var(--text3)', boxShadow: `0 0 4px ${SEV_COLORS[c.severity] || 'var(--text3)'}66` }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '10px', color: '#8aac90', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</div>
-                  <div style={{ display: 'flex', gap: 5, fontSize: '8px', color: '#2a3e2e' }}>
-                    <span style={{ color: SEV_COLORS[c.severity] || '#2a3e2e', fontSize: '7px', fontWeight: 700, letterSpacing: '.1em', border: `1px solid ${SEV_COLORS[c.severity] || '#2a3e2e'}44`, padding: '0 3px' }}>{c.severity?.toUpperCase()}</span>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text1)', lineHeight: 1.4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</div>
+                  <div style={{ display: 'flex', gap: 5, fontSize: '10.5px', color: 'var(--text3)' }}>
+                    <span style={{ color: SEV_COLORS[c.severity] || 'var(--text3)', fontSize: '9.5px', fontWeight: 700, letterSpacing: '.1em', border: `1px solid ${SEV_COLORS[c.severity] || 'var(--text3)'}44`, padding: '0 3px' }}>{c.severity?.toUpperCase()}</span>
                     <span>{c.country}</span>
-                    {c.fatalities ? <span style={{ color: '#ff1a3e' }}>⚠ {c.fatalities}</span> : null}
+                    {c.fatalities ? <span style={{ color: 'var(--red)' }}>⚠ {c.fatalities}</span> : null}
                   </div>
                 </div>
               </div>
@@ -946,18 +953,18 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
 
         {tab === 'NEWS' && (
           newsLoading && news.length === 0
-            ? <div style={{ padding: '8px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.12em' }}>// QUERYING ALL SOURCES…</div>
+            ? <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// QUERYING ALL SOURCES…</div>
             : news.length === 0
-              ? <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO NEWS MATCHED</div>
+              ? <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO NEWS MATCHED</div>
               : news.slice(0, 50).map(a => (
                 <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="intel-row" style={{ alignItems: 'flex-start' }}>
-                  <div style={{ width: 1, background: '#141e16', flexShrink: 0, alignSelf: 'stretch' }} />
+                  <div style={{ width: 1, background: 'var(--border)', flexShrink: 0, alignSelf: 'stretch' }} />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '9.5px', color: '#8aac90', lineHeight: 1.4, marginBottom: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text1)', lineHeight: 1.4, marginBottom: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <span style={{ fontSize: '7.5px', color: '#2a3e2e' }}>{a.source}</span>
-                      <span style={{ fontSize: '7.5px', color: '#1a2e1e' }}>{safeTimeAgo(a.publishedAt)}</span>
-                      <ExternalLink size={7} style={{ color: '#1a2e1e' }} />
+                      <span style={{ fontSize: '10px', color: 'var(--text3)' }}>{a.source}</span>
+                      <span style={{ fontSize: '10px', color: 'var(--text3)' }}>{safeTimeAgo(a.publishedAt)}</span>
+                      <ExternalLink size={7} style={{ color: 'var(--text3)' }} />
                     </div>
                   </div>
                 </a>
@@ -966,12 +973,12 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
 
         {tab === 'AIR' && (
           filteredFlights.length === 0
-            ? <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO FLIGHTS MATCHED</div>
+            ? <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO FLIGHTS MATCHED</div>
             : filteredFlights.slice(0, 60).map(f => (
               <div key={f.icao24} className="intel-row">
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '10px', color: '#00ff88', fontWeight: 700 }}>{f.callsign || f.icao24}</div>
-                  <div style={{ display: 'flex', gap: 6, fontSize: '7.5px', color: '#2a3e2e' }}>
+                  <div style={{ fontSize: '12.5px', color: 'var(--accent)', fontWeight: 700 }}>{f.callsign || f.icao24}</div>
+                  <div style={{ display: 'flex', gap: 6, fontSize: '10px', color: 'var(--text3)' }}>
                     <span>{f.origin_country}</span>
                     {f.altitude  != null && <span>{Math.round(f.altitude)}m</span>}
                     {f.velocity  != null && <span>{Math.round(f.velocity * 1.944)}kts</span>}
@@ -983,14 +990,14 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
 
         {tab === 'NET' && (
           outages.length === 0
-            ? <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO OUTAGES MATCHED</div>
+            ? <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO OUTAGES MATCHED</div>
             : outages.map(ev => (
               <div key={ev.id} className="intel-row" style={{ alignItems: 'flex-start' }}>
                 <div style={{ width: 2, alignSelf: 'stretch', flexShrink: 0, background: outageScoreColor(ev.score), boxShadow: `0 0 4px ${outageScoreColor(ev.score)}66` }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: '10px', color: '#8aac90', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.entityName}</div>
-                  <div style={{ display: 'flex', gap: 5, fontSize: '7.5px', color: '#2a3e2e' }}>
-                    <span style={{ color: outageScoreColor(ev.score), fontWeight: 700, fontSize: '7px', border: `1px solid ${outageScoreColor(ev.score)}44`, padding: '0 3px' }}>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.entityName}</div>
+                  <div style={{ display: 'flex', gap: 5, fontSize: '10px', color: 'var(--text3)' }}>
+                    <span style={{ color: outageScoreColor(ev.score), fontWeight: 700, fontSize: '9.5px', border: `1px solid ${outageScoreColor(ev.score)}44`, padding: '0 3px' }}>
                       {ev.score >= 500 ? 'CRITICAL' : ev.score >= 200 ? 'MAJOR' : ev.score >= 50 ? 'MODERATE' : 'MINOR'}
                     </span>
                     <span>{ev.entityType}</span>
@@ -1064,33 +1071,34 @@ export function DrugTrafficPanel() {
   // Auto-refresh 30 min
   useEffect(() => {
     const t = window.setInterval(() => load(tab), 30 * 60_000)
-    return () => clearInterval(t)
+    const unsub = onGlobalReload(() => load(tab))
+    return () => { clearInterval(t); unsub() }
   }, [tab, load])
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
         {DRUG_TABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
             className={`news-tab ${tab === t.id ? 'active' : ''}`}
-            style={tab === t.id ? { color: '#ff1a3e', borderColor: '#ff1a3e44' } : {}}>
+            style={tab === t.id ? { color: 'var(--red)', borderColor: 'var(--red)44' } : {}}>
             {t.id.toUpperCase()}
           </button>
         ))}
         <button onClick={() => load(tab)} disabled={loading}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2a3e2e', opacity: loading ? 0.3 : 1, marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: loading ? 0.3 : 1, marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
           <RefreshCw size={9} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>
       {lastFetch && (
-        <div style={{ padding: '2px 8px', fontSize: '7px', color: '#1a2e1e', borderBottom: '1px solid #0d120e', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <span style={{ width: 4, height: 4, background: '#ff1a3e', borderRadius: '50%', display: 'inline-block' }} />
+        <div style={{ padding: '2px 8px', fontSize: '9.5px', color: 'var(--text3)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 4, height: 4, background: 'var(--red)', borderRadius: '50%', display: 'inline-block' }} />
           LIVE · GDELT · {articles.length} REPORTS · {formatDistanceToNow(new Date(lastFetch), { addSuffix: true })}
         </div>
       )}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {loading && <div style={{ padding: '8px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.12em' }}>// QUERYING INTEL…</div>}
-        {!loading && articles.length === 0 && <div style={{ padding: '8px 10px', fontSize: '9px', color: '#1a2e1e', letterSpacing: '.1em' }}>// NO REPORTS</div>}
+        {loading && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// QUERYING INTEL…</div>}
+        {!loading && articles.length === 0 && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO REPORTS</div>}
         {articles.map(a => <ArticleRow key={a.id} a={a} />)}
       </div>
     </>
@@ -1161,40 +1169,40 @@ export function ExchangesPanel() {
 
   return (
     <>
-      <div style={{ padding: '4px 8px', borderBottom: '1px solid #141e16' }}>
+      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)' }}>
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search country or exchange…"
-          style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #141e16', color: '#c0dcc4', fontSize: 9, padding: '3px 7px', outline: 'none', fontFamily: 'inherit', letterSpacing: '.03em' }}
+          style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: 11.5, padding: '3px 7px', outline: 'none', fontFamily: 'inherit', letterSpacing: '.03em' }}
         />
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {loading && <div style={{ padding: '8px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.12em' }}>// LOADING QUOTES…</div>}
+        {loading && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// LOADING QUOTES…</div>}
         {filtered.map(ex => {
           const q = stocks.find(s => s.symbol === ex.ticker)
           const chg = q?.changePercent ?? null
-          const chgColor = chg === null ? '#2a3e2e' : chg >= 0 ? '#00ff88' : '#ff1a3e'
+          const chgColor = chg === null ? 'var(--text3)' : chg >= 0 ? 'var(--accent)' : 'var(--red)'
           return (
-            <div key={ex.ticker} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderBottom: '1px solid #0d120e', transition: 'background .1s' }}
-              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,255,136,0.03)' }}
+            <div key={ex.ticker} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 8px', borderBottom: '1px solid var(--border)', transition: 'background .1s' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
             >
-              <span style={{ fontSize: 12, flexShrink: 0 }}>{ex.flag}</span>
+              <span style={{ fontSize: 13.5, flexShrink: 0 }}>{ex.flag}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '9px', color: '#8aac90', fontWeight: 600, letterSpacing: '.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.country}</div>
-                <div style={{ fontSize: '7.5px', color: '#2a3e2e', letterSpacing: '.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.exchange}</div>
+                <div style={{ fontSize: '11.5px', color: 'var(--text1)', fontWeight: 600, letterSpacing: '.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.country}</div>
+                <div style={{ fontSize: '10px', color: 'var(--text3)', letterSpacing: '.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.exchange}</div>
               </div>
               <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{ fontSize: '9px', color: '#8aac90', fontVariantNumeric: 'tabular-nums' }}>
+                <div style={{ fontSize: '11.5px', color: 'var(--text1)', fontVariantNumeric: 'tabular-nums' }}>
                   {q ? q.price.toFixed(2) : '—'}
                 </div>
-                <div style={{ fontSize: '7.5px', color: chgColor, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
+                <div style={{ fontSize: '10px', color: chgColor, fontVariantNumeric: 'tabular-nums', fontWeight: 700 }}>
                   {chg !== null ? `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%` : ''}
                 </div>
               </div>
               <a href={ex.url} target="_blank" rel="noopener noreferrer"
-                style={{ color: '#1a2e1e', fontSize: 8, flexShrink: 0 }}
+                style={{ color: 'var(--text3)', fontSize: 10.5, flexShrink: 0 }}
                 title={`Open ${ex.exchange}`}
                 onClick={e => e.stopPropagation()}>
                 <ExternalLink size={9} />
@@ -1224,49 +1232,89 @@ const SEV_ORDER: SanctionedCountry['severity'][] = ['critical', 'high', 'medium'
 export function SanctionsPanel() {
   const [filter, setFilter] = useState('')
   const [sevFilter, setSevFilter] = useState<string>('all')
+  const [news, setNews] = useState<{ title: string; url: string; domain: string; seendate: string }[]>([])
+  const [newsLoading, setNewsLoading] = useState(false)
+  const [lastFetch, setLastFetch] = useState<number | null>(null)
   const q = filter.trim().toLowerCase()
   const rows = SANCTIONED_COUNTRIES
     .filter(c => sevFilter === 'all' || c.severity === sevFilter)
     .filter(c => !q || c.name.toLowerCase().includes(q) || c.summary.toLowerCase().includes(q) || c.regimes.some(r => r.toLowerCase().includes(q)))
     .sort((a, b) => SEV_ORDER.indexOf(a.severity) - SEV_ORDER.indexOf(b.severity))
 
+  const loadNews = useCallback(() => {
+    setNewsLoading(true)
+    fetchSanctionsNews(q || undefined)
+      .then(articles => { setNews(articles); setLastFetch(Date.now()) })
+      .finally(() => setNewsLoading(false))
+  }, [q])
+
+  useEffect(() => { loadNews() }, [loadNews])
+
+  // Auto-refresh 30 min
+  useEffect(() => {
+    const t = window.setInterval(loadNews, 30 * 60_000)
+    const unsub = onGlobalReload(loadNews)
+    return () => { clearInterval(t); unsub() }
+  }, [loadNews])
+
   return (
     <>
-      <div style={{ padding: '4px 8px', borderBottom: '1px solid #141e16', display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         {(['all','critical','high','medium','low'] as const).map(s => (
           <button key={s} onClick={() => setSevFilter(s)}
             className={`news-tab ${sevFilter === s ? 'active' : ''}`}
-            style={sevFilter === s && s !== 'all' ? { color: s === 'critical' ? '#ff1a3e' : s === 'high' ? '#ff6600' : s === 'medium' ? '#ffcc00' : '#8888ff', borderColor: `${SANCTION_COLORS[s as SanctionedCountry['severity']]}44` } : {}}>
+            style={sevFilter === s && s !== 'all' ? { color: s === 'critical' ? 'var(--red)' : s === 'high' ? 'var(--amber)' : s === 'medium' ? 'var(--amber)' : '#8888ff', borderColor: `${SANCTION_COLORS[s as SanctionedCountry['severity']]}44` } : {}}>
             {s.toUpperCase()}
           </button>
         ))}
+        <button onClick={loadNews} disabled={newsLoading}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: newsLoading ? 0.3 : 1, marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
+          <RefreshCw size={9} className={newsLoading ? 'animate-spin' : ''} />
+        </button>
       </div>
-      <div style={{ padding: '3px 8px', borderBottom: '1px solid #0d120e' }}>
+      <div style={{ padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
         <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search country, regime…"
-          style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #141e16', color: '#c0dcc4', fontSize: 9, padding: '2px 6px', outline: 'none', fontFamily: 'inherit' }} />
+          style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: 11.5, padding: '2px 6px', outline: 'none', fontFamily: 'inherit' }} />
       </div>
+      {lastFetch && (
+        <div style={{ padding: '2px 8px', fontSize: '9.5px', color: 'var(--text3)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ width: 4, height: 4, background: 'var(--amber)', borderRadius: '50%', display: 'inline-block' }} />
+          LIVE · GDELT · {news.length} REPORTS · {formatDistanceToNow(new Date(lastFetch), { addSuffix: true })}
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {rows.map(c => {
           const color = SANCTION_COLORS[c.severity]
           return (
-            <div key={c.iso2} style={{ padding: '5px 8px', borderBottom: '1px solid #0d120e', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+            <div key={c.iso2} style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
               <div style={{ width: 2, background: color, flexShrink: 0, alignSelf: 'stretch', boxShadow: `0 0 4px ${color}66` }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: '#c0dcc4' }}>{c.name}</span>
-                  <span style={{ fontSize: '6.5px', color: color, border: `1px solid ${color}55`, padding: '0 3px', fontWeight: 700, letterSpacing: '.08em' }}>{c.severity.toUpperCase()}</span>
-                  {c.since && <span style={{ fontSize: '7px', color: '#2a3e2e', marginLeft: 'auto' }}>since {c.since}</span>}
+                  <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text1)' }}>{c.name}</span>
+                  <span style={{ fontSize: '9px', color: color, border: `1px solid ${color}55`, padding: '0 3px', fontWeight: 700, letterSpacing: '.08em' }}>{c.severity.toUpperCase()}</span>
+                  {c.since && <span style={{ fontSize: '9.5px', color: 'var(--text3)', marginLeft: 'auto' }}>since {c.since}</span>}
                 </div>
-                <div style={{ fontSize: '8px', color: '#6a8aaa', lineHeight: 1.5, marginBottom: 3 }}>{c.summary}</div>
+                <div style={{ fontSize: '10.5px', color: 'var(--text2)', lineHeight: 1.5, marginBottom: 3 }}>{c.summary}</div>
                 <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                  {c.regimes.map(r => <span key={r} style={{ fontSize: '6.5px', border: '1px solid #0a3050', color: '#00ff88', padding: '0 3px' }}>{r}</span>)}
-                  {c.categories.map(cat => <span key={cat} style={{ fontSize: '6.5px', border: '1px solid #2a1520', color: '#ff8844', padding: '0 3px' }}>{cat.replace('_',' ')}</span>)}
+                  {c.regimes.map(r => <span key={r} style={{ fontSize: '9px', border: '1px solid var(--accent-soft)', color: 'var(--accent)', padding: '0 3px' }}>{r}</span>)}
+                  {c.categories.map(cat => <span key={cat} style={{ fontSize: '9px', border: '1px solid var(--red-soft)', color: 'var(--amber)', padding: '0 3px' }}>{cat.replace('_',' ')}</span>)}
                 </div>
-                {c.totalDesignations && <div style={{ fontSize: '7px', color: '#1a2e1e', marginTop: 2 }}>~{c.totalDesignations.toLocaleString()} designations</div>}
+                {c.totalDesignations && <div style={{ fontSize: '9.5px', color: 'var(--text3)', marginTop: 2 }}>~{c.totalDesignations.toLocaleString()} designations</div>}
               </div>
             </div>
           )
         })}
+        {news.length > 0 && (
+          <div style={{ padding: '4px 8px', fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.1em', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+            // LATEST SANCTIONS NEWS
+          </div>
+        )}
+        {news.map((n, i) => (
+          <a key={i} href={n.url} target="_blank" rel="noreferrer" style={{ display: 'block', padding: '5px 8px', borderBottom: '1px solid var(--border)', textDecoration: 'none' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text1)', lineHeight: 1.4, marginBottom: 2 }}>{n.title}</div>
+            <div style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{n.domain} · {formatDistanceToNow(new Date(n.seendate), { addSuffix: true })}</div>
+          </a>
+        ))}
       </div>
     </>
   )
@@ -1285,7 +1333,7 @@ export function MilitaryPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => vo
 
   return (
     <>
-      <div style={{ padding: '3px 8px', borderBottom: '1px solid #141e16', display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div style={{ padding: '3px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center' }}>
         <button className={`news-tab ${typeFilter === 'all' ? 'active' : ''}`} onClick={() => setTypeFilter('all')}>ALL</button>
         {types.map(t => (
           <button key={t} className={`news-tab ${typeFilter === t ? 'active' : ''}`}
@@ -1295,34 +1343,34 @@ export function MilitaryPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => vo
           </button>
         ))}
       </div>
-      <div style={{ padding: '3px 8px', borderBottom: '1px solid #0d120e' }}>
+      <div style={{ padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name, country, operator…"
-          style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #141e16', color: '#c0dcc4', fontSize: 9, padding: '2px 6px', outline: 'none', fontFamily: 'inherit' }} />
+          style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: 11.5, padding: '2px 6px', outline: 'none', fontFamily: 'inherit' }} />
       </div>
-      <div style={{ padding: '2px 8px', borderBottom: '1px solid #0d120e', fontSize: '7px', color: '#1a2e1e' }}>{rows.length} facilities</div>
+      <div style={{ padding: '2px 8px', borderBottom: '1px solid var(--border)', fontSize: '9.5px', color: 'var(--text3)' }}>{rows.length} facilities</div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {rows.map(f => {
           const color = FACILITY_COLORS[f.type]
           return (
             <div key={f.id}
               onClick={() => onGeoSearch?.(`${f.lat},${f.lng}`)}
-              style={{ padding: '5px 8px', borderBottom: '1px solid #0d120e', display: 'flex', gap: 6, alignItems: 'flex-start', cursor: onGeoSearch ? 'pointer' : 'default', transition: 'background .1s' }}
-              onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,255,136,0.05)' }}
+              style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 6, alignItems: 'flex-start', cursor: onGeoSearch ? 'pointer' : 'default', transition: 'background .1s' }}
+              onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
               title={onGeoSearch ? `Fly to ${f.name}` : undefined}
             >
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 3, boxShadow: `0 0 4px ${color}88` }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 2 }}>
-                  <span style={{ fontSize: 9.5, fontWeight: 700, color: '#c0dcc4' }}>{f.name}</span>
-                  {f.nuclear && <span style={{ fontSize: '6.5px', color: '#ff4444', border: '1px solid #ff444433', padding: '0 3px' }}>☢ NUC</span>}
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{f.name}</span>
+                  {f.nuclear && <span style={{ fontSize: '9px', color: 'var(--red)', border: '1px solid var(--red)33', padding: '0 3px' }}>☢ NUC</span>}
                 </div>
-                <div style={{ fontSize: '7.5px', color: '#4a6a50', marginBottom: 3 }}>
+                <div style={{ fontSize: '10px', color: 'var(--text2)', marginBottom: 3 }}>
                   <span style={{ color }}>{FACILITY_LABELS[f.type]}</span>
-                  <span style={{ color: '#2a3e2e' }}> · {f.operator} → {f.host}</span>
-                  {f.personnel ? <span style={{ color: '#1a2e1e' }}> · {f.personnel.toLocaleString()} personnel</span> : null}
+                  <span style={{ color: 'var(--text3)' }}> · {f.operator} → {f.host}</span>
+                  {f.personnel ? <span style={{ color: 'var(--text3)' }}> · {f.personnel.toLocaleString()} personnel</span> : null}
                 </div>
-                <div style={{ fontSize: '8px', color: '#6a8aaa', lineHeight: 1.5 }}>{f.notes}</div>
+                <div style={{ fontSize: '10.5px', color: 'var(--text2)', lineHeight: 1.5 }}>{f.notes}</div>
               </div>
             </div>
           )
@@ -1348,46 +1396,46 @@ export function NuclearPanel() {
 
   return (
     <>
-      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16' }}>
-        <button className={`news-tab ${tab==='power'?'active':''}`} onClick={() => setTab('power')} style={tab==='power'?{color:'#ffdd00',borderColor:'#ffdd0044'}:{}}>☢ POWER PLANTS</button>
-        <button className={`news-tab ${tab==='weapons'?'active':''}`} onClick={() => setTab('weapons')} style={tab==='weapons'?{color:'#ff1a3e',borderColor:'#ff1a3e44'}:{}}>💣 WEAPONS SITES</button>
+      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>
+        <button className={`news-tab ${tab==='power'?'active':''}`} onClick={() => setTab('power')} style={tab==='power'?{color:'var(--amber)',borderColor:'var(--amber)44'}:{}}>☢ POWER PLANTS</button>
+        <button className={`news-tab ${tab==='weapons'?'active':''}`} onClick={() => setTab('weapons')} style={tab==='weapons'?{color:'var(--red)',borderColor:'var(--red)44'}:{}}>💣 WEAPONS SITES</button>
       </div>
-      <div style={{ padding: '3px 8px', borderBottom: '1px solid #0d120e' }}>
+      <div style={{ padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tab==='power'?'Search plant, country…':'Search facility, operator…'}
-          style={{ width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #141e16', color: '#c0dcc4', fontSize: 9, padding: '2px 6px', outline: 'none', fontFamily: 'inherit' }} />
+          style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: 11.5, padding: '2px 6px', outline: 'none', fontFamily: 'inherit' }} />
       </div>
-      <div style={{ padding: '2px 8px', borderBottom: '1px solid #0d120e', fontSize: '7px', color: '#1a2e1e' }}>
+      <div style={{ padding: '2px 8px', borderBottom: '1px solid var(--border)', fontSize: '9.5px', color: 'var(--text3)' }}>
         {tab === 'power' ? `${plants.length} facilities` : `${weapons.length} sites`}
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'power' && plants.map(p => {
           const color = PLANT_STATUS_COLORS[p.status]
           return (
-            <div key={p.id} style={{ padding: '5px 8px', borderBottom: '1px solid #0d120e', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+            <div key={p.id} style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0, marginTop: 3 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 2 }}>
-                  <span style={{ fontSize: 9.5, fontWeight: 700, color: '#c0dcc4', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                  <span style={{ fontSize: '6.5px', color, border: `1px solid ${color}55`, padding: '0 3px', flexShrink: 0 }}>{p.status.replace('_',' ').toUpperCase()}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                  <span style={{ fontSize: '9px', color, border: `1px solid ${color}55`, padding: '0 3px', flexShrink: 0 }}>{p.status.replace('_',' ').toUpperCase()}</span>
                 </div>
-                <div style={{ fontSize: '7.5px', color: '#4a6a50', marginBottom: 3 }}>
-                  {p.country} · <span style={{ color: '#ffdd00' }}>{p.type}</span> · {p.reactors} reactor{p.reactors !== 1 ? 's' : ''} · {p.capacity.toLocaleString()} MWe
+                <div style={{ fontSize: '10px', color: 'var(--text2)', marginBottom: 3 }}>
+                  {p.country} · <span style={{ color: 'var(--amber)' }}>{p.type}</span> · {p.reactors} reactor{p.reactors !== 1 ? 's' : ''} · {p.capacity.toLocaleString()} MWe
                 </div>
-                <div style={{ fontSize: '8px', color: '#6a8aaa', lineHeight: 1.5 }}>{p.notes}</div>
+                <div style={{ fontSize: '10.5px', color: 'var(--text2)', lineHeight: 1.5 }}>{p.notes}</div>
               </div>
             </div>
           )
         })}
         {tab === 'weapons' && weapons.map(f => (
-          <div key={f.id} style={{ padding: '5px 8px', borderBottom: '1px solid #0d120e', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#ff0033', flexShrink: 0, marginTop: 3, boxShadow: '0 0 6px #ff003388' }} />
+          <div key={f.id} style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red)', flexShrink: 0, marginTop: 3, boxShadow: '0 0 6px var(--red)88' }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: 2 }}>
-                <span style={{ fontSize: 9.5, fontWeight: 700, color: '#c0dcc4' }}>{f.name}</span>
-                {f.status === 'suspected' && <span style={{ fontSize: '6.5px', color: '#ff8844', border: '1px solid #ff884433', padding: '0 3px' }}>SUSPECTED</span>}
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{f.name}</span>
+                {f.status === 'suspected' && <span style={{ fontSize: '9px', color: 'var(--amber)', border: '1px solid var(--amber)33', padding: '0 3px' }}>SUSPECTED</span>}
               </div>
-              <div style={{ fontSize: '7.5px', color: '#4a6a50', marginBottom: 3 }}>{f.operator} → {f.host}{f.since ? ` · since ${f.since}` : ''}</div>
-              <div style={{ fontSize: '8px', color: '#6a8aaa', lineHeight: 1.5 }}>{f.notes}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text2)', marginBottom: 3 }}>{f.operator} → {f.host}{f.since ? ` · since ${f.since}` : ''}</div>
+              <div style={{ fontSize: '10.5px', color: 'var(--text2)', lineHeight: 1.5 }}>{f.notes}</div>
             </div>
           </div>
         ))}
@@ -1397,8 +1445,8 @@ export function NuclearPanel() {
 }
 
 // ── Airspace Monitor Panel ─────────────────────────────────────────────────────
-const SEV_COL: Record<string, string> = { critical: '#ff1a3e', warning: '#ff8800', info: '#ffcc00' }
-const STATUS_COL: Record<string, string> = { closed: '#ff1a3e', restricted: '#ff8800', normal: '#00ff88' }
+const SEV_COL: Record<string, string> = { critical: 'var(--red)', warning: 'var(--amber)', info: 'var(--amber)' }
+const STATUS_COL: Record<string, string> = { closed: 'var(--red)', restricted: 'var(--amber)', normal: 'var(--accent)' }
 
 export function AirspacePanel({ flights }: { flights: { latitude: number | null; longitude: number | null }[] }) {
   const [tab, setTab] = useState<'alerts'|'regions'>('alerts')
@@ -1408,55 +1456,55 @@ export function AirspacePanel({ flights }: { flights: { latitude: number | null;
 
   return (
     <>
-      <div style={{ padding: '4px 8px', borderBottom: '1px solid #141e16', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: '7px', color: '#ff1a3e', fontWeight: 700, letterSpacing: '.1em' }}>
+      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontSize: '9.5px', color: 'var(--red)', fontWeight: 700, letterSpacing: '.1em' }}>
           {closedCount > 0 ? `⚠ ${closedCount} FIR${closedCount>1?'s':''} CLOSED` : ''}
         </span>
-        {restrictedCount > 0 && <span style={{ fontSize: '7px', color: '#ff8800', fontWeight: 700, letterSpacing: '.1em' }}>⚡ {restrictedCount} RESTRICTED</span>}
-        <span style={{ marginLeft: 'auto', fontSize: '7px', color: '#1a2e1e' }}>{new Date().toLocaleTimeString()}</span>
+        {restrictedCount > 0 && <span style={{ fontSize: '9.5px', color: 'var(--amber)', fontWeight: 700, letterSpacing: '.1em' }}>⚡ {restrictedCount} RESTRICTED</span>}
+        <span style={{ marginLeft: 'auto', fontSize: '9.5px', color: 'var(--text3)' }}>{new Date().toLocaleTimeString()}</span>
       </div>
-      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid #141e16' }}>
+      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>
         <button className={`news-tab ${tab==='alerts'?'active':''}`} onClick={() => setTab('alerts')}
-          style={tab==='alerts'&&alerts.length>0?{color:'#ff1a3e',borderColor:'#ff1a3e44'}:{}}>
-          ALERTS <span style={{ fontSize: '7px', color: '#2a3e2e' }}>{alerts.length}</span>
+          style={tab==='alerts'&&alerts.length>0?{color:'var(--red)',borderColor:'var(--red)44'}:{}}>
+          ALERTS <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{alerts.length}</span>
         </button>
         <button className={`news-tab ${tab==='regions'?'active':''}`} onClick={() => setTab('regions')}>
-          ALL FIRS <span style={{ fontSize: '7px', color: '#2a3e2e' }}>{statuses.length}</span>
+          ALL FIRS <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{statuses.length}</span>
         </button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'alerts' && alerts.length === 0 && (
-          <div style={{ padding: '12px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.1em' }}>// ALL MONITORED FIRS NORMAL</div>
+          <div style={{ padding: '12px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// ALL MONITORED FIRS NORMAL</div>
         )}
         {tab === 'alerts' && alerts.map((a: NOTAMAlert) => (
-          <div key={a.id} style={{ padding: '5px 8px', borderBottom: '1px solid #0d120e', display: 'flex', gap: 5 }}>
+          <div key={a.id} style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 5 }}>
             <div style={{ width: 2, background: SEV_COL[a.severity], flexShrink: 0, alignSelf: 'stretch', boxShadow: `0 0 4px ${SEV_COL[a.severity]}88` }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                <span style={{ fontSize: '7px', color: SEV_COL[a.severity], fontWeight: 700, border: `1px solid ${SEV_COL[a.severity]}44`, padding: '0 3px', letterSpacing: '.08em' }}>{a.severity.toUpperCase()}</span>
-                <span style={{ fontSize: '9px', fontWeight: 700, color: '#c0dcc4' }}>{a.icao}</span>
-                <span style={{ fontSize: '7.5px', color: '#4a6a50' }}>|</span>
-                <span style={{ fontSize: '7.5px', color: '#6a8aaa' }}>{a.country}</span>
-                <span style={{ fontSize: '7px', color: '#4a6a50', border: '1px solid #141e16', padding: '0 3px', marginLeft: 'auto' }}>{a.type}</span>
+                <span style={{ fontSize: '9.5px', color: SEV_COL[a.severity], fontWeight: 700, border: `1px solid ${SEV_COL[a.severity]}44`, padding: '0 3px', letterSpacing: '.08em' }}>{a.severity.toUpperCase()}</span>
+                <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text1)' }}>{a.icao}</span>
+                <span style={{ fontSize: '10px', color: 'var(--text2)' }}>|</span>
+                <span style={{ fontSize: '10px', color: 'var(--text2)' }}>{a.country}</span>
+                <span style={{ fontSize: '9.5px', color: 'var(--text2)', border: '1px solid var(--border)', padding: '0 3px', marginLeft: 'auto' }}>{a.type}</span>
               </div>
-              <div style={{ fontSize: '8.5px', color: '#6a8aaa', lineHeight: 1.5 }}>{a.message}</div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 2, fontSize: '7.5px', color: '#2a3e2e' }}>
-                <span>Live: <b style={{ color: '#c0dcc4' }}>{a.liveCount}</b></span>
-                <span>Baseline: <b style={{ color: '#4a6a50' }}>~{a.baseline}</b></span>
+              <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.5 }}>{a.message}</div>
+              <div style={{ display: 'flex', gap: 8, marginTop: 2, fontSize: '10px', color: 'var(--text3)' }}>
+                <span>Live: <b style={{ color: 'var(--text1)' }}>{a.liveCount}</b></span>
+                <span>Baseline: <b style={{ color: 'var(--text2)' }}>~{a.baseline}</b></span>
                 <span style={{ color: SEV_COL[a.severity] }}>▼ {a.dropPct}% below normal</span>
               </div>
             </div>
           </div>
         ))}
         {tab === 'regions' && statuses.map((s: FIRStatus) => (
-          <div key={s.icao} style={{ padding: '4px 8px', borderBottom: '1px solid #0d120e', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div key={s.icao} style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 5, height: 5, borderRadius: '50%', background: STATUS_COL[s.status], flexShrink: 0, boxShadow: `0 0 4px ${STATUS_COL[s.status]}66` }} />
-            <span style={{ fontSize: 8.5, fontWeight: 700, color: '#8aac90', minWidth: 40 }}>{s.icao}</span>
-            <span style={{ fontSize: 8, color: '#4a6a50', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.country}</span>
-            <span style={{ fontSize: '7px', color: STATUS_COL[s.status], fontWeight: 700, letterSpacing: '.06em', minWidth: 60, textAlign: 'right' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text1)', minWidth: 40 }}>{s.icao}</span>
+            <span style={{ fontSize: 10.5, color: 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.country}</span>
+            <span style={{ fontSize: '9.5px', color: STATUS_COL[s.status], fontWeight: 700, letterSpacing: '.06em', minWidth: 60, textAlign: 'right' }}>
               {s.status.toUpperCase()}
             </span>
-            <span style={{ fontSize: '7.5px', color: '#1a2e1e', fontVariantNumeric: 'tabular-nums', minWidth: 24, textAlign: 'right' }}>{s.liveCount}</span>
+            <span style={{ fontSize: '10px', color: 'var(--text3)', fontVariantNumeric: 'tabular-nums', minWidth: 24, textAlign: 'right' }}>{s.liveCount}</span>
           </div>
         ))}
       </div>
@@ -1498,26 +1546,31 @@ export function CryptoPanel() {
     }
   }, [])
 
-  useEffect(() => { load(); const t = window.setInterval(load, 60_000); return () => clearInterval(t) }, [load])
+  useEffect(() => {
+    load()
+    const t = window.setInterval(load, 60_000)
+    const unsub = onGlobalReload(load)
+    return () => { clearInterval(t); unsub() }
+  }, [load])
 
-  if (loading && !data.length) return <div style={{ padding: '8px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.12em' }}>// LOADING…</div>
+  if (loading && !data.length) return <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// LOADING…</div>
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
       {data.map(d => {
         const pos = d.change >= 0
         const price = d.price >= 1 ? d.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : d.price.toFixed(4)
         return (
-          <div key={d.sym} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 10px', borderBottom: '1px solid #141e16', borderLeft: '2px solid transparent', transition: 'all .1s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,255,136,0.04)'; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'rgba(0,255,136,0.18)' }}
+          <div key={d.sym} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 10px', borderBottom: '1px solid var(--border)', borderLeft: '2px solid transparent', transition: 'all .1s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)'; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'var(--accent)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ''; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'transparent' }}
           >
             <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#c0dcc4' }}>{d.sym}</div>
-              <div style={{ fontSize: '7.5px', color: '#2a3e2e' }}>crypto · USD</div>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text1)' }}>{d.sym}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text3)' }}>crypto · USD</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '10px', color: '#8aac90', fontVariantNumeric: 'tabular-nums' }}>${price}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end', fontSize: '8px', color: pos ? '#00ff88' : '#ff1a3e' }}>
+              <div style={{ fontSize: '12.5px', color: 'var(--text1)', fontVariantNumeric: 'tabular-nums' }}>${price}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 2, justifyContent: 'flex-end', fontSize: '10.5px', color: pos ? 'var(--accent)' : 'var(--red)' }}>
                 {pos ? <TrendingUp size={7} /> : <TrendingDown size={7} />}
                 {pos ? '+' : ''}{d.change.toFixed(2)}%
               </div>
@@ -1565,9 +1618,14 @@ export function ForexPanel() {
     }
   }, [])
 
-  useEffect(() => { load(); const t = window.setInterval(load, 120_000); return () => clearInterval(t) }, [load])
+  useEffect(() => {
+    load()
+    const t = window.setInterval(load, 120_000)
+    const unsub = onGlobalReload(load)
+    return () => { clearInterval(t); unsub() }
+  }, [load])
 
-  if (loading && !Object.keys(rates).length) return <div style={{ padding: '8px 10px', fontSize: '9px', color: '#2a3e2e', letterSpacing: '.12em' }}>// LOADING…</div>
+  if (loading && !Object.keys(rates).length) return <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// LOADING…</div>
 
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -1580,16 +1638,16 @@ export function ForexPanel() {
         if (!rate) return null
         const decimals = rate > 10 ? 2 : rate > 1 ? 4 : 4
         return (
-          <div key={pair} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 10px', borderBottom: '1px solid #141e16', borderLeft: '2px solid transparent', transition: 'all .1s' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,255,136,0.04)'; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'rgba(0,255,136,0.18)' }}
+          <div key={pair} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 10px', borderBottom: '1px solid var(--border)', borderLeft: '2px solid transparent', transition: 'all .1s' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)'; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'var(--accent)' }}
             onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ''; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'transparent' }}
           >
             <div>
-              <div style={{ fontSize: '10px', fontWeight: 700, color: '#c0dcc4' }}>{flag} {pair}</div>
-              <div style={{ fontSize: '7.5px', color: '#2a3e2e' }}>forex · spot</div>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text1)' }}>{flag} {pair}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text3)' }}>forex · spot</div>
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '10px', color: '#8aac90', fontVariantNumeric: 'tabular-nums' }}>{rate.toFixed(decimals)}</div>
+              <div style={{ fontSize: '12.5px', color: 'var(--text1)', fontVariantNumeric: 'tabular-nums' }}>{rate.toFixed(decimals)}</div>
             </div>
           </div>
         )
@@ -1600,30 +1658,30 @@ export function ForexPanel() {
 
 // ── Live Streams Panel ────────────────────────────────────────────────────────
 const LIVE_STREAM_REGIONS = [
-  { region: 'Americas', color: '#ff1a3e', streams: [
+  { region: 'Americas', color: 'var(--red)', streams: [
     { id: 'cnn',      label: 'CNN',       src: 'https://www.youtube.com/embed/wq4Fb36aA2k?autoplay=1&mute=0',                                    title: 'CNN Live' },
     { id: 'stream2',  label: 'ABC',       src: 'https://www.youtube.com/embed/iipR5yUp36o?autoplay=1&mute=0',                                   title: 'ABC News Live' },
     { id: 'nbc',      label: 'NBC',       src: 'https://www.youtube.com/embed/SRYdE7zQBmg?autoplay=1&mute=0',                                   title: 'NBC News Now' },
     { id: 'cspan',    label: 'C-SPAN',    src: 'https://www.youtube.com/embed/DAPkHRRydr8?autoplay=1&mute=0',                                   title: 'C-SPAN Live' },
   ]},
-  { region: 'Europe', color: '#00ff88', streams: [
+  { region: 'Europe', color: 'var(--accent)', streams: [
     { id: 'bbcworld', label: 'BBC',       src: 'https://www.youtube.com/embed/w_Ma8oQLmSM?autoplay=1&mute=0',                                   title: 'BBC World News' },
     { id: 'euronews', label: 'EURO',      src: 'https://www.youtube.com/embed/3uVBkOSAZ4E?autoplay=1&mute=0',                                   title: 'Euronews Live' },
     { id: 'france24', label: 'FR24',      src: 'https://www.youtube.com/embed/h3MuIUNCCLI?autoplay=1&mute=0',                                   title: 'France 24 English' },
     { id: 'dwnews',   label: 'DW',        src: 'https://www.youtube.com/embed/mGnFE0-VHgw?autoplay=1&mute=0',                                   title: 'DW News Live' },
   ]},
-  { region: 'MENA', color: '#ffaa00', streams: [
+  { region: 'MENA', color: 'var(--amber)', streams: [
     { id: 'aljazeng', label: 'AJE',       src: 'https://www.youtube.com/embed/Z_8fVI7xuYo?autoplay=1&mute=0',                                   title: 'Al Jazeera English' },
     { id: 'aljazeera',label: 'AJA',       src: 'https://www.youtube.com/embed/hvFpW7QMPFE?autoplay=1&mute=0',                                   title: 'Al Jazeera Arabic' },
     { id: 'trtworld', label: 'TRT',       src: 'https://www.youtube.com/embed/K_pJJa5p-aw?autoplay=1&mute=0',                                   title: 'TRT World Live' },
   ]},
-  { region: 'Asia', color: '#00ff88', streams: [
+  { region: 'Asia', color: 'var(--accent)', streams: [
     { id: 'nhkworld', label: 'NHK',       src: 'https://www.youtube.com/embed/CTEhRdPXlKQ?autoplay=1&mute=0',                                   title: 'NHK World Japan' },
     { id: 'cgtn',     label: 'CGTN',      src: 'https://www.youtube.com/embed/ljMqpMfNgpU?autoplay=1&mute=0',                                   title: 'CGTN News Live' },
     { id: 'arirang',  label: 'ARIAN',     src: 'https://www.youtube.com/embed/h4mFKOz5ZtA?autoplay=1&mute=0',                                   title: 'Arirang Korea' },
     { id: 'wion',     label: 'WION',      src: 'https://www.youtube.com/embed/pSAPFBRbpz0?autoplay=1&mute=0',                                   title: 'WION India' },
   ]},
-  { region: 'Africa', color: '#ff6600', streams: [
+  { region: 'Africa', color: 'var(--amber)', streams: [
     { id: 'africaews',label: 'AFRC',      src: 'https://www.youtube.com/embed/XjW7iE2yy2c?autoplay=1&mute=0',                                   title: 'Africa News' },
     { id: 'aljaafr',  label: 'AJ-AFR',    src: 'https://www.youtube.com/embed/b_fzBSSwgQg?autoplay=1&mute=0',                                   title: 'Al Jazeera Africa' },
   ]},
@@ -1647,27 +1705,28 @@ export function CNNLivePanel() {
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#000' }}>
       {/* Region tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #141e16', overflowX: 'auto' }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
         {LIVE_STREAM_REGIONS.map(r => (
           <button key={r.region} onClick={() => selectRegion(r)} style={{
-            flexShrink: 0, padding: '4px 8px', fontSize: 7, fontWeight: 700, letterSpacing: '.1em',
+            flexShrink: 0, padding: '5px 10px', fontSize: 12.5, fontWeight: 600, letterSpacing: '.06em',
             border: 'none', borderBottom: `2px solid ${activeRegion === r.region ? r.color : 'transparent'}`,
             background: 'transparent',
-            color: activeRegion === r.region ? r.color : '#2a3e2e',
-            cursor: 'pointer', fontFamily: 'monospace', transition: 'all .12s',
+            color: activeRegion === r.region ? r.color : 'var(--text3)',
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all .12s',
           }}>{r.region.toUpperCase()}</button>
         ))}
       </div>
       {/* Stream tabs for current region */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 6px', borderBottom: '1px solid #141e16', flexWrap: 'wrap' }}>
-        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#ff1a3e', display: 'inline-block', animation: 'pulse 1.5s infinite', flexShrink: 0 }} />
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 6px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)', display: 'inline-block', animation: 'pulse 1.5s infinite', flexShrink: 0 }} />
         {region.streams.map(s => (
           <button key={s.id} onClick={() => setActiveId(s.id)} style={{
-            padding: '1px 6px', fontSize: 7, fontWeight: 700, letterSpacing: '.1em',
-            border: `1px solid ${activeId === s.id ? region.color + '88' : '#141e16'}`,
+            padding: '3px 9px', fontSize: 12.5, fontWeight: 600, letterSpacing: '.04em',
+            borderRadius: 'var(--r-pill)',
+            border: `1px solid ${activeId === s.id ? region.color + '88' : 'var(--border)'}`,
             background: activeId === s.id ? region.color + '22' : 'transparent',
-            color: activeId === s.id ? region.color : '#2a3e2e',
-            cursor: 'pointer', fontFamily: 'monospace', transition: 'all .12s',
+            color: activeId === s.id ? region.color : 'var(--text3)',
+            cursor: 'pointer', fontFamily: 'inherit', transition: 'all .12s',
           }}>{s.label}</button>
         ))}
       </div>
@@ -1679,6 +1738,132 @@ export function CNNLivePanel() {
         allowFullScreen
         style={{ flex: 1, border: 'none', minHeight: 210, width: '100%' }}
       />
+    </div>
+  )
+}
+
+// ── US Webcam Grid Panel ──────────────────────────────────────────────────────
+type WebcamSource = 'skyline' | 'earthcam'
+
+interface WebcamEntry {
+  id: string
+  label: string
+  state: string
+  source: WebcamSource
+  url: string
+}
+
+const US_WEBCAMS: WebcamEntry[] = [
+  // ── SkylineWebcams ──
+  { id: 'sw-times-square',   label: 'Times Square',          state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/times-square.html' },
+  { id: 'sw-empire-state',   label: 'Empire State Building', state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/empire-state-building.html' },
+  { id: 'sw-nyc-skyline',    label: 'NYC Skyline',           state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/new-york-skyline.html' },
+  { id: 'sw-nyc-46th',       label: 'NYC — 46th Street',     state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/nyc-46th-street.html' },
+  { id: 'sw-broadway',       label: 'Broadway Billboards',   state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/new-york-city.html' },
+  { id: 'sw-las-vegas',      label: 'Las Vegas Strip',       state: 'NV', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/nevada/las-vegas/las-vegas.html' },
+  { id: 'sw-the-strat',      label: 'The Strat, Las Vegas',  state: 'NV', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/nevada/las-vegas/the-strat.html' },
+  { id: 'sw-laguna',         label: 'Laguna Beach',          state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/laguna-beach/laguna-beach.html' },
+  { id: 'sw-santa-barbara',  label: 'Santa Barbara',         state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/santa-barbara/santa-barbara.html' },
+  { id: 'sw-encinitas',      label: 'Encinitas',             state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/encinitas/encinitas-california.html' },
+  { id: 'sw-miami',          label: 'Miami',                 state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/miami/miami.html' },
+  { id: 'sw-venetian',       label: 'Venetian Marina',       state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/miami/venetian-marina-biscayne-bay.html' },
+  { id: 'sw-fort-myers',     label: 'Fort Myers Beach',      state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/fort-myers-beach/fort-myers-beach.html' },
+  { id: 'sw-boston',         label: 'Boston Common',         state: 'MA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/massachusetts/boston/boston.html' },
+  { id: 'sw-philly',         label: 'Rittenhouse Square',    state: 'PA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/pennsylvania/philadelphia/rittenhouse-square-park.html' },
+  { id: 'sw-atlantic-city',  label: 'Atlantic City Boardwalk',state:'NJ', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-jersey/atlantic-city/atlantic-city-boardwalk.html' },
+  { id: 'sw-ocean-city',     label: 'Ocean City Boardwalk',  state: 'NJ', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-jersey/ocean-city/boardwalk.html' },
+  { id: 'sw-gatlinburg',     label: 'Gatlinburg',            state: 'TN', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/tennessee/gatlinburg/tennessee-gatlinburg.html' },
+  { id: 'sw-smoky-mtns',     label: 'Great Smoky Mountains', state: 'TN', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/tennessee/pigeon-forge/great-smoky-mountains.html' },
+  { id: 'sw-kahului',        label: 'Kahului, Maui',         state: 'HI', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/hawaii/maui/kahului.html' },
+  { id: 'sw-newport-or',     label: 'Yaquina Bay, Newport',  state: 'OR', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/oregon/newport/yaquina-bay-newport-oregon-coast.html' },
+  // ── EarthCam ──
+  { id: 'ec-times-square',   label: 'Times Square South 4K', state: 'NY', source: 'earthcam', url: 'https://www.earthcam.com/usa/newyork/timessquare/' },
+  { id: 'ec-vegas-strip',    label: 'Las Vegas Strip',       state: 'NV', source: 'earthcam', url: 'https://www.earthcam.com/usa/nevada/lasvegas/?cam=lasvegas' },
+  { id: 'ec-miami-south',    label: 'Miami South Beach',     state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/miamibeach/?cam=miamibeach' },
+  { id: 'ec-key-west',       label: 'Key West Sunset Pier',  state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/keywest/?cam=sunsetpier' },
+  { id: 'ec-new-orleans',    label: 'Bourbon Street',        state: 'LA', source: 'earthcam', url: 'https://www.earthcam.com/usa/louisiana/neworleans/bourbonstreet/?cam=catsmeow' },
+  { id: 'ec-chicago',        label: 'Chicago Navy Pier',     state: 'IL', source: 'earthcam', url: 'https://www.earthcam.com/usa/illinois/chicago/navypier/?cam=navypier' },
+  { id: 'ec-niagara',        label: 'Niagara Falls',         state: 'NY', source: 'earthcam', url: 'https://www.earthcam.com/usa/newyork/niagarafalls/?cam=niagarafalls' },
+  { id: 'ec-nashville',      label: 'Nashville Broadway',    state: 'TN', source: 'earthcam', url: 'https://www.earthcam.com/usa/tennessee/nashville/?cam=nashville' },
+  { id: 'ec-santa-monica',   label: 'Santa Monica Pier',     state: 'CA', source: 'earthcam', url: 'https://www.earthcam.com/usa/california/santamonica/?cam=samo' },
+  { id: 'ec-daytona',        label: 'Daytona Beach',         state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/daytonabeach/?cam=daytonabeach' },
+]
+
+const WEBCAM_STATES = ['All', ...Array.from(new Set(US_WEBCAMS.map(w => w.state))).sort()]
+
+const SOURCE_META: Record<WebcamSource, { label: string; color: string }> = {
+  skyline:  { label: 'SKYLINE',  color: 'var(--accent)' },
+  earthcam: { label: 'EARTHCAM', color: 'var(--amber)' },
+}
+
+export function USWebcamsPanel() {
+  const [state, setState]   = useState('All')
+  const [source, setSource] = useState<WebcamSource | 'All'>('All')
+
+  const filtered = US_WEBCAMS.filter(w =>
+    (state === 'All' || w.state === state) &&
+    (source === 'All' || w.source === source)
+  )
+
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      {/* Source filter */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>
+        <button onClick={() => setSource('All')} className={`news-tab ${source === 'All' ? 'active' : ''}`}>ALL</button>
+        {(Object.keys(SOURCE_META) as WebcamSource[]).map(s => (
+          <button key={s} onClick={() => setSource(s)}
+            className={`news-tab ${source === s ? 'active' : ''}`}
+            style={source === s ? { color: SOURCE_META[s].color, borderColor: SOURCE_META[s].color + '44' } : {}}
+          >{SOURCE_META[s].label}</button>
+        ))}
+        <span style={{ marginLeft: 'auto', fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.06em' }}>{filtered.length} CAMS</span>
+      </div>
+
+      {/* State filter */}
+      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
+        {WEBCAM_STATES.map(s => (
+          <button key={s} onClick={() => setState(s)}
+            className={`news-tab ${state === s ? 'active' : ''}`}
+            style={{ whiteSpace: 'nowrap' }}>{s}</button>
+        ))}
+      </div>
+
+      {/* Grid */}
+      <div style={{
+        flex: 1, overflowY: 'auto', display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(128px, 1fr))', gap: 6, padding: 6,
+      }}>
+        {filtered.map(w => {
+          const meta = SOURCE_META[w.source]
+          return (
+            <a key={w.id} href={w.url} target="_blank" rel="noopener noreferrer"
+              style={{
+                display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+                aspectRatio: '4 / 3', padding: 7,
+                border: '1px solid var(--border)', background: 'var(--surface2)',
+                textDecoration: 'none', cursor: 'pointer', transition: 'all .12s', position: 'relative',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = meta.color + '88'; (e.currentTarget as HTMLAnchorElement).style.background = 'var(--accent-soft)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLAnchorElement).style.background = 'var(--surface2)' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
+                <span style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '.06em', color: meta.color }}>{meta.label}</span>
+              </div>
+              <div>
+                <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text1)', lineHeight: 1.3 }}>{w.label}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
+                  <span style={{ fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.06em' }}>{w.state}</span>
+                  <ExternalLink size={8} style={{ color: 'var(--text3)', marginLeft: 'auto' }} />
+                </div>
+              </div>
+            </a>
+          )
+        })}
+        {filtered.length === 0 && (
+          <div style={{ gridColumn: '1 / -1', padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO CAMS FOR FILTER</div>
+        )}
+      </div>
     </div>
   )
 }
@@ -1700,6 +1885,7 @@ export function PanelContent({ id, crises, flights, panelState, onToggleLayer, d
     case 'nuclear':      return <NuclearPanel />
     case 'airspace':     return <AirspacePanel flights={flights} />
     case 'cnn':          return <CNNLivePanel />
+    case 'webcams':      return <USWebcamsPanel />
     case 'crypto':       return <CryptoPanel />
     case 'forex':        return <ForexPanel />
     case 'analyst':      return <AIAnalystPanel crises={crises} flights={flights} onGeoSearch={onGeoSearch} onCountryClick={onCountryClick} onToggleLayer={onToggleLayer} panelState={panelState} />
@@ -1711,6 +1897,197 @@ export function PanelContent({ id, crises, flights, panelState, onToggleLayer, d
       return syms ? <StockList symbols={syms} /> : null
     }
   }
+}
+
+// ── Global Economy Panel ──────────────────────────────────────────────────
+// All 249 countries/territories (ISO 3166-1) for World Bank lookup
+const ALL_COUNTRIES: { iso2: string; name: string }[] = [
+  {iso2:'AF',name:'Afghanistan'},{iso2:'AL',name:'Albania'},{iso2:'DZ',name:'Algeria'},{iso2:'AD',name:'Andorra'},{iso2:'AO',name:'Angola'},
+  {iso2:'AG',name:'Antigua and Barbuda'},{iso2:'AR',name:'Argentina'},{iso2:'AM',name:'Armenia'},{iso2:'AU',name:'Australia'},{iso2:'AT',name:'Austria'},
+  {iso2:'AZ',name:'Azerbaijan'},{iso2:'BS',name:'Bahamas'},{iso2:'BH',name:'Bahrain'},{iso2:'BD',name:'Bangladesh'},{iso2:'BB',name:'Barbados'},
+  {iso2:'BY',name:'Belarus'},{iso2:'BE',name:'Belgium'},{iso2:'BZ',name:'Belize'},{iso2:'BJ',name:'Benin'},{iso2:'BT',name:'Bhutan'},
+  {iso2:'BO',name:'Bolivia'},{iso2:'BA',name:'Bosnia and Herzegovina'},{iso2:'BW',name:'Botswana'},{iso2:'BR',name:'Brazil'},{iso2:'BN',name:'Brunei'},
+  {iso2:'BG',name:'Bulgaria'},{iso2:'BF',name:'Burkina Faso'},{iso2:'BI',name:'Burundi'},{iso2:'CV',name:'Cabo Verde'},{iso2:'KH',name:'Cambodia'},
+  {iso2:'CM',name:'Cameroon'},{iso2:'CA',name:'Canada'},{iso2:'CF',name:'Central African Republic'},{iso2:'TD',name:'Chad'},{iso2:'CL',name:'Chile'},
+  {iso2:'CN',name:'China'},{iso2:'CO',name:'Colombia'},{iso2:'KM',name:'Comoros'},{iso2:'CG',name:'Congo'},{iso2:'CD',name:'DR Congo'},
+  {iso2:'CR',name:'Costa Rica'},{iso2:'CI',name:'Côte d\'Ivoire'},{iso2:'HR',name:'Croatia'},{iso2:'CU',name:'Cuba'},{iso2:'CY',name:'Cyprus'},
+  {iso2:'CZ',name:'Czech Republic'},{iso2:'DK',name:'Denmark'},{iso2:'DJ',name:'Djibouti'},{iso2:'DM',name:'Dominica'},{iso2:'DO',name:'Dominican Republic'},
+  {iso2:'EC',name:'Ecuador'},{iso2:'EG',name:'Egypt'},{iso2:'SV',name:'El Salvador'},{iso2:'GQ',name:'Equatorial Guinea'},{iso2:'ER',name:'Eritrea'},
+  {iso2:'EE',name:'Estonia'},{iso2:'SZ',name:'Eswatini'},{iso2:'ET',name:'Ethiopia'},{iso2:'FJ',name:'Fiji'},{iso2:'FI',name:'Finland'},
+  {iso2:'FR',name:'France'},{iso2:'GA',name:'Gabon'},{iso2:'GM',name:'Gambia'},{iso2:'GE',name:'Georgia'},{iso2:'DE',name:'Germany'},
+  {iso2:'GH',name:'Ghana'},{iso2:'GR',name:'Greece'},{iso2:'GD',name:'Grenada'},{iso2:'GT',name:'Guatemala'},{iso2:'GN',name:'Guinea'},
+  {iso2:'GW',name:'Guinea-Bissau'},{iso2:'GY',name:'Guyana'},{iso2:'HT',name:'Haiti'},{iso2:'HN',name:'Honduras'},{iso2:'HU',name:'Hungary'},
+  {iso2:'IS',name:'Iceland'},{iso2:'IN',name:'India'},{iso2:'ID',name:'Indonesia'},{iso2:'IR',name:'Iran'},{iso2:'IQ',name:'Iraq'},
+  {iso2:'IE',name:'Ireland'},{iso2:'IL',name:'Israel'},{iso2:'IT',name:'Italy'},{iso2:'JM',name:'Jamaica'},{iso2:'JP',name:'Japan'},
+  {iso2:'JO',name:'Jordan'},{iso2:'KZ',name:'Kazakhstan'},{iso2:'KE',name:'Kenya'},{iso2:'KI',name:'Kiribati'},{iso2:'KP',name:'North Korea'},
+  {iso2:'KR',name:'South Korea'},{iso2:'KW',name:'Kuwait'},{iso2:'KG',name:'Kyrgyzstan'},{iso2:'LA',name:'Laos'},{iso2:'LV',name:'Latvia'},
+  {iso2:'LB',name:'Lebanon'},{iso2:'LS',name:'Lesotho'},{iso2:'LR',name:'Liberia'},{iso2:'LY',name:'Libya'},{iso2:'LI',name:'Liechtenstein'},
+  {iso2:'LT',name:'Lithuania'},{iso2:'LU',name:'Luxembourg'},{iso2:'MG',name:'Madagascar'},{iso2:'MW',name:'Malawi'},{iso2:'MY',name:'Malaysia'},
+  {iso2:'MV',name:'Maldives'},{iso2:'ML',name:'Mali'},{iso2:'MT',name:'Malta'},{iso2:'MH',name:'Marshall Islands'},{iso2:'MR',name:'Mauritania'},
+  {iso2:'MU',name:'Mauritius'},{iso2:'MX',name:'Mexico'},{iso2:'FM',name:'Micronesia'},{iso2:'MD',name:'Moldova'},{iso2:'MC',name:'Monaco'},
+  {iso2:'MN',name:'Mongolia'},{iso2:'ME',name:'Montenegro'},{iso2:'MA',name:'Morocco'},{iso2:'MZ',name:'Mozambique'},{iso2:'MM',name:'Myanmar'},
+  {iso2:'NA',name:'Namibia'},{iso2:'NR',name:'Nauru'},{iso2:'NP',name:'Nepal'},{iso2:'NL',name:'Netherlands'},{iso2:'NZ',name:'New Zealand'},
+  {iso2:'NI',name:'Nicaragua'},{iso2:'NE',name:'Niger'},{iso2:'NG',name:'Nigeria'},{iso2:'MK',name:'North Macedonia'},{iso2:'NO',name:'Norway'},
+  {iso2:'OM',name:'Oman'},{iso2:'PK',name:'Pakistan'},{iso2:'PW',name:'Palau'},{iso2:'PA',name:'Panama'},{iso2:'PG',name:'Papua New Guinea'},
+  {iso2:'PY',name:'Paraguay'},{iso2:'PE',name:'Peru'},{iso2:'PH',name:'Philippines'},{iso2:'PL',name:'Poland'},{iso2:'PT',name:'Portugal'},
+  {iso2:'QA',name:'Qatar'},{iso2:'RO',name:'Romania'},{iso2:'RU',name:'Russia'},{iso2:'RW',name:'Rwanda'},{iso2:'KN',name:'Saint Kitts and Nevis'},
+  {iso2:'LC',name:'Saint Lucia'},{iso2:'VC',name:'Saint Vincent'},{iso2:'WS',name:'Samoa'},{iso2:'SM',name:'San Marino'},{iso2:'ST',name:'São Tomé and Príncipe'},
+  {iso2:'SA',name:'Saudi Arabia'},{iso2:'SN',name:'Senegal'},{iso2:'RS',name:'Serbia'},{iso2:'SC',name:'Seychelles'},{iso2:'SL',name:'Sierra Leone'},
+  {iso2:'SG',name:'Singapore'},{iso2:'SK',name:'Slovakia'},{iso2:'SI',name:'Slovenia'},{iso2:'SB',name:'Solomon Islands'},{iso2:'SO',name:'Somalia'},
+  {iso2:'ZA',name:'South Africa'},{iso2:'SS',name:'South Sudan'},{iso2:'ES',name:'Spain'},{iso2:'LK',name:'Sri Lanka'},{iso2:'SD',name:'Sudan'},
+  {iso2:'SR',name:'Suriname'},{iso2:'SE',name:'Sweden'},{iso2:'CH',name:'Switzerland'},{iso2:'SY',name:'Syria'},{iso2:'TW',name:'Taiwan'},
+  {iso2:'TJ',name:'Tajikistan'},{iso2:'TZ',name:'Tanzania'},{iso2:'TH',name:'Thailand'},{iso2:'TL',name:'Timor-Leste'},{iso2:'TG',name:'Togo'},
+  {iso2:'TO',name:'Tonga'},{iso2:'TT',name:'Trinidad and Tobago'},{iso2:'TN',name:'Tunisia'},{iso2:'TR',name:'Turkey'},{iso2:'TM',name:'Turkmenistan'},
+  {iso2:'TV',name:'Tuvalu'},{iso2:'UG',name:'Uganda'},{iso2:'UA',name:'Ukraine'},{iso2:'AE',name:'UAE'},{iso2:'GB',name:'United Kingdom'},
+  {iso2:'US',name:'United States'},{iso2:'UY',name:'Uruguay'},{iso2:'UZ',name:'Uzbekistan'},{iso2:'VU',name:'Vanuatu'},{iso2:'VE',name:'Venezuela'},
+  {iso2:'VN',name:'Vietnam'},{iso2:'YE',name:'Yemen'},{iso2:'ZM',name:'Zambia'},{iso2:'ZW',name:'Zimbabwe'},
+  {iso2:'HK',name:'Hong Kong'},{iso2:'MO',name:'Macau'},{iso2:'PS',name:'Palestine'},{iso2:'XK',name:'Kosovo'},
+]
+
+export function GlobalEconomyPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
+  const [selected, setSelected] = useState<string | null>(null)
+  const [econData, setEconData] = useState<CountryEconData | null>(null)
+  const [econLoading, setEconLoading] = useState(false)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    if (!selected) { setEconData(null); return }
+    setEconLoading(true)
+    fetchCountryEcon(selected).then(d => { setEconData(d); setEconLoading(false) }).catch(() => setEconLoading(false))
+  }, [selected])
+
+  // Merge: trade profiles first (with balance), then all other countries
+  const tradeMap = new Map(TRADE_PROFILES.map(t => [t.iso2, t]))
+  const allEntries = ALL_COUNTRIES.map(c => ({ ...c, trade: tradeMap.get(c.iso2) ?? null }))
+  // Sort: countries with trade profiles first (by balance), then alphabetical
+  const sorted = allEntries.sort((a, b) => {
+    if (a.trade && !b.trade) return -1
+    if (!a.trade && b.trade) return 1
+    if (a.trade && b.trade) return (b.trade.tradeBalance ?? 0) - (a.trade.tradeBalance ?? 0)
+    return a.name.localeCompare(b.name)
+  })
+  const filtered = search.trim()
+    ? sorted.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.iso2.toLowerCase().includes(search.toLowerCase()))
+    : sorted
+  const maxBal = Math.max(...TRADE_PROFILES.map(t => Math.abs(t.tradeBalance ?? 0)), 1)
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder={`Search ${ALL_COUNTRIES.length} countries…`}
+          style={{
+            width: '100%', background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--text1)',
+            padding: '4px 6px', fontSize: 10.5, fontFamily: 'inherit', outline: 'none',
+          }}
+        />
+      </div>
+      <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
+        {filtered.length} countries · {TRADE_PROFILES.length} with trade profiles · Click for World Bank data
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
+        {filtered.map(c => {
+          const t = c.trade
+          const isOpen = selected === c.name
+          const bal = t?.tradeBalance ?? null
+          const balColor = bal != null ? (bal >= 0 ? 'var(--accent)' : 'var(--red)') : 'var(--text3)'
+          const barW = bal != null ? Math.abs(bal) / maxBal * 100 : 0
+          return (
+            <div key={c.iso2} style={{ borderBottom: '1px solid var(--border)', marginBottom: 1 }}>
+              <button
+                onClick={() => { setSelected(isOpen ? null : c.name); onCountryClick?.(c.name) }}
+                style={{
+                  width: '100%', textAlign: 'left', background: isOpen ? 'var(--accent-soft)' : 'none',
+                  border: 'none', padding: '3px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
+                }}
+              >
+                <span style={{ fontSize: 9.5, fontWeight: 700, color: t ? 'var(--accent)' : 'var(--text3)', width: 20, flexShrink: 0 }}>{c.iso2}</span>
+                <span style={{ fontSize: 10.5, color: t ? 'var(--text1)' : 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                {bal != null && (
+                  <>
+                    <div style={{ width: 50, height: 3, background: 'var(--border)', borderRadius: 1, overflow: 'hidden', flexShrink: 0 }}>
+                      <div style={{ width: `${barW}%`, height: '100%', background: balColor, borderRadius: 1 }} />
+                    </div>
+                    <span style={{ fontSize: 9, color: balColor, fontWeight: 700, width: 38, textAlign: 'right', flexShrink: 0 }}>
+                      {bal >= 0 ? '+' : ''}{bal}B
+                    </span>
+                  </>
+                )}
+              </button>
+              {isOpen && (
+                <div style={{ padding: '4px 0 6px 20px' }}>
+                  {t && (
+                    <>
+                      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 4 }}>
+                        {t.tradeToGDP != null && (
+                          <span style={{ fontSize: 9, padding: '1px 4px', background: 'var(--accent-soft)', border: '1px solid var(--accent)22', color: 'var(--accent)' }}>
+                            Trade/GDP {t.tradeToGDP}%
+                          </span>
+                        )}
+                        <span style={{ fontSize: 9, padding: '1px 4px', background: 'var(--amber-soft)', border: '1px solid var(--amber)22', color: 'var(--amber)' }}>
+                          {t.currency}
+                        </span>
+                        <span style={{ fontSize: 9, padding: '1px 4px', background: 'rgba(170,136,255,0.08)', border: '1px solid #aa88ff22', color: '#aa88ff' }}>
+                          {t.incomeGroup}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 9, color: 'var(--text2)', marginBottom: 2 }}>TOP EXPORTS</div>
+                      {t.topExports.slice(0, 4).map(e => (
+                        <div key={e.product} style={{ fontSize: 9.5, color: 'var(--text2)', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{e.product}</span><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{e.pct}%</span>
+                        </div>
+                      ))}
+                      <div style={{ fontSize: 9, color: 'var(--text2)', marginTop: 3, marginBottom: 2 }}>TOP PARTNERS</div>
+                      {t.topExportPartners.slice(0, 3).map(p => (
+                        <div key={p.country} style={{ fontSize: 9.5, color: 'var(--text2)', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{p.country}</span><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{p.pct}%</span>
+                        </div>
+                      ))}
+                      {t.dependencies && t.dependencies.length > 0 && (
+                        <>
+                          <div style={{ fontSize: 9, color: 'var(--red)', marginTop: 3, marginBottom: 2 }}>DEPENDENCIES</div>
+                          {t.dependencies.slice(0, 3).map(d => (
+                            <div key={d} style={{ fontSize: 9, color: 'var(--text2)' }}>▸ {d}</div>
+                          ))}
+                        </>
+                      )}
+                    </>
+                  )}
+                  {/* World Bank live data */}
+                  {econLoading && <div style={{ fontSize: 9.5, color: 'var(--text2)', marginTop: 4, fontStyle: 'italic' }}>Loading World Bank data…</div>}
+                  {econData && econData.indicators.length > 0 && (() => {
+                    const groups = groupIndicators(econData.indicators)
+                    return Object.entries(groups).map(([groupName, indicators]) => (
+                      <div key={groupName} style={{ marginTop: 4 }}>
+                        <div style={{ fontSize: 9, color: 'var(--text2)', letterSpacing: '.08em', marginBottom: 2 }}>{groupName}</div>
+                        {indicators.map(ind => {
+                          if (ind.value == null) return null
+                          const formatted = formatEconValue(ind.id, ind.value)
+                          const isGrowth = ind.id.includes('.ZG') || ind.id === 'SP.POP.GROW'
+                          let valColor = 'var(--accent)'
+                          if (isGrowth) valColor = ind.value >= 0 ? 'var(--accent)' : 'var(--red)'
+                          return (
+                            <div key={ind.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5, padding: '0.5px 0' }}>
+                              <span style={{ color: 'var(--text2)' }}>{ind.label}</span>
+                              <span style={{ color: valColor, fontWeight: 700 }}>{formatted} <span style={{ fontSize: 8, color: 'var(--text2)' }}>{ind.year}</span></span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    ))
+                  })()}
+                  {!t && !econLoading && !econData && (
+                    <div style={{ fontSize: 9.5, color: 'var(--text2)', fontStyle: 'italic' }}>Click to load World Bank economic data</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 // ── Unified Markets Panel ─────────────────────────────────────────────────
@@ -1727,7 +2104,7 @@ const MARKET_TABS = [
   { id: 'exchanges',   label: 'EXC' },
 ] as const
 
-function MarketsPanel() {
+export function MarketsPanel() {
   const [activeTab, setActiveTab] = useState<string>('indices')
 
   const renderContent = () => {
@@ -1745,13 +2122,13 @@ function MarketsPanel() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Tab bar — scrollable row */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #141e16', flexShrink: 0, overflowX: 'auto', gap: 0 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0, overflowX: 'auto', gap: 0 }}>
         {MARKET_TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-            padding: '4px 7px', fontSize: 7, fontWeight: 700, letterSpacing: '.08em',
-            background: activeTab === t.id ? 'rgba(0,255,136,0.08)' : 'transparent',
-            border: 'none', borderBottom: activeTab === t.id ? '2px solid #00ff88' : '2px solid transparent',
-            color: activeTab === t.id ? '#00ff88' : '#2a3e2e', cursor: 'pointer',
+            padding: '4px 7px', fontSize: 9.5, fontWeight: 700, letterSpacing: '.08em',
+            background: activeTab === t.id ? 'var(--accent-soft)' : 'transparent',
+            border: 'none', borderBottom: activeTab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
+            color: activeTab === t.id ? 'var(--accent)' : 'var(--text3)', cursor: 'pointer',
             transition: 'all .12s', flexShrink: 0, fontFamily: 'inherit',
           }}>{t.label}</button>
         ))}
@@ -1764,8 +2141,50 @@ function MarketsPanel() {
   )
 }
 
+// ── Watchlist card — rule-based trajectory forecast, rendered inside AIAnalystPanel ──
+function WatchlistCard({ entry, onExplain }: { entry: TrajectoryEntry; onExplain: () => void }) {
+  const Icon = entry.trend === 'rising' ? TrendingUp : entry.trend === 'falling' ? TrendingDown : Minus
+  const color = entry.trend === 'rising' ? 'var(--red)' : entry.trend === 'falling' ? 'var(--green)' : '#7b83a8'
+  const bars = Math.max(1, Math.min(5, Math.round(entry.velocity / 20)))
+  return (
+    <div style={{
+      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.25)',
+      borderRadius: 'var(--r-md)', padding: '7px 9px',
+      display: 'flex', flexDirection: 'column', gap: 4,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <Icon size={12} color={color} style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#e6e9f5', flex: 1 }}>{entry.country}</span>
+        <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <span key={i} style={{
+              width: 3, height: i * 2 + 2, borderRadius: 1,
+              background: i <= bars ? color : 'rgba(129,140,248,0.2)',
+            }} />
+          ))}
+        </div>
+        <span style={{ fontSize: 9, color, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+          {entry.trend}
+        </span>
+      </div>
+      <div style={{ fontSize: 10, color: '#9aa3c7', lineHeight: 1.5 }}>{entry.reason}</div>
+      <button
+        onClick={onExplain}
+        style={{
+          alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
+          color: '#818cf8', fontSize: 9.5, letterSpacing: '.02em', padding: 0, fontFamily: 'inherit',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#c7d2fe' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#818cf8' }}
+      >
+        Explain this trend →
+      </button>
+    </div>
+  )
+}
+
 // ── AI Analyst Panel (OpenRouter) ─────────────────────────────────────────
-function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, onToggleLayer, panelState }: {
+export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, onToggleLayer, panelState }: {
   crises: CrisisEvent[]; flights: Flight[]
   onGeoSearch?: (q: string) => void
   onCountryClick?: (country: string) => void
@@ -1778,13 +2197,62 @@ function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, onToggle
   const [history, setHistory]     = useState<DSMessage[]>([])
   const [error, setError]         = useState('')
   const [model, setModel]         = useState(DEFAULT_MODEL)
+  const [sessionId, setSessionId] = useState(() => newSessionId())
+  const [showHistory, setShowHistory] = useState(false)
+  const [pastSessions, setPastSessions] = useState<ChatSession[]>([])
   const abortRef  = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const hasKey    = !!import.meta.env.VITE_OPENROUTER_KEY
 
+  // Rule-based trajectory scoring — recomputes automatically as crises/flights refresh.
+  // No prompt required; this is what makes the panel proactive rather than ask-only.
+  const trajectories = useMemo(() => computeTrajectories(crises, flights), [crises, flights])
+
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [response])
+
+  // Persist the running conversation to localStorage after each turn
+  useEffect(() => {
+    if (history.length === 0) return
+    saveSession({
+      id: sessionId,
+      startedAt: Number(sessionId.split('-')[0]) || Date.now(),
+      updatedAt: Date.now(),
+      model,
+      messages: history,
+    })
+  }, [history, sessionId, model])
+
+  function openHistory() {
+    setPastSessions(listSessions())
+    setShowHistory(true)
+  }
+
+  function loadSession(s: ChatSession) {
+    setHistory(s.messages)
+    setModel(s.model)
+    setSessionId(s.id)
+    const lastAssistant = [...s.messages].reverse().find(m => m.role === 'assistant')
+    setResponse(lastAssistant?.content ?? '')
+    setShowHistory(false)
+    setError('')
+  }
+
+  function startNewSession() {
+    setHistory([])
+    setResponse('')
+    setError('')
+    setSessionId(newSessionId())
+    setShowHistory(false)
+  }
+
+  function removeSession(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    deleteSession(id)
+    setPastSessions(listSessions())
+    if (id === sessionId) startNewSession()
+  }
 
   async function ask(prompt: string) {
     if (!prompt.trim() || streaming) return
@@ -1793,16 +2261,16 @@ function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, onToggle
     setStreaming(true)
     abortRef.current = new AbortController()
 
-    const context  = buildDashboardContext(crises, flights)
+    const context  = buildDashboardContext(crises, flights, trajectories)
     const sysMsg: DSMessage = {
       role: 'system',
-      content: `You are an elite intelligence analyst embedded in a real-time global surveillance dashboard called WORLDVIEW. You have access to live data and should provide concise, actionable analysis. Use a professional intelligence briefing tone. Format with clear sections when appropriate. Be direct and fact-focused.
+      content: `You are an elite intelligence analyst embedded in a real-time global surveillance dashboard called WORLDVIEW. You have access to live data, including a rule-based TRAJECTORY SIGNALS section (computed locally, not by you) that tracks whether each region's crisis activity is rising, falling, or flat over the last 3 days vs. the prior week. Ground your analysis in these computed trajectories when discussing risk or escalation — explicitly distinguish current state ("X active events") from direction of change ("rising/falling, because..."). Provide concise, actionable analysis. Use a professional intelligence briefing tone. Format with clear sections when appropriate. Be direct and fact-focused.
 
 IMPORTANT: You can execute dashboard commands by including them in your response. Commands are on their own line:
 
 [FLY:location] — Fly the map to a location (city, country, coordinates). Example: [FLY:Tehran, Iran]
 [COUNTRY:name] — Open the country intelligence drawer. Example: [COUNTRY:Iran]
-[LAYER:id:on] or [LAYER:id:off] — Toggle a map layer. Layer IDs: flights, crises, wildfires, military, nuclear, sanctions, cameras, infrastructure, airspace, humanitarian, vessels, oilgas, gpsjam
+[LAYER:id:on] or [LAYER:id:off] — Toggle a map layer. Layer IDs: flights, crises, wildfires, military, nuclear, sanctions, cameras, infrastructure, airspace, humanitarian, vessels, oil, gas, ports, pipelines, gpsjam
 [DEEPSTATE:on] or [DEEPSTATE:off] — Toggle Ukraine frontline overlay
 
 When a user asks about a specific country or region, ALWAYS include the FLY and COUNTRY commands to show it on the map. When relevant, enable related layers. For example if asked about Iran, fly there, open the country drawer, and enable relevant layers like military, crises, airspace.
@@ -1898,14 +2366,14 @@ ${context}`,
       const isBullet = /^[\-\•\*]\s/.test(line)
       return (
         <div key={i} style={{
-          marginBottom: isHeader ? 6 : isBullet ? 1 : 0,
-          paddingLeft: isBullet ? 8 : 0,
-          borderLeft: isBullet ? '1px solid #141e16' : 'none',
-          color: isHeader ? '#00ff88' : '#8aac90',
+          marginBottom: isHeader ? 7 : isBullet ? 2 : 1,
+          paddingLeft: isBullet ? 10 : 0,
+          borderLeft: isBullet ? '2px solid rgba(129,140,248,0.35)' : 'none',
+          color: isHeader ? '#c7d2fe' : '#e6e9f5',
           fontWeight: isHeader ? 700 : 400,
-          fontSize: isHeader ? 9 : 8.5,
-          letterSpacing: isHeader ? '.1em' : '.03em',
-          lineHeight: 1.65,
+          fontSize: isHeader ? 11.5 : 11,
+          letterSpacing: isHeader ? '.06em' : '.01em',
+          lineHeight: 1.7,
         }}
           dangerouslySetInnerHTML={{ __html: bold.replace(/^#+\s/, '').replace(/^[\-\•\*]\s/, '') }}
         />
@@ -1913,52 +2381,171 @@ ${context}`,
     })
   }
 
+  // Lightweight, cosmetic "reasoning trace" — cycles through a few
+  // transient status lines while a response is streaming/loading.
+  // Vocabulary drawn only from this panel's own quick-prompt labels / context.
+  const TRACE_STEPS = [
+    'Cross-referencing crisis feed…',
+    'Checking airspace status…',
+    'Correlating market signals…',
+    'Scanning humanitarian corridors…',
+  ]
+  const [traceIdx, setTraceIdx] = useState(0)
+  useEffect(() => {
+    if (!streaming) { setTraceIdx(0); return }
+    const t = window.setInterval(() => setTraceIdx(i => (i + 1) % TRACE_STEPS.length), 1100)
+    return () => clearInterval(t)
+  }, [streaming]) // eslint-disable-line
+
+  // Cosmetic, client-side confidence heuristic derived from the response itself —
+  // not a backend field. Longer, more structured answers read as higher confidence.
+  function confidenceOf(text: string): { label: string; bars: number } {
+    if (!text) return { label: 'Low confidence', bars: 1 }
+    const len = text.length
+    const hasStructure = /\n[\-\•\*]\s|\n#+\s|\d/.test(text)
+    let bars = 1
+    if (len > 200) bars = 2
+    if (len > 500) bars = 3
+    if (len > 900 && hasStructure) bars = 4
+    const label = bars >= 4 ? 'High confidence' : bars === 3 ? 'Good confidence' : bars === 2 ? 'Moderate confidence' : 'Low confidence'
+    return { label, bars }
+  }
+
   if (!hasKey) return (
-    <div style={{ padding: '12px 14px', fontSize: 9, color: '#1a2e1e', letterSpacing: '.1em', lineHeight: 1.7 }}>
-      // OPENROUTER KEY REQUIRED<br />
+    <div className="ai-surface" style={{ height: '100%', padding: '14px 16px', fontSize: 11, color: '#9aa3c7', letterSpacing: '.04em', lineHeight: 1.8 }}>
+      OPENROUTER KEY REQUIRED<br />
       Add VITE_OPENROUTER_KEY to .env
     </div>
   )
 
+  const confidence = confidenceOf(response)
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <div className="ai-surface" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
 
       {/* Model selector */}
-      <div style={{ padding: '5px 10px', borderBottom: '1px solid #0d120e', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-        <span style={{ fontSize: 7.5, color: '#1a2e1e', letterSpacing: '.1em', flexShrink: 0 }}>MODEL</span>
+      <div className="ai-header" style={{ padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, position: 'relative' }}>
+        <span className="ai-pulse-dot" />
+        <span style={{ fontSize: 9.5, color: '#9aa3c7', letterSpacing: '.08em', flexShrink: 0, fontWeight: 600 }}>MODEL</span>
         <select
           value={model}
           onChange={e => setModel(e.target.value)}
           disabled={streaming}
           style={{
-            flex: 1, background: '#030609', border: '1px solid #0d1e30', color: '#4a6a50',
-            fontSize: 8, fontFamily: 'inherit', letterSpacing: '.04em', padding: '2px 4px',
+            flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(129,140,248,0.3)', color: '#c7d2fe',
+            fontSize: 10.5, fontFamily: 'inherit', letterSpacing: '.02em', padding: '3px 5px', borderRadius: 'var(--r-sm)',
             outline: 'none', cursor: 'pointer',
           }}
         >
           {FREE_MODELS.map(m => (
-            <option key={m.id} value={m.id}>{m.label} · {m.ctx} ctx · FREE</option>
+            <option key={m.id} value={m.id} style={{ color: '#111' }}>{m.label} · {m.ctx} ctx · FREE</option>
           ))}
         </select>
+        <button
+          onClick={startNewSession}
+          title="New conversation"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.3)', borderRadius: 'var(--r-sm)', color: '#9aa3c7', cursor: 'pointer', padding: '4px 5px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#c7d2fe'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(129,140,248,0.6)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#9aa3c7'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(129,140,248,0.3)' }}
+        >
+          <Plus size={11} />
+        </button>
+        <button
+          onClick={() => (showHistory ? setShowHistory(false) : openHistory())}
+          title="Chat history"
+          style={{ background: showHistory ? 'rgba(129,140,248,0.18)' : 'rgba(255,255,255,0.05)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.6)' : 'rgba(129,140,248,0.3)'}`, borderRadius: 'var(--r-sm)', color: showHistory ? '#c7d2fe' : '#9aa3c7', cursor: 'pointer', padding: '4px 5px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#c7d2fe' }}
+          onMouseLeave={e => { if (!showHistory) (e.currentTarget as HTMLButtonElement).style.color = '#9aa3c7' }}
+        >
+          <History size={11} />
+        </button>
+
+        {showHistory && (
+          <div className="ai-glow-border" style={{
+            position: 'absolute', top: '100%', right: 10, left: 10, zIndex: 40,
+            background: 'linear-gradient(160deg, #12162c 0%, #0b0f1e 100%)', border: '1px solid rgba(129,140,248,0.3)',
+            borderRadius: 'var(--r-md)', maxHeight: 220, overflowY: 'auto', marginTop: 4,
+          }}>
+            <div style={{ padding: '6px 9px', fontSize: 9.5, color: '#9aa3c7', letterSpacing: '.08em', borderBottom: '1px solid rgba(129,140,248,0.2)' }}>
+              PAST CONVERSATIONS ({pastSessions.length})
+            </div>
+            {pastSessions.length === 0 && (
+              <div style={{ padding: '10px 9px', fontSize: 10.5, color: '#7b83a8', letterSpacing: '.03em' }}>No saved conversations yet</div>
+            )}
+            {pastSessions.map(s => {
+              const firstUser = s.messages.find(m => m.role === 'user')
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => loadSession(s)}
+                  style={{
+                    padding: '7px 9px', borderBottom: '1px solid rgba(129,140,248,0.12)', cursor: 'pointer',
+                    background: s.id === sessionId ? 'rgba(129,140,248,0.12)' : 'transparent',
+                    display: 'flex', alignItems: 'flex-start', gap: 6, transition: 'background .12s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(129,140,248,0.16)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = s.id === sessionId ? 'rgba(129,140,248,0.12)' : 'transparent' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 10.5, color: '#e6e9f5', letterSpacing: '.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {firstUser?.content || '(empty)'}
+                    </div>
+                    <div style={{ fontSize: 9, color: '#7b83a8', letterSpacing: '.04em', marginTop: 2 }}>
+                      {new Date(s.updatedAt).toLocaleString()} · {s.messages.length} MSGS
+                    </div>
+                  </div>
+                  <button
+                    onClick={e => removeSession(s.id, e)}
+                    title="Delete conversation"
+                    style={{ background: 'none', border: 'none', color: '#7b83a8', cursor: 'pointer', padding: 2, flexShrink: 0 }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#7b83a8' }}
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
+
+      {/* Watchlist — proactive trajectory forecast, no prompt required */}
+      {trajectories.length > 0 && (
+        <div style={{ padding: '9px 10px', borderBottom: '1px solid rgba(129,140,248,0.15)', flexShrink: 0 }}>
+          <div style={{ fontSize: 9.5, color: '#7b83a8', letterSpacing: '.08em', marginBottom: 7, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span className="ai-pulse-dot" /> WATCHLIST — 72H TRAJECTORY
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            {trajectories.map(t => (
+              <WatchlistCard key={t.country} entry={t} onExplain={() => {
+                ask(`Explain the ${t.trend} trend for ${t.country}: ${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore}). What's driving this and what should I watch for next?`)
+              }} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick prompts */}
       {!response && !streaming && history.length === 0 && (
-        <div style={{ padding: '8px 10px', borderBottom: '1px solid #141e16', flexShrink: 0 }}>
-          <div style={{ fontSize: 7.5, color: '#1a2e1e', letterSpacing: '.12em', marginBottom: 6 }}>// QUICK ANALYSIS</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+        <div style={{ padding: '9px 10px', borderBottom: '1px solid rgba(129,140,248,0.15)', flexShrink: 0 }}>
+          <div style={{ fontSize: 9.5, color: '#7b83a8', letterSpacing: '.08em', marginBottom: 7, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span className="ai-pulse-dot" /> QUICK ANALYSIS
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
             {QUICK_PROMPTS.map(qp => (
               <button
                 key={qp.label}
                 onClick={() => { ask(qp.prompt) }}
                 style={{
-                  background: 'rgba(0,255,136,0.04)', border: '1px solid #0d1e30',
-                  color: '#4a6a50', fontSize: 8, padding: '3px 8px',
-                  cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '.07em',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(129,140,248,0.3)',
+                  borderRadius: 'var(--r-pill)',
+                  color: '#c7d2fe', fontSize: 10.5, padding: '4px 10px',
+                  cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '.02em',
                   transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 4,
                 }}
-                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'rgba(0,255,136,0.3)'; el.style.color = '#00ff88' }}
-                onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = '#0d1e30'; el.style.color = '#4a6a50' }}
+                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'rgba(129,140,248,0.7)'; el.style.background = 'rgba(129,140,248,0.14)' }}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'rgba(129,140,248,0.3)'; el.style.background = 'rgba(255,255,255,0.04)' }}
               >
                 {qp.icon} {qp.label}
               </button>
@@ -1969,37 +2556,69 @@ ${context}`,
 
       {/* Conversation history */}
       {history.length > 0 && (
-        <div style={{ padding: '8px 10px 0', flexShrink: 0 }}>
+        <div style={{ padding: '9px 10px 0', flexShrink: 0 }}>
           {history.filter(m => m.role === 'user').slice(-2).map((m, i) => (
-            <div key={i} style={{ fontSize: 8, color: '#2a3e2e', letterSpacing: '.06em', marginBottom: 4, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-              <span style={{ color: '#0d1e30', flexShrink: 0 }}>▸</span>
-              <span style={{ color: '#4a6a50' }}>{m.content.slice(0, 80)}{m.content.length > 80 ? '…' : ''}</span>
+            <div key={i} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 5 }}>
+              <span style={{
+                background: 'linear-gradient(135deg, #4338ca, #4f46e5)', color: '#eef0ff',
+                borderRadius: '12px 12px 3px 12px', padding: '5px 10px', fontSize: 10.5,
+                letterSpacing: '.01em', maxWidth: '85%', lineHeight: 1.5,
+              }}>
+                {m.content.slice(0, 140)}{m.content.length > 140 ? '…' : ''}
+              </span>
             </div>
           ))}
         </div>
       )}
 
       {/* Response area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '8px 12px', minHeight: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '9px 12px', minHeight: 0 }}>
         {!response && !streaming && history.length === 0 && (
-          <div style={{ fontSize: 8, color: '#0d1e30', letterSpacing: '.08em', lineHeight: 1.8, paddingTop: 4 }}>
-            // DEEPSEEK AI ANALYST READY<br />
-            // {crises.length} active crises · {flights.length.toLocaleString()} flights tracked<br />
-            // Select a quick analysis or type your query below
+          <div style={{ fontSize: 10.5, color: '#7b83a8', letterSpacing: '.02em', lineHeight: 1.9, paddingTop: 4 }}>
+            AI ANALYST READY<br />
+            {crises.length} active crises · {flights.length.toLocaleString()} flights tracked<br />
+            {trajectories.length > 0
+              ? `Watchlist above is tracking ${trajectories.length} regions — select an entry or ask below`
+              : 'Select a quick analysis or type your query below'}
+          </div>
+        )}
+
+        {streaming && !response && (
+          <div style={{ marginBottom: 8 }}>
+            {TRACE_STEPS.slice(0, traceIdx + 1).map((step, i) => (
+              <div key={step} className="ai-trace-item" style={{ opacity: i === traceIdx ? 1 : 0.5 }}>
+                <span className="ai-pulse-dot" style={{ width: 4, height: 4 }} />
+                {step}
+              </div>
+            ))}
           </div>
         )}
 
         {(response || streaming) && (
-          <div style={{ fontSize: 8.5, lineHeight: 1.65, letterSpacing: '.03em' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(129,140,248,0.25)',
+            borderRadius: '12px 12px 12px 3px', padding: '9px 11px',
+          }}>
             {renderText(response)}
-            {streaming && (
-              <span style={{ display: 'inline-block', width: 6, height: 10, background: '#00ff88', opacity: 0.8, marginLeft: 2, animation: 'blink 0.8s step-end infinite', verticalAlign: 'middle' }} />
+            {streaming && <span className="ai-cursor" />}
+            {!streaming && response && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(129,140,248,0.15)' }}>
+                <div style={{ display: 'flex', gap: 2 }}>
+                  {[1, 2, 3, 4].map(i => (
+                    <span key={i} style={{
+                      width: 4, height: i * 2 + 3, borderRadius: 1, alignSelf: 'flex-end',
+                      background: i <= confidence.bars ? '#818cf8' : 'rgba(129,140,248,0.2)',
+                    }} />
+                  ))}
+                </div>
+                <span style={{ fontSize: 9, color: '#9aa3c7', letterSpacing: '.03em' }}>{confidence.label}</span>
+              </div>
             )}
           </div>
         )}
 
         {error && (
-          <div style={{ fontSize: 8, color: '#ff4444', letterSpacing: '.06em', marginTop: 4 }}>
+          <div style={{ fontSize: 10.5, color: '#fca5a5', letterSpacing: '.02em', marginTop: 6 }}>
             ⚠ {error}
           </div>
         )}
@@ -2007,24 +2626,24 @@ ${context}`,
       </div>
 
       {/* Context pill */}
-      <div style={{ padding: '3px 10px', borderTop: '1px solid #0d120e', borderBottom: '1px solid #0d120e', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ fontSize: 7, color: '#0d1e30', letterSpacing: '.1em', display: 'flex', gap: 8 }}>
-          <span style={{ color: '#ff1a3e44' }}>⬤</span> {crises.length} CRISES
-          <span style={{ color: '#00ff8844' }}>⬤</span> {flights.length.toLocaleString()} FLIGHTS
-          <span style={{ color: '#00ff8844' }}>⬤</span> LIVE
+      <div style={{ padding: '4px 10px', borderTop: '1px solid rgba(129,140,248,0.15)', borderBottom: '1px solid rgba(129,140,248,0.15)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ fontSize: 9, color: '#7b83a8', letterSpacing: '.06em', display: 'flex', gap: 9, alignItems: 'center' }}>
+          <span style={{ color: 'var(--red)' }}>⬤</span> {crises.length} CRISES
+          <span style={{ color: '#818cf8' }}>⬤</span> {flights.length.toLocaleString()} FLIGHTS
+          <span className="ai-pulse-dot" /> LIVE
         </div>
         {history.length > 0 && (
           <button
-            onClick={() => { setHistory([]); setResponse(''); setError('') }}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#1a2e1e', fontSize: 7, letterSpacing: '.08em', fontFamily: 'inherit' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ff4444' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#1a2e1e' }}
+            onClick={startNewSession}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#7b83a8', fontSize: 9, letterSpacing: '.04em', fontFamily: 'inherit' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#fca5a5' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#7b83a8' }}
           >↺ CLEAR</button>
         )}
       </div>
 
       {/* Input */}
-      <div style={{ padding: '6px 10px', borderTop: '1px solid #141e16', display: 'flex', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+      <div style={{ padding: '7px 10px', display: 'flex', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -2032,25 +2651,26 @@ ${context}`,
           placeholder="Ask anything about current events, threats, markets…"
           rows={2}
           style={{
-            flex: 1, background: 'rgba(0,255,136,0.03)', border: '1px solid #0d1e30',
-            color: '#c0dcc4', fontSize: 8.5, fontFamily: 'inherit', letterSpacing: '.04em',
-            padding: '5px 8px', resize: 'none', outline: 'none', lineHeight: 1.5,
+            flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.3)',
+            borderRadius: 'var(--r-md)',
+            color: '#e6e9f5', fontSize: 10.5, fontFamily: 'inherit', letterSpacing: '.01em',
+            padding: '6px 9px', resize: 'none', outline: 'none', lineHeight: 1.5,
             transition: 'border-color .12s',
           }}
-          onFocus={e  => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'rgba(0,255,136,0.3)' }}
-          onBlur={e   => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = '#0d1e30' }}
+          onFocus={e  => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'rgba(129,140,248,0.7)' }}
+          onBlur={e   => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'rgba(129,140,248,0.3)' }}
         />
         {streaming ? (
-          <button onClick={stop} style={{ background: 'rgba(255,26,62,0.1)', border: '1px solid rgba(255,26,62,0.3)', color: '#ff1a3e', cursor: 'pointer', padding: '5px 7px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-            <Square size={10} />
+          <button onClick={stop} style={{ background: 'var(--red-soft)', border: '1px solid rgba(220,38,38,0.4)', borderRadius: 'var(--r-md)', color: '#fca5a5', cursor: 'pointer', padding: '6px 8px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <Square size={11} />
           </button>
         ) : (
           <button
             onClick={() => { ask(input); setInput('') }}
             disabled={!input.trim()}
-            style={{ background: input.trim() ? 'rgba(0,255,136,0.1)' : 'transparent', border: `1px solid ${input.trim() ? 'rgba(0,255,136,0.3)' : '#0d1e30'}`, color: input.trim() ? '#00ff88' : '#1a2e1e', cursor: input.trim() ? 'pointer' : 'default', padding: '5px 7px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
+            style={{ background: input.trim() ? 'linear-gradient(135deg, #4338ca, #4f46e5)' : 'rgba(255,255,255,0.05)', border: `1px solid ${input.trim() ? 'rgba(129,140,248,0.7)' : 'rgba(129,140,248,0.25)'}`, borderRadius: 'var(--r-md)', color: input.trim() ? '#eef0ff' : '#5a6088', cursor: input.trim() ? 'pointer' : 'default', padding: '6px 8px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
           >
-            <Send size={10} />
+            <Send size={11} />
           </button>
         )}
       </div>
@@ -2068,7 +2688,7 @@ function fmt(n: number): string {
   return n.toLocaleString()
 }
 
-function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEvent[]; flights: Flight[]; onGeoSearch?: (q: string) => void }) {
+export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEvent[]; flights: Flight[]; onGeoSearch?: (q: string) => void }) {
   const [tab, setTab]         = useState<HumTab>('OVERVIEW')
   const [stats, setStats]     = useState<UNHCRStat[]>(TOP_HOSTING)
   const [showOrigin, setShowOrigin] = useState(false)
@@ -2077,7 +2697,11 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
   const [campSearch, setCampSearch]     = useState('')
 
   useEffect(() => {
-    fetchUNHCRPopulation().then(data => { if (data.length) setStats(data) })
+    const load = () => { fetchUNHCRPopulation().then(data => { if (data.length) setStats(data) }) }
+    load()
+    const t = window.setInterval(load, 30 * 60_000)
+    const unsub = onGlobalReload(load)
+    return () => { clearInterval(t); unsub() }
   }, [])
 
   const g = UNHCR_GLOBAL_2023
@@ -2099,15 +2723,15 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
   const maxHosting = Math.max(...TOP_HOSTING.map(s => s.total))
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontSize: 9 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontSize: 11.5 }}>
       {/* Tab bar */}
-      <div style={{ display: 'flex', borderBottom: '1px solid #141e16', flexShrink: 0 }}>
+      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         {HUM_TABS.map(t => (
           <button key={t} onClick={() => setTab(t)} style={{
-            flex: 1, padding: '4px 2px', fontSize: 7.5, fontWeight: 700, letterSpacing: '.1em',
-            background: tab === t ? 'rgba(0,170,255,0.1)' : 'transparent',
-            border: 'none', borderBottom: tab === t ? '2px solid #00aaff' : '2px solid transparent',
-            color: tab === t ? '#00aaff' : '#2a3e2e', cursor: 'pointer', transition: 'all .12s',
+            flex: 1, padding: '4px 2px', fontSize: 10, fontWeight: 700, letterSpacing: '.1em',
+            background: tab === t ? 'var(--accent-soft)' : 'transparent',
+            border: 'none', borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
+            color: tab === t ? 'var(--accent)' : 'var(--text3)', cursor: 'pointer', transition: 'all .12s',
           }}>{t}</button>
         ))}
       </div>
@@ -2117,19 +2741,19 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 10px' }}>
           {/* Global summary */}
           <div style={{ marginBottom: 8 }}>
-            <div style={{ fontSize: 7, color: '#2a3e2e', letterSpacing: '.15em', marginBottom: 5 }}>// GLOBAL DISPLACEMENT · {g.year}</div>
+            <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.15em', marginBottom: 5 }}>// GLOBAL DISPLACEMENT · {g.year}</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px 8px' }}>
               {[
-                { label: 'FORCIBLY DISPLACED', value: g.total_forcibly_displaced, color: '#ff4444' },
-                { label: 'REFUGEES (UNHCR)',   value: g.refugees_unhcr,           color: '#ff8800' },
-                { label: 'INT. DISPLACED',     value: g.idps,                     color: '#ffaa00' },
-                { label: 'ASYLUM SEEKERS',     value: g.asylum_seekers,           color: '#00ff88' },
+                { label: 'FORCIBLY DISPLACED', value: g.total_forcibly_displaced, color: 'var(--red)' },
+                { label: 'REFUGEES (UNHCR)',   value: g.refugees_unhcr,           color: 'var(--amber)' },
+                { label: 'INT. DISPLACED',     value: g.idps,                     color: 'var(--amber)' },
+                { label: 'ASYLUM SEEKERS',     value: g.asylum_seekers,           color: 'var(--accent)' },
                 { label: 'STATELESS',          value: g.stateless,                color: '#aa44ff' },
-                { label: 'RETURNEES',          value: g.returnees,                color: '#00ff88' },
+                { label: 'RETURNEES',          value: g.returnees,                color: 'var(--accent)' },
               ].map(({ label, value, color }) => (
-                <div key={label} style={{ background: 'rgba(0,0,0,0.3)', padding: '5px 7px', border: '1px solid #141e16' }}>
-                  <div style={{ fontSize: 6.5, color: '#2a3e2e', letterSpacing: '.1em', marginBottom: 2 }}>{label}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums', letterSpacing: '.04em' }}>{fmt(value)}</div>
+                <div key={label} style={{ background: 'var(--surface2)', padding: '5px 7px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginBottom: 2 }}>{label}</div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums', letterSpacing: '.04em' }}>{fmt(value)}</div>
                 </div>
               ))}
             </div>
@@ -2138,49 +2762,49 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
           {/* Toggle hosting / origin */}
           <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
             <button onClick={() => setShowOrigin(false)} style={{
-              flex: 1, padding: '3px 6px', fontSize: 7.5, fontWeight: 700, letterSpacing: '.1em',
-              border: `1px solid ${!showOrigin ? '#00aaff55' : '#141e16'}`,
-              background: !showOrigin ? 'rgba(0,170,255,0.1)' : 'transparent',
-              color: !showOrigin ? '#00aaff' : '#2a3e2e', cursor: 'pointer',
+              flex: 1, padding: '3px 6px', fontSize: 10, fontWeight: 700, letterSpacing: '.1em',
+              border: `1px solid ${!showOrigin ? 'var(--accent)55' : 'var(--border)'}`,
+              background: !showOrigin ? 'var(--accent-soft)' : 'transparent',
+              color: !showOrigin ? 'var(--accent)' : 'var(--text3)', cursor: 'pointer',
             }}>TOP HOSTING</button>
             <button onClick={() => setShowOrigin(true)} style={{
-              flex: 1, padding: '3px 6px', fontSize: 7.5, fontWeight: 700, letterSpacing: '.1em',
-              border: `1px solid ${showOrigin ? '#ff884455' : '#141e16'}`,
-              background: showOrigin ? 'rgba(255,136,0,0.1)' : 'transparent',
-              color: showOrigin ? '#ff8844' : '#2a3e2e', cursor: 'pointer',
+              flex: 1, padding: '3px 6px', fontSize: 10, fontWeight: 700, letterSpacing: '.1em',
+              border: `1px solid ${showOrigin ? 'var(--amber)55' : 'var(--border)'}`,
+              background: showOrigin ? 'var(--amber-soft)' : 'transparent',
+              color: showOrigin ? 'var(--amber)' : 'var(--text3)', cursor: 'pointer',
             }}>TOP ORIGINS</button>
           </div>
 
           {/* Country ranking */}
-          <div style={{ fontSize: 7, color: '#2a3e2e', letterSpacing: '.12em', marginBottom: 4 }}>
+          <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.12em', marginBottom: 4 }}>
             {!showOrigin ? '// COUNTRIES HOSTING MOST DISPLACED (2023)' : '// TOP COUNTRIES OF ORIGIN (2023)'}
           </div>
           {(!showOrigin ? (stats.length ? stats : TOP_HOSTING) : TOP_ORIGINS).map((s, i) => {
             const pct = (s.total / (showOrigin ? 16_000_000 : maxHosting)) * 100
-            const color = showOrigin ? '#ff8844' : '#00aaff'
+            const color = showOrigin ? 'var(--amber)' : 'var(--accent)'
             return (
               <div key={s.iso3 + i} style={{ marginBottom: 4 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                  <span style={{ fontSize: 7, color: '#1a2e1e', width: 14, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
-                  <span style={{ fontSize: 8, color: '#8aac90', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.country}</span>
-                  <span style={{ fontSize: 8, color, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(s.total)}</span>
+                  <span style={{ fontSize: 9.5, color: 'var(--text3)', width: 14, textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.country}</span>
+                  <span style={{ fontSize: 10.5, color, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(s.total)}</span>
                 </div>
-                <div style={{ marginLeft: 19, height: 2, background: '#141e16', borderRadius: 1 }}>
+                <div style={{ marginLeft: 19, height: 2, background: 'var(--border)', borderRadius: 1 }}>
                   <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: color, opacity: 0.55, borderRadius: 1, transition: 'width .5s' }} />
                 </div>
                 {s.refugees > 0 && s.idps > 0 && (
                   <div style={{ marginLeft: 19, marginTop: 1, display: 'flex', gap: 6 }}>
-                    {s.refugees > 0     && <span style={{ fontSize: 6.5, color: '#ff8800' }}>REF {fmt(s.refugees)}</span>}
-                    {s.idps > 0         && <span style={{ fontSize: 6.5, color: '#ffaa00' }}>IDP {fmt(s.idps)}</span>}
-                    {s.asylum_seekers > 0 && <span style={{ fontSize: 6.5, color: '#00ff88' }}>ASY {fmt(s.asylum_seekers)}</span>}
+                    {s.refugees > 0     && <span style={{ fontSize: 9, color: 'var(--amber)' }}>REF {fmt(s.refugees)}</span>}
+                    {s.idps > 0         && <span style={{ fontSize: 9, color: 'var(--amber)' }}>IDP {fmt(s.idps)}</span>}
+                    {s.asylum_seekers > 0 && <span style={{ fontSize: 9, color: 'var(--accent)' }}>ASY {fmt(s.asylum_seekers)}</span>}
                   </div>
                 )}
               </div>
             )
           })}
 
-          <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid #0d120e' }}>
-            <div style={{ fontSize: 6.5, color: '#1a2e1e', letterSpacing: '.05em', lineHeight: 1.7 }}>
+          <div style={{ marginTop: 8, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+            <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '.05em', lineHeight: 1.7 }}>
               SOURCE: UNHCR GLOBAL TRENDS {g.year} · api.unhcr.org<br />
               DATA: MID-YEAR ESTIMATES · UNHCR POPULATION STATISTICS
             </div>
@@ -2220,7 +2844,7 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
 
         return (
           <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
-            <div style={{ fontSize: 7, color: '#2a3e2e', letterSpacing: '.12em', marginBottom: 6 }}>
+            <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.12em', marginBottom: 6 }}>
               // CRISIS → DISPLACEMENT NEXUS · LIVE CORRELATION
             </div>
             {originCountries.map(origin => {
@@ -2232,51 +2856,51 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
                 ? (linked.some(c => c.severity === 'critical') ? 'critical'
                   : linked.some(c => c.severity === 'high') ? 'high' : 'medium')
                 : 'low'
-              const sevColor = severity === 'critical' ? '#ff1a3e' : severity === 'high' ? '#ff8800' : severity === 'medium' ? '#ffcc00' : '#4a6a50'
+              const sevColor = severity === 'critical' ? 'var(--red)' : severity === 'high' ? 'var(--amber)' : severity === 'medium' ? 'var(--amber)' : 'var(--text2)'
 
               return (
-                <div key={origin} style={{ marginBottom: 8, padding: '6px 8px', background: 'rgba(0,0,0,0.25)', border: `1px solid ${sevColor}22` }}>
+                <div key={origin} style={{ marginBottom: 8, padding: '6px 8px', background: 'var(--surface2)', border: `1px solid ${sevColor}22` }}>
                   {/* Origin header */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: sevColor, flexShrink: 0 }} />
-                    <span style={{ fontSize: 9, fontWeight: 800, color: '#c0dcc4', flex: 1 }}>{origin.toUpperCase()}</span>
-                    <span style={{ fontSize: 7, color: sevColor, fontWeight: 700, letterSpacing: '.08em' }}>{severity.toUpperCase()}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text1)', flex: 1 }}>{origin.toUpperCase()}</span>
+                    <span style={{ fontSize: 9.5, color: sevColor, fontWeight: 700, letterSpacing: '.08em' }}>{severity.toUpperCase()}</span>
                   </div>
 
                   {/* Displacement total */}
                   <div style={{ display: 'flex', gap: 8, marginBottom: 4, marginLeft: 13 }}>
-                    <span style={{ fontSize: 8, color: '#ff8844' }}>DISPLACED: <b>{fmt(totalDisplaced)}</b></span>
-                    {disp && disp.origin > 0 && <span style={{ fontSize: 7, color: '#4a6a50' }}>UNHCR ORIGIN: {fmt(disp.origin)}</span>}
+                    <span style={{ fontSize: 10.5, color: 'var(--amber)' }}>DISPLACED: <b>{fmt(totalDisplaced)}</b></span>
+                    {disp && disp.origin > 0 && <span style={{ fontSize: 9.5, color: 'var(--text2)' }}>UNHCR ORIGIN: {fmt(disp.origin)}</span>}
                   </div>
 
                   {/* Active crises linked */}
                   {linked.length > 0 && (
                     <div style={{ marginLeft: 13, marginBottom: 4 }}>
-                      <div style={{ fontSize: 6.5, color: '#ff1a3e', letterSpacing: '.1em', marginBottom: 2 }}>ACTIVE CRISES ({linked.length})</div>
+                      <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em', marginBottom: 2 }}>ACTIVE CRISES ({linked.length})</div>
                       {linked.slice(0, 4).map((c, i) => (
                         <div key={c.id + i}
                           onClick={() => onGeoSearch?.(`${c.latitude},${c.longitude}`)}
-                          style={{ fontSize: 7.5, color: '#8aac90', marginBottom: 1, cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', gap: 4, alignItems: 'center' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = '#c0dcc4' }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = '#8aac90' }}
+                          style={{ fontSize: 10, color: 'var(--text1)', marginBottom: 1, cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', gap: 4, alignItems: 'center' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--text1)' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--text1)' }}
                         >
-                          <span style={{ fontSize: 6, color: c.severity === 'critical' ? '#ff1a3e' : c.severity === 'high' ? '#ff8800' : '#ffcc00', fontWeight: 700 }}>
+                          <span style={{ fontSize: 8.5, color: c.severity === 'critical' ? 'var(--red)' : c.severity === 'high' ? 'var(--amber)' : 'var(--amber)', fontWeight: 700 }}>
                             {c.type.toUpperCase().slice(0, 3)}
                           </span>
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
-                          {c.fatalities ? <span style={{ fontSize: 6.5, color: '#ff1a3e', flexShrink: 0 }}>†{c.fatalities}</span> : null}
+                          {c.fatalities ? <span style={{ fontSize: 9, color: 'var(--red)', flexShrink: 0 }}>†{c.fatalities}</span> : null}
                         </div>
                       ))}
-                      {linked.length > 4 && <div style={{ fontSize: 6.5, color: '#2a3e2e' }}>+{linked.length - 4} more</div>}
+                      {linked.length > 4 && <div style={{ fontSize: 9, color: 'var(--text3)' }}>+{linked.length - 4} more</div>}
                     </div>
                   )}
                   {linked.length === 0 && (
-                    <div style={{ marginLeft: 13, fontSize: 7, color: '#2a3e2e', fontStyle: 'italic', marginBottom: 4 }}>No live crisis events detected</div>
+                    <div style={{ marginLeft: 13, fontSize: 9.5, color: 'var(--text3)', fontStyle: 'italic', marginBottom: 4 }}>No live crisis events detected</div>
                   )}
 
                   {/* Flow corridors */}
                   <div style={{ marginLeft: 13 }}>
-                    <div style={{ fontSize: 6.5, color: '#00aaff', letterSpacing: '.1em', marginBottom: 2 }}>CORRIDORS ({flows.length})</div>
+                    <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '.1em', marginBottom: 2 }}>CORRIDORS ({flows.length})</div>
                     {flows.map(f => {
                       const dest = f.label.split(' → ')[1]
                       const camps = getCamps(dest)
@@ -2284,15 +2908,15 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
                       return (
                         <div key={f.label}
                           onClick={() => onGeoSearch?.(`${f.dest[1]},${f.dest[0]}`)}
-                          style={{ fontSize: 7.5, color: '#6a8aaa', marginBottom: 2, cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', gap: 4, alignItems: 'center' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = '#c0dcc4' }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = '#6a8aaa' }}
+                          style={{ fontSize: 10, color: 'var(--text2)', marginBottom: 2, cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', gap: 4, alignItems: 'center' }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--text1)' }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--text2)' }}
                         >
-                          <span style={{ color: '#00ff88', fontWeight: 700 }}>→</span>
+                          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>→</span>
                           <span style={{ flex: 1 }}>{dest}</span>
-                          <span style={{ fontSize: 7, color: '#ffcc00', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(f.count)}</span>
-                          {camps.length > 0 && <span style={{ fontSize: 6, color: '#00ff88' }}>{camps.length} sites</span>}
-                          {nearbyFlights > 0 && <span style={{ fontSize: 6, color: '#aa44ff' }}>✈{nearbyFlights}</span>}
+                          <span style={{ fontSize: 9.5, color: 'var(--amber)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(f.count)}</span>
+                          {camps.length > 0 && <span style={{ fontSize: 8.5, color: 'var(--accent)' }}>{camps.length} sites</span>}
+                          {nearbyFlights > 0 && <span style={{ fontSize: 8.5, color: '#aa44ff' }}>✈{nearbyFlights}</span>}
                         </div>
                       )
                     })}
@@ -2300,7 +2924,7 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
                 </div>
               )
             })}
-            <div style={{ marginTop: 6, fontSize: 6.5, color: '#1a2e1e', letterSpacing: '.05em', lineHeight: 1.7 }}>
+            <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', letterSpacing: '.05em', lineHeight: 1.7 }}>
               CORRELATION: UNHCR GLOBAL TRENDS × ACLED LIVE EVENTS × OPENSKY<br />
               NEXUS UPDATES IN REAL-TIME WITH INCOMING DATA
             </div>
@@ -2311,7 +2935,7 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
       {/* ─ FLOWS: refugee corridor listing ─ */}
       {tab === 'FLOWS' && (
         <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
-          <div style={{ fontSize: 7, color: '#2a3e2e', letterSpacing: '.12em', marginBottom: 6 }}>
+          <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.12em', marginBottom: 6 }}>
             // MAJOR REFUGEE CORRIDORS · {REFUGEE_FLOWS.length} ROUTES
           </div>
           {REFUGEE_FLOWS
@@ -2327,34 +2951,34 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
               const isActive = linked.length > 0
               // Color gradient by count
               const t = Math.min(1, f.count / 4_000_000)
-              const color = t > 0.6 ? '#ff4444' : t > 0.3 ? '#ffaa00' : '#00ff88'
+              const color = t > 0.6 ? 'var(--red)' : t > 0.3 ? 'var(--amber)' : 'var(--accent)'
 
               return (
                 <div key={f.label}
                   onClick={() => onGeoSearch?.(`${f.origin[1]},${f.origin[0]}`)}
                   style={{ marginBottom: 5, cursor: onGeoSearch ? 'pointer' : 'default' }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,170,255,0.05)' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                    <span style={{ fontSize: 7, color: '#1a2e1e', width: 16, textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
-                    <span style={{ fontSize: 8, color: '#c0dcc4', fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {origin} <span style={{ color: '#4a6a50' }}>→</span> {dest}
+                    <span style={{ fontSize: 9.5, color: 'var(--text3)', width: 16, textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--text1)', fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {origin} <span style={{ color: 'var(--text2)' }}>→</span> {dest}
                     </span>
-                    <span style={{ fontSize: 8, color, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(f.count)}</span>
-                    {isActive && <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#ff1a3e', flexShrink: 0, animation: 'blink 1s step-end infinite' }} title={`${linked.length} active crises in ${origin}`} />}
+                    <span style={{ fontSize: 10.5, color, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(f.count)}</span>
+                    {isActive && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)', flexShrink: 0, animation: 'blink 1s step-end infinite' }} title={`${linked.length} active crises in ${origin}`} />}
                   </div>
-                  <div style={{ marginLeft: 21, height: 2, background: '#141e16', borderRadius: 1, marginBottom: 2 }}>
+                  <div style={{ marginLeft: 21, height: 2, background: 'var(--border)', borderRadius: 1, marginBottom: 2 }}>
                     <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: color, opacity: 0.55, borderRadius: 1, transition: 'width .5s' }} />
                   </div>
                   {isActive && (
                     <div style={{ marginLeft: 21, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
                       {linked.slice(0, 3).map((c, j) => (
                         <span key={j} style={{
-                          fontSize: 6, padding: '1px 4px', borderRadius: 2,
-                          background: c.severity === 'critical' ? 'rgba(255,26,62,0.15)' : 'rgba(255,136,0,0.1)',
-                          color: c.severity === 'critical' ? '#ff1a3e' : '#ff8800',
-                          border: `1px solid ${c.severity === 'critical' ? '#ff1a3e22' : '#ff880022'}`,
+                          fontSize: 8.5, padding: '1px 4px', borderRadius: 2,
+                          background: c.severity === 'critical' ? 'var(--red-soft)' : 'var(--amber-soft)',
+                          color: c.severity === 'critical' ? 'var(--red)' : 'var(--amber)',
+                          border: `1px solid ${c.severity === 'critical' ? 'var(--red)22' : 'var(--amber)22'}`,
                         }}>
                           {c.type.toUpperCase().slice(0, 3)} · {c.title.slice(0, 30)}{c.title.length > 30 ? '…' : ''}
                         </span>
@@ -2364,7 +2988,7 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
                 </div>
               )
             })}
-          <div style={{ marginTop: 6, fontSize: 6.5, color: '#1a2e1e', letterSpacing: '.05em', lineHeight: 1.7 }}>
+          <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', letterSpacing: '.05em', lineHeight: 1.7 }}>
             SOURCE: UNHCR GLOBAL TRENDS 2023 · CRISIS TAGS FROM ACLED LIVE
           </div>
         </div>
@@ -2373,14 +2997,14 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
       {/* ─ OFFICES ─ */}
       {tab === 'OFFICES' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '5px 8px', borderBottom: '1px solid #141e16', flexShrink: 0 }}>
+          <div style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
             <input
               placeholder="Filter by country or city…"
               value={officeFilter}
               onChange={e => setOfficeFilter(e.target.value)}
               style={{
-                width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #0d1e30',
-                color: '#c0dcc4', fontSize: 8, padding: '3px 6px', outline: 'none', fontFamily: 'inherit',
+                width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
+                color: 'var(--text1)', fontSize: 10.5, padding: '3px 6px', outline: 'none', fontFamily: 'inherit',
                 boxSizing: 'border-box',
               }}
             />
@@ -2390,26 +3014,26 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
               <div
                 key={o.id}
                 onClick={() => onGeoSearch?.(`${o.lat},${o.lng}`)}
-                style={{ padding: '5px 10px', borderBottom: '1px solid #0d120e', cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 6 }}
-                onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,170,255,0.05)' }}
+                style={{ padding: '5px 10px', borderBottom: '1px solid var(--border)', cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 6 }}
+                onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
                 title={onGeoSearch ? `Fly to ${o.name}` : undefined}
               >
                 <div style={{ width: 7, height: 7, borderRadius: '50%', background: OFFICE_TYPE_COLORS[o.type], flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 8, color: '#8aac90', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.name}</div>
-                  <div style={{ fontSize: 7, color: '#4a6a50', marginTop: 1 }}>{o.city} · {o.country}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.name}</div>
+                  <div style={{ fontSize: 9.5, color: 'var(--text2)', marginTop: 1 }}>{o.city} · {o.country}</div>
                 </div>
-                <span style={{ fontSize: 6.5, color: '#1a2e1e', letterSpacing: '.08em', textTransform: 'uppercase', flexShrink: 0 }}>
+                <span style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '.08em', textTransform: 'uppercase', flexShrink: 0 }}>
                   {o.type === 'hq' ? 'HQ' : o.type === 'regional' ? 'REG' : o.type === 'liaison' ? 'LNK' : 'CO'}
                 </span>
               </div>
             ))}
             {filteredOffices.length === 0 && (
-              <div style={{ padding: 10, fontSize: 8, color: '#2a3e2e', textAlign: 'center' }}>No offices match filter</div>
+              <div style={{ padding: 10, fontSize: 10.5, color: 'var(--text3)', textAlign: 'center' }}>No offices match filter</div>
             )}
           </div>
-          <div style={{ padding: '3px 8px', borderTop: '1px solid #0d120e', fontSize: 6.5, color: '#1a2e1e', letterSpacing: '.08em', flexShrink: 0 }}>
+          <div style={{ padding: '3px 8px', borderTop: '1px solid var(--border)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.08em', flexShrink: 0 }}>
             {filteredOffices.length} OFFICES · UNHCR PRESENCE MAP
           </div>
         </div>
@@ -2419,13 +3043,13 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
       {tab === 'CROSSINGS' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Status filter */}
-          <div style={{ padding: '5px 8px', borderBottom: '1px solid #141e16', display: 'flex', gap: 4, flexShrink: 0 }}>
+          <div style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 4, flexShrink: 0 }}>
             {(['all', 'open', 'restricted', 'closed'] as const).map(s => (
               <button key={s} onClick={() => setCrossFilter(s)} style={{
-                flex: 1, padding: '2px 3px', fontSize: 7, fontWeight: 700, letterSpacing: '.08em',
-                border: `1px solid ${crossFilter === s ? (CROSSING_STATUS_COLORS[s as keyof typeof CROSSING_STATUS_COLORS] ?? '#00ff88') + '55' : '#141e16'}`,
-                background: crossFilter === s ? (CROSSING_STATUS_COLORS[s as keyof typeof CROSSING_STATUS_COLORS] ?? 'rgba(0,255,136,0.1)') + '14' : 'transparent',
-                color: crossFilter === s ? (CROSSING_STATUS_COLORS[s as keyof typeof CROSSING_STATUS_COLORS] ?? '#00ff88') : '#2a3e2e',
+                flex: 1, padding: '2px 3px', fontSize: 9.5, fontWeight: 700, letterSpacing: '.08em',
+                border: `1px solid ${crossFilter === s ? (CROSSING_STATUS_COLORS[s as keyof typeof CROSSING_STATUS_COLORS] ?? 'var(--accent)') + '55' : 'var(--border)'}`,
+                background: crossFilter === s ? (CROSSING_STATUS_COLORS[s as keyof typeof CROSSING_STATUS_COLORS] ?? 'var(--accent-soft)') + '14' : 'transparent',
+                color: crossFilter === s ? (CROSSING_STATUS_COLORS[s as keyof typeof CROSSING_STATUS_COLORS] ?? 'var(--accent)') : 'var(--text3)',
                 cursor: 'pointer', textTransform: 'uppercase',
               }}>{s}</button>
             ))}
@@ -2435,21 +3059,21 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
               <div
                 key={c.id}
                 onClick={() => onGeoSearch?.(`${c.lat},${c.lng}`)}
-                style={{ padding: '5px 10px', borderBottom: '1px solid #0d120e', cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 6 }}
-                onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,170,255,0.05)' }}
+                style={{ padding: '5px 10px', borderBottom: '1px solid var(--border)', cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', alignItems: 'center', gap: 6 }}
+                onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
                 title={onGeoSearch ? `Fly to ${c.name}` : undefined}
               >
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: CROSSING_STATUS_COLORS[c.status], flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 8, color: '#8aac90', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
-                  <div style={{ fontSize: 7, color: '#4a6a50', marginTop: 1 }}>{c.country1} ↔ {c.country2}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+                  <div style={{ fontSize: 9.5, color: 'var(--text2)', marginTop: 1 }}>{c.country1} ↔ {c.country2}</div>
                 </div>
-                <span style={{ fontSize: 7, color: CROSSING_STATUS_COLORS[c.status], fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', flexShrink: 0 }}>{c.status}</span>
+                <span style={{ fontSize: 9.5, color: CROSSING_STATUS_COLORS[c.status], fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', flexShrink: 0 }}>{c.status}</span>
               </div>
             ))}
           </div>
-          <div style={{ padding: '3px 8px', borderTop: '1px solid #0d120e', fontSize: 6.5, color: '#1a2e1e', letterSpacing: '.08em', flexShrink: 0 }}>
+          <div style={{ padding: '3px 8px', borderTop: '1px solid var(--border)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.08em', flexShrink: 0 }}>
             {filteredCrossings.length} CROSSINGS · UNHCR BORDER MONITORING
           </div>
         </div>
@@ -2458,14 +3082,14 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
       {/* ─ CAMPS ─ */}
       {tab === 'CAMPS' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <div style={{ padding: '5px 8px', borderBottom: '1px solid #141e16', flexShrink: 0 }}>
+          <div style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
             <input
               placeholder="Search camps or countries…"
               value={campSearch}
               onChange={e => setCampSearch(e.target.value)}
               style={{
-                width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #0d1e30',
-                color: '#c0dcc4', fontSize: 8, padding: '3px 6px', outline: 'none', fontFamily: 'inherit',
+                width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)',
+                color: 'var(--text1)', fontSize: 10.5, padding: '3px 6px', outline: 'none', fontFamily: 'inherit',
                 boxSizing: 'border-box',
               }}
             />
@@ -2474,35 +3098,35 @@ function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEve
             {filteredCamps.map((c, i) => {
               const maxPop = REFUGEE_CAMPS[0].population
               const pct = (c.population / maxPop) * 100
-              const color = c.type === 'camp' ? '#00ff88' : c.type === 'settlement' ? '#00ff88' : c.type === 'poc_site' ? '#ffdd00' : c.type === 'transit' ? '#ffaa00' : '#8844ff'
+              const color = c.type === 'camp' ? 'var(--accent)' : c.type === 'settlement' ? 'var(--accent)' : c.type === 'poc_site' ? 'var(--amber)' : c.type === 'transit' ? 'var(--amber)' : '#8844ff'
               return (
                 <div
                   key={c.id}
                   onClick={() => onGeoSearch?.(`${c.lat},${c.lng}`)}
-                  style={{ padding: '5px 10px', borderBottom: '1px solid #0d120e', cursor: onGeoSearch ? 'pointer' : 'default' }}
-                  onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'rgba(0,170,255,0.05)' }}
+                  style={{ padding: '5px 10px', borderBottom: '1px solid var(--border)', cursor: onGeoSearch ? 'pointer' : 'default' }}
+                  onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
                   title={onGeoSearch ? `Fly to ${c.name}` : undefined}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                    <span style={{ fontSize: 7, color: '#1a2e1e', width: 16, textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
+                    <span style={{ fontSize: 9.5, color: 'var(--text3)', width: 16, textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 8, color: '#8aac90', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
-                    <span style={{ fontSize: 8, color, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(c.population)}</span>
+                    <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                    <span style={{ fontSize: 10.5, color, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(c.population)}</span>
                   </div>
-                  <div style={{ marginLeft: 27, height: 2, background: '#141e16', borderRadius: 1, marginBottom: 2 }}>
+                  <div style={{ marginLeft: 27, height: 2, background: 'var(--border)', borderRadius: 1, marginBottom: 2 }}>
                     <div style={{ width: `${pct}%`, height: '100%', background: color, opacity: 0.5, borderRadius: 1 }} />
                   </div>
                   <div style={{ marginLeft: 27, display: 'flex', gap: 5 }}>
-                    <span style={{ fontSize: 6.5, color: '#4a6a50' }}>{c.country}</span>
-                    <span style={{ fontSize: 6.5, color: color, opacity: 0.7, textTransform: 'uppercase' }}>{c.type.replace('_', ' ')}</span>
-                    {c.notes && <span style={{ fontSize: 6.5, color: '#1a2e1e', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.notes}</span>}
+                    <span style={{ fontSize: 9, color: 'var(--text2)' }}>{c.country}</span>
+                    <span style={{ fontSize: 9, color: color, opacity: 0.7, textTransform: 'uppercase' }}>{c.type.replace('_', ' ')}</span>
+                    {c.notes && <span style={{ fontSize: 9, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.notes}</span>}
                   </div>
                 </div>
               )
             })}
           </div>
-          <div style={{ padding: '3px 8px', borderTop: '1px solid #0d120e', fontSize: 6.5, color: '#1a2e1e', letterSpacing: '.08em', flexShrink: 0 }}>
+          <div style={{ padding: '3px 8px', borderTop: '1px solid var(--border)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.08em', flexShrink: 0 }}>
             {filteredCamps.length} SITES · UNHCR POPULATION REFERENCE POINTS
           </div>
         </div>

@@ -6,7 +6,7 @@ import { formatDistanceToNow } from 'date-fns'
 
 const TABS = [
   { id: 'BBC',       label: 'BBC',     color: '#BB1919', fn: () => fetchRSSFeed('https://feeds.bbci.co.uk/news/world/rss.xml', 'BBC News') },
-  { id: 'Reuters',   label: 'RTR',     color: '#FF8000', fn: () => fetchRSSFeed('https://feeds.reuters.com/reuters/worldNews', 'Reuters') },
+  { id: 'NPR',       label: 'NPR',     color: '#FF8000', fn: () => fetchRSSFeed('https://feeds.npr.org/1001/rss.xml', 'NPR') },
   { id: 'DW',        label: 'DW',      color: '#0095B5', fn: () => fetchRSSFeed('https://rss.dw.com/xml/rss-en-world', 'DW News') },
   { id: 'AlJazeera', label: 'AJZ',     color: '#cc9900', fn: () => fetchRSSFeed('https://www.aljazeera.com/xml/rss/all.xml', 'Al Jazeera') },
   { id: 'France24',  label: 'F24',     color: '#003087', fn: () => fetchRSSFeed('https://www.france24.com/en/rss', 'France 24') },

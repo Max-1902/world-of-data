@@ -244,6 +244,253 @@ export const MILITARY_FACILITIES: MilitaryFacility[] = [
   // ═══════════════════════════════════════════════════════════════
   { id:'au-pine-gap',    name:'Pine Gap Joint Defence Facility', type:'intelligence',operator:'AU/US', host:'Australia', lat:-23.799, lng:133.737, personnel:800, status:'active', notes:'Joint CIA/NSA/ASD satellite ground station. Intercepts satellite communications, processes SIGINT, supports missile defense. Critical for US nuclear command and control.', since:'1966' },
   { id:'au-northwest-cape',name:'NWC Exmouth (Harold Holt)',    type:'intelligence',  operator:'AU/US', host:'Australia', lat:-21.814, lng:114.167, personnel:400, status:'active', notes:'VLF transmissions to US and Australian submarines (ELF/VLF). Submarine communications for SSBN/SSN operations in Indian Ocean and Pacific. AUKUS role expanded.', since:'1967' },
+  { id:'au-darwin',        name:'RAAF Base Darwin',              type:'airbase',       operator:'Australia', host:'Australia', lat:-12.415, lng:130.873, personnel:4500, status:'active', notes:'Northern Australia. F-35A Lightning II, MQ-4C Triton. Hosts USMC rotational forces (2,500 Marines). Key for Indo-Pacific force projection under AUKUS.', since:'1940' },
+  { id:'au-tindal',        name:'RAAF Base Tindal',              type:'airbase',       operator:'Australia', host:'Australia', lat:-14.521, lng:132.378, personnel:2000, status:'active', notes:'Katherine, NT. F-35A base. Runway extended to 3,660m for B-52 operations under AUKUS. US fuel storage expansion. Northern shield airbase.', since:'1942' },
+  { id:'au-stirling',      name:'HMAS Stirling (Fleet Base West)',type:'naval_base',   operator:'Australia', host:'Australia', lat:-32.268, lng:115.684, personnel:5000, status:'active', notes:'Garden Island, WA. Collins-class SSK homeport. Future AUKUS SSN base. Australian surface fleet western hub. Largest naval base in Southern Hemisphere.', since:'1978' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // TURKEY
+  // ═══════════════════════════════════════════════════════════════
+  { id:'tr-aksaz',         name:'Aksaz Naval Base',               type:'naval_base',    operator:'Turkey', host:'Turkey',   lat:36.958, lng:28.359,  personnel:5000,  status:'active', notes:'Aegean Fleet HQ. Muğla Province. Frigates, corvettes, submarines. Key to Aegean Sea and Eastern Mediterranean naval control. TCG Anadolu (LHD) homeport.', since:'1977' },
+  { id:'tr-golcuk',        name:'Gölcük Naval Base',              type:'naval_base',    operator:'Turkey', host:'Turkey',   lat:40.721, lng:29.839,  personnel:8000,  status:'active', notes:'Turkish Naval Forces Command HQ. Sea of Marmara. Submarine fleet homeport (Type 209/1400, Reis-class AIP). Major shipyard. Controls Bosphorus/Dardanelles access.', since:'1930' },
+  { id:'tr-konya',         name:'Konya Air Base (3rd Main Jet)',  type:'airbase',       operator:'Turkey', host:'Turkey',   lat:37.980, lng:32.560,  personnel:4000,  status:'active', notes:'Central Anatolia. F-16C/D fighters, E-7T AEW&C (Peace Eagle). USAF/NATO exercises. One of Turkey\'s largest airbases.', since:'1955' },
+  { id:'tr-diyarbakir',    name:'Diyarbakır Air Base (8th MJB)',  type:'airbase',       operator:'Turkey', host:'Turkey',   lat:37.906, lng:40.201,  personnel:5000,  status:'active', notes:'Southeastern Turkey. F-16C/D. Key base for operations in northern Iraq/Syria against PKK and ISIS. Close to Iranian border. Bayraktar TB2 drone operations.', since:'1956' },
+  { id:'tr-balikesir',     name:'Balıkesir Air Base (9th MJB)',   type:'airbase',       operator:'Turkey', host:'Turkey',   lat:39.626, lng:27.926,  personnel:3000,  status:'active', notes:'Western Turkey. F-16 fighters. Aegean Sea air defense. Intercepts Greek Air Force incursions into disputed airspace.', since:'1954' },
+  { id:'tr-batman',        name:'Batman Air Base',                type:'airbase',       operator:'Turkey', host:'Turkey',   lat:37.925, lng:41.115,  personnel:2000,  status:'active', notes:'Southeastern Turkey. TAI Anka-S armed UAV operations. Anti-PKK ISR/strike missions. Also civilian airport.', since:'1955' },
+  { id:'tr-mersin',        name:'Mersin İskenderun Naval Base',   type:'naval_base',    operator:'Turkey', host:'Turkey',   lat:36.778, lng:36.161,  personnel:3000,  status:'active', notes:'İskenderun Bay. Southern Fleet Cmd. Ada-class corvettes. Mediterranean patrol. Near Syrian border — used extensively 2011-present.', since:'1960' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // IRAN
+  // ═══════════════════════════════════════════════════════════════
+  { id:'ir-bandar-abbas',  name:'Bandar Abbas Naval Base',        type:'naval_base',    operator:'Iran', host:'Iran',     lat:27.177, lng:56.283,  personnel:15000, status:'active', notes:'IRIN HQ Southern Fleet. Strait of Hormuz control. Kilo-class submarines, frigates, fast attack craft, anti-ship cruise missiles. Iran\'s most strategic naval position.', since:'1973' },
+  { id:'ir-jask',          name:'Jask Naval/Air Base',            type:'naval_base',    operator:'Iran', host:'Iran',     lat:25.653, lng:57.788,  personnel:3000,  status:'active', notes:'Gulf of Oman. IRGCN forward operating base. Outside Strait of Hormuz — allows Iranian Navy to operate in open Indian Ocean. Drone base. Submarine capable.', since:'2021' },
+  { id:'ir-chabahar',      name:'Chabahar Naval Base',            type:'naval_base',    operator:'Iran', host:'Iran',     lat:25.292, lng:60.645,  personnel:2000,  status:'active', notes:'Easternmost Iranian port. IRGCN and IRIN presence. Indian Ocean access. India-Iran strategic port cooperation (bypassing Pakistan). Makran coast.', since:'1981' },
+  { id:'ir-bushehr-ab',    name:'Bushehr Air Base (6th TAB)',     type:'airbase',       operator:'Iran', host:'Iran',     lat:28.948, lng:50.835,  personnel:3000,  status:'active', notes:'Persian Gulf coast. F-4E Phantom IIs, Su-24 Fencers. Coastal air defense. Overlooks Gulf oil shipping lanes. Near Bushehr nuclear plant.', since:'1971' },
+  { id:'ir-isfahan',       name:'Isfahan Air Base (8th TAB)',     type:'airbase',       operator:'Iran', host:'Iran',     lat:32.705, lng:51.691,  personnel:5000,  status:'active', notes:'Central Iran. F-14A Tomcats (last operator globally), MiG-29s, F-4Es. IRIAF Tactical Fighter Base. Isfahan nuclear research facilities nearby.', since:'1955' },
+  { id:'ir-parchin',       name:'Parchin Military Complex',       type:'nuclear_weapons',operator:'Iran', host:'Iran',    lat:35.520, lng:51.790,  personnel:5000,  status:'suspected', notes:'Suspected nuclear weapons-related testing site. High-explosive testing for implosion warhead design. IAEA access denied for years. Southeast Tehran.', nuclear:true, since:'1930' },
+  { id:'ir-natanz',        name:'Natanz Uranium Enrichment',      type:'nuclear_weapons',operator:'Iran', host:'Iran',    lat:33.723, lng:51.728,  personnel:3000,  status:'active', notes:'Underground centrifuge facility. IR-6/IR-8 advanced centrifuges. 60% enriched uranium (near weapons-grade). Stuxnet target. IAEA-monitored. Isfahan Province.', nuclear:true, since:'2003' },
+  { id:'ir-fordow',        name:'Fordow Enrichment Facility',     type:'nuclear_weapons',operator:'Iran', host:'Iran',    lat:34.882, lng:51.288,  personnel:1000,  status:'active', notes:'Deeply buried in mountain near Qom. ~1,000 centrifuges enriching to 60%. Hardened against airstrikes. Revealed in 2009. IAEA camera access disputes.', nuclear:true, since:'2009' },
+  { id:'ir-shahrud',       name:'Shahrud Missile Base',           type:'missile_defense',operator:'Iran', host:'Iran',    lat:36.382, lng:55.044,  personnel:2000,  status:'active', notes:'IRGC Aerospace Force. Medium-range and ICBM development testing. Shahab-3, Khorramshahr, Sejjil. Satellite launch tests (dual-use ICBM technology). Northeast Iran.', since:'1990' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SAUDI ARABIA
+  // ═══════════════════════════════════════════════════════════════
+  { id:'sa-king-fahd',     name:'King Fahd Air Base',             type:'airbase',       operator:'Saudi Arabia', host:'Saudi Arabia', lat:26.265, lng:49.779, personnel:6000, status:'active', notes:'RSAF Eastern Province. F-15SA Strike Eagles, Eurofighter Typhoons. Near Dhahran. Major airbase facing Iran/Gulf. Combined Air Operations Center (CAOC).', since:'1946' },
+  { id:'sa-king-faisal',   name:'King Faisal Naval Base',         type:'naval_base',    operator:'Saudi Arabia', host:'Saudi Arabia', lat:21.356, lng:39.092, personnel:5000, status:'active', notes:'Jeddah, Red Sea. RSNF Western Fleet HQ. Al-Riyadh-class frigates, Al-Madinah corvettes. Red Sea maritime security. Near Bab el-Mandeb strait.', since:'1980' },
+  { id:'sa-prince-sultan', name:'Prince Sultan Air Base',         type:'airbase',       operator:'Saudi Arabia', host:'Saudi Arabia', lat:24.062, lng:47.581, personnel:4000, status:'active', notes:'Al Kharj. Central Saudi Arabia. RSAF F-15s. Former US CENTCOM CAOC (2001-2003). Saudi air defense command. Patriot/THAAD missile defense. Used for Yemen campaign.', since:'1998' },
+  { id:'sa-king-khalid',   name:'King Khalid Military City',      type:'army_base',     operator:'Saudi Arabia', host:'Saudi Arabia', lat:27.858, lng:45.518, personnel:20000, status:'active', notes:'Hafar Al-Batin. Massive garrison city near Iraqi/Kuwaiti border. Multiple armored brigades. M1A2S Abrams tanks. Built 1980s for northern defense.', since:'1985' },
+  { id:'sa-jubail',        name:'King Abdul Aziz Naval Base',     type:'naval_base',    operator:'Saudi Arabia', host:'Saudi Arabia', lat:27.014, lng:49.658, personnel:5000, status:'active', notes:'Jubail, Eastern Province. RSNF Eastern Fleet HQ. Al-Sadiq-class patrol boats, mine warfare. Persian Gulf maritime operations. Faces Iran directly.', since:'1983' },
+  { id:'sa-taif',          name:'King Fahd Air Base (Taif)',      type:'airbase',       operator:'Saudi Arabia', host:'Saudi Arabia', lat:21.481, lng:40.541, personnel:3000, status:'active', notes:'RSAF Tornado IDS/GR4. Yemen campaign strike operations. Western Saudi Arabia. Supports Red Sea operations and Yemen border defense.', since:'1950' },
+  { id:'sa-al-sulayyil',   name:'Al-Sulayyil Missile Base',       type:'missile_defense',operator:'Saudi Arabia', host:'Saudi Arabia', lat:20.462, lng:45.579, personnel:1500, status:'suspected', notes:'Suspected DF-3A/DF-21 Chinese medium-range ballistic missile storage. Underground facility in Empty Quarter. Acquired CSS-2 East Wind missiles from China 1987. Potential nuclear delivery platform.', nuclear:true, since:'1987' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // UAE
+  // ═══════════════════════════════════════════════════════════════
+  { id:'ae-dhafra',        name:'Al Dhafra Air Base',             type:'airbase',       operator:'UAE', host:'UAE',       lat:24.248, lng:54.551,  personnel:5000,  status:'active', notes:'Mirage 2000-9s, F-16E/F Block 60 Desert Falcons. Also hosts USAF/French units. Joint base. Major air power hub in Gulf. Abu Dhabi. Ordered 80× F-35s (pending).', since:'1973' },
+  { id:'ae-al-minhad',     name:'Al Minhad Air Base',             type:'airbase',       operator:'UAE', host:'UAE',       lat:25.023, lng:55.366,  personnel:3000,  status:'active', notes:'Dubai. Australian, Canadian, and coalition forces staging base. Used for Afghanistan logistics. UAE Air Force operations. Modern infrastructure.', since:'1990' },
+  { id:'ae-taweelah',      name:'Taweelah Naval Base',            type:'naval_base',    operator:'UAE', host:'UAE',       lat:24.580, lng:54.660,  personnel:3000,  status:'active', notes:'Abu Dhabi. UAE Navy HQ. Baynunah-class corvettes, Falaj-class patrol boats. Gulf maritime security. Anti-Iran deterrence posture.', since:'2010' },
+  { id:'ae-assab',         name:'Assab (UAE Base Eritrea)',        type:'logistics',     operator:'UAE', host:'Eritrea',   lat:13.052, lng:42.741,  personnel:1000,  status:'active', notes:'UAE forward operating base on Red Sea. Used for Yemen military campaign logistics (2015-present). Naval facility, air-capable. Strategic Bab el-Mandeb presence.', since:'2015' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // JAPAN (JSDF)
+  // ═══════════════════════════════════════════════════════════════
+  { id:'jp-yokosuka-jsdf',  name:'JMSDF Yokosuka District',       type:'naval_base',    operator:'Japan', host:'Japan',   lat:35.285, lng:139.668, personnel:12000, status:'active', notes:'JMSDF Fleet HQ co-located with USN. Izumo-class helicopter destroyers (F-35B capable), Kongō-class Aegis destroyers. Japan\'s most powerful naval concentration.', since:'1945' },
+  { id:'jp-kure',           name:'Kure Naval Base (JMSDF)',        type:'naval_base',    operator:'Japan', host:'Japan',   lat:34.234, lng:132.559, personnel:6000,  status:'active', notes:'Hiroshima Prefecture. JMSDF submarine fleet HQ. Sōryū-class and Taigei-class AIP submarines. Historic IJN base (Yamato built here). Japan Maritime Self-Defense Force.', since:'1889' },
+  { id:'jp-hyakuri',        name:'Hyakuri Air Base (JASDF)',       type:'airbase',       operator:'Japan', host:'Japan',   lat:36.182, lng:140.414, personnel:3000,  status:'active', notes:'Ibaraki Prefecture. 7th Air Wing. F-2A fighters (Japanese F-16 derivative), RF-4E reconnaissance. Tokyo air defense.', since:'1966' },
+  { id:'jp-chitose',        name:'Chitose Air Base (JASDF)',       type:'airbase',       operator:'Japan', host:'Japan',   lat:42.795, lng:141.666, personnel:3500,  status:'active', notes:'Hokkaido. 2nd Air Wing. F-15J Eagles. Northern air defense facing Russia. Scrambles against Russian aircraft regularly. Cold weather operations.', since:'1926' },
+  { id:'jp-naha',           name:'Naha Air Base (JASDF)',          type:'airbase',       operator:'Japan', host:'Japan',   lat:26.196, lng:127.646, personnel:4000,  status:'active', notes:'Okinawa. JASDF 9th Air Wing. F-15J/DJ Eagles. Southwestern islands defense. First line against Chinese military activity in East China Sea. Senkaku Islands scrambles.', since:'1972' },
+  { id:'jp-sasebo-jsdf',    name:'JMSDF Sasebo District',          type:'naval_base',    operator:'Japan', host:'Japan',   lat:33.174, lng:129.715, personnel:5000,  status:'active', notes:'Nagasaki Prefecture. JMSDF amphibious operations. Ōsumi-class LSTs, mine warfare. Faces East China Sea and Korean Peninsula. Co-located with US Navy facilities.', since:'1889' },
+  { id:'jp-camp-fuji',      name:'Camp Fuji (JGSDF/USMC)',        type:'training',      operator:'Japan', host:'Japan',   lat:35.274, lng:138.924, personnel:2000,  status:'active', notes:'Shizuoka Prefecture. Combined US-Japan live-fire training area at foot of Mount Fuji. JGSDF and USMC joint exercises. Type 10 tank operations.', since:'1945' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SOUTH KOREA (ROK)
+  // ═══════════════════════════════════════════════════════════════
+  { id:'kr-gyeryongdae',    name:'Gyeryongdae Military HQ',       type:'army_base',     operator:'S.Korea', host:'S.Korea', lat:36.350, lng:127.015, personnel:10000, status:'active', notes:'South Chungcheong Province. ROK Army, Navy, Air Force HQ consolidated complex. Korean "Pentagon". Operational command center for all three branches.', since:'1989' },
+  { id:'kr-jinhae',         name:'Jinhae Naval Base',              type:'naval_base',    operator:'S.Korea', host:'S.Korea', lat:35.133, lng:128.665, personnel:12000, status:'active', notes:'ROKN Fleet HQ. Sejong the Great-class Aegis destroyers, Son Won-il-class submarines. South Korea\'s largest naval base. Gyeongsang Province.', since:'1945' },
+  { id:'kr-gwangju',        name:'Gwangju Air Base',               type:'airbase',       operator:'S.Korea', host:'S.Korea', lat:35.120, lng:126.814, personnel:3000,  status:'active', notes:'ROKAF 1st Fighter Wing. KF-16 Fighting Falcons. Southern air defense. Southwestern Korea. E-737 Peace Eye AEW&C.', since:'1948' },
+  { id:'kr-cheongju',       name:'Cheongju Air Base',              type:'airbase',       operator:'S.Korea', host:'S.Korea', lat:36.717, lng:127.499, personnel:3000,  status:'active', notes:'ROKAF 17th Fighter Wing. KF-21 Boramae next-gen fighter initial deployment. Central Korea. F-5E/F and KF-16 transition.', since:'1958' },
+  { id:'kr-seongnam',       name:'Seoul Air Base (Seongnam)',      type:'airbase',       operator:'S.Korea', host:'S.Korea', lat:37.444, lng:127.114, personnel:5000,  status:'active', notes:'ROKAF HQ, VIP transport. KC-330 tankers, Boeing 737 SIGINT. Near Seoul. Government continuity site. Hosts Air Force One equivalent.', since:'1950' },
+  { id:'kr-jeju',           name:'Jeju Naval Base',                type:'naval_base',    operator:'S.Korea', host:'S.Korea', lat:33.227, lng:126.517, personnel:3000,  status:'active', notes:'Gangjeong village, Jeju Island. Opened 2016. Controversial — protests over environmental damage. Aegis destroyers, submarines. Controls Korea Strait.', since:'2016' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // GERMANY (BUNDESWEHR)
+  // ═══════════════════════════════════════════════════════════════
+  { id:'de-buechel',        name:'Fliegerhorst Büchel',            type:'nuclear_weapons',operator:'Germany', host:'Germany', lat:50.174, lng:7.063, personnel:1500, status:'active', notes:'Tactical Air Force Squadron 33. Tornado IDS — NATO nuclear sharing (B61 gravity bombs). Germany\'s nuclear strike role under NATO\'s nuclear umbrella. Rhineland-Palatinate.', nuclear:true, since:'1955' },
+  { id:'de-geilenkirchen',  name:'NATO Air Base Geilenkirchen',    type:'airbase',       operator:'NATO', host:'Germany',     lat:50.961, lng:6.041, personnel:3000, status:'active', notes:'NATO AWACS fleet home base. E-3A Sentry (17 aircraft). Multi-national aircrew. Provides airborne early warning for all of NATO Europe.', since:'1968' },
+  { id:'de-rostock',        name:'Rostock-Laage Air Base',         type:'airbase',       operator:'Germany', host:'Germany', lat:53.918, lng:12.278, personnel:2000, status:'active', notes:'Eurofighter Typhoon (TLG 73 "Steinhoff"). Baltic air policing. Northern Germany. Faces Russia across the Baltic Sea.', since:'1993' },
+  { id:'de-wilhelmshaven',  name:'Wilhelmshaven Naval Base',       type:'naval_base',    operator:'Germany', host:'Germany', lat:53.512, lng:8.148,  personnel:5000, status:'active', notes:'Deutsche Marine HQ. F125 Baden-Württemberg frigates, K130 corvettes. North Sea fleet hub. NATO Standing Naval Forces.', since:'1869' },
+  { id:'de-kiel',           name:'Kiel Naval Base',                type:'naval_base',    operator:'Germany', host:'Germany', lat:54.328, lng:10.133, personnel:3000, status:'active', notes:'Submarine force HQ. Type 212A AIP submarines. Baltic Sea operations. Eckernförde naval special forces (KSM). Germany\'s primary submarine port.', since:'1865' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // ITALY
+  // ═══════════════════════════════════════════════════════════════
+  { id:'it-ghedi',          name:'Ghedi Air Base',                 type:'nuclear_weapons',operator:'Italy', host:'Italy',   lat:45.432, lng:10.277, personnel:2000, status:'active', notes:'6° Stormo. Tornado IDS — NATO nuclear sharing (B61-12 gravity bombs). Italy\'s nuclear strike role. Lombardy. Upgrading to F-35A for nuclear mission.', nuclear:true, since:'1956' },
+  { id:'it-amendola',       name:'Amendola Air Base',              type:'airbase',       operator:'Italy', host:'Italy',   lat:41.541, lng:15.718, personnel:2500, status:'active', notes:'32° Stormo. F-35A Lightning II — Italy\'s first F-35 operating base. MQ-9A Predator B drones. Puglia. Southern air power projection.', since:'1934' },
+  { id:'it-taranto',        name:'Taranto Naval Base (Mar Grande)',type:'naval_base',    operator:'Italy', host:'Italy',   lat:40.445, lng:17.219, personnel:8000, status:'active', notes:'Marina Militare fleet HQ. Cavour aircraft carrier homeport. FREMM frigates, U212 submarines. Mediterranean naval power. Ionian Sea. Historic Italian naval hub.', since:'1889' },
+  { id:'it-la-spezia',      name:'La Spezia Naval Base',           type:'naval_base',    operator:'Italy', host:'Italy',   lat:44.103, lng:9.845,  personnel:5000, status:'active', notes:'Ligurian Sea. COMSUBIN (naval special forces) HQ. FREMM frigates. NATO CMRE (Centre for Maritime Research). Submarine base.', since:'1861' },
+  { id:'it-pratica',        name:'Pratica di Mare Air Base',       type:'airbase',       operator:'Italy', host:'Italy',   lat:41.650, lng:12.449, personnel:3000, status:'active', notes:'South of Rome. Italian Air Force Flight Test Centre. KC-767A tankers, Carabinieri helicopter wing. NATO exercises staging.', since:'1938' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // INDIA — EXPANDED
+  // ═══════════════════════════════════════════════════════════════
+  { id:'in-andaman',        name:'INS Baaz (Andaman & Nicobar)',   type:'naval_base',    operator:'India', host:'India',    lat:6.811,  lng:93.906,  personnel:3000,  status:'active', notes:'India\'s southernmost military base. Tri-services command. Malacca Strait monitoring. Strategic Indian Ocean presence. MiG-29K, P-8I Poseidon capable.', since:'2012' },
+  { id:'in-karwar',         name:'INS Kadamba (Karwar)',            type:'naval_base',    operator:'India', host:'India',    lat:14.783, lng:74.117,  personnel:8000,  status:'active', notes:'Project Seabird — India\'s largest naval base. Karnataka. Aircraft carrier INS Vikramaditya homeport. Nuclear submarine base expansion. 20+ berths.', since:'2005' },
+  { id:'in-ambala',         name:'Ambala Air Force Station',       type:'airbase',       operator:'India', host:'India',    lat:30.364, lng:76.816,  personnel:5000,  status:'active', notes:'IAF No. 17 "Golden Arrows" Squadron. First Rafale fighter base in India. 36 Dassault Rafales. Haryana. Northwestern air defense against Pakistan/China.', since:'1948' },
+  { id:'in-leh',            name:'Leh Air Force Station',          type:'airbase',       operator:'India', host:'India',    lat:34.136, lng:77.546,  personnel:3000,  status:'active', notes:'Ladakh. 14,000ft elevation — one of world\'s highest military airbases. C-17, C-130J operations. LAC (Line of Actual Control) with China. Critical post-Galwan crisis 2020.', since:'1947' },
+  { id:'in-agra',           name:'Agra Missile Base',              type:'nuclear_weapons',operator:'India', host:'India',    lat:27.157, lng:77.960,  personnel:2000,  status:'active', notes:'Strategic Forces Command. Agni-V ICBM (5,500+ km range, MIRV capable). India\'s land-based nuclear deterrent against China. Multiple warhead capacity.', nuclear:true, since:'2012' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // EGYPT
+  // ═══════════════════════════════════════════════════════════════
+  { id:'eg-cairo-west',     name:'Cairo West Air Base',            type:'airbase',       operator:'Egypt', host:'Egypt',    lat:30.116, lng:30.915,  personnel:5000,  status:'active', notes:'EAF strategic base near Cairo. MiG-29M/M2, Rafale DM/EM. Air defense command. Egypt\'s most capable fighter base. Giza Governorate.', since:'1952' },
+  { id:'eg-mersa-matruh',   name:'Mersa Matruh Air Base',          type:'airbase',       operator:'Egypt', host:'Egypt',    lat:31.325, lng:27.222,  personnel:3000,  status:'active', notes:'Western Mediterranean coast. F-16C/D Block 40/52. Air defense facing Libya. NATO-compatible infrastructure. Mediterranean maritime patrol.', since:'1940' },
+  { id:'eg-berenice',       name:'Berenice Military Base',         type:'naval_base',    operator:'Egypt', host:'Egypt',    lat:23.946, lng:35.456,  personnel:5000,  status:'active', notes:'Red Sea coast. Opened 2020 — Egypt\'s newest and southernmost military base. Naval facility, airstrip, amphibious staging. Near Sudan border. Southern Red Sea control.', since:'2020' },
+  { id:'eg-ras-banas',      name:'Ras Banas Air Base',             type:'airbase',       operator:'Egypt', host:'Egypt',    lat:23.991, lng:35.484,  personnel:2000,  status:'active', notes:'Red Sea coast adjacent to Berenice. Long runway for strategic airlift. Potential US/coalition use. Bab el-Mandeb area of operations.', since:'1982' },
+  { id:'eg-alexandria',     name:'Ras el-Tin Naval Base',          type:'naval_base',    operator:'Egypt', host:'Egypt',    lat:31.207, lng:29.872,  personnel:8000,  status:'active', notes:'Egyptian Navy HQ. Alexandria. FREMM frigates (from France/Italy), Type 209 submarines, Mistral-class LHDs. Mediterranean Fleet. Egypt\'s most powerful naval force concentration.', since:'1882' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // BRAZIL
+  // ═══════════════════════════════════════════════════════════════
+  { id:'br-natal',          name:'Natal Air Base (BANT)',           type:'airbase',       operator:'Brazil', host:'Brazil',  lat:-5.911, lng:-35.248, personnel:3000,  status:'active', notes:'Closest point in Americas to Africa. F-39 Gripen E base. Air defense of northeastern coast. Parnamirim. Strategic for South Atlantic patrol.', since:'1942' },
+  { id:'br-sao-pedro',      name:'São Pedro da Aldeia (ABNSP)',    type:'naval_base',    operator:'Brazil', host:'Brazil',  lat:-22.807, lng:-42.098, personnel:5000, status:'active', notes:'Brazilian Naval Aviation HQ. AF-1 Skyhawk (carrier-capable), S-70B Seahawk helicopters. Near Rio. Supports NAe São Paulo aircraft carrier operations.', since:'1965' },
+  { id:'br-itaguai',        name:'Itaguaí Submarine Base (PROSUB)',type:'naval_base',    operator:'Brazil', host:'Brazil',  lat:-22.884, lng:-43.862, personnel:4000, status:'active', notes:'Brazil\'s nuclear submarine program (PROSUB). Scorpène-class SSK construction. SN-BR Alvaro Alberto nuclear attack submarine under construction. DCNS/Naval Group partnership.', nuclear:true, since:'2018' },
+  { id:'br-campo-grande',   name:'Campo Grande Air Base',          type:'airbase',       operator:'Brazil', host:'Brazil',  lat:-20.469, lng:-54.673, personnel:2000, status:'active', notes:'FAB. A-29 Super Tucano light attack. Amazon/Pantanal surveillance. Anti-narcotics operations. Mato Grosso do Sul. E-99 AEW&C.', since:'1960' },
+  { id:'br-alcantara',      name:'Alcântara Launch Center',        type:'space',         operator:'Brazil', host:'Brazil',  lat:-2.373, lng:-44.396, personnel:1500, status:'active', notes:'Maranhão. Closest launch pad to equator in the Americas. Sounding rockets, VLS rocket program (failed 2003). US Space Force Technology Safeguards Agreement signed 2019.', since:'1990' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // GREECE
+  // ═══════════════════════════════════════════════════════════════
+  { id:'gr-souda',          name:'Souda Bay Naval Base',           type:'naval_base',    operator:'Greece', host:'Greece',  lat:35.488, lng:24.128,  personnel:4000,  status:'active', notes:'Crete. NATO deep-water port. US Navy forward staging. MEKO 200 frigates, Type 214 submarines. Eastern Mediterranean naval hub. Recently expanded US access agreement.', since:'1969' },
+  { id:'gr-araxos',         name:'Araxos Air Base',                type:'airbase',       operator:'Greece', host:'Greece',  lat:38.151, lng:21.425,  personnel:2000,  status:'active', notes:'Peloponnese. HAF 116th Combat Wing. F-16C/D Block 52+. Nuclear weapons storage capability (NATO infrastructure). US nuclear weapons deployed during Cold War.', since:'1951' },
+  { id:'gr-tanagra',        name:'Tanagra Air Base',               type:'airbase',       operator:'Greece', host:'Greece',  lat:38.340, lng:23.565,  personnel:3000,  status:'active', notes:'HAF 114th Combat Wing. Rafale (24 ordered from France, replacing Mirage 2000). Near Athens. Aegean air defense against Turkish Air Force incursions.', since:'1951' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // POLAND
+  // ═══════════════════════════════════════════════════════════════
+  { id:'pl-redzikowo',      name:'Aegis Ashore Redzikowo',         type:'missile_defense',operator:'NATO', host:'Poland',   lat:54.479, lng:17.100,  personnel:500,   status:'active', notes:'NATO Ballistic Missile Defense. SM-3 Block IIA interceptors. Became operational 2024. Complements Romania Deveselu site. Russia strongly objects — claims it threatens strategic stability.', since:'2024' },
+  { id:'pl-lask',           name:'32nd Air Base Łask',             type:'airbase',       operator:'Poland', host:'Poland',  lat:51.551, lng:19.179,  personnel:3000,  status:'active', notes:'F-16C/D Block 52+ (48 aircraft). Poland\'s primary multirole fighter base. Central Poland. NATO enhanced Air Policing. Hosts rotational US F-35 deployments.', since:'2006' },
+  { id:'pl-poznan',         name:'V Corps Forward HQ Poznań',      type:'army_base',     operator:'US', host:'Poland',      lat:52.407, lng:16.899,  personnel:1000,  status:'active', notes:'US Army V Corps forward headquarters established 2022 after Russia-Ukraine war. First permanent US military garrison in Poland. NATO eastern flank command.', since:'2022' },
+  { id:'pl-malbork',        name:'22nd Air Base Malbork',          type:'airbase',       operator:'Poland', host:'Poland',  lat:54.027, lng:19.134,  personnel:2000,  status:'active', notes:'MiG-29 fighters (being replaced by FA-50 and F-35). Northeastern Poland. Baltic Air Policing mission support. Kaliningrad monitoring.', since:'1945' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // ROMANIA
+  // ═══════════════════════════════════════════════════════════════
+  { id:'ro-deveselu',       name:'Aegis Ashore Deveselu',          type:'missile_defense',operator:'NATO', host:'Romania',  lat:43.773, lng:24.280,  personnel:500,   status:'active', notes:'NATO BMD site. SM-3 Block IB interceptors (upgrading to IIA). Operational since 2016. Russia considers it existential threat — claims Mk 41 VLS could launch Tomahawks.', since:'2016' },
+  { id:'ro-kogalniceanu',   name:'Mihail Kogălniceanu Air Base',   type:'airbase',       operator:'Romania', host:'Romania', lat:44.362, lng:28.492, personnel:4000,  status:'active', notes:'Black Sea coast. US/NATO rotational forces. F-16AM (Portuguese/Norwegian transfer). Romania\'s main operational fighter base. Afghanistan staging 2001-2021.', since:'1999' },
+  { id:'ro-campia-turzii',  name:'Câmpia Turzii Air Base (71st)', type:'airbase',       operator:'Romania', host:'Romania', lat:46.498, lng:23.890, personnel:2000,  status:'active', notes:'Transylvania. F-16AM fighters. Designated for F-35A procurement (32 aircraft ordered). US rotational forces. Central NATO eastern flank.', since:'1952' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // NORWAY
+  // ═══════════════════════════════════════════════════════════════
+  { id:'no-ramsund',        name:'Ramsund Naval Station',          type:'naval_base',    operator:'Norway', host:'Norway',  lat:68.451, lng:16.517,  personnel:1500,  status:'active', notes:'Northern Norway. Sjøforsvaret. Submarine support for Ula-class SSK. Arctic operations. Russian Northern Fleet monitoring. NATO maritime surveillance.', since:'1960' },
+  { id:'no-oerland',        name:'Ørland Air Station',             type:'airbase',       operator:'Norway', host:'Norway',  lat:63.699, lng:9.604,   personnel:3000,  status:'active', notes:'Royal Norwegian Air Force. F-35A Lightning II (52 aircraft — Norway\'s entire fighter fleet). Arctic air defense. NATO Quick Reaction Alert. Faces Russian Arctic bases.', since:'1941' },
+  { id:'no-bodo',           name:'Bodø Main Air Station',          type:'airbase',       operator:'Norway', host:'Norway',  lat:67.269, lng:14.365,  personnel:2000,  status:'active', notes:'NATO CAOC Finmark. P-3 Orion maritime patrol (being replaced by P-8). MQ-4C Triton deployment planned. Russian submarine tracking. Above Arctic Circle.', since:'1952' },
+  { id:'no-haakonsvern',    name:'Haakonsvern Naval Base',         type:'naval_base',    operator:'Norway', host:'Norway',  lat:60.324, lng:5.261,   personnel:5000,  status:'active', notes:'Bergen. Royal Norwegian Navy HQ. Fridtjof Nansen-class frigates (Aegis), Ula-class submarines. NATO Standing Naval Force. North Sea/Norwegian Sea control.', since:'1963' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SPAIN
+  // ═══════════════════════════════════════════════════════════════
+  { id:'es-rota',           name:'Rota Naval Base',                type:'naval_base',    operator:'Spain', host:'Spain',    lat:36.641, lng:-6.349,  personnel:7000,  status:'active', notes:'Joint US-Spanish base. US NAVSTA Rota — 4× Aegis BMD destroyers (DDG-51). Spanish Armada fleet. Atlantic/Mediterranean gateway. Cadiz. NATO maritime operations.', since:'1955' },
+  { id:'es-moron',          name:'Morón Air Base',                 type:'airbase',       operator:'Spain', host:'Spain',    lat:37.175, lng:-5.616,  personnel:3000,  status:'active', notes:'Joint US-Spanish. USMC SPMAGTF-CR (Crisis Response Africa). KC-130J tankers, MV-22 Ospreys. Seville. Staging for AFRICOM operations.', since:'1953' },
+  { id:'es-torrejon',       name:'Torrejón Air Base',              type:'airbase',       operator:'Spain', host:'Spain',    lat:40.487, lng:-3.446,  personnel:4000,  status:'active', notes:'Ejército del Aire. Eurofighter Typhoon (Ala 12). Near Madrid. Spain\'s primary interceptor base. NATO air policing. EU Satellite Centre co-located.', since:'1957' },
+  { id:'es-cartagena',      name:'Cartagena Naval Base',           type:'naval_base',    operator:'Spain', host:'Spain',    lat:37.584, lng:-0.981,  personnel:6000,  status:'active', notes:'Mediterranean Fleet HQ. S-80 Plus submarines (under construction), F-100 Aegis frigates. Murcia. Spain\'s main Mediterranean naval hub. Historic port since Carthage.', since:'240 BCE' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // NETHERLANDS
+  // ═══════════════════════════════════════════════════════════════
+  { id:'nl-volkel',         name:'Volkel Air Base',                type:'nuclear_weapons',operator:'Netherlands', host:'Netherlands', lat:51.654, lng:5.707, personnel:2000, status:'active', notes:'NATO nuclear sharing. F-35A Lightning II (replacing F-16AM). ~20 B61-12 nuclear gravity bombs in WS3 vaults. 312/313 Sqn. North Brabant. Netherlands nuclear strike role.', nuclear:true, since:'1954' },
+  { id:'nl-den-helder',     name:'Den Helder Naval Base',          type:'naval_base',    operator:'Netherlands', host:'Netherlands', lat:52.959, lng:4.797, personnel:4000, status:'active', notes:'Royal Netherlands Navy HQ. De Zeven Provinciën-class frigates (SMART-L radar), Walrus-class submarines. North Sea maritime security. NATO SNMG.', since:'1947' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // BELGIUM
+  // ═══════════════════════════════════════════════════════════════
+  { id:'be-kleine-brogel',  name:'Kleine-Brogel Air Base',         type:'nuclear_weapons',operator:'Belgium', host:'Belgium', lat:51.168, lng:5.470, personnel:1500, status:'active', notes:'10th Tactical Wing. F-16AM (transitioning to F-35A). NATO nuclear sharing — ~20 B61-12 nuclear gravity bombs. Limburg. Belgium nuclear strike role.', nuclear:true, since:'1953' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // TAIWAN (ROC)
+  // ═══════════════════════════════════════════════════════════════
+  { id:'tw-zuoying',        name:'Zuoying Naval Base',             type:'naval_base',    operator:'Taiwan', host:'Taiwan',  lat:22.700, lng:120.275, personnel:8000,  status:'active', notes:'ROCN Fleet Command. Keelung-class destroyers (ex-US Kidd), Lafayette-class frigates. Southern Taiwan. Faces PLA South China Sea forces.', since:'1945' },
+  { id:'tw-hualien',        name:'Hualien Air Base',               type:'airbase',       operator:'Taiwan', host:'Taiwan',  lat:24.023, lng:121.618, personnel:3000,  status:'active', notes:'ROCAF F-16V Vipers (66 aircraft). Eastern Taiwan coast. Hardened mountain shelters (Jiashan facility — underground hangar for 200+ aircraft). Most survivable Taiwan base.', since:'1936' },
+  { id:'tw-taichung',       name:'Ching Chuan Kang Air Base',      type:'airbase',       operator:'Taiwan', host:'Taiwan',  lat:24.264, lng:120.621, personnel:4000,  status:'active', notes:'Central Taiwan. Indigenous Defense Fighters (IDF Ching-kuo), E-2K Hawkeye AEW. ROCAF Air Defense Command. Former US base during Vietnam War.', since:'1954' },
+  { id:'tw-hsinchu',        name:'Hsinchu Air Base',               type:'airbase',       operator:'Taiwan', host:'Taiwan',  lat:24.818, lng:120.939, personnel:3000,  status:'active', notes:'Mirage 2000-5 (from France). Northern Taiwan air defense. ROCAF 2nd Tactical Fighter Wing. Faces PLA Eastern Theater Command directly.', since:'1936' },
+  { id:'tw-chiashan',       name:'Chiashan Underground Base',      type:'airbase',       operator:'Taiwan', host:'Taiwan',  lat:24.048, lng:121.558, personnel:1000,  status:'active', notes:'Massive underground aircraft shelter carved into Hualien mountains. Reportedly holds 200+ fighter aircraft. Blast-hardened against missile/bomb strikes. Taiwan\'s strategic reserve.', since:'1992' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SINGAPORE
+  // ═══════════════════════════════════════════════════════════════
+  { id:'sg-changi',         name:'Changi Naval Base',              type:'naval_base',    operator:'Singapore', host:'Singapore', lat:1.346, lng:104.000, personnel:5000, status:'active', notes:'RSN HQ. Formidable-class frigates (ESSM/Aster), Archer-class submarines. Malacca Strait control. US Navy logistics agreement. Largest naval base in SE Asia per sq km.', since:'2004' },
+  { id:'sg-tengah',         name:'Tengah Air Base',                type:'airbase',       operator:'Singapore', host:'Singapore', lat:1.387, lng:103.709, personnel:3000, status:'active', notes:'RSAF. F-15SG Strike Eagles, F-16D+ Block 52. Singapore\'s primary fighter base. Underground hangars. F-35B on order (12 aircraft). Highly modernized.', since:'1971' },
+  { id:'sg-paya-lebar',     name:'Paya Lebar Air Base',            type:'airbase',       operator:'Singapore', host:'Singapore', lat:1.359, lng:103.909, personnel:2000, status:'active', notes:'RSAF transport, AEW&C (G550 CAEW), tanker operations. Military intelligence. Being relocated to Changi East (2030s) to free up prime urban land.', since:'1954' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // INDONESIA
+  // ═══════════════════════════════════════════════════════════════
+  { id:'id-surabaya',       name:'Surabaya Naval Base (Koarmatim)',type:'naval_base',    operator:'Indonesia', host:'Indonesia', lat:-7.215, lng:112.729, personnel:10000, status:'active', notes:'TNI-AL Eastern Fleet Command. SIGMA-class corvettes, Chang Bogo-class submarines. Java Sea. Indonesia\'s largest naval base. Natuna Islands patrol operations.', since:'1945' },
+  { id:'id-halim',          name:'Halim Perdanakusuma Air Base',   type:'airbase',       operator:'Indonesia', host:'Indonesia', lat:-6.262, lng:106.891, personnel:4000,  status:'active', notes:'Jakarta. TNI-AU strategic airlift (C-130H/J). Presidential flights. Su-27/Su-30 fighters. National air defense command. VIP transport hub.', since:'1945' },
+  { id:'id-makassar',       name:'Sultan Hasanuddin Air Base',     type:'airbase',       operator:'Indonesia', host:'Indonesia', lat:-5.064, lng:119.554, personnel:3000,  status:'active', notes:'Sulawesi. F-16C/D Block 25 (upgraded). Eastern Indonesia air defense. Makassar Strait maritime patrol. Su-30MK2 multirole fighters.', since:'1942' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PAKISTAN — EXPANDED
+  // ═══════════════════════════════════════════════════════════════
+  { id:'pk-kamra',          name:'PAC Kamra (Minhas Air Base)',    type:'airbase',       operator:'Pakistan', host:'Pakistan', lat:33.869, lng:72.398, personnel:5000,  status:'active', notes:'Pakistan Aeronautical Complex. JF-17 Thunder production facility and base. F-16A/B MLU. Nuclear-capable fighter delivery. Punjab. Pakistan\'s aviation industry hub.', since:'1968' },
+  { id:'pk-karachi-navy',   name:'PNS Zulfiquar (Karachi)',       type:'naval_base',    operator:'Pakistan', host:'Pakistan', lat:24.843, lng:66.998, personnel:8000,  status:'active', notes:'Pakistan Navy HQ. Azmat-class FACs, F-22P frigates, Agosta-90B submarines (AIP). Arabian Sea maritime operations. Balochistan coastal defense.', since:'1947' },
+  { id:'pk-sargodha',       name:'PAF Base Mushaf (Sargodha)',    type:'nuclear_weapons',operator:'Pakistan', host:'Pakistan', lat:32.047, lng:72.668, personnel:4000,  status:'active', notes:'Nuclear-capable F-16 and JF-17 base. Suspected nuclear weapons storage. No. 14 Squadron. Punjab. Central Pakistan — deep interior for survivability.', nuclear:true, since:'1966' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // VIETNAM
+  // ═══════════════════════════════════════════════════════════════
+  { id:'vn-cam-ranh',       name:'Cam Ranh Bay Naval Base',        type:'naval_base',    operator:'Vietnam', host:'Vietnam', lat:11.998, lng:109.219, personnel:5000,  status:'active', notes:'Historic deep-water port (former US, then Soviet base). VPAN HQ. Kilo-class submarines (6× from Russia), Gepard frigates. South China Sea maritime defense. Key strategic position.', since:'1905' },
+  { id:'vn-da-nang',        name:'Da Nang Air Base',               type:'airbase',       operator:'Vietnam', host:'Vietnam', lat:16.044, lng:108.199, personnel:3000,  status:'active', notes:'Central Vietnam. Su-30MK2 multirole fighters. Paracel Islands air patrol. South China Sea air defense. Former US major base during Vietnam War.', since:'1965' },
+  { id:'vn-phan-rang',      name:'Phan Rang Air Base',             type:'airbase',       operator:'Vietnam', host:'Vietnam', lat:11.632, lng:108.952, personnel:2000,  status:'active', notes:'Southern Vietnam. Su-22M4 Fitter strike aircraft. Maritime patrol. Spratly Islands area operations. VPAF 937th Fighter Regiment.', since:'1965' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PHILIPPINES
+  // ═══════════════════════════════════════════════════════════════
+  { id:'ph-subic',          name:'Subic Bay Freeport (EDCA)',      type:'naval_base',    operator:'Philippines', host:'Philippines', lat:14.794, lng:120.283, personnel:3000, status:'active', notes:'Former USN base (closed 1992). Philippine Navy uses facilities. EDCA agreement allows US rotational forces. Ship maintenance. Facing South China Sea.', since:'1992' },
+  { id:'ph-clark',          name:'Clark Air Base (EDCA)',          type:'airbase',       operator:'Philippines', host:'Philippines', lat:15.186, lng:120.559, personnel:4000, status:'active', notes:'Former USAF base. Philippine Air Force HQ. FA-50PH light fighters. EDCA enhanced defense cooperation. Luzon. US rotational access since 2014.', since:'1903' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // MALAYSIA
+  // ═══════════════════════════════════════════════════════════════
+  { id:'my-lumut',          name:'KD Sultan Abdul Halim (Lumut)',  type:'naval_base',    operator:'Malaysia', host:'Malaysia', lat:4.241, lng:100.622, personnel:4000,  status:'active', notes:'Royal Malaysian Navy HQ (TLDM). Scorpène-class submarines, Kedah-class OPVs. Strait of Malacca patrol. Perak. South China Sea sovereignty operations.', since:'1984' },
+  { id:'my-butterworth',    name:'RMAF Butterworth',               type:'airbase',       operator:'Malaysia', host:'Malaysia', lat:5.466, lng:100.391, personnel:3000,  status:'active', notes:'Penang. Su-30MKM Flankers, F/A-18D Hornets. RMAF\'s primary fighter base. Five Power Defence Arrangements (FPDA) with Australia, NZ, UK, Singapore.', since:'1941' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // QATAR
+  // ═══════════════════════════════════════════════════════════════
+  { id:'qa-dukhan',         name:'Dukhan Air Base',                type:'airbase',       operator:'Qatar', host:'Qatar',    lat:25.454, lng:50.773,  personnel:2000,  status:'active', notes:'QEAF. Rafale EQ/DQ (36 ordered from France). Eurofighter Typhoon (24). Qatar\'s most modern air fleet. Western Qatar. Rapid military modernization.', since:'2019' },
+  { id:'qa-hamad-port',     name:'Hamad Port Naval Facility',      type:'naval_base',    operator:'Qatar', host:'Qatar',    lat:25.017, lng:51.550,  personnel:2000,  status:'active', notes:'QENF. Vita-class corvettes, Damen OPVs. New mega-port with military section. Persian Gulf maritime security. Near Al Udeid (US CENTCOM hub).', since:'2017' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // ALGERIA
+  // ═══════════════════════════════════════════════════════════════
+  { id:'dz-boufarik',       name:'Boufarik Air Base',              type:'airbase',       operator:'Algeria', host:'Algeria',  lat:36.545, lng:2.876,  personnel:4000,  status:'active', notes:'ANP Air Force. Su-30MKA Flankers (58 aircraft — largest African Flanker fleet). Near Algiers. Strategic air defense and maritime patrol. Russian-equipped.', since:'1962' },
+  { id:'dz-mers-el-kebir',  name:'Mers el-Kébir Naval Base',      type:'naval_base',    operator:'Algeria', host:'Algeria',  lat:35.716, lng:-0.725, personnel:5000,  status:'active', notes:'Oran. ANP Navy HQ. Kilo-class submarines, MEKO A200 frigates. Mediterranean Fleet. Algeria\'s main naval power projection hub. Historic French colonial base.', since:'1962' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SOUTH AFRICA
+  // ═══════════════════════════════════════════════════════════════
+  { id:'za-simonstown',     name:'Simon\'s Town Naval Base',       type:'naval_base',    operator:'S.Africa', host:'S.Africa', lat:-34.195, lng:18.440, personnel:4000, status:'active', notes:'SAN HQ. Cape Town. Valour-class frigates, Heroine-class submarines (Type 209). South Atlantic/Indian Ocean patrol. Cape route maritime security.', since:'1957' },
+  { id:'za-waterkloof',     name:'AFB Waterkloof',                 type:'airbase',       operator:'S.Africa', host:'S.Africa', lat:-25.830, lng:28.223, personnel:3000, status:'active', notes:'SAAF largest base. Pretoria. Gripen E/F fighters (26), C-130BZ Hercules. South Africa\'s primary military airlift and air defense hub.', since:'1938' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // NIGERIA
+  // ═══════════════════════════════════════════════════════════════
+  { id:'ng-abuja',          name:'Nnamdi Azikiwe AB (NAF Base)',   type:'airbase',       operator:'Nigeria', host:'Nigeria',  lat:9.006, lng:7.263,   personnel:3000,  status:'active', notes:'Nigerian Air Force. JF-17 Thunder (under delivery), F-7Ni, Super Tucano (A-29). Counter-insurgency (Boko Haram). Federal Capital Territory. COIN operations.', since:'2000' },
+  { id:'ng-maiduguri',      name:'Maiduguri Air Base',             type:'airbase',       operator:'Nigeria', host:'Nigeria',  lat:11.855, lng:13.081, personnel:2000,  status:'active', notes:'NAF. Northeastern Nigeria. Primary COIN air operations base against Boko Haram/ISWAP. Super Tucano, CH-3 drones. Borno State. Lake Chad Basin operations.', since:'2015' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // KENYA
+  // ═══════════════════════════════════════════════════════════════
+  { id:'ke-nanyuki',        name:'Nanyuki BATUK Training Base',    type:'training',      operator:'UK', host:'Kenya',        lat:0.017, lng:37.074,  personnel:1500,  status:'active', notes:'British Army Training Unit Kenya (BATUK). Permanent UK training presence. 10,000 troops rotate annually. Live-fire exercises. Central Kenya. Post-colonial partnership.', since:'1964' },
+  { id:'ke-manda-bay',      name:'Manda Bay Airstrip (Camp Simba)',type:'airbase',       operator:'US', host:'Kenya',        lat:-2.252, lng:40.913,  personnel:500,   status:'active', notes:'US military base near Lamu. Counter-terrorism (Al-Shabaab). MQ-9 Reaper drone operations. Attacked by Al-Shabaab January 2020. AFRICOM operations.', since:'2004' },
+
+  // ═══════════════════════════════════════════════════════════════
+  // DJIBOUTI (MULTI-NATIONAL)
+  // ═══════════════════════════════════════════════════════════════
+  { id:'dj-lemonnier',      name:'Camp Lemonnier (US)',            type:'army_base',     operator:'US', host:'Djibouti',     lat:11.547, lng:43.153,  personnel:4000,  status:'active', notes:'Only permanent US military base in Africa. CJTF-HOA. MQ-9 Reapers, P-3 Orion. Counter-terrorism operations. $1.4B lease to 2044. Bab el-Mandeb strait control.', since:'2003' },
+  { id:'dj-japan',          name:'JSDF Djibouti Base',             type:'logistics',     operator:'Japan', host:'Djibouti',   lat:11.553, lng:43.159,  personnel:170,   status:'active', notes:'Japan\'s only overseas military facility. JMSDF P-3C anti-piracy patrols. Gulf of Aden maritime security. Small but symbolically significant for Japan\'s post-WWII military posture.', since:'2011' },
+  { id:'dj-italy',          name:'Base Militare Italiana Djibouti',type:'logistics',     operator:'Italy', host:'Djibouti',   lat:11.555, lng:43.145,  personnel:300,   status:'active', notes:'Italian military support base. Anti-piracy (Operation Atalanta). EUNAVFOR support. Carabinieri training for Djiboutian forces.', since:'2013' },
 ]
 
 // ═══════════════════════════════════════════════════════════════════════════

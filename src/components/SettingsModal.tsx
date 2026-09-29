@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { X } from 'lucide-react'
 import type { MapViewMode, PanelState } from '../types'
 
 const TABS = ['GENERAL', 'LAYERS', 'DATA SOURCES', 'API KEYS', 'DISPLAY', 'ABOUT'] as const
@@ -88,7 +89,13 @@ const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
   { id: 'airspace', label: 'AIRSPACE', desc: 'FIR/NOTAM regions' },
   { id: 'humanitarian', label: 'HUMANITARIAN', desc: 'UNHCR displacement data' },
   { id: 'vessels', label: 'VESSELS', desc: 'AIS ship tracking' },
-  { id: 'oilgas', label: 'OIL & GAS', desc: 'Reserves and production' },
+  { id: 'oil', label: 'OIL', desc: 'Oil reserves and production' },
+  { id: 'gas', label: 'GAS', desc: 'Gas reserves and production' },
+  { id: 'ports', label: 'PORTS', desc: 'Global commercial & naval ports' },
+  { id: 'pipelines', label: 'PIPELINES', desc: 'Global gas pipeline network' },
+  { id: 'chokepoints', label: 'CHOKEPOINTS', desc: 'Strategic maritime chokepoints' },
+  { id: 'supplychain', label: 'SUPPLY CHAIN', desc: 'Semiconductor fabs, rare earth, lithium, cobalt' },
+  { id: 'shippingRoutes', label: 'SHIPPING', desc: 'Major trade corridor lanes' },
   { id: 'gpsjam', label: 'GPS JAM', desc: 'Interference zones' },
 ]
 
@@ -124,16 +131,18 @@ interface Props {
   onToggleLayer: (id: keyof PanelState) => void
   deepstateMode: boolean
   onDeepstateToggle: () => void
+  reticleColor?: string
+  onReticleColor?: (color: string) => void
 }
 
 const s = {
-  label: { fontSize: 9, fontWeight: 400, letterSpacing: '.08em', color: '#6b6b6b', textTransform: 'uppercase' as const },
-  value: { fontSize: 9, color: '#e8e8e8', fontFamily: 'JetBrains Mono, monospace' },
-  row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #1e1e1e' },
-  sectionTitle: { fontSize: 9, fontWeight: 500, letterSpacing: '.12em', color: '#e8e8e8', textTransform: 'uppercase' as const, marginBottom: 8, marginTop: 16 },
+  label: { fontSize: 11, fontWeight: 500, color: 'var(--text2)' },
+  value: { fontSize: 11, color: 'var(--text1)', fontFamily: 'IBM Plex Mono, monospace' },
+  row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--border)' },
+  sectionTitle: { fontSize: 11, fontWeight: 700, letterSpacing: '.04em', color: 'var(--text1)', textTransform: 'uppercase' as const, marginBottom: 10, marginTop: 20 },
 }
 
-export default function SettingsModal({ open, onClose, viewMode, onViewMode, panelState, onToggleLayer, deepstateMode, onDeepstateToggle }: Props) {
+export default function SettingsModal({ open, onClose, viewMode, onViewMode, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, reticleColor, onReticleColor }: Props) {
   const [tab, setTab] = useState<Tab>('GENERAL')
 
   if (!open) return null
@@ -143,7 +152,8 @@ export default function SettingsModal({ open, onClose, viewMode, onViewMode, pan
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 200,
-        background: 'rgba(0,0,0,0.75)',
+        background: 'rgba(15,18,25,0.45)',
+        backdropFilter: 'blur(2px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
       }}
     >
@@ -151,52 +161,55 @@ export default function SettingsModal({ open, onClose, viewMode, onViewMode, pan
         onClick={e => e.stopPropagation()}
         style={{
           width: 720, maxWidth: '95vw', maxHeight: '85vh',
-          background: '#0a0a0a',
-          border: '1px solid #1e1e1e',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--r-lg)',
+          boxShadow: 'var(--shadow-lg)',
           display: 'flex', flexDirection: 'column',
           overflow: 'hidden',
         }}
       >
         {/* Header */}
         <div style={{
-          display: 'flex', alignItems: 'center', padding: '8px 12px',
-          borderBottom: '1px solid #1e1e1e',
+          display: 'flex', alignItems: 'center', padding: '14px 18px',
+          borderBottom: '1px solid var(--border)',
         }}>
-          <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: '.14em', color: '#e8e8e8' }}>
-            SETTINGS
+          <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text1)' }}>
+            Settings
           </span>
           <button
             onClick={onClose}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#3a3a3a', fontSize: 16, lineHeight: 1 }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ff3344' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#3a3a3a' }}
-          >x</button>
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', display: 'flex', padding: 4, borderRadius: 'var(--r-sm)' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--red-soft)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)'; (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
+          ><X size={16} /></button>
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', borderBottom: '1px solid #1e1e1e', flexShrink: 0, overflowX: 'auto' }}>
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0, overflowX: 'auto', padding: '0 10px', gap: 2 }}>
           {TABS.map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                padding: '6px 12px',
-                fontSize: 8, fontWeight: 400, letterSpacing: '.1em',
-                color: tab === t ? '#e8e8e8' : '#3a3a3a',
-                borderBottom: tab === t ? '1px solid #e8e8e8' : '1px solid transparent',
+                padding: '10px 12px',
+                fontSize: 11, fontWeight: 600, letterSpacing: '.01em',
+                color: tab === t ? 'var(--accent)' : 'var(--text2)',
+                borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
+                whiteSpace: 'nowrap',
               }}
             >{t}</button>
           ))}
         </div>
 
         {/* Content */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 20px 20px' }}>
           {tab === 'GENERAL' && <GeneralTab viewMode={viewMode} onViewMode={onViewMode} deepstateMode={deepstateMode} onDeepstateToggle={onDeepstateToggle} />}
           {tab === 'LAYERS' && <LayersTab panelState={panelState} onToggleLayer={onToggleLayer} />}
           {tab === 'DATA SOURCES' && <DataSourcesTab />}
           {tab === 'API KEYS' && <ApiKeysTab />}
-          {tab === 'DISPLAY' && <DisplayTab />}
+          {tab === 'DISPLAY' && <DisplayTab reticleColor={reticleColor} onReticleColor={onReticleColor} />}
           {tab === 'ABOUT' && <AboutTab />}
         </div>
       </div>
@@ -207,29 +220,30 @@ export default function SettingsModal({ open, onClose, viewMode, onViewMode, pan
 function GeneralTab({ viewMode, onViewMode, deepstateMode, onDeepstateToggle }: { viewMode: MapViewMode; onViewMode: (m: MapViewMode) => void; deepstateMode: boolean; onDeepstateToggle: () => void }) {
   return (
     <div>
-      <div style={s.sectionTitle}>MAP MODE</div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+      <div style={s.sectionTitle}>Map mode</div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {VIEW_MODES.map(m => (
           <button
             key={m.id}
             onClick={() => onViewMode(m.id)}
             style={{
-              padding: '4px 10px', fontSize: 8, letterSpacing: '.06em',
-              border: '1px solid #1e1e1e', cursor: 'pointer',
-              background: viewMode === m.id ? '#111111' : 'transparent',
-              color: viewMode === m.id ? '#00ff88' : '#6b6b6b',
+              padding: '6px 12px', fontSize: 11, fontWeight: 500,
+              border: '1px solid var(--border)', borderRadius: 'var(--r-pill)', cursor: 'pointer',
+              background: viewMode === m.id ? 'var(--accent-soft)' : 'var(--surface2)',
+              color: viewMode === m.id ? 'var(--accent)' : 'var(--text2)',
+              borderColor: viewMode === m.id ? 'var(--accent)' : 'var(--border)',
             }}
           >{m.label}</button>
         ))}
       </div>
 
-      <div style={s.sectionTitle}>OVERLAYS</div>
+      <div style={s.sectionTitle}>Overlays</div>
       <div style={s.row}>
         <span style={s.label}>Ukraine frontline (DeepState)</span>
         <Toggle on={deepstateMode} onToggle={onDeepstateToggle} />
       </div>
 
-      <div style={s.sectionTitle}>REFRESH RATES</div>
+      <div style={s.sectionTitle}>Refresh rates</div>
       {[
         { label: 'Flights (OpenSky)', value: '15s' },
         { label: 'Crises (ACLED)', value: '5 min' },
@@ -250,14 +264,14 @@ function GeneralTab({ viewMode, onViewMode, deepstateMode, onDeepstateToggle }: 
 function LayersTab({ panelState, onToggleLayer }: { panelState: PanelState; onToggleLayer: (id: keyof PanelState) => void }) {
   return (
     <div>
-      <div style={{ fontSize: 8, color: '#6b6b6b', letterSpacing: '.06em', marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 12, marginBottom: 8 }}>
         Toggle map data layers on or off.
       </div>
       {LAYER_IDS.map(l => (
-        <div key={l.id} style={{ ...s.row, gap: 12 }}>
+        <div key={l.id} style={{ ...s.row, gap: 14 }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 9, color: '#e8e8e8', letterSpacing: '.08em' }}>{l.label}</div>
-            <div style={{ fontSize: 8, color: '#3a3a3a', letterSpacing: '.04em', marginTop: 1 }}>{l.desc}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)' }}>{l.label}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 1 }}>{l.desc}</div>
           </div>
           <Toggle on={panelState[l.id]} onToggle={() => onToggleLayer(l.id)} />
         </div>
@@ -270,7 +284,7 @@ function DataSourcesTab() {
   const [expanded, setExpanded] = useState<string | null>(null)
   return (
     <div>
-      <div style={{ fontSize: 8, color: '#6b6b6b', letterSpacing: '.06em', marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 12, marginBottom: 10 }}>
         All collection is client-side via public OSINT APIs. No data is retained or transmitted externally.
       </div>
       {DATA_SOURCES.map(cat => (
@@ -279,20 +293,22 @@ function DataSourcesTab() {
             onClick={() => setExpanded(expanded === cat.category ? null : cat.category)}
             style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '8px 0', background: 'none', border: 'none', cursor: 'pointer',
-              borderBottom: '1px solid #1e1e1e',
+              padding: '10px 4px', background: 'none', border: 'none', cursor: 'pointer',
+              borderBottom: '1px solid var(--border)', borderRadius: 'var(--r-sm)',
             }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'none' }}
           >
-            <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '.1em', color: '#e8e8e8' }}>{cat.category}</span>
-            <span style={{ fontSize: 8, color: '#3a3a3a' }}>{cat.items.length} source{cat.items.length > 1 ? 's' : ''}</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{cat.category}</span>
+            <span style={{ fontSize: 10.5, color: 'var(--text3)' }}>{cat.items.length} source{cat.items.length > 1 ? 's' : ''}</span>
           </button>
           {expanded === cat.category && (
-            <div style={{ padding: '4px 0 8px' }}>
+            <div style={{ padding: '6px 4px 10px' }}>
               {cat.items.map((item, i) => (
-                <div key={i} style={{ display: 'grid', gridTemplateColumns: '140px 160px 1fr', gap: 8, padding: '5px 0', borderBottom: '1px solid #111111' }}>
-                  <span style={{ fontSize: 8, color: '#e8e8e8', letterSpacing: '.04em' }}>{item.label}</span>
-                  <span style={{ fontSize: 8, color: '#6b6b6b', letterSpacing: '.03em' }}>{item.source}</span>
-                  <span style={{ fontSize: 7, color: '#3a3a3a', letterSpacing: '.03em', lineHeight: 1.5 }}>{item.notes}</span>
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '150px 170px 1fr', gap: 10, padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text1)' }}>{item.label}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text2)' }}>{item.source}</span>
+                  <span style={{ fontSize: 10.5, color: 'var(--text3)', lineHeight: 1.5 }}>{item.notes}</span>
                 </div>
               ))}
             </div>
@@ -306,23 +322,28 @@ function DataSourcesTab() {
 function ApiKeysTab() {
   return (
     <div>
-      <div style={{ fontSize: 8, color: '#6b6b6b', letterSpacing: '.06em', marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 12, marginBottom: 10 }}>
         API keys are stored in .env file. Restart the dev server after changes.
       </div>
       {API_KEYS.map(k => {
         const val = (import.meta as any).env?.[k.key]
         const isSet = !!val
         return (
-          <div key={k.key} style={{ ...s.row, gap: 12 }}>
+          <div key={k.key} style={{ ...s.row, gap: 14 }}>
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 9, color: '#e8e8e8', letterSpacing: '.06em' }}>{k.label}</span>
-                {k.required && <span style={{ fontSize: 7, color: '#ff3344', letterSpacing: '.08em' }}>REQUIRED</span>}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)' }}>{k.label}</span>
+                {k.required && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--red)', background: 'var(--red-soft)', padding: '1px 6px', borderRadius: 'var(--r-pill)' }}>REQUIRED</span>}
               </div>
-              <div style={{ fontSize: 7, color: '#3a3a3a', letterSpacing: '.04em', marginTop: 1 }}>{k.desc}</div>
-              <div style={{ fontSize: 7, color: '#3a3a3a', letterSpacing: '.02em', marginTop: 1, fontFamily: 'JetBrains Mono, monospace' }}>{k.key}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 1 }}>{k.desc}</div>
+              <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1, fontFamily: 'IBM Plex Mono, monospace' }}>{k.key}</div>
             </div>
-            <span style={{ fontSize: 8, fontFamily: 'JetBrains Mono, monospace', color: isSet ? '#00ff88' : '#3a3a3a', letterSpacing: '.08em' }}>
+            <span style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '.04em',
+              color: isSet ? 'var(--green)' : 'var(--text3)',
+              background: isSet ? 'var(--green-soft)' : 'var(--surface2)',
+              padding: '3px 9px', borderRadius: 'var(--r-pill)',
+            }}>
               {isSet ? 'SET' : 'NOT SET'}
             </span>
           </div>
@@ -332,38 +353,70 @@ function ApiKeysTab() {
   )
 }
 
-function DisplayTab() {
+const RETICLE_COLORS = [
+  { id: '#16a34a', label: 'GREEN' },
+  { id: '#dc2626', label: 'RED' },
+  { id: '#2563eb', label: 'BLUE' },
+]
+
+function DisplayTab({ reticleColor, onReticleColor }: { reticleColor?: string; onReticleColor?: (c: string) => void }) {
   return (
     <div>
-      <div style={s.sectionTitle}>TYPOGRAPHY</div>
+      <div style={s.sectionTitle}>Reticle</div>
+      <div style={{ ...s.row, gap: 8 }}>
+        <span style={s.label}>Color</span>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {RETICLE_COLORS.map(c => (
+            <button
+              key={c.id}
+              onClick={() => onReticleColor?.(c.id)}
+              style={{
+                width: 56, height: 26,
+                background: reticleColor === c.id ? c.id + '18' : 'var(--surface2)',
+                border: `1px solid ${reticleColor === c.id ? c.id : 'var(--border)'}`,
+                borderRadius: 'var(--r-sm)',
+                color: reticleColor === c.id ? c.id : 'var(--text2)',
+                fontSize: 9, fontWeight: 600,
+                letterSpacing: '.02em', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
+              }}
+            >
+              <div style={{ width: 7, height: 7, borderRadius: '50%', background: c.id, flexShrink: 0 }} />
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={s.sectionTitle}>Typography</div>
       <div style={s.row}>
         <span style={s.label}>UI font</span>
-        <span style={s.value}>Inter 400</span>
+        <span style={s.value}>Inter</span>
       </div>
       <div style={s.row}>
         <span style={s.label}>Data font</span>
-        <span style={s.value}>JetBrains Mono</span>
+        <span style={s.value}>IBM Plex Mono</span>
       </div>
 
-      <div style={s.sectionTitle}>COLORS</div>
+      <div style={s.sectionTitle}>Colors</div>
       {[
-        { label: 'Background', value: '#0a0a0a' },
-        { label: 'Surface', value: '#111111' },
-        { label: 'Border', value: '#1e1e1e' },
-        { label: 'Text primary', value: '#e8e8e8' },
-        { label: 'Text secondary', value: '#6b6b6b' },
-        { label: 'Accent', value: '#00ff88' },
+        { label: 'Background', value: '#f4f5f7' },
+        { label: 'Surface', value: '#ffffff' },
+        { label: 'Border', value: '#e5e7eb' },
+        { label: 'Text primary', value: '#14161a' },
+        { label: 'Text secondary', value: '#6b7280' },
+        { label: 'Accent', value: '#2563eb' },
       ].map(c => (
         <div key={c.label} style={s.row}>
           <span style={s.label}>{c.label}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 10, height: 10, background: c.value, border: '1px solid #1e1e1e' }} />
-            <span style={{ ...s.value, fontSize: 8 }}>{c.value}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 14, height: 14, borderRadius: 'var(--r-sm)', background: c.value, border: '1px solid var(--border)' }} />
+            <span style={{ ...s.value, fontSize: 10.5 }}>{c.value}</span>
           </div>
         </div>
       ))}
 
-      <div style={s.sectionTitle}>LAYOUT</div>
+      <div style={s.sectionTitle}>Layout</div>
       <div style={s.row}>
         <span style={s.label}>Command panel</span>
         <span style={s.value}>Right side, resizable</span>
@@ -379,11 +432,11 @@ function DisplayTab() {
 function AboutTab() {
   return (
     <div>
-      <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '.14em', color: '#e8e8e8', marginBottom: 4 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)', marginTop: 12, marginBottom: 3 }}>
         WORLDVIEW
       </div>
-      <div style={{ fontSize: 8, color: '#6b6b6b', letterSpacing: '.08em', marginBottom: 16 }}>
-        GLOBAL SITUATIONAL AWARENESS PLATFORM
+      <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 18 }}>
+        Global Situational Awareness Platform
       </div>
 
       <div style={s.row}>
@@ -399,7 +452,7 @@ function AboutTab() {
         <span style={s.value}>OpenRouter (free tier)</span>
       </div>
 
-      <div style={{ marginTop: 16, fontSize: 8, color: '#3a3a3a', letterSpacing: '.04em', lineHeight: 1.7 }}>
+      <div style={{ marginTop: 18, fontSize: 11, color: 'var(--text3)', lineHeight: 1.7 }}>
         All collection is client-side via public OSINT APIs. No data is retained or transmitted to external servers beyond the API providers listed in Data Sources. Market feeds carry up to 15 min delay. ADS-B positions update every ~10s.
       </div>
     </div>
@@ -411,18 +464,19 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
     <button
       onClick={onToggle}
       style={{
-        width: 32, height: 14, padding: 0,
-        background: on ? '#111111' : '#0a0a0a',
-        border: `1px solid ${on ? '#00ff88' : '#1e1e1e'}`,
+        width: 38, height: 20, padding: 0,
+        background: on ? 'var(--accent)' : 'var(--border-strong)',
+        border: 'none', borderRadius: 'var(--r-pill)',
         cursor: 'pointer', position: 'relative',
-        flexShrink: 0,
+        flexShrink: 0, transition: 'background 0.15s',
       }}
     >
       <div style={{
-        width: 8, height: 8, position: 'absolute', top: 2,
+        width: 16, height: 16, position: 'absolute', top: 2,
         left: on ? 20 : 2,
-        background: on ? '#00ff88' : '#3a3a3a',
-        transition: 'left 0.1s, background 0.1s',
+        background: '#fff', borderRadius: '50%',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+        transition: 'left 0.15s',
       }} />
     </button>
   )

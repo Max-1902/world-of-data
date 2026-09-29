@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Search, X } from 'lucide-react'
+import { Search, X, RefreshCw, Globe2 } from 'lucide-react'
 import type { MapViewMode, CrisisEvent } from '../types'
 import OSINTSearch from './OSINTSearch'
 
@@ -20,11 +20,11 @@ function computeThreatLevel(crises: CrisisEvent[]): { level: number; label: stri
   const critical = crises.filter((c) => c.severity === 'critical').length
   const high     = crises.filter((c) => c.severity === 'high').length
   const score    = critical * 4 + high * 2 + crises.length
-  if (score > 500) return { level: 1, label: 'CRITICAL', color: '#ff0022' }
-  if (score > 250) return { level: 2, label: 'ELEVATED', color: '#ff4400' }
-  if (score > 100) return { level: 3, label: 'HIGH',     color: '#ff8800' }
-  if (score > 40)  return { level: 4, label: 'MODERATE', color: '#ffcc00' }
-  return               { level: 5, label: 'NORMAL',   color: '#00ff88' }
+  if (score > 500) return { level: 1, label: 'CRITICAL', color: '#dc2626' }
+  if (score > 250) return { level: 2, label: 'ELEVATED', color: '#ea580c' }
+  if (score > 100) return { level: 3, label: 'HIGH',     color: '#d97706' }
+  if (score > 40)  return { level: 4, label: 'MODERATE', color: '#ca8a04' }
+  return               { level: 5, label: 'NORMAL',   color: '#16a34a' }
 }
 
 interface Props {
@@ -35,9 +35,11 @@ interface Props {
   searchQuery: string
   onSearch: (q: string) => void
   onSettingsOpen?: () => void
+  onReloadAll?: () => void
+  reloading?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, flightCount, crises, searchQuery, onSearch, onSettingsOpen }: Props) {
+export default function TopBar({ viewMode, onViewMode, flightCount, crises, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
   const [expanded, setExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const threat = computeThreatLevel(crises)
@@ -56,21 +58,29 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
   function clearSearch() { onSearch(''); setExpanded(false) }
 
   return (
-    <div className="topbar" style={{ height: 32 }}>
+    <div className="topbar" style={{ height: 48 }}>
       {/* left: branding */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        <div style={{ borderLeft: '2px solid #1e1e1e', paddingLeft: 8 }}>
-          <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: '.2em', color: '#e8e8e8', lineHeight: 1, fontFamily: 'Inter, -apple-system, sans-serif' }}>
-            WORLDVIEW
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 26, height: 26, borderRadius: 7,
+            background: 'linear-gradient(135deg,#2563eb,#1d4ed8)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+          }}>
+            <Globe2 size={15} color="#fff" />
           </div>
-          <div style={{ fontSize: 7, letterSpacing: '.12em', color: '#6b6b6b', lineHeight: 1.3, fontFamily: 'Inter, -apple-system, sans-serif' }}>
-            SITUATIONAL AWARENESS
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.02em', color: 'var(--text1)', lineHeight: 1.1, fontFamily: 'Inter, -apple-system, sans-serif' }}>
+              WORLDVIEW
+            </div>
+            <div style={{ fontSize: 8.5, letterSpacing: '.06em', color: 'var(--text3)', lineHeight: 1.3, fontFamily: 'Inter, -apple-system, sans-serif' }}>
+              SITUATIONAL AWARENESS
+            </div>
           </div>
         </div>
 
-        <span style={{ fontSize: 8, fontWeight: 400, letterSpacing: '.1em', color: '#00ff88', fontFamily: 'JetBrains Mono, monospace' }}>
-          LIVE
-        </span>
+        <span className="live-badge">LIVE</span>
 
         <OSINTSearch />
       </div>
@@ -78,7 +88,7 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
       <div className="hud-sep" />
 
       {/* center: stats */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, justifyContent: 'center' }}>
         <HudStat label="TRACKED" value={flightCount} />
 
         <div className="hud-sep" />
@@ -88,24 +98,17 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
         <div className="hud-sep" />
 
         {/* threat level */}
-        <div style={{
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-          padding: '1px 8px',
-          border: '1px solid #1e1e1e',
-          fontSize: 9, letterSpacing: '.08em',
-          fontFamily: 'JetBrains Mono, monospace',
-          color: threat.color,
-        }}>
-          <span style={{ fontSize: 7, color: '#6b6b6b' }}>DEFCON</span>
+        <div className="defcon-badge" style={{ color: threat.color, borderColor: threat.color, background: `${threat.color}12` }}>
+          <span style={{ fontSize: 8, color: 'var(--text3)' }}>DEFCON</span>
           <span>{threat.level}</span>
-          <span style={{ fontSize: 8 }}>{threat.label}</span>
+          <span style={{ fontSize: 9 }}>{threat.label}</span>
         </div>
 
         <div className="hud-sep" />
 
         {/* UTC clock */}
-        <div style={{ fontSize: 9, color: '#6b6b6b', letterSpacing: '.04em', fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace' }}>
-          <span style={{ color: '#3a3a3a', marginRight: 4 }}>UTC</span>
+        <div style={{ fontSize: 10, color: 'var(--text2)', letterSpacing: '.02em', fontVariantNumeric: 'tabular-nums', fontFamily: 'IBM Plex Mono, monospace' }}>
+          <span style={{ color: 'var(--text3)', marginRight: 5 }}>UTC</span>
           {utc}
         </div>
       </div>
@@ -113,8 +116,8 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
       <div className="hud-sep" />
 
       {/* right: view modes + search */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 1, border: '1px solid #1e1e1e', padding: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 1, background: 'var(--surface2)', borderRadius: 'var(--r-md)', padding: 2 }}>
           {VIEW_MODES.map(({ id, label }) => (
             <button
               key={id}
@@ -130,13 +133,8 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
         <div className="hud-sep" />
 
         {/* search */}
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 4,
-          border: `1px solid ${expanded || searchQuery ? '#1e1e1e' : '#1e1e1e'}`,
-          padding: '2px 6px',
-          minWidth: expanded ? 160 : 'auto',
-        }}>
-          <Search size={9} style={{ color: searchQuery ? '#00ff88' : '#6b6b6b', flexShrink: 0 }} />
+        <div className="search-wrap" style={{ minWidth: expanded ? 180 : 'auto' }}>
+          <Search size={13} style={{ color: searchQuery ? 'var(--accent)' : 'var(--text3)', flexShrink: 0 }} />
           {expanded ? (
             <input
               ref={inputRef}
@@ -147,25 +145,25 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
               placeholder="location, coordinates..."
               style={{
                 flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 9, color: '#e8e8e8', fontFamily: 'JetBrains Mono, monospace',
-                letterSpacing: '.04em', minWidth: 120,
+                fontSize: 11, color: 'var(--text1)', fontFamily: 'Inter, -apple-system, sans-serif',
+                minWidth: 130,
               }}
             />
           ) : (
             <button
               onClick={() => setExpanded(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b6b6b', fontSize: 9, letterSpacing: '.08em', padding: 0, fontFamily: 'Inter, -apple-system, sans-serif' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontSize: 11, padding: 0, fontFamily: 'Inter, -apple-system, sans-serif' }}
             >
-              {searchQuery || 'LOCATE'}
+              {searchQuery || 'Locate'}
             </button>
           )}
           {searchQuery && (
             <button onClick={clearSearch}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b6b6b', display: 'flex', padding: 0 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#ff3344' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6b6b6b' }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', display: 'flex', padding: 0 }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)' }}
             >
-              <X size={9} />
+              <X size={12} />
             </button>
           )}
         </div>
@@ -173,17 +171,22 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
         <div className="hud-sep" />
 
         <button
+          onClick={onReloadAll}
+          disabled={reloading}
+          title="Reload all data"
+          className="cy-btn"
+          style={{ color: reloading ? 'var(--accent)' : 'var(--text2)' }}
+        >
+          <RefreshCw size={11} className={reloading ? 'animate-spin' : ''} />
+          Reload
+        </button>
+
+        <button
           onClick={onSettingsOpen}
           title="Settings"
-          style={{
-            background: 'none', border: '1px solid #1e1e1e', cursor: 'pointer',
-            color: '#6b6b6b', fontSize: 9, padding: '2px 8px',
-            fontFamily: 'Inter, -apple-system, sans-serif', letterSpacing: '.08em',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#e8e8e8' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#6b6b6b' }}
+          className="cy-btn"
         >
-          SETTINGS
+          Settings
         </button>
       </div>
     </div>
@@ -193,10 +196,10 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
 function HudStat({ label, value }: { label: string; value: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-      <span style={{ fontSize: 12, fontWeight: 500, color: '#e8e8e8', lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFamily: 'JetBrains Mono, monospace' }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFamily: 'IBM Plex Mono, monospace' }}>
         {value.toLocaleString()}
       </span>
-      <span style={{ fontSize: 7, fontWeight: 400, letterSpacing: '.14em', color: '#3a3a3a', fontFamily: 'Inter, -apple-system, sans-serif' }}>
+      <span style={{ fontSize: 8, fontWeight: 500, letterSpacing: '.08em', color: 'var(--text3)', fontFamily: 'Inter, -apple-system, sans-serif' }}>
         {label}
       </span>
     </div>

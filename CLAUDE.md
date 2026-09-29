@@ -1,0 +1,42 @@
+# Working agreement for AI agents in this repo
+
+This file exists so any agent (Claude or otherwise) picks up context fast and doesn't repeat mistakes already made and corrected in this repo's history.
+
+## Secrets — non-negotiable
+
+- **Never commit `.env` or hardcode real API keys/passwords anywhere in source, even to a private repo, even "temporarily."** Git history is effectively permanent once pushed — reverting a later commit does not remove it from history, and a private repo can become public, get forked, or have its access change. This was asked for explicitly during development and refused; the refusal stands as project policy, not a one-off judgment call.
+- If an agent running inside a GitHub dev environment (Codespaces, Actions) needs real keys to execute/test the app, use that platform's own secrets store (repo `Settings → Secrets and variables → Codespaces`), which injects them as env vars at runtime without touching git. Do not propose committing `.env` as a workaround.
+- `.env.example` (placeholders only) is the correct and only key-related file to commit.
+
+## Multi-session hazard
+
+This repo has been worked on by multiple concurrent Claude Code sessions pointed at the same working directory at once. There is no isolation between sessions sharing one folder — a write from one session is immediately visible to (and overwritable by) every other. Symptoms seen in practice: a finished redesign silently reverting because a sibling session wrote over the same files; orphaned dead files appearing (e.g. an unused `LeftPanel.tsx` from an abandoned parallel attempt) that nothing imports.
+
+Before assuming your own edits are broken or reverted, check `git status`/`git diff` against what you expect — it's more likely a sibling session touched the same file than that the build actually failed. If you find files changed outside your own edits, read them before overwriting; don't assume they're wrong.
+
+## What's been built here (context for future work)
+
+- Full visual redesign from a dark terminal/HUD theme to a light SaaS theme (`src/index.css` design tokens, sidebar+map+right-rail shell). See `ARCHITECTURE.md`.
+- The AI Analyst panel was explicitly called out as the project's most important feature ("a smart dashboard I can use to foresee future events") and was upgraded from a plain ask-and-answer chatbot into one with a proactive, rule-based Watchlist (`src/utils/trajectory.ts`) that surfaces rising/falling regional trends automatically, with the LLM's own answers grounded in those same computed numbers. Do not regress this back to prompt-only chat without discussing it first — it was a deliberate response to direct feedback that the panel wasn't living up to the project's stated purpose.
+- The AI panel also has a distinct visual identity (dark indigo/navy gradient surface, `.ai-*` classes in `index.css`) deliberately different from the rest of the now-light UI — this was a specific request ("futuristic, a system that knows everything"), not an oversight to be reskinned into matching the rest of the app. It must **not** claim or imply access to this repo's source code — it reasons over live dashboard data only.
+
+## Preferences observed from actual project feedback
+
+**Liked / keep doing:**
+- Reusing existing patterns instead of inventing new ones — e.g. the trajectory engine extends `computeCountryRisk`'s severity-weighting rather than introducing a second scoring system.
+- Grounding AI-generated content in real, locally-computed numbers rather than letting the model free-associate — the Watchlist computes deltas first, then the LLM explains them.
+- Keeping changes scoped to what was asked — visual redesign work explicitly avoided touching data logic, hooks, services, or map layer/source definitions; only styling.
+- Flagging problems directly and clearly instead of silently working around them or complying with a risky request just because it was repeated (see Secrets section above).
+
+**Disliked / avoid:**
+- Claiming a background task/agent is "done" or "complete" before its actual completion signal has arrived. This happened repeatedly during a multi-agent redesign session and was a real, called-out failure — always verify status before reporting it, and if unsure, say so rather than asserting.
+- Vague or generic AI panel behavior that doesn't feel purpose-built — the panel is meant to feel like it's actually reasoning over the dashboard's live data, not just producing generic chatbot text.
+- Cosmetic-only fixes when the actual complaint was functional. When told the AI panel "hasn't been redesigned," the real issue was that it had no proactive/forecasting behavior at all (chat-on-request only) — a visual pass alone would not have addressed it.
+- The original "vibe coded" dark-terminal aesthetic (`#0a0a0a` background, neon green `#00ff88` accent, tiny monospace-everywhere labels) — explicitly replaced for looking unpolished/non-professional. Don't reintroduce it as a "fix" without being asked.
+
+## Conventions to follow when extending this repo
+
+- New data source → new file in `services/`, new hook in `hooks/`, new entry in `src/panels/registry.tsx`. Don't bypass the registry with ad-hoc panel wiring.
+- New map layer → follow the existing `addSource`/`addLayer` pairing pattern in `MapView.tsx`, gate visibility behind a new `PanelState` boolean (`src/types/index.ts`), wire the toggle through `SettingsModal`'s `LAYER_IDS` list.
+- Styling: use the CSS custom properties defined in `src/index.css` (`--surface`, `--text1/2/3`, `--accent`, `--red/amber/green` + `-soft` tints, `--r-sm/md/lg/pill`, `--shadow-sm/md/lg`) rather than hardcoding hex values, so the whole app stays reskinnable from one place.
+- Run `npx tsc --noEmit` before considering any change done — this repo has no test suite; strict typechecking is the primary safety net.
