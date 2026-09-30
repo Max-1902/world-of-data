@@ -63,6 +63,15 @@ Ten view modes (`earth/standard/dark/satellite/city3d/nightvision/bw/infrared/sn
 
 A known race condition worth knowing about: flight data can arrive before the map's `load` event fires. The fix already in place is a `flightDataRef` that buffers pending data and flushes it inside `map.on('load')`.
 
+## Oil & gas pipelines (`services/pipelines.ts`)
+
+Real route geometry from OpenStreetMap (ODbL), in two tiers, because neither alone works:
+
+- **World view:** `public/data/pipelines-trunk.geojson`, a committed snapshot of every OSM `route=pipeline` relation tagged `substance=oil|gas` (~200 long-distance lines). Regenerate with `node scripts/build-pipelines.mjs`. It's a snapshot because a world-wide Overpass query 504s on the public instances. The script retries and falls back between mirrors, and only writes the file when the whole run succeeds.
+- **Detail view:** from zoom 9, individual pipeline ways are fetched live in 0.5° cells (`fetchPipelineCell`), cached per cell, capped per viewport, 3 requests at a time. Dense areas are huge (a 4°×4° tile over Texas was ~25 MB), so don't raise the cell size or lower the min zoom without re-measuring.
+
+The older hand-typed waypoint lists (`GAS_PIPELINES`, `PIPELINE_ROUTES`) were removed: they were approximate and drew straight lines across terrain, which the no-approximated-data rule in `CLAUDE.md` forbids. Only the `pipelines` toggle drives these layers; the `infrastructure` toggle no longer writes to the `pipelines` source. Attribution to OpenStreetMap contributors is shown in the popup and Settings → data sources.
+
 ## The "Watchlist" — rule-based forecasting (`src/utils/trajectory.ts`)
 
 The AI Analyst panel doesn't just answer prompts — `computeTrajectories()` is a pure function (no network calls) that buckets each country's crisis events into a "last 3 days" vs "4–10 days prior" window using each event's real `date` field, scores both by severity, and ranks countries by the delta. This produces a "rising / falling / flat" trend per region, shown automatically on panel load with no prompt required. The same computed numbers are appended to the LLM's system prompt (`buildDashboardContext` in `services/openrouter.ts`) so the model's own analysis is grounded in a real, local computation rather than a static snapshot.

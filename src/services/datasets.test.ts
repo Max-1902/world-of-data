@@ -8,13 +8,12 @@
  */
 import { describe, it, expect } from 'vitest'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS, FACILITIES_BY_ID, PLANTS_BY_ID } from './military'
-import { MAJOR_DAMS, LNG_TERMINALS, MAJOR_REFINERIES, PIPELINE_ROUTES, ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS } from './infrastructure'
+import { MAJOR_DAMS, LNG_TERMINALS, MAJOR_REFINERIES, ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS } from './infrastructure'
 import { CHOKEPOINTS } from './chokepoints'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from './ports'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from './supplychain'
 import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from './gpsjam'
 import { EARTHCAM_CAMERAS } from './earthcam'
-import { GAS_PIPELINES, PIPELINE_STATUS_COLORS, PIPELINE_STATUS_LABELS } from './pipelines'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS } from './sanctions'
 import { OIL_GAS_DATA } from './oilgas'
 import { RESOURCE_PROFILES } from './resources'
@@ -107,15 +106,6 @@ describe('infrastructure', () => {
     for (const d of LNG_TERMINALS) expect(d.type, d.id).toBe('lng')
     for (const d of MAJOR_REFINERIES) expect(d.type, d.id).toBe('refinery')
   })
-
-  it('pipeline routes have unique ids and valid [lng, lat] paths', () => {
-    expectUnique('PIPELINE_ROUTES', PIPELINE_ROUTES.map(p => p.id))
-    for (const r of PIPELINE_ROUTES) {
-      expectRing(`route ${r.id}`, r.coords)
-      expect(['oil', 'gas', 'multi'], r.id).toContain(r.type)
-      expect(['operational', 'under_construction', 'suspended'], r.id).toContain(r.status)
-    }
-  })
 })
 
 describe('chokepoints', () => {
@@ -196,19 +186,6 @@ describe('live cameras', () => {
   })
   it('has no duplicate stream URLs', () => {
     expectUnique('camera urls', EARTHCAM_CAMERAS.map(c => c.url))
-  })
-})
-
-describe('gas pipelines', () => {
-  it('pipelines have unique ids, known status, valid paths and non-negative metrics', () => {
-    expectUnique('GAS_PIPELINES', GAS_PIPELINES.map(p => p.id))
-    for (const p of GAS_PIPELINES) {
-      expect(PIPELINE_STATUS_COLORS[p.status], p.id).toMatch(HEX)
-      expect(PIPELINE_STATUS_LABELS[p.status], p.id).toBeTruthy()
-      expectRing(`pipeline ${p.id}`, p.path)
-      if (p.capacityBcmYr !== undefined) expect(p.capacityBcmYr, p.id).toBeGreaterThan(0)
-      if (p.lengthKm !== undefined) expect(p.lengthKm, p.id).toBeGreaterThan(0)
-    }
   })
 })
 

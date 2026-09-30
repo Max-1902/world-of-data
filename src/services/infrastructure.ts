@@ -30,18 +30,6 @@ export interface InfraPoint {
   status:   'operational' | 'under_construction' | 'decommissioned'
 }
 
-export interface PipelineRoute {
-  id:      string
-  name:    string
-  type:    'oil' | 'gas' | 'multi'
-  country: string   // primary country
-  from:    string
-  to:      string
-  coords:  [number, number][]  // [lng, lat] pairs for the line
-  capacity?: string
-  status:  'operational' | 'under_construction' | 'suspended'
-  notes?:  string
-}
 
 export const INFRA_COLORS: Record<InfraType, string> = {
   dam:         '#00aaff',
@@ -169,90 +157,6 @@ export const MAJOR_REFINERIES: InfraPoint[] = [
   { id: 'rotterdam',     name: 'Shell Pernis Rotterdam',   type: 'refinery', country: 'Netherlands',   lat: 51.8833,  lng: 4.3333,   capacity: '415K bbl/day',  status: 'operational', notes: 'Europe\'s largest refinery' },
   { id: 'omsk',          name: 'Omsk Refinery',            type: 'refinery', country: 'Russia',        lat: 54.9333,  lng: 73.4000,  capacity: '500K bbl/day',  status: 'operational' },
   { id: 'sinopec-zhenhai',name: 'Zhenhai Refinery',        type: 'refinery', country: 'China',         lat: 29.9667,  lng: 121.7167, capacity: '460K bbl/day',  status: 'operational' },
-]
-
-// ── Major Pipeline Routes (simplified as polylines) ─────────────────────────
-export const PIPELINE_ROUTES: PipelineRoute[] = [
-  {
-    id: 'nordstream', name: 'Nord Stream (sabotaged)',
-    type: 'gas', country: 'Russia/Germany', from: 'Vyborg, Russia', to: 'Lubmin, Germany',
-    status: 'suspended', notes: 'Sabotaged Sep 2022 — geopolitically significant',
-    coords: [
-      [28.7, 60.7], [22.0, 57.5], [14.5, 54.5], [13.8, 54.1],
-    ],
-  },
-  {
-    id: 'turkstream', name: 'TurkStream',
-    type: 'gas', country: 'Russia/Turkey', from: 'Anapa, Russia', to: 'İstanbul, Turkey',
-    status: 'operational', capacity: '31.5 bcm/yr',
-    coords: [
-      [37.4, 44.9], [35.0, 42.5], [32.0, 41.5], [28.8, 41.0],
-    ],
-  },
-  {
-    id: 'tapline', name: 'Trans-Arabian Pipeline',
-    type: 'oil', country: 'Saudi Arabia', from: 'Dhahran', to: 'Sidon, Lebanon',
-    status: 'suspended', notes: 'Historic pipeline — mostly decommissioned',
-    coords: [
-      [50.1, 26.4], [44.2, 32.0], [39.1, 32.3], [35.4, 33.5],
-    ],
-  },
-  {
-    id: 'baku-tbilisi-ceyhan', name: 'BTC Pipeline',
-    type: 'oil', country: 'Azerbaijan/Georgia/Turkey', from: 'Baku', to: 'Ceyhan',
-    status: 'operational', capacity: '1.2M bbl/day',
-    coords: [
-      [49.8, 40.4], [45.0, 41.7], [41.7, 41.7], [38.5, 39.8], [36.1, 36.8],
-    ],
-  },
-  {
-    id: 'keystone-xl', name: 'Keystone Pipeline',
-    type: 'oil', country: 'United States/Canada', from: 'Hardisty, Alberta', to: 'Port Arthur, TX',
-    status: 'operational', capacity: '890K bbl/day',
-    coords: [
-      [-111.3, 52.7], [-100.0, 48.0], [-98.0, 42.0], [-96.0, 37.0], [-94.0, 30.0],
-    ],
-  },
-  {
-    id: 'east-africa', name: 'East Africa Crude Oil Pipeline',
-    type: 'oil', country: 'Uganda/Tanzania', from: 'Hoima, Uganda', to: 'Tanga, Tanzania',
-    status: 'under_construction', capacity: '216K bbl/day', notes: 'World\'s longest heated pipeline',
-    coords: [
-      [31.4, 1.4], [33.0, -1.5], [35.8, -4.0], [39.1, -5.1],
-    ],
-  },
-  {
-    id: 'cpec-pipeline', name: 'China-Pakistan Pipeline (CPEC)',
-    type: 'multi', country: 'Pakistan/China', from: 'Gwadar', to: 'Kashgar',
-    status: 'under_construction',
-    coords: [
-      [62.3, 25.1], [66.5, 28.0], [68.4, 31.5], [69.5, 34.0], [72.0, 36.5], [75.9, 37.2],
-    ],
-  },
-  {
-    id: 'igat', name: 'Iran Gas Trunkline (IGAT)',
-    type: 'gas', country: 'Iran', from: 'Assaluyeh', to: 'Tehran',
-    status: 'operational', notes: 'Main Iranian gas transmission backbone',
-    coords: [
-      [52.7, 27.5], [51.0, 30.5], [50.8, 32.5], [51.4, 35.7],
-    ],
-  },
-  {
-    id: 'yamal-europe', name: 'Yamal-Europe Pipeline',
-    type: 'gas', country: 'Russia/Poland/Germany', from: 'Yamal, Russia', to: 'Frankfurt (Oder)',
-    status: 'suspended', capacity: '33 bcm/yr',
-    coords: [
-      [68.8, 71.3], [60.0, 60.0], [55.0, 55.0], [30.0, 52.5], [24.0, 52.2], [14.7, 52.4],
-    ],
-  },
-  {
-    id: 'trans-adriatic', name: 'Trans Adriatic Pipeline (TAP)',
-    type: 'gas', country: 'Greece/Albania/Italy', from: 'Turkish border', to: 'Brindisi, Italy',
-    status: 'operational', capacity: '10 bcm/yr',
-    coords: [
-      [26.3, 41.4], [23.0, 41.0], [20.5, 40.7], [18.5, 40.6], [17.9, 40.6],
-    ],
-  },
 ]
 
 // Combined flat list for map rendering (static, curated entries)
