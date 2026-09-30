@@ -13,7 +13,10 @@ import {
   SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2,
 } from '../../services/sanctions'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from '../../services/ports'
-import { GAS_PIPELINES, PIPELINE_STATUS_COLORS, PIPELINE_STATUS_LABELS } from '../../services/pipelines'
+import {
+  PIPELINE_COLORS, PIPELINE_LABELS, PIPELINE_ATTRIBUTION, PIPELINE_DETAIL_MIN_ZOOM,
+  fetchTrunkPipelines, fetchPipelineCell, cellsForBounds, type PipelineFeature,
+} from '../../services/pipelines'
 import {
   detectFlightType, countFlightTypes, headingToCompass,
   FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS,
@@ -21,7 +24,7 @@ import {
 } from '../../utils/flightType'
 import { EARTHCAM_CAMERAS, type LiveCamera } from '../../services/earthcam'
 import { registerUSWebcams } from '../panels/PanelContent'
-import { ALL_INFRA_POINTS, PIPELINE_ROUTES, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchTopPowerPlants, type InfraPoint } from '../../services/infrastructure'
+import { ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchTopPowerPlants, type InfraPoint } from '../../services/infrastructure'
 import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
 import { FIR_REGIONS, analyzeAirspace } from '../../services/notam'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../services/aisstream'
@@ -1314,59 +1317,91 @@ export default function MapView({
       map.on('mouseenter', 'port-circles', () => { map.getCanvas().style.cursor = 'pointer' })
       map.on('mouseleave', 'port-circles', () => { map.getCanvas().style.cursor = '' })
 
-      // ── Gas Pipelines GeoJSON source ────────────────────────────────────
-      map.addSource('pipelines', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
+      // ── Oil & gas pipelines (OpenStreetMap) ─────────────────────────────
+      // 'pipelines' = world snapshot of long-distance lines; 'pipelines-detail'
+      // = live per-way geometry loaded when zoomed in (see services/pipelines.ts).
+      const pipeColor: mapboxgl.Expression = ['match', ['get', 'substance'],
+        'oil', PIPELINE_COLORS.oil, 'gas', PIPELINE_COLORS.gas, '#ffffff']
+      const pipeWidth = (scale: number): mapboxgl.Expression => ['interpolate', ['linear'], ['zoom'],
+        1, 0.7 * scale, 4, 1.2 * scale, 7, 1.9 * scale, 10, 3 * scale, 14, 4.5 * scale]
+      const pipeLayout = { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' } as const
+      // Underground / subsea segments are drawn dashed, above-ground solid.
+      const pipeDash: mapboxgl.Expression = ['match', ['get', 'location'],
+        ['underground', 'underwater'], ['literal', [2, 1.5]], ['literal', [1, 0]]]
+
+      map.addSource('pipelines',        { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+      map.addSource('pipelines-detail', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+
+      // World snapshot fades out as the detailed live geometry takes over.
+      map.addLayer({
+        id: 'pipeline-casing', type: 'line', source: 'pipelines', layout: pipeLayout,
+        paint: {
+          'line-color': '#04121a',
+          'line-width': pipeWidth(1.9),
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.55, 10, 0.1],
+        },
       })
       map.addLayer({
-        id: 'pipeline-lines', type: 'line', source: 'pipelines',
+        id: 'pipeline-lines', type: 'line', source: 'pipelines', layout: pipeLayout,
         paint: {
-          'line-color': ['get', 'color'],
-          'line-width': ['interpolate', ['linear'], ['zoom'], 1, 1.2, 4, 2, 7, 3.5, 10, 5],
-          'line-opacity': 0.8,
+          'line-color': pipeColor,
+          'line-width': pipeWidth(1),
+          'line-opacity': ['interpolate', ['linear'], ['zoom'], 8, 0.95, 10, 0.35],
         },
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round',
-          visibility: 'none',
+      })
+      map.addLayer({
+        id: 'pipeline-detail-casing', type: 'line', source: 'pipelines-detail', layout: pipeLayout,
+        paint: { 'line-color': '#04121a', 'line-width': pipeWidth(1.9), 'line-opacity': 0.55 },
+      })
+      map.addLayer({
+        id: 'pipeline-detail-lines', type: 'line', source: 'pipelines-detail', layout: pipeLayout,
+        paint: {
+          'line-color': pipeColor,
+          'line-width': pipeWidth(1),
+          'line-opacity': 0.95,
+          'line-dasharray': pipeDash,
         },
       })
       map.addLayer({
         id: 'pipeline-labels', type: 'symbol', source: 'pipelines', minzoom: 4,
+        filter: ['!=', ['get', 'name'], ''],
         layout: {
-          'symbol-placement': 'line-center',
+          'symbol-placement': 'line',
+          'symbol-spacing': 420,
           'text-field': ['get', 'name'],
           'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': ['interpolate', ['linear'], ['zoom'], 4, 8, 8, 10, 12, 12],
+          'text-size': ['interpolate', ['linear'], ['zoom'], 4, 9, 8, 11, 12, 12],
+          'text-max-angle': 30,
           'text-allow-overlap': false,
           'text-optional': true,
           visibility: 'none',
         } as Record<string, unknown>,
         paint: {
-          'text-color': ['get', 'color'],
-          'text-halo-color': 'rgba(0,0,0,0.85)',
-          'text-halo-width': 1.5,
+          'text-color': pipeColor,
+          'text-halo-color': 'rgba(4,18,26,0.92)',
+          'text-halo-width': 1.6,
         },
       } as Parameters<typeof map.addLayer>[0])
 
-      map.on('click', 'pipeline-lines', (e) => {
+      const PIPE_HIT = ['pipeline-lines', 'pipeline-detail-lines']
+      map.on('click', PIPE_HIT, (e) => {
         if (!e.features?.[0]) return
         const p = e.features[0].properties as Record<string, unknown>
-        const color = String(p.color || '#44ddaa')
-        const cap = p.capacityBcmYr ? `<span style="color:#6b7280;">⛽ <b style="color:#2563eb">${p.capacityBcmYr} bcm/yr</b></span>` : ''
-        const len = p.lengthKm ? `<span style="color:#6b7280;">📏 <b style="color:#2563eb">${Number(p.lengthKm).toLocaleString()} km</b></span>` : ''
-        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:240px;max-width:310px;">
+        const sub = p.substance === 'oil' ? 'oil' : 'gas'
+        const color = PIPELINE_COLORS[sub]
+        const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
+        const rows = [
+          p.operator ? `<div><span style="color:#9ca3af;">Operator:</span> ${esc(p.operator)}</div>` : '',
+          p.diameter ? `<div><span style="color:#9ca3af;">Diameter:</span> ${esc(p.diameter)} mm</div>` : '',
+          p.location ? `<div><span style="color:#9ca3af;">Laid:</span> ${esc(p.location)}</div>` : '',
+        ].join('')
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:300px;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;gap:6px;">
-            <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">${p.name}</span>
-            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.statusLabel}</span>
+            <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">${esc(p.name) || `Unnamed ${PIPELINE_LABELS[sub].toLowerCase()} pipeline`}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}88;padding:1px 5px;flex-shrink:0;background:#0b1c26;">${PIPELINE_LABELS[sub].toUpperCase()}</span>
           </div>
-          <div style="font-size:11px;color:#6b7280;margin-bottom:5px;">${p.countries}</div>
-          <div style="display:flex;gap:8px;margin-bottom:5px;font-size:10px;flex-wrap:wrap;">
-            ${cap}${len}
-            ${p.operator ? `<span style="color:#6b7280;">🏢 <b style="color:#2563eb">${p.operator}</b></span>` : ''}
-          </div>
-          ${p.notes ? `<div style="font-size:10px;color:#6b7280;line-height:1.5;">${p.notes}</div>` : ''}
+          <div style="font-size:11px;color:#6b7280;line-height:1.6;">${rows}</div>
+          <div style="margin-top:5px;font-size:10px;color:#9ca3af;">${PIPELINE_ATTRIBUTION}${p.osm ? ` · <a href="https://www.openstreetmap.org/${esc(p.osm)}" target="_blank" rel="noopener noreferrer">${esc(p.osm)}</a>` : ''}</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '330px', className: 'cy-popup' })
@@ -1375,8 +1410,8 @@ export default function MapView({
           .addTo(map)
         ;(map as any).__markFeatureClick?.()
       })
-      map.on('mouseenter', 'pipeline-lines', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'pipeline-lines', () => { map.getCanvas().style.cursor = '' })
+      map.on('mouseenter', PIPE_HIT, () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', PIPE_HIT, () => { map.getCanvas().style.cursor = '' })
 
       // ── Nuclear power plants GeoJSON source ──────────────────────────────
       map.addSource('nuclear-plants', {
@@ -1608,29 +1643,6 @@ export default function MapView({
       map.on('mouseenter', 'datacenter-circles', () => { map.getCanvas().style.cursor = 'crosshair' })
       map.on('mouseleave', 'datacenter-circles', () => { map.getCanvas().style.cursor = '' })
 
-      map.on('click', 'pipeline-lines', (e) => {
-        if (!e.features?.[0]) return
-        const p     = e.features[0].properties as Record<string, unknown>
-        const color  = String(p.color || '#ea580c')
-        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:280px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
-            <span style="font-size:12px;font-weight:800;color:#14161a;">⬡ ${p.name}</span>
-            <span style="font-size:10px;color:${color};border:1px solid ${color}55;padding:1px 5px;">${String(p.type).toUpperCase()}</span>
-          </div>
-          <div style="font-size:11px;color:#6b7280;line-height:1.6;">
-            <div><span style="color:#9ca3af;">Route:</span> ${p.from} → ${p.to}</div>
-            ${p.capacity ? `<div><span style="color:#9ca3af;">Capacity:</span> ${p.capacity}</div>` : ''}
-            ${p.notes    ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
-            <div style="margin-top:4px;font-size:10px;color:#${p.status === 'operational' ? '16a34a' : p.status === 'under_construction' ? 'd97706' : 'dc2626'};">● ${String(p.status).replace('_',' ').toUpperCase()}</div>
-          </div>
-        </div>`
-        if (popupRef.current) popupRef.current.remove()
-        popupRef.current = new mapboxgl.Popup({ maxWidth: '300px', className: 'cy-popup' })
-          .setLngLat(e.lngLat).setHTML(html).addTo(map)
-        ;(map as any).__markFeatureClick?.()
-      })
-      map.on('mouseenter', 'pipeline-lines', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'pipeline-lines', () => { map.getCanvas().style.cursor = '' })
 
       // ── Humanitarian (UNHCR offices, border crossings, refugee camps) ────────
       map.addSource('humanitarian-offices',   { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
@@ -2929,32 +2941,51 @@ export default function MapView({
     src.setData({ type: 'FeatureCollection', features })
   }, [showPorts, mapReady])
 
-  // ── Gas Pipelines GeoJSON ───────────────────────────────────────────────
+  // ── Oil & gas pipelines (OSM): world snapshot + live detail when zoomed in ──
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layersReadyRef.current) return
     const src = map.getSource('pipelines') as mapboxgl.GeoJSONSource | undefined
     if (!src) return
     const vis = showPipelines ? 'visible' : 'none'
-    if (map.getLayer('pipeline-lines'))  map.setLayoutProperty('pipeline-lines',  'visibility', vis)
-    if (map.getLayer('pipeline-labels')) map.setLayoutProperty('pipeline-labels', 'visibility', vis)
+    for (const id of ['pipeline-casing', 'pipeline-lines', 'pipeline-labels', 'pipeline-detail-casing', 'pipeline-detail-lines']) {
+      if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis)
+    }
     if (!showPipelines) { src.setData({ type: 'FeatureCollection', features: [] }); return }
-    const features: GeoJSON.Feature[] = GAS_PIPELINES.map(p => ({
-      type: 'Feature',
-      geometry: { type: 'LineString', coordinates: p.path },
-      properties: {
-        name:           p.name,
-        countries:      p.countries,
-        status:         p.status,
-        statusLabel:    PIPELINE_STATUS_LABELS[p.status],
-        color:          PIPELINE_STATUS_COLORS[p.status],
-        capacityBcmYr:  p.capacityBcmYr ?? null,
-        lengthKm:       p.lengthKm ?? null,
-        operator:       p.operator ?? '',
-        notes:          p.notes ?? '',
-      },
-    }))
-    src.setData({ type: 'FeatureCollection', features })
+    let cancelled = false
+    fetchTrunkPipelines().then(fc => { if (!cancelled) src.setData(fc) })
+    return () => { cancelled = true }
+  }, [showPipelines, mapReady])
+
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const detail = map.getSource('pipelines-detail') as mapboxgl.GeoJSONSource | undefined
+    if (!detail) return
+    const clear = () => detail.setData({ type: 'FeatureCollection', features: [] })
+    if (!showPipelines) { clear(); return }
+
+    let seq = 0
+    let timer: ReturnType<typeof setTimeout> | undefined
+    const load = async () => {
+      const mine = ++seq
+      if (map.getZoom() < PIPELINE_DETAIL_MIN_ZOOM) { clear(); return }
+      const b = map.getBounds()
+      if (!b) return
+      const cells = cellsForBounds(b.getWest(), b.getSouth(), b.getEast(), b.getNorth())
+      const byId = new Map<string, PipelineFeature>()
+      const POOL = 3
+      for (let i = 0; i < cells.length && mine === seq; i += POOL) {
+        const chunk = await Promise.all(cells.slice(i, i + POOL).map(fetchPipelineCell))
+        if (mine !== seq) return
+        for (const feats of chunk) for (const f of feats) byId.set(f.properties.osm, f)
+        detail.setData({ type: 'FeatureCollection', features: [...byId.values()] })
+      }
+    }
+    const schedule = () => { clearTimeout(timer); timer = setTimeout(load, 350) }
+    map.on('moveend', schedule)
+    schedule()
+    return () => { seq++; clearTimeout(timer); map.off('moveend', schedule) }
   }, [showPipelines, mapReady])
 
   // ── Chokepoints GeoJSON ───────────────────────────────────────────────────
@@ -3100,16 +3131,13 @@ export default function MapView({
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layersReadyRef.current) return
-    const infraSrc    = map.getSource('infrastructure') as mapboxgl.GeoJSONSource | undefined
-    const pipelineSrc = map.getSource('pipelines')      as mapboxgl.GeoJSONSource | undefined
-    if (!infraSrc || !pipelineSrc) return
+    const infraSrc = map.getSource('infrastructure') as mapboxgl.GeoJSONSource | undefined
+    if (!infraSrc) return
     const vis = showInfrastructure ? 'visible' : 'none'
     if (map.getLayer('infra-circles')) map.setLayoutProperty('infra-circles', 'visibility', vis)
     if (map.getLayer('infra-labels'))  map.setLayoutProperty('infra-labels',  'visibility', vis)
-    if (map.getLayer('pipeline-lines'))map.setLayoutProperty('pipeline-lines','visibility', vis)
     if (!showInfrastructure) {
       infraSrc.setData({ type: 'FeatureCollection', features: [] })
-      pipelineSrc.setData({ type: 'FeatureCollection', features: [] })
       return
     }
     // Populate infra points (curated static + live power plants)
@@ -3130,18 +3158,6 @@ export default function MapView({
       },
     }))
     infraSrc.setData({ type: 'FeatureCollection', features: infraFeatures })
-    // Populate pipelines
-    const PIPE_COLORS: Record<string, string> = { oil: '#ff6600', gas: '#ffdd00', multi: '#ff8800' }
-    const pipeFeatures: GeoJSON.Feature[] = PIPELINE_ROUTES.map(r => ({
-      type: 'Feature',
-      geometry: { type: 'LineString', coordinates: r.coords },
-      properties: {
-        name:     r.name, type: r.type, from: r.from, to: r.to,
-        capacity: r.capacity ?? null, notes: r.notes ?? null, status: r.status,
-        color:    PIPE_COLORS[r.type] ?? '#ff8800',
-      },
-    }))
-    pipelineSrc.setData({ type: 'FeatureCollection', features: pipeFeatures })
   }, [showInfrastructure, mapReady, powerPlants])
 
   // ── Data Centers GeoJSON (live, OpenStreetMap via Overpass) ───────────────
@@ -3942,7 +3958,7 @@ export default function MapView({
                 { key: 'oil',            label: 'OIL',             icon: '▲', color: '#ff6600' },
                 { key: 'gas',            label: 'GAS',             icon: '▲', color: '#00aaff' },
                 { key: 'ports',          label: 'PORTS',          icon: '⚓', color: '#00ccff' },
-                { key: 'pipelines',      label: 'PIPELINES',      icon: '═', color: '#44ddaa' },
+                { key: 'pipelines',      label: 'PIPELINES',      icon: '═', color: PIPELINE_COLORS.gas },
                 { key: 'gpsjam',         label: 'GPS JAM',        icon: '◌', color: '#ff3344' },
                 { key: 'chokepoints',    label: 'CHOKEPOINTS',    icon: '⊘', color: '#ff4466' },
                 { key: 'supplychain',    label: 'SUPPLY CHAIN',   icon: '◆', color: '#00ccff' },
