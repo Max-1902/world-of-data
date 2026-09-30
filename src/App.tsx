@@ -10,6 +10,7 @@ import { useWildfires }   from './hooks/useWildfires'
 import { useVessels }    from './hooks/useVessels'
 import { useOutages }    from './hooks/useOutages'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
+import { useHistoryRecorder } from './hooks/useHistory'
 import MapView      from './components/Map/MapView'
 import TopBar       from './components/TopBar'
 import Sidebar      from './components/Sidebar'
@@ -102,6 +103,8 @@ export default function App() {
   const { outages, refresh: refreshOutages }         = useOutages(panelState.outages)
 
   void stocks
+
+  useHistoryRecorder(crises, flights, panelState.flights)
 
   const [reloading, setReloading] = useState(false)
   const handleReloadAll = useCallback(() => {

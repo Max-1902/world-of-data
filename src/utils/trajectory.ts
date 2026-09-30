@@ -13,7 +13,7 @@ export interface TrajectoryEntry {
   newsHit?: string
 }
 
-const SEV_WEIGHT: Record<CrisisEvent['severity'], number> = {
+export const SEV_WEIGHT: Record<CrisisEvent['severity'], number> = {
   critical: 10, high: 6, medium: 3, low: 1,
 }
 

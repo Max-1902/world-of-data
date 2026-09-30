@@ -24,6 +24,10 @@ import { fetchDataCenters, type DataCenterPoint } from '../../services/datacente
 import { OWID_CHARTS, fetchOwidChart, formatOwidValue, TOPIC_LABELS, type OwidTopic, type OwidChartData } from '../../services/owid'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
+import { computeThreatScore } from '../../utils/threat'
+import { useHistory } from '../../hooks/useHistory'
+import { countrySeries, threatSeries } from '../../services/history'
+import Sparkline from '../Sparkline'
 import {
   UNHCR_GLOBAL_2023, TOP_HOSTING, TOP_ORIGINS, UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS,
   CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS,
@@ -105,14 +109,6 @@ function riskColor(score: number) {
   if (score >= 20) return 'var(--amber)'
   if (score >= 10) return 'var(--amber)'
   return 'var(--accent)'
-}
-
-function computeThreatScore(crises: CrisisEvent[], flights: Flight[]) {
-  const base = crises.reduce((acc, c) => {
-    const w: Record<string, number> = { critical: 8, high: 4, medium: 2, low: 1 }
-    return acc + (w[c.severity] ?? 1)
-  }, 0)
-  return Math.min(100, Math.round(base / 8 + (flights.length > 5000 ? 5 : 0)))
 }
 
 // ── Panel sub-components ───────────────────────────────────────────────────────
@@ -308,6 +304,7 @@ export function LayersPanel({ panelState, onToggleLayer, deepstateMode, onDeepst
 
 export function RiskPanel({ crises }: { crises: CrisisEvent[] }) {
   const risks = computeCountryRisk(crises)
+  const snaps = useHistory()
   const maxScore = Math.max(1, ...risks.map(r => r.score))
 
   // Count crisis types per country for mini breakdown
@@ -360,6 +357,7 @@ export function RiskPanel({ crises }: { crises: CrisisEvent[] }) {
                 background: `${color}14`, border: `1px solid ${color}33`,
                 padding: '1px 5px', borderRadius: 2, flexShrink: 0,
               }}>{label}</span>
+              <Sparkline points={countrySeries(snaps, r.country)} color={color} label={`${r.country} risk score history`} />
               <span style={{ fontSize: 12.5, fontWeight: 800, color, fontVariantNumeric: 'tabular-nums', minWidth: 22, textAlign: 'right', flexShrink: 0 }}>
                 {r.score}
               </span>
@@ -395,6 +393,7 @@ export function RiskPanel({ crises }: { crises: CrisisEvent[] }) {
 
 export function ThreatPanel({ crises, flights }: { crises: CrisisEvent[]; flights: Flight[] }) {
   const score = computeThreatScore(crises, flights)
+  const series = threatSeries(useHistory())
   const R = 31, CX = 40, CY = 40
   const arc   = 2 * Math.PI * R * (score / 100)
   const total = 2 * Math.PI * R
@@ -421,7 +420,17 @@ export function ThreatPanel({ crises, flights }: { crises: CrisisEvent[]; flight
       </div>
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: '12.5px', fontWeight: 800, letterSpacing: '.15em', color }}>{label}</div>
-        <div style={{ fontSize: '10.5px', color: 'var(--text3)', letterSpacing: '.1em', marginTop: 1 }}>// TREND STABLE</div>
+        {series.length >= 2 ? (
+          <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <Sparkline points={series} width={120} height={28} color={color} label="Threat index history" />
+            <div style={{ fontSize: '9.5px', color: 'var(--text3)' }}>
+              since {formatDistanceToNow(new Date(series[0].t), { addSuffix: true })}
+              {' · '}{series[series.length - 1].v - series[0].v >= 0 ? '+' : ''}{series[series.length - 1].v - series[0].v}
+            </div>
+          </div>
+        ) : (
+          <div style={{ fontSize: '10px', color: 'var(--text3)', marginTop: 4 }}>Collecting history…</div>
+        )}
       </div>
     </div>
   )
