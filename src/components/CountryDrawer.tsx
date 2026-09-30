@@ -11,6 +11,7 @@ import { ALL_INFRA_POINTS, fetchPowerPlantsForCountry, INFRA_LABELS, type InfraP
 import { computeCountryRisk } from './panels/PanelContent'
 import { detectFlightType, FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS } from '../utils/flightType'
 import { fetchCountryEcon, formatEconValue, groupIndicators, resolveISO2, type CountryEconData } from '../services/worldbank'
+import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../services/militaryPersonnel'
 import { getTradeProfile } from '../services/tradeStats'
 import { fetchCivilFacilities, CIVIL_FACILITY_COLORS, CIVIL_FACILITY_LABELS, type CivilFacility } from '../services/civilFacilities'
 
@@ -166,6 +167,19 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     }).catch(() => setCivilLoading(false))
   }, [country])
 
+  // ── Armed forces personnel ranking (World Bank, IISS Military Balance) ─────
+  const [milPersonnel, setMilPersonnel] = useState<MilitaryPersonnelEntry | null>(null)
+  const [milPersonnelTotal, setMilPersonnelTotal] = useState(0)
+  useEffect(() => {
+    setMilPersonnel(null)
+    const iso2 = resolveISO2(country)
+    if (!iso2) return
+    fetchMilitaryPersonnelRanking().then(ranking => {
+      setMilPersonnelTotal(ranking.length)
+      setMilPersonnel(ranking.find(r => r.iso2 === iso2) ?? null)
+    }).catch(() => {})
+  }, [country])
+
   const riskScore = risk?.score ?? 0
   const sevColor = riskScore >= 40 ? 'var(--red)' : riskScore >= 20 ? 'var(--amber)' : riskScore >= 10 ? 'var(--amber)' : 'var(--green)'
 
@@ -222,7 +236,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     || camps.length > 0 || milBases.length > 0 || nukes.length > 0 || sanction
     || infra.length > 0 || nearbyFlights > 0 || nearbyQuakes.length > 0
     || powerPlants.length > 0 || civilFacilities.length > 0 || civilLoading
-    || !!getTradeProfile(country)
+    || !!getTradeProfile(country) || !!milPersonnel
 
   return (
     <div className="country-drawer" style={{
@@ -364,6 +378,23 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
             <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>
               {nukes.reduce((s, p) => s + p.reactors, 0)} reactors · {fmt(nukes.reduce((s, p) => s + p.capacity, 0))} MWe total
             </div>
+          </Section>
+        )}
+
+        {/* ── Armed forces personnel (World Bank, IISS Military Balance) ───── */}
+        {milPersonnel && (
+          <Section title="ARMED FORCES PERSONNEL" color="var(--red)">
+            <div style={{ display: 'flex', gap: 6, marginBottom: 3 }}>
+              <div style={{ padding: '3px 6px', background: soft('var(--red)', 8), borderRadius: 'var(--r-sm)' }}>
+                <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }}>PERSONNEL</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)' }}>{formatPersonnel(milPersonnel.personnel)}</div>
+              </div>
+              <div style={{ padding: '3px 6px', background: soft('var(--red)', 8), borderRadius: 'var(--r-sm)' }}>
+                <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }}>WORLD RANK</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)' }}>#{milPersonnel.rank} / {milPersonnelTotal}</div>
+              </div>
+            </div>
+            <div style={{ fontSize: 9, color: 'var(--text3)' }}>Source: World Bank (IISS Military Balance), {milPersonnel.year}</div>
           </Section>
         )}
 

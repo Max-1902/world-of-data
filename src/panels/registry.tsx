@@ -11,6 +11,8 @@ import {
   SanctionsPanel, MilitaryPanel, NuclearPanel, AirspacePanel,
   USWebcamsPanel, CryptoPanel, ForexPanel, ExchangesPanel,
   StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, AIAnalystPanel,
+  MilitaryInstallationsByCountryPanel, NuclearFacilitiesByCountryPanel, InfrastructureByCountryPanel,
+  ResourcesByCountryPanel, TradePartnersByCountryPanel, TradeProductsByCountryPanel,
   SECTORS,
 } from '../components/panels/PanelContent'
 
@@ -127,6 +129,48 @@ export const PANELS: PanelDef[] = [
     dotColor: 'red', desc: 'Correlated intel for active query',
     render: (p) => <IntelBriefPanel query={p.searchQuery ?? ''} crises={p.crises} flights={p.flights} />,
   },
+
+  // ── DEDICATED PER-CATEGORY WORKSPACES (country → items → fly to) ─────────────
+  {
+    id: 'militaryInstallationsByCountry', title: 'Installations', group: 'militaryInstallations',
+    dotColor: 'blue', desc: 'Military bases by country — click to fly to',
+    render: (p) => <MilitaryInstallationsByCountryPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
+    id: 'nuclearFacilitiesByCountry', title: 'Nuclear Facilities', group: 'nuclearFacilities',
+    dotColor: 'yellow', desc: 'Reactors & weapons sites by country — click to fly to',
+    render: (p) => <NuclearFacilitiesByCountryPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
+    id: 'infrastructureByCountry', title: 'Infrastructure', group: 'infrastructureSites',
+    dotColor: 'amber', desc: 'Dams, pipelines, LNG, power plants by country — click to fly to',
+    render: (p) => <InfrastructureByCountryPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
+    id: 'resourcesByCountry', title: 'Resources', group: 'resourcesByCountry',
+    dotColor: 'amber', desc: 'Critical minerals & commodities by country',
+    render: (p) => <ResourcesByCountryPanel onGeoSearch={p.onCountryClick} onCountryClick={p.onCountryClick} />,
+  },
+  {
+    id: 'forceSizeByCountry', title: 'Force Size', group: 'forceSize',
+    dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
+    render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} />,
+  },
+  {
+    id: 'tradePartnersByCountry', title: 'Trade Partners', group: 'tradePartnersByCountry',
+    dotColor: 'grn', desc: 'Top export/import partner countries — click to fly to',
+    render: (p) => <TradePartnersByCountryPanel onGeoSearch={p.onCountryClick} onCountryClick={p.onCountryClick} />,
+  },
+  {
+    id: 'tradeProductsByCountry', title: 'Trade Products', group: 'tradeProductsByCountry',
+    dotColor: 'blue', desc: 'Top exported/imported product categories by country',
+    render: (p) => <TradeProductsByCountryPanel onCountryClick={p.onCountryClick} />,
+  },
+  {
+    id: 'economicDataByCountry', title: 'Economic Data', group: 'economicData',
+    dotColor: 'blue', desc: 'World Bank indicators by country',
+    render: (p) => <GlobalEconomyPanel onCountryClick={p.onCountryClick} />,
+  },
 ]
 
 /* ── Lookup helpers ────────────────────────────────────────────────────────── */
@@ -147,6 +191,14 @@ export const GROUP_ORDER: { id: PanelGroup; label: string }[] = [
   { id: 'security', label: 'SECURITY & DEFENSE' },
   { id: 'markets',  label: 'ECONOMY' },
   { id: 'analysis', label: 'ANALYSIS' },
+  { id: 'militaryInstallations',   label: 'INSTALLATIONS' },
+  { id: 'nuclearFacilities',       label: 'NUCLEAR FACILITIES' },
+  { id: 'infrastructureSites',     label: 'INFRA SITES' },
+  { id: 'resourcesByCountry',      label: 'RESOURCES' },
+  { id: 'forceSize',               label: 'FORCE SIZE' },
+  { id: 'tradePartnersByCountry',  label: 'TRADE PARTNERS' },
+  { id: 'tradeProductsByCountry',  label: 'TRADE PRODUCTS' },
+  { id: 'economicData',            label: 'ECON DATA' },
 ]
 
 /** All panel IDs (for backwards compat) */

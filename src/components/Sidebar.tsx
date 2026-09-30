@@ -1,4 +1,7 @@
-import { BookOpen, LayoutDashboard, LineChart, Radio, ShieldHalf, Network } from 'lucide-react'
+import {
+  BookOpen, LayoutDashboard, LineChart, Radio, ShieldHalf, Network,
+  Swords, Radiation, Factory, Pickaxe, Users, ArrowLeftRight, Package, Landmark,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { GROUP_ORDER, panelsForGroup } from '../panels/registry'
 import type { PanelGroup } from '../panels/types'
@@ -10,6 +13,14 @@ const GROUP_ICONS: Record<PanelGroup, LucideIcon> = {
   security: ShieldHalf,
   markets:  LineChart,
   analysis: BookOpen,
+  militaryInstallations:  Swords,
+  nuclearFacilities:      Radiation,
+  infrastructureSites:    Factory,
+  resourcesByCountry:     Pickaxe,
+  forceSize:              Users,
+  tradePartnersByCountry: ArrowLeftRight,
+  tradeProductsByCountry: Package,
+  economicData:           Landmark,
 }
 
 const GROUP_HINTS: Record<PanelGroup, string> = {
@@ -19,6 +30,14 @@ const GROUP_HINTS: Record<PanelGroup, string> = {
   security: 'Military, airspace, sanctions, and trafficking',
   markets: 'Trade, markets, and resource production',
   analysis: 'Briefings and regional outlook',
+  militaryInstallations: 'Military bases by country — click to fly to',
+  nuclearFacilities: 'Reactors & weapons sites by country — click to fly to',
+  infrastructureSites: 'Dams, pipelines, LNG, power plants by country',
+  resourcesByCountry: 'Critical minerals & commodities by country',
+  forceSize: 'Armed forces personnel ranked by country (World Bank)',
+  tradePartnersByCountry: 'Top export/import partner countries by country',
+  tradeProductsByCountry: 'Top exported/imported product categories by country',
+  economicData: 'World Bank economic indicators by country',
 }
 
 interface Props {
