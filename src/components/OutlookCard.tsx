@@ -1,15 +1,16 @@
-import { ArrowDownRight, ArrowRight, ArrowUpRight, Minus, Radar } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Minus, Radar } from 'lucide-react'
 import { computeTrajectories } from '../utils/trajectory'
-import type { CrisisEvent, Flight } from '../types'
+import type { CrisisEvent, Flight, NewsArticle } from '../types'
 
 interface Props {
   crises: CrisisEvent[]
   flights: Flight[]
-  onOpen: () => void
+  articles: NewsArticle[]
+  onSelectCountry: (country: string) => void
 }
 
-export default function OutlookCard({ crises, flights, onOpen }: Props) {
-  const entries = computeTrajectories(crises, flights, 6)
+export default function OutlookCard({ crises, flights, articles, onSelectCountry }: Props) {
+  const entries = computeTrajectories(crises, flights, 6, articles)
   const rising = entries.filter(entry => entry.trend === 'rising')
   const featured = (rising.length ? rising : entries).slice(0, 2)
 
@@ -33,10 +34,18 @@ export default function OutlookCard({ crises, flights, onOpen }: Props) {
             const falling = entry.trend === 'falling'
             const Icon = rising ? ArrowUpRight : falling ? ArrowDownRight : Minus
             return (
-              <div className="outlook-entry" key={entry.country}>
+              <button
+                className="outlook-entry outlook-entry-btn"
+                key={entry.country}
+                onClick={() => onSelectCountry(entry.country)}
+                title={`Open full data for ${entry.country}`}
+              >
                 <div className={`outlook-trend ${entry.trend}`}><Icon size={14} /></div>
                 <div className="outlook-detail">
-                  <div className="outlook-country">{entry.country}</div>
+                  <div className="outlook-country">
+                    {entry.country}
+                    {entry.newsHit && <span className="outlook-news-badge" title={entry.newsHit}>NEWS</span>}
+                  </div>
                   <div className="outlook-reason">{entry.reason}</div>
                 </div>
                 <div
@@ -45,17 +54,13 @@ export default function OutlookCard({ crises, flights, onOpen }: Props) {
                 >
                   {entry.delta > 0 ? '+' : ''}{entry.delta}
                 </div>
-              </div>
+              </button>
             )
           })}
         </div>
       ) : (
         <div className="outlook-empty">No recent regional activity trend is available.</div>
       )}
-
-      <button className="outlook-action" onClick={onOpen}>
-        Open full analysis <ArrowRight size={12} />
-      </button>
     </section>
   )
 }
