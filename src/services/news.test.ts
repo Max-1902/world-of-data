@@ -42,7 +42,7 @@ describe('fetchRSSFeed', () => {
     const fetchMock = mockFetch(() => rssBody([]))
     const { fetchRSSFeed } = await load()
     await settle(fetchRSSFeed('https://feed/a?x=1&y=2', 'Wire'))
-    expect(String(fetchMock.mock.calls[0][0])).toContain('rss_url=https%3A%2F%2Ffeed%2Fa%3Fx%3D1%26y%3D2')
+    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/rss?url=https%3A%2F%2Ffeed%2Fa%3Fx%3D1%26y%3D2')
   })
 
   it('serves repeat requests from cache for 5 minutes, then refetches', async () => {
@@ -263,5 +263,68 @@ describe('searchAllSources', () => {
     })
     const result = await settle((await load()).searchAllSources('x'))
     expect(result.map(a => a.title)).toEqual(['Surviving english headline'])
+  })
+})
+
+describe('searchGDELTNews rate limiting (GDELT allows one request per 5 s)', () => {
+  beforeEach(() => { vi.useFakeTimers(); quietConsole() })
+  afterEach(() => vi.useRealTimers())
+
+  const article = { url: 'https://n/1', title: 'Headline', seendate: '20250101T000000Z', domain: 'n', language: 'English' }
+  const gdelt = () => jsonResponse({ articles: [article] })
+
+  it('caches per query for 10 minutes, then refetches', async () => {
+    const fetchMock = mockFetch(gdelt)
+    const { searchGDELTNews } = await load()
+    await settle(searchGDELTNews('iran'))
+    await settle(searchGDELTNews('iran'))
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 1)
+    await settle(searchGDELTNews('iran'))
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('lets concurrent identical queries share a single request', async () => {
+    const fetchMock = mockFetch(gdelt)
+    const { searchGDELTNews } = await load()
+    const results = await settle(Promise.all([searchGDELTNews('iran'), searchGDELTNews('iran'), searchGDELTNews('iran')]))
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(results.every(r => r.length === 1)).toBe(true)
+  })
+
+  it('spaces different queries at least 5.5 s apart', async () => {
+    const times: number[] = []
+    mockFetch(() => { times.push(Date.now()); return gdelt() })
+    const { searchGDELTNews } = await load()
+    await settle(Promise.all([searchGDELTNews('a'), searchGDELTNews('b'), searchGDELTNews('c')]))
+    expect(times).toHaveLength(3)
+    expect(times[1] - times[0]).toBeGreaterThanOrEqual(5500)
+    expect(times[2] - times[1]).toBeGreaterThanOrEqual(5500)
+  })
+
+  it('pauses all GDELT calls for a minute after a 429, then resumes', async () => {
+    let status = 429
+    const fetchMock = mockFetch(() => status === 429 ? jsonResponse({}, { status }) : gdelt())
+    const { searchGDELTNews } = await load()
+    expect(await settle(searchGDELTNews('a'))).toEqual([])
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    status = 200
+    expect(await settle(searchGDELTNews('b'))).toEqual([])          // still cooling down: no request made
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(60 * 1000 + 1)
+    expect(await settle(searchGDELTNews('b'))).toHaveLength(1)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('serves the last good results when a later refresh fails', async () => {
+    let fail = false
+    mockFetch(() => fail ? jsonResponse({}, { status: 500 }) : gdelt())
+    const { searchGDELTNews } = await load()
+    expect(await settle(searchGDELTNews('iran'))).toHaveLength(1)
+    await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 1)
+    fail = true
+    expect(await settle(searchGDELTNews('iran'))).toHaveLength(1)
   })
 })
