@@ -7,9 +7,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const key = process.env.FINNHUB_KEY
   if (!key) return res.status(200).json({})
 
-  const path = Array.isArray(req.query.path) ? req.query.path.join('/') : ''
+  // `vercel dev`'s local (unlinked) mode puts the catch-all segment under the
+  // literal key "...path" instead of "path" (production doesn't) — read both.
+  const rawPath = req.query.path ?? req.query['...path']
+  const path = Array.isArray(rawPath) ? rawPath.join('/') : (rawPath ?? '')
   const params = new URLSearchParams(req.query as Record<string, string>)
   params.delete('path')
+  params.delete('...path')
   params.set('token', key)
 
   const upstream = await fetch(`https://finnhub.io/api/v1/${path}?${params.toString()}`)
