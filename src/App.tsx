@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
 import type { MapViewMode, PanelState, Flight, CrisisEvent } from './types'
 import type { PanelGroup } from './panels/types'
 import { useFlights }     from './hooks/useFlights'
@@ -10,17 +10,21 @@ import { useWildfires }   from './hooks/useWildfires'
 import { useVessels }    from './hooks/useVessels'
 import { useOutages }    from './hooks/useOutages'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
-import { useHistoryRecorder } from './hooks/useHistory'
 import MapView      from './components/Map/MapView'
 import TopBar       from './components/TopBar'
 import Sidebar      from './components/Sidebar'
 import PanelDock    from './components/PanelDock/PanelDock'
 import ObserveTray  from './components/PanelDock/ObserveTray'
-import SettingsModal from './components/SettingsModal'
-import CountryDrawer from './components/CountryDrawer'
+import CommandPalette from './components/CommandPalette'
 import NewsTicker   from './components/NewsTicker'
 import OutlookCard from './components/OutlookCard'
 import { triggerGlobalReload } from './utils/reloadBus'
+import { GROUP_ORDER } from './panels/registry'
+import { decodeHash, encodeHash, enabledLayers, layersToPanelState, type DecodedState } from './utils/urlState'
+
+// Rarely-open surfaces: keep their code (and the datasets CountryDrawer pulls in) out of the first load.
+const SettingsModal = lazy(() => import('./components/SettingsModal'))
+const CountryDrawer = lazy(() => import('./components/CountryDrawer'))
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
@@ -34,7 +38,14 @@ const DEFAULT_PANEL_STATE: PanelState = {
   militaryPersonnel: false, datacenters: false, infraIndicators: false,
 }
 
+/** A shared link (#v=…&l=…) wins over localStorage, so opening it shows exactly what was sent. */
+function readHash(): DecodedState {
+  return decodeHash(window.location.hash, Object.keys(DEFAULT_PANEL_STATE), GROUP_ORDER.map(g => g.id))
+}
+
 function loadPanelState(): PanelState {
+  const fromLink = readHash().layers
+  if (fromLink) return layersToPanelState(DEFAULT_PANEL_STATE, fromLink)
   try {
     const raw = localStorage.getItem('ws-panel-state')
     if (raw) return { ...DEFAULT_PANEL_STATE, ...JSON.parse(raw) }
@@ -43,6 +54,8 @@ function loadPanelState(): PanelState {
 }
 
 function loadViewMode(): MapViewMode {
+  const fromLink = readHash().viewMode
+  if (fromLink) return fromLink
   try {
     const v = localStorage.getItem('ws-view-mode')
     if (v) return v as MapViewMode
@@ -51,6 +64,8 @@ function loadViewMode(): MapViewMode {
 }
 
 function loadGroup(): PanelGroup {
+  const fromLink = readHash().group
+  if (fromLink) return fromLink as PanelGroup
   const oldGroupMap: Record<string, PanelGroup> = {
     intel: 'overview',
     mil: 'security',
@@ -77,8 +92,9 @@ export default function App() {
   const [deepstateMode, setDeepstateMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [geoFlyTo, setGeoFlyTo] = useState('')
-  const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
+  const [selectedCountry, setSelectedCountry] = useState<string | null>(() => readHash().country ?? null)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const [reticleColor, setReticleColor] = useState(() => {
     try { return localStorage.getItem('ws-reticle-color') || '#16a34a' } catch { return '#16a34a' }
   })
@@ -104,8 +120,6 @@ export default function App() {
 
   void stocks
 
-  useHistoryRecorder(crises, flights, panelState.flights)
-
   const [reloading, setReloading] = useState(false)
   const handleReloadAll = useCallback(() => {
     setReloading(true)
@@ -125,6 +139,34 @@ export default function App() {
   useEffect(() => { try { localStorage.setItem('ws-panel-state', JSON.stringify(panelState)) } catch {} }, [panelState])
   useEffect(() => { try { localStorage.setItem('ws-view-mode', viewMode) } catch {} }, [viewMode])
   useEffect(() => { try { localStorage.setItem('ws-dock-group', activeGroup) } catch {} }, [activeGroup])
+
+  // Mirror shareable state into the URL hash (replaceState: no history spam, no hashchange echo).
+  useEffect(() => {
+    const hash = encodeHash({ viewMode, layers: enabledLayers(panelState), group: activeGroup, country: selectedCountry })
+    if (window.location.hash !== hash) history.replaceState(null, '', hash)
+  }, [viewMode, panelState, activeGroup, selectedCountry])
+
+  // A link pasted into the same tab only changes the hash — apply it without a reload.
+  useEffect(() => {
+    function onHashChange() {
+      const d = readHash()
+      if (d.viewMode) setViewMode(d.viewMode)
+      if (d.layers) setPanelState(prev => layersToPanelState(prev, d.layers!))
+      if (d.group) setActiveGroup(d.group as PanelGroup)
+      setSelectedCountry(d.country ?? null)
+    }
+    window.addEventListener('hashchange', onHashChange)
+    return () => window.removeEventListener('hashchange', onHashChange)
+  }, [])
+
+  // Cmd/Ctrl+K opens the command palette from anywhere, including while typing in an input.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletteOpen(o => !o) }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const toggleLayer = useCallback((layer: keyof PanelState) => {
     setPanelState((prev) => ({ ...prev, [layer]: !prev[layer] }))
@@ -238,18 +280,21 @@ export default function App() {
             onToggleLayer={toggleLayer}
           />
           </div>
-          {selectedCountry && (
-            <CountryDrawer
-              country={selectedCountry}
-              crises={crises}
-              flights={flights}
-              earthquakes={earthquakes}
-              fires={fires}
-              onClose={() => setSelectedCountry(null)}
-              onFlyTo={handleGeoSearch}
-            />
-          )}
+          <Suspense fallback={null}>
+            {selectedCountry && (
+              <CountryDrawer
+                country={selectedCountry}
+                crises={crises}
+                flights={flights}
+                earthquakes={earthquakes}
+                fires={fires}
+                onClose={() => setSelectedCountry(null)}
+                onFlyTo={handleGeoSearch}
+              />
+            )}
+          </Suspense>
           <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={setSelectedCountry} />
+          <Suspense fallback={null}>
           <SettingsModal
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
@@ -261,6 +306,16 @@ export default function App() {
             onDeepstateToggle={() => setDeepstateMode(v => !v)}
             reticleColor={reticleColor}
             onReticleColor={(c: string) => { setReticleColor(c); try { localStorage.setItem('ws-reticle-color', c) } catch {} }}
+          />
+          </Suspense>
+          <CommandPalette
+            open={paletteOpen}
+            onClose={() => setPaletteOpen(false)}
+            panelState={panelState}
+            onSelectGroup={setActiveGroup}
+            onToggleLayer={toggleLayer}
+            onViewMode={setViewMode}
+            onGeoSearch={handleGeoSearch}
           />
 
           {/* ── Bottom-left observation tray (up to 6 panels) ──────── */}

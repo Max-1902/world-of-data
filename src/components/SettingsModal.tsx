@@ -77,7 +77,7 @@ const DATA_SOURCES: { category: string; items: { label: string; source: string; 
   },
 ]
 
-const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
+export const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
   { id: 'flights', label: 'FLIGHTS', desc: 'ADS-B aircraft positions' },
   { id: 'crises', label: 'CRISES', desc: 'ACLED conflict events' },
   { id: 'news', label: 'NEWS', desc: 'GDELT article markers' },
@@ -107,7 +107,7 @@ const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
   { id: 'datacenters', label: 'DATA CENTERS', desc: 'Data center facilities worldwide (OpenStreetMap)' },
 ]
 
-const VIEW_MODES: { id: MapViewMode; label: string }[] = [
+export const VIEW_MODES: { id: MapViewMode; label: string }[] = [
   { id: 'earth', label: 'Globe' },
   { id: 'dark', label: 'Dark' },
   { id: 'satellite', label: 'Satellite' },

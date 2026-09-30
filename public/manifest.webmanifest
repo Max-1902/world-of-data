@@ -1,0 +1,13 @@
+{
+  "name": "World Map — Global Situational Awareness",
+  "short_name": "World Map",
+  "description": "Live global situational-awareness dashboard",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080e13",
+  "theme_color": "#080e13",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
