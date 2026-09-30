@@ -62,7 +62,7 @@ function findNewsHit(country: string, articles: NewsArticle[]): NewsArticle | un
  * last 3 days against the 4–10 day-prior window (using each event's own date),
  * ranking the fastest-rising regions. Pure function, no network calls.
  */
-export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], limit = 6, articles: NewsArticle[] = []): TrajectoryEntry[] {
+export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], limit = 6, articles: NewsArticle[] = [], focusCountry?: string | null): TrajectoryEntry[] {
   const now = Date.now()
   const byCountry: Record<string, { recent: CrisisEvent[]; prior: CrisisEvent[] }> = {}
 
@@ -118,8 +118,29 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
     }
   })
 
-  return entries
-    .filter(e => e.recentCount > 0 || e.priorCount > 0)
+  const withActivity = entries.filter(e => e.recentCount > 0 || e.priorCount > 0)
+
+  if (focusCountry) {
+    const existing = withActivity.find(e => e.country === focusCountry)
+    if (existing) return [existing]
+
+    // No dated crisis activity for this country in the tracked window — still
+    // surface an explicit "quiet" entry rather than falling through to the
+    // generic empty state, since the user asked about this specific country.
+    const newsHit = findNewsHit(focusCountry, articles)
+    return [{
+      country: focusCountry,
+      recentScore: 0, priorScore: 0,
+      delta: 0,
+      trend: 'flat',
+      velocity: 50,
+      recentCount: 0, priorCount: 0,
+      reason: newsHit ? 'No tracked crisis activity in the last 10 days; mentioned in recent news' : 'No tracked crisis activity in the last 10 days',
+      newsHit: newsHit?.title,
+    }]
+  }
+
+  return withActivity
     .sort((a, b) => b.delta - a.delta)
     .slice(0, limit)
 }

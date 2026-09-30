@@ -6,13 +6,14 @@ interface Props {
   crises: CrisisEvent[]
   flights: Flight[]
   articles: NewsArticle[]
+  selectedCountry?: string | null
   onSelectCountry: (country: string) => void
 }
 
-export default function OutlookCard({ crises, flights, articles, onSelectCountry }: Props) {
-  const entries = computeTrajectories(crises, flights, 6, articles)
+export default function OutlookCard({ crises, flights, articles, selectedCountry, onSelectCountry }: Props) {
+  const entries = computeTrajectories(crises, flights, 6, articles, selectedCountry)
   const rising = entries.filter(entry => entry.trend === 'rising')
-  const featured = (rising.length ? rising : entries).slice(0, 2)
+  const featured = selectedCountry ? entries : (rising.length ? rising : entries).slice(0, 2)
 
   return (
     <section className="outlook-card" aria-label="Regional activity outlook">
@@ -20,7 +21,7 @@ export default function OutlookCard({ crises, flights, articles, onSelectCountry
         <div className="outlook-title">
           <span className="outlook-icon"><Radar size={13} /></span>
           <div>
-            <div className="outlook-eyebrow">REGIONAL OUTLOOK</div>
+            <div className="outlook-eyebrow">{selectedCountry ? selectedCountry.toUpperCase() : 'REGIONAL OUTLOOK'}</div>
             <div className="outlook-subtitle">Activity trend · 72 hours</div>
           </div>
         </div>
