@@ -148,6 +148,7 @@ export default function App() {
     onDeepstateToggle: () => setDeepstateMode(v => !v),
     onGeoSearch: handleGeoSearch,
     onCountryClick: setSelectedCountry,
+    searchQuery,
   }
 
   if (!TOKEN) {
