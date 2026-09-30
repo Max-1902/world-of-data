@@ -59,7 +59,7 @@ Refresh rates are chosen per-provider to stay under free-tier rate limits, not f
 
 One Mapbox GL instance, ~20 independently toggleable `addSource`/`addLayer` pairs (flights, vessels, crises, military, nuclear, pipelines, ports, chokepoints, supply chain, shipping density, humanitarian, GPS jamming, etc.), each gated by a boolean in `PanelState` (`src/types/index.ts`). `App.tsx` owns `panelState` and passes `showX` booleans down; `MapView` adds/removes layer visibility, it never owns the toggle state itself.
 
-Ten view modes (`earth/standard/dark/satellite/city3d/nightvision/bw/infrared/snow/thermal`) are implemented two ways: `city3d` tilts the camera and shows a real `fill-extrusion` buildings layer; the rest (`nightvision/bw/infrared/snow/thermal`) are CSS `filter()` overlays on the canvas element (`src/index.css`), not different Mapbox styles — cheap to add, no extra tile requests.
+Ten view modes (`earth/standard/dark/satellite/city3d/nightvision/bw/infrared/snow/thermal`) are implemented two ways: `city3d` tilts the camera and shows a real `fill-extrusion` buildings layer; the rest (`nightvision/bw/infrared/snow/thermal`) are CSS `filter()` overlays applied to the canvas element (`CANVAS_FILTERS` in `MapView.tsx`), not different Mapbox styles — cheap to add, no extra tile requests.
 
 A known race condition worth knowing about: flight data can arrive before the map's `load` event fires. The fix already in place is a `flightDataRef` that buffers pending data and flushes it inside `map.on('load')`.
 

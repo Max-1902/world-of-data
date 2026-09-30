@@ -30,7 +30,7 @@ Most dashboards either pick one data source and go deep, or fake it with static 
 - **Vite + React 18 + TypeScript** (strict)
 - **Mapbox GL JS v3** — 3D globe, custom GeoJSON layers, fill-extrusion buildings
 - **Tailwind CSS** — utility styling for the surrounding chrome
-- **date-fns**, **axios**, **lucide-react**
+- **date-fns**, **lucide-react**
 
 No backend — the app talks directly to public APIs from the browser, using Vite's dev proxy (and a deploy-time equivalent) to route around CORS where needed (OpenSky OAuth, NASA FIRMS, AISStream WebSocket, OpenRouter).
 
