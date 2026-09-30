@@ -49,7 +49,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       // ? — show shortcut help (console for now)
       if (e.key === '?') {
         console.log(
-          '%c WORLDVIEW Keyboard Shortcuts',
+          '%c World Map Keyboard Shortcuts',
           'color:#00ff88;font-weight:bold;font-size:14px',
           '\n\n1-0: Toggle layers (flights, crises, military, nuclear, sanctions, vessels, humanitarian, ports, chokepoints, shipping)',
           '\nG: Globe view | D: Dark | S: Satellite | N: Nightvision',
