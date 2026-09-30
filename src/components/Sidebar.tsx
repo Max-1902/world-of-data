@@ -1,12 +1,12 @@
-import { BookOpen, LayoutDashboard, LineChart, MapPinned, Newspaper, ShieldHalf } from 'lucide-react'
+import { BookOpen, LayoutDashboard, LineChart, Radio, ShieldHalf, Network } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { GROUP_ORDER, panelsForGroup } from '../panels/registry'
 import type { PanelGroup } from '../panels/types'
 
 const GROUP_ICONS: Record<PanelGroup, LucideIcon> = {
   overview: LayoutDashboard,
-  news:     Newspaper,
-  geo:      MapPinned,
+  news:     Radio,
+  geo:      Network,
   security: ShieldHalf,
   markets:  LineChart,
   analysis: BookOpen,
@@ -14,10 +14,10 @@ const GROUP_ICONS: Record<PanelGroup, LucideIcon> = {
 
 const GROUP_HINTS: Record<PanelGroup, string> = {
   overview: 'Global situation and active risk',
-  news: 'Reporting and live media sources',
-  geo: 'Places, networks, and humanitarian data',
-  security: 'Defense, airspace, and restrictions',
-  markets: 'Economy and financial activity',
+  news: 'Reporting and live media/webcam sources',
+  geo: 'Connectivity, overlays, and humanitarian data',
+  security: 'Military, airspace, sanctions, and trafficking',
+  markets: 'Trade, markets, and resource production',
   analysis: 'Briefings and regional outlook',
 }
 

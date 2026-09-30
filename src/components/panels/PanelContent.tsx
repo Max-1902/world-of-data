@@ -33,7 +33,7 @@ export type PanelId =
   | 'indices' | 'commodities' | 'energy' | 'tech' | 'healthcare' | 'defense'
   | 'crypto' | 'forex' | 'bonds' | 'exchanges'
   | 'markets'
-  | 'drugs' | 'sanctions' | 'military' | 'nuclear' | 'airspace' | 'cnn'
+  | 'drugs' | 'sanctions' | 'military' | 'nuclear' | 'airspace'
   | 'outages' | 'brief' | 'crisiswatch' | 'analyst' | 'humanitarian' | 'webcams'
 
 export const PANEL_META: Record<PanelId, { title: string; dotColor?: string; width: number; desc: string }> = {
@@ -58,7 +58,6 @@ export const PANEL_META: Record<PanelId, { title: string; dotColor?: string; wid
   military:    { title: 'Installations', dotColor: 'blue',   width: 300, desc: 'Military bases & force posture' },
   nuclear:     { title: 'Nuclear',       dotColor:'yellow',  width: 300, desc: 'Reactors & weapons storage sites' },
   airspace:    { title: 'Airspace',      dotColor: 'red',    width: 300, desc: 'FIR status & NOTAM alerts' },
-  cnn:         { title: 'Live Feeds',    dotColor: 'red',    width: 420, desc: 'Regional surveillance streams' },
   outages:     { title: 'Connectivity',  dotColor: 'yellow', width: 280, desc: 'Internet disruption monitoring' },
   brief:       { title: 'Briefing',      dotColor: 'red',    width: 240, desc: 'Correlated intel for active query' },
   crisiswatch: { title: 'Crisis Monitor',dotColor: 'orange', width: 290, desc: 'ICG conflict tracking — 70+ states' },
@@ -71,7 +70,7 @@ export const DEFAULT_ORDER: PanelId[] = [
   'news', 'crisiswatch', 'layers', 'intel', 'humanitarian', 'risk', 'threat',
   'markets',
   'analyst',
-  'drugs', 'sanctions', 'military', 'nuclear', 'airspace', 'cnn', 'webcams',
+  'drugs', 'sanctions', 'military', 'nuclear', 'airspace', 'webcams',
   'outages',
 ]
 
@@ -1678,92 +1677,6 @@ export function ForexPanel() {
   )
 }
 
-// ── Live Streams Panel ────────────────────────────────────────────────────────
-const LIVE_STREAM_REGIONS = [
-  { region: 'Americas', color: 'var(--red)', streams: [
-    { id: 'cnn',      label: 'CNN',       src: 'https://www.youtube.com/embed/wq4Fb36aA2k?autoplay=1&mute=0',                                    title: 'CNN Live' },
-    { id: 'stream2',  label: 'ABC',       src: 'https://www.youtube.com/embed/iipR5yUp36o?autoplay=1&mute=0',                                   title: 'ABC News Live' },
-    { id: 'nbc',      label: 'NBC',       src: 'https://www.youtube.com/embed/SRYdE7zQBmg?autoplay=1&mute=0',                                   title: 'NBC News Now' },
-    { id: 'cspan',    label: 'C-SPAN',    src: 'https://www.youtube.com/embed/DAPkHRRydr8?autoplay=1&mute=0',                                   title: 'C-SPAN Live' },
-  ]},
-  { region: 'Europe', color: 'var(--accent)', streams: [
-    { id: 'bbcworld', label: 'BBC',       src: 'https://www.youtube.com/embed/w_Ma8oQLmSM?autoplay=1&mute=0',                                   title: 'BBC World News' },
-    { id: 'euronews', label: 'EURO',      src: 'https://www.youtube.com/embed/3uVBkOSAZ4E?autoplay=1&mute=0',                                   title: 'Euronews Live' },
-    { id: 'france24', label: 'FR24',      src: 'https://www.youtube.com/embed/h3MuIUNCCLI?autoplay=1&mute=0',                                   title: 'France 24 English' },
-    { id: 'dwnews',   label: 'DW',        src: 'https://www.youtube.com/embed/mGnFE0-VHgw?autoplay=1&mute=0',                                   title: 'DW News Live' },
-  ]},
-  { region: 'MENA', color: 'var(--amber)', streams: [
-    { id: 'aljazeng', label: 'AJE',       src: 'https://www.youtube.com/embed/Z_8fVI7xuYo?autoplay=1&mute=0',                                   title: 'Al Jazeera English' },
-    { id: 'aljazeera',label: 'AJA',       src: 'https://www.youtube.com/embed/hvFpW7QMPFE?autoplay=1&mute=0',                                   title: 'Al Jazeera Arabic' },
-    { id: 'trtworld', label: 'TRT',       src: 'https://www.youtube.com/embed/K_pJJa5p-aw?autoplay=1&mute=0',                                   title: 'TRT World Live' },
-  ]},
-  { region: 'Asia', color: 'var(--accent)', streams: [
-    { id: 'nhkworld', label: 'NHK',       src: 'https://www.youtube.com/embed/CTEhRdPXlKQ?autoplay=1&mute=0',                                   title: 'NHK World Japan' },
-    { id: 'cgtn',     label: 'CGTN',      src: 'https://www.youtube.com/embed/ljMqpMfNgpU?autoplay=1&mute=0',                                   title: 'CGTN News Live' },
-    { id: 'arirang',  label: 'ARIAN',     src: 'https://www.youtube.com/embed/h4mFKOz5ZtA?autoplay=1&mute=0',                                   title: 'Arirang Korea' },
-    { id: 'wion',     label: 'WION',      src: 'https://www.youtube.com/embed/pSAPFBRbpz0?autoplay=1&mute=0',                                   title: 'WION India' },
-  ]},
-  { region: 'Africa', color: 'var(--amber)', streams: [
-    { id: 'africaews',label: 'AFRC',      src: 'https://www.youtube.com/embed/XjW7iE2yy2c?autoplay=1&mute=0',                                   title: 'Africa News' },
-    { id: 'aljaafr',  label: 'AJ-AFR',    src: 'https://www.youtube.com/embed/b_fzBSSwgQg?autoplay=1&mute=0',                                   title: 'Al Jazeera Africa' },
-  ]},
-]
-
-// Flat list for lookup
-const ALL_LIVE_STREAMS = LIVE_STREAM_REGIONS.flatMap(r => r.streams.map(s => ({ ...s, region: r.region, regionColor: r.color })))
-
-export function CNNLivePanel() {
-  const [activeRegion, setActiveRegion] = useState('Americas')
-  const [activeId,     setActiveId]     = useState('cnn')
-
-  const region  = LIVE_STREAM_REGIONS.find(r => r.region === activeRegion) ?? LIVE_STREAM_REGIONS[0]
-  const active  = ALL_LIVE_STREAMS.find(s => s.id === activeId) ?? ALL_LIVE_STREAMS[0]
-
-  function selectRegion(r: typeof LIVE_STREAM_REGIONS[0]) {
-    setActiveRegion(r.region)
-    setActiveId(r.streams[0].id)
-  }
-
-  return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#000' }}>
-      {/* Region tabs */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', overflowX: 'auto' }}>
-        {LIVE_STREAM_REGIONS.map(r => (
-          <button key={r.region} onClick={() => selectRegion(r)} style={{
-            flexShrink: 0, padding: '5px 10px', fontSize: 12.5, fontWeight: 600, letterSpacing: '.06em',
-            border: 'none', borderBottom: `2px solid ${activeRegion === r.region ? r.color : 'transparent'}`,
-            background: 'transparent',
-            color: activeRegion === r.region ? r.color : 'var(--text3)',
-            cursor: 'pointer', fontFamily: 'inherit', transition: 'all .12s',
-          }}>{r.region.toUpperCase()}</button>
-        ))}
-      </div>
-      {/* Stream tabs for current region */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 6px', borderBottom: '1px solid var(--border)', flexWrap: 'wrap' }}>
-        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)', display: 'inline-block', animation: 'pulse 1.5s infinite', flexShrink: 0 }} />
-        {region.streams.map(s => (
-          <button key={s.id} onClick={() => setActiveId(s.id)} style={{
-            padding: '3px 9px', fontSize: 12.5, fontWeight: 600, letterSpacing: '.04em',
-            borderRadius: 'var(--r-pill)',
-            border: `1px solid ${activeId === s.id ? region.color + '88' : 'var(--border)'}`,
-            background: activeId === s.id ? region.color + '22' : 'transparent',
-            color: activeId === s.id ? region.color : 'var(--text3)',
-            cursor: 'pointer', fontFamily: 'inherit', transition: 'all .12s',
-          }}>{s.label}</button>
-        ))}
-      </div>
-      <iframe
-        key={active.id}
-        src={active.src}
-        title={active.title}
-        allow="autoplay; encrypted-media; picture-in-picture"
-        allowFullScreen
-        style={{ flex: 1, border: 'none', minHeight: 210, width: '100%' }}
-      />
-    </div>
-  )
-}
-
 // ── US Webcam Grid Panel ──────────────────────────────────────────────────────
 type WebcamSource = 'skyline' | 'earthcam'
 
@@ -1990,7 +1903,6 @@ export function PanelContent({ id, crises, flights, panelState, onToggleLayer, d
     case 'military':     return <MilitaryPanel onGeoSearch={onGeoSearch} />
     case 'nuclear':      return <NuclearPanel />
     case 'airspace':     return <AirspacePanel flights={flights} />
-    case 'cnn':          return <CNNLivePanel />
     case 'webcams':      return <USWebcamsPanel />
     case 'crypto':       return <CryptoPanel />
     case 'forex':        return <ForexPanel />

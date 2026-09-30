@@ -36,13 +36,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/openrouter/, ''),
       },
-      // AISStream WebSocket — browser CORS not supported, must proxy
-      '/api/aisstream': {
-        target: 'wss://stream.aisstream.io',
-        ws: true,
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/aisstream/, '/v0/stream'),
-      },
       // Aircraft database — hexdb.io (free, no auth)
       '/api/hexdb': {
         target: 'https://hexdb.io',
