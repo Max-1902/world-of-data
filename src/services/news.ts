@@ -111,47 +111,79 @@ export async function searchNYT(query: string): Promise<NewsArticle[]> {
   }
 }
 
-// ── BBC RSS via GDELT ────────────────────────────────────────────────────────
+// ── GDELT article search ─────────────────────────────────────────────────────
 // GDELT Article Search — free, no key, pulls from 65k+ global news sources
-export async function searchGDELTNews(query: string): Promise<NewsArticle[]> {
-  try {
-    const url =
-      `/api/gdelt/v2/doc/doc?query=${encodeURIComponent(query + ' sourcelang:english')}` +
-      `&mode=artlist&maxrecords=50&format=json&sort=DateDesc&sourcelang=english`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`GDELT Doc ${res.status}`)
-    const json = await res.json()
-    const articles = json.articles || []
-    return articles.map(
-      (a: {
-        url: string
-        title: string
-        seendate: string
-        socialimage?: string
-        domain: string
-        language: string
-      }, i: number) =>
-        ({
-          id: `gdelt-${i}-${Date.now()}`,
-          title: a.title,
-          description: '',
-          url: a.url,
-          source: a.domain,
-          publishedAt: a.seendate,
-          imageUrl: a.socialimage,
-        } satisfies NewsArticle)
-    )
-  } catch (err) {
-    console.warn('[GDELT News]', err)
-    return []
-  }
+// GDELT's DOC API allows one request per 5 seconds per IP and answers HTTP 429 beyond that — and the app
+// fires several searches at once on load. So calls are serialized with a gap, results are cached per query,
+// identical in-flight queries share one request, and a 429 pauses all GDELT calls for a minute.
+const GDELT_GAP_MS = 5_500
+const GDELT_CACHE_TTL_MS = 10 * 60 * 1000
+const GDELT_COOLDOWN_MS = 60 * 1000
+const gdeltCache = new Map<string, { at: number; data: NewsArticle[] }>()
+const gdeltInFlight = new Map<string, Promise<NewsArticle[]>>()
+let gdeltTail: Promise<unknown> = Promise.resolve()
+let gdeltCooldownUntil = 0
+
+class GdeltRateLimited extends Error {}
+
+export function searchGDELTNews(query: string): Promise<NewsArticle[]> {
+  const cached = gdeltCache.get(query)
+  if (cached && Date.now() - cached.at < GDELT_CACHE_TTL_MS) return Promise.resolve(cached.data)
+  const pending = gdeltInFlight.get(query)
+  if (pending) return pending
+
+  const run = gdeltTail.then(async () => {
+    if (Date.now() < gdeltCooldownUntil) return cached?.data ?? []
+    try {
+      const data = await fetchGDELTNews(query)
+      gdeltCache.set(query, { at: Date.now(), data })
+      return data
+    } catch (err) {
+      if (err instanceof GdeltRateLimited) gdeltCooldownUntil = Date.now() + GDELT_COOLDOWN_MS
+      console.warn('[GDELT News]', err)
+      return cached?.data ?? []
+    }
+  })
+  gdeltTail = run.then(() => sleep(GDELT_GAP_MS), () => sleep(GDELT_GAP_MS))
+  gdeltInFlight.set(query, run)
+  void run.finally(() => gdeltInFlight.delete(query))
+  return run
 }
 
-// ── RSS (via rss2json proxy) ────────────────────────────────────────────────
-// rss2json's free tier is aggressively rate-limited (HTTP 429) once several
-// feeds are requested at once, which this app does on load (news ticker,
-// crisiswatch, country panel, etc). A shared cache + a small request queue
-// with backoff keeps us under that limit and avoids "no data" panels.
+async function fetchGDELTNews(query: string): Promise<NewsArticle[]> {
+  const url =
+    `/api/gdelt/v2/doc/doc?query=${encodeURIComponent(query + ' sourcelang:english')}` +
+    `&mode=artlist&maxrecords=50&format=json&sort=DateDesc&sourcelang=english`
+  const res = await fetch(url)
+  if (res.status === 429) throw new GdeltRateLimited('GDELT Doc 429 (limit is one request per 5 s)')
+  if (!res.ok) throw new Error(`GDELT Doc ${res.status}`)
+  const json = await res.json()
+  const articles = json.articles || []
+  return articles.map(
+    (a: {
+      url: string
+      title: string
+      seendate: string
+      socialimage?: string
+      domain: string
+      language: string
+    }, i: number) =>
+      ({
+        id: `gdelt-${i}-${Date.now()}`,
+        title: a.title,
+        description: '',
+        url: a.url,
+        source: a.domain,
+        publishedAt: a.seendate,
+        imageUrl: a.socialimage,
+      } satisfies NewsArticle)
+  )
+}
+
+// ── RSS (via our own /api/rss proxy) ────────────────────────────────────────
+// Feeds are fetched and parsed server-side (api/rss.ts) because most send no CORS headers. This used to go
+// through api.rss2json.com, whose free tier 429'd after a few feeds on every page load. The shared cache
+// and small request queue below still smooth the burst of feeds requested on load (ticker, crisiswatch, …).
 const RSS_CACHE_TTL_MS = 5 * 60 * 1000
 const rssCache = new Map<string, { at: number; data: NewsArticle[] }>()
 
@@ -176,7 +208,7 @@ export async function fetchRSSFeed(feedUrl: string, sourceName: string): Promise
   if (cached && Date.now() - cached.at < RSS_CACHE_TTL_MS) return cached.data
 
   try {
-    const proxy = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feedUrl)}`
+    const proxy = `/api/rss?url=${encodeURIComponent(feedUrl)}`
     const json = await scheduleRSSRequest(async () => {
       for (let attempt = 0; attempt < 3; attempt++) {
         const res = await fetch(proxy)
