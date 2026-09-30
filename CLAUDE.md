@@ -59,4 +59,4 @@ Before assuming your own edits are broken or reverted, check `git status`/`git d
 - New data source → new file in `services/`, new hook in `hooks/`, new entry in `src/panels/registry.tsx`. Don't bypass the registry with ad-hoc panel wiring.
 - New map layer → follow the existing `addSource`/`addLayer` pairing pattern in `MapView.tsx`, gate visibility behind a new `PanelState` boolean (`src/types/index.ts`), wire the toggle through `SettingsModal`'s `LAYER_IDS` list.
 - Styling: use the CSS custom properties defined in `src/index.css` (`--surface`, `--text1/2/3`, `--accent`, `--red/amber/green` + `-soft` tints, `--r-sm/md/lg/pill`, `--shadow-sm/md/lg`) rather than hardcoding hex values, so the whole app stays reskinnable from one place.
-- Run `npx tsc --noEmit` before considering any change done — this repo has no test suite; strict typechecking is the primary safety net.
+- Run `npm run typecheck` before considering any change done — this repo has no test suite; strict typechecking is the primary safety net. It checks both `src/` (browser/Vite types) and `api/` (Node/Vercel serverless function types) since they use different `tsconfig`s.

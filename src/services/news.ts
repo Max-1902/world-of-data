@@ -1,8 +1,6 @@
 import type { NewsArticle } from '../types'
 
 const NEWSAPI_KEY = import.meta.env.VITE_NEWSAPI_KEY || ''
-const GUARDIAN_KEY = import.meta.env.VITE_GUARDIAN_KEY || ''
-const NYT_KEY = import.meta.env.VITE_NYT_KEY || ''
 
 // ── NewsAPI ──────────────────────────────────────────────────────────────────
 export async function searchNewsAPI(query: string): Promise<NewsArticle[]> {
@@ -41,11 +39,10 @@ export async function searchNewsAPI(query: string): Promise<NewsArticle[]> {
 
 // ── The Guardian ─────────────────────────────────────────────────────────────
 export async function searchGuardian(query: string): Promise<NewsArticle[]> {
-  if (!GUARDIAN_KEY) return []
   try {
     const url =
       `/api/guardian/search?q=${encodeURIComponent(query)}` +
-      `&show-fields=headline,trailText,thumbnail&order-by=newest&page-size=30&lang=en&production-office=uk&api-key=${GUARDIAN_KEY}`
+      `&show-fields=headline,trailText,thumbnail&order-by=newest&page-size=30&lang=en&production-office=uk`
     const res = await fetch(url)
     if (!res.ok) throw new Error(`Guardian ${res.status}`)
     const json = await res.json()
@@ -77,11 +74,10 @@ export async function searchGuardian(query: string): Promise<NewsArticle[]> {
 
 // ── New York Times ───────────────────────────────────────────────────────────
 export async function searchNYT(query: string): Promise<NewsArticle[]> {
-  if (!NYT_KEY) return []
   try {
     const url =
-      `https://api.nytimes.com/svc/search/v2/articlesearch.json?q=${encodeURIComponent(query)}` +
-      `&sort=newest&fq=document_type:("article")&api-key=${NYT_KEY}`
+      `/api/nyt?q=${encodeURIComponent(query)}` +
+      `&sort=newest&fq=document_type:("article")`
     const res = await fetch(url)
     if (!res.ok) throw new Error(`NYT ${res.status}`)
     const json = await res.json()

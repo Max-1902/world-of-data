@@ -115,14 +115,26 @@ const VIEW_MODES: { id: MapViewMode; label: string }[] = [
   { id: 'thermal', label: 'Thermal' },
 ]
 
-const API_KEYS = [
-  { key: 'VITE_MAPBOX_TOKEN', label: 'Mapbox', required: true, desc: 'Map rendering and geocoding' },
-  { key: 'VITE_OPENROUTER_KEY', label: 'OpenRouter', required: false, desc: 'AI analyst (free tier available)' },
-  { key: 'VITE_GUARDIAN_KEY', label: 'The Guardian', required: false, desc: 'Guardian news API' },
-  { key: 'VITE_NYT_KEY', label: 'New York Times', required: false, desc: 'NYT article search' },
-  { key: 'VITE_FINNHUB_KEY', label: 'Finnhub', required: false, desc: 'Market data (alternative)' },
-  { key: 'VITE_ACLED_KEY', label: 'ACLED', required: false, desc: 'Conflict event data' },
-  { key: 'VITE_ACLED_EMAIL', label: 'ACLED Email', required: false, desc: 'ACLED account email' },
+// Client-visible keys — Vite bundles these, so their status can be read directly.
+// NOTE: each `isSet` is a static `import.meta.env.VITE_X` reference (not a dynamic
+// `env[key]` lookup) so Vite's build-time replacement only inlines these specific
+// booleans, not the entire .env object (a dynamic lookup would bundle every
+// VITE_-prefixed value, including ones never meant to reach the client).
+const CLIENT_API_KEYS = [
+  { label: 'Mapbox', required: true, desc: 'Map rendering and geocoding', isSet: !!import.meta.env.VITE_MAPBOX_TOKEN },
+  { label: 'NewsAPI', required: false, desc: 'General news search', isSet: !!import.meta.env.VITE_NEWSAPI_KEY },
+  { label: 'AISStream', required: false, desc: 'Live vessel tracking (WebSocket)', isSet: !!import.meta.env.VITE_AISSTREAM_KEY },
+]
+
+// Server-only keys — held by api/*.ts serverless functions, never bundled into
+// the client, so their configured status can't be checked from here.
+const SERVER_API_KEYS = [
+  { label: 'OpenRouter', desc: 'AI analyst (free tier available)' },
+  { label: 'The Guardian', desc: 'Guardian news API' },
+  { label: 'New York Times', desc: 'NYT article search' },
+  { label: 'Finnhub', desc: 'Market data' },
+  { label: 'ACLED', desc: 'Conflict event data (email + password)' },
+  { label: 'OpenSky', desc: 'Live flight tracking (OAuth client credentials)' },
 ]
 
 interface Props {
@@ -328,32 +340,40 @@ function ApiKeysTab() {
   return (
     <div>
       <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 12, marginBottom: 10 }}>
-        API keys are stored in .env file. Restart the dev server after changes.
+        Client-visible keys are stored in .env (VITE_ prefix). Server-only keys are
+        held by the api/*.ts serverless functions and configured in your deploy
+        host's environment variables — see .env.example.
       </div>
-      {API_KEYS.map(k => {
-        const val = (import.meta as any).env?.[k.key]
-        const isSet = !!val
-        return (
-          <div key={k.key} style={{ ...s.row, gap: 14 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)' }}>{k.label}</span>
-                {k.required && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--red)', background: 'var(--red-soft)', padding: '1px 6px', borderRadius: 'var(--r-pill)' }}>REQUIRED</span>}
-              </div>
-              <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 1 }}>{k.desc}</div>
-              <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1, fontFamily: 'IBM Plex Mono, monospace' }}>{k.key}</div>
+      {CLIENT_API_KEYS.map(k => (
+        <div key={k.label} style={{ ...s.row, gap: 14 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)' }}>{k.label}</span>
+              {k.required && <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--red)', background: 'var(--red-soft)', padding: '1px 6px', borderRadius: 'var(--r-pill)' }}>REQUIRED</span>}
             </div>
-            <span style={{
-              fontSize: 10, fontWeight: 700, letterSpacing: '.04em',
-              color: isSet ? 'var(--green)' : 'var(--text3)',
-              background: isSet ? 'var(--green-soft)' : 'var(--surface2)',
-              padding: '3px 9px', borderRadius: 'var(--r-pill)',
-            }}>
-              {isSet ? 'SET' : 'NOT SET'}
-            </span>
+            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 1 }}>{k.desc}</div>
           </div>
-        )
-      })}
+          <span style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '.04em',
+            color: k.isSet ? 'var(--green)' : 'var(--text3)',
+            background: k.isSet ? 'var(--green-soft)' : 'var(--surface2)',
+            padding: '3px 9px', borderRadius: 'var(--r-pill)',
+          }}>
+            {k.isSet ? 'SET' : 'NOT SET'}
+          </span>
+        </div>
+      ))}
+      <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--text3)', letterSpacing: '.04em', marginTop: 16, marginBottom: 4 }}>
+        SERVER-SIDE (status not visible to the client)
+      </div>
+      {SERVER_API_KEYS.map(k => (
+        <div key={k.label} style={{ ...s.row, gap: 14 }}>
+          <div style={{ flex: 1 }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)' }}>{k.label}</span>
+            <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 1 }}>{k.desc}</div>
+          </div>
+        </div>
+      ))}
     </div>
   )
 }

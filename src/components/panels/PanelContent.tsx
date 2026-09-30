@@ -493,13 +493,11 @@ export function StockRow({ s }: { s: Stock }) {
 
 export function StockList({ symbols }: { symbols: string[] }) {
   const [stocks, setStocks] = useState<Stock[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [retryCount, setRetryCount] = useState(0)
-  const hasFinnhub = !!import.meta.env.VITE_FINNHUB_KEY
   const key = symbols.join(',')
 
   useEffect(() => {
-    if (!hasFinnhub) return
     const load = () => { setLoading(true); fetchMultipleQuotes(symbols).then(setStocks).finally(() => setLoading(false)) }
     load()
     const timer = window.setInterval(load, 60_000)
@@ -507,11 +505,12 @@ export function StockList({ symbols }: { symbols: string[] }) {
     return () => { clearInterval(timer); unsub() }
   }, [key, retryCount]) // eslint-disable-line
 
-  if (!hasFinnhub) return (
+  const noData = !loading && stocks.length === 0
+  if (noData) return (
     <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
       <div style={{ fontSize: 10.5, color: 'var(--text3)', letterSpacing: '.1em', textAlign: 'center' }}>MARKET DATA UNAVAILABLE</div>
       <div style={{ fontSize: 9.5, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6 }}>
-        Add VITE_FINNHUB_KEY to .env<br />to enable live market feeds
+        Set FINNHUB_KEY on the server<br />to enable live market feeds
       </div>
       {/* Skeleton rows */}
       {symbols.slice(0, 4).map((sym, i) => (
@@ -2336,7 +2335,10 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   const [followUps, setFollowUps] = useState<string[]>([])
   const abortRef  = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
-  const hasKey    = !!import.meta.env.VITE_OPENROUTER_KEY
+  // Whether OpenRouter is actually configured now lives server-side (api/openrouter/*)
+  // and can't be checked from the client; the UI stays enabled and any missing-key
+  // failure surfaces through the normal streamAI error path below instead.
+  const hasKey    = true
 
   // Rule-based trajectory scoring — recomputes automatically as crises/flights refresh.
   // No prompt required; this is what makes the panel proactive rather than ask-only.

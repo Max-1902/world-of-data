@@ -1,40 +1,26 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Local dev: run `vercel dev` instead of `vite` directly so the /api/* serverless
+// functions (which hold the real provider keys server-side) run alongside Vite.
+// `vercel dev` reads the same .env file and proxies non-API requests to this
+// Vite server automatically — see README "Running it locally".
 export default defineConfig({
   plugins: [react()],
   server: {
     port: 3000,
     proxy: {
-      // NASA FIRMS active fire data (no CORS headers on their CDN)
+      // NASA FIRMS active fire data (no CORS headers on their CDN, no key required)
       '/api/firms': {
         target: 'https://firms.modaps.eosdis.nasa.gov',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/firms/, ''),
-      },
-      // OpenSky OAuth2 token — browser can't POST to auth.opensky-network.org directly
-      '/api/opensky-token': {
-        target: 'https://auth.opensky-network.org',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/opensky-token/, '/auth/realms/opensky-network/protocol/openid-connect/token'),
-      },
-      // OpenSky REST API — proxy to avoid any CORS edge cases
-      '/api/opensky': {
-        target: 'https://opensky-network.org',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/opensky/, '/api'),
       },
       // EmailRep.io — email reputation lookup (free, 10 req/day without key)
       '/api/emailrep': {
         target: 'https://emailrep.io',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/emailrep/, ''),
-      },
-      // OpenRouter AI — proxied to avoid CORS
-      '/api/openrouter': {
-        target: 'https://openrouter.ai/api/v1',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/openrouter/, ''),
       },
       // Aircraft database — hexdb.io (free, no auth)
       '/api/hexdb': {
@@ -48,29 +34,15 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/planespotters/, ''),
       },
-      // The Guardian Content API — no CORS headers
-      '/api/guardian': {
-        target: 'https://content.guardianapis.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/guardian/, ''),
-      },
-      // ACLED — OAuth token + read API, neither sends CORS headers
-      '/api/acled-token': {
-        target: 'https://acleddata.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/acled-token/, '/oauth/token'),
-      },
-      '/api/acled': {
-        target: 'https://acleddata.com',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/acled/, '/api/acled'),
-      },
-      // GDELT — no CORS headers on either the doc or geo endpoints
+      // GDELT — no CORS headers on either the doc or geo endpoints, no key required
       '/api/gdelt': {
         target: 'https://api.gdeltproject.org',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/gdelt/, '/api'),
       },
+      // opensky / acled / finnhub / guardian / nyt / openrouter are NOT proxied
+      // here — they require a real key injected server-side and are served by
+      // the /api/*.ts serverless functions (run via `vercel dev`, not `vite`).
     },
   },
 })

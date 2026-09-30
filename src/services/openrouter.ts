@@ -37,16 +37,10 @@ export async function streamAI(
   model     = DEFAULT_MODEL,
   onReasoning?: (token: string) => void,
 ): Promise<void> {
-  const key = import.meta.env.VITE_OPENROUTER_KEY
-  if (!key) throw new Error('VITE_OPENROUTER_KEY not set')
-
   const res = await fetch(`${BASE}/chat/completions`, {
     method:  'POST',
     headers: {
       'Content-Type':  'application/json',
-      'Authorization': `Bearer ${key}`,
-      'HTTP-Referer':  'http://localhost:3000',
-      'X-Title':       'World Surveillance',
     },
     body: JSON.stringify({
       model,
