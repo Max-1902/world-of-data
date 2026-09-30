@@ -25,6 +25,7 @@ import { OWID_CHARTS, fetchOwidChart, formatOwidValue, TOPIC_LABELS, type OwidTo
 import { onGlobalReload } from '../../utils/reloadBus'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
 import { computeThreatScore } from '../../utils/threat'
+import { healthTracker, healthSummary } from '../../services/sourceHealth'
 import { useHistory } from '../../hooks/useHistory'
 import { countrySeries, threatSeries } from '../../services/history'
 import Sparkline from '../Sparkline'
@@ -2896,7 +2897,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setStreaming(true)
     abortRef.current = new AbortController()
 
-    const context  = buildDashboardContext(crises, flights, trajectories)
+    const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()))
     const sysMsg: DSMessage = {
       role: 'system',
       content: `You are the analyst in World Map, a global intelligence dashboard. You have access to current crisis and flight data, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.

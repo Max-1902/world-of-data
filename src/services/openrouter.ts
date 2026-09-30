@@ -92,7 +92,7 @@ export async function streamAI(
 }
 
 // ── Context builder ────────────────────────────────────────────────────────
-export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = []): string {
+export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = [], dataHealth = ''): string {
   const now      = new Date().toUTCString()
   const critical = crises.filter(c => c.severity === 'critical')
   const high     = crises.filter(c => c.severity === 'high')
@@ -130,6 +130,10 @@ TRAJECTORY SIGNALS (rule-based, last 3d vs prior 7d — computed locally, not mo
   ${risingTrend.length} of ${trajectories.length} tracked regions trending upward
 ${trajectoryLines}` : ''}
 
+${dataHealth ? `
+DATA SOURCE HEALTH (observed from this session's requests — treat figures from DOWN or intermittent sources as incomplete)
+${dataHealth}
+` : ''}
 AIR TRAFFIC
   Airborne flights tracked: ${flights.length.toLocaleString()}
 
