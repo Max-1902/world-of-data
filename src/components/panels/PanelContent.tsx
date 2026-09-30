@@ -17,8 +17,10 @@ import { listSessions, saveSession, deleteSession, newSessionId, type ChatSessio
 import { TRADE_PROFILES } from '../../services/tradeStats'
 import { fetchCountryEcon, formatEconValue, groupIndicators, type CountryEconData } from '../../services/worldbank'
 import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
+import { fetchInfraIndicatorRanking, formatInfraValue, type CountryInfraEntry } from '../../services/infraIndicators'
 import { RESOURCE_PROFILES, getResourceProfile, fetchResourceRents, type ResourceRent } from '../../services/resources'
 import { ALL_INFRA_POINTS, INFRA_COLORS } from '../../services/infrastructure'
+import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
 import {
@@ -2637,6 +2639,67 @@ export function MilitaryPersonnelPanel({ onCountryClick }: { onCountryClick?: (c
   )
 }
 
+// ── Infrastructure Access Panel — ranked by electricity access (World Bank) ──
+export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
+  const [ranking, setRanking] = useState<CountryInfraEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    fetchInfraIndicatorRanking()
+      .then(r => { setRanking(r); setLoading(false) })
+      .catch(() => { setError(true); setLoading(false) })
+  }, [])
+
+  const filtered = search.trim()
+    ? ranking.filter(c => c.country.toLowerCase().includes(search.toLowerCase()) || c.iso2.toLowerCase().includes(search.toLowerCase()))
+    : ranking
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder={`Search ${ranking.length || '…'} countries…`}
+          style={{
+            width: '100%', background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--text1)',
+            padding: '4px 6px', fontSize: 10.5, fontFamily: 'inherit', outline: 'none',
+          }}
+        />
+      </div>
+      <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
+        Ranked by access to electricity · World Bank (World Development Indicators)
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
+        {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading World Bank data…</div>}
+        {error && <div style={{ fontSize: 9.5, color: 'var(--red)', padding: '8px 0' }}>Failed to load World Bank data.</div>}
+        {filtered.map(c => (
+          <button
+            key={c.iso2}
+            onClick={() => onCountryClick?.(c.country)}
+            style={{
+              width: '100%', textAlign: 'left', background: 'none', border: 'none',
+              borderBottom: '1px solid var(--border)', padding: '3.5px 0', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
+            }}
+          >
+            <span style={{ fontSize: 9, color: 'var(--text3)', width: 22, flexShrink: 0, textAlign: 'right' }}>#{c.rank}</span>
+            <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--blue)', width: 20, flexShrink: 0 }}>{c.iso2}</span>
+            <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.country}</span>
+            <div style={{ width: 40, height: 3, background: 'var(--border)', borderRadius: 1, overflow: 'hidden', flexShrink: 0 }}>
+              <div style={{ width: `${c.electricityAccessPct}%`, height: '100%', background: 'var(--blue)', borderRadius: 1 }} />
+            </div>
+            <span style={{ fontSize: 9, color: 'var(--text2)', fontWeight: 700, width: 46, textAlign: 'right', flexShrink: 0 }}>
+              {formatInfraValue('EG.ELC.ACCS.ZS', c.electricityAccessPct)}
+            </span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ── Unified Markets Panel ─────────────────────────────────────────────────
 const MARKET_TABS = [
   { id: 'indices',     label: 'IDX' },
@@ -3723,6 +3786,63 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Data Centers Panel ───────────────────────────────────────────────────────
+export function DataCentersPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => void }) {
+  const [datacenters, setDatacenters] = useState<DataCenterPoint[]>([])
+  const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState(false)
+  const [search, setSearch]           = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+    fetchDataCenters()
+      .then(pts => { if (!cancelled) { setDatacenters(pts); setLoading(false) } })
+      .catch(() => { if (!cancelled) { setError(true); setLoading(false) } })
+    return () => { cancelled = true }
+  }, [])
+
+  const q = search.trim().toLowerCase()
+  const filtered = datacenters.filter(d =>
+    !q || d.name.toLowerCase().includes(q) || (d.operator ?? '').toLowerCase().includes(q) || (d.country ?? '').toLowerCase().includes(q)
+  )
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search facility, operator, country…"
+          style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: 11.5, padding: '2px 6px', outline: 'none', fontFamily: 'inherit' }} />
+      </div>
+      <div style={{ padding: '2px 8px', borderBottom: '1px solid var(--border)', fontSize: '9.5px', color: 'var(--text3)' }}>
+        {loading ? 'Loading…' : error ? 'Failed to load' : `${filtered.length} facilities`}
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        {filtered.map(d => (
+          <div key={d.id}
+            onClick={() => onGeoSearch?.(d.name)}
+            style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 6, alignItems: 'flex-start', cursor: onGeoSearch ? 'pointer' : 'default' }}
+            onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
+            title={onGeoSearch ? `Fly to ${d.name}` : undefined}
+          >
+            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#a855f7', flexShrink: 0, marginTop: 3 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{d.name}</span>
+              <div style={{ fontSize: '10px', color: 'var(--text2)', marginTop: 2 }}>
+                {d.operator ? `${d.operator}` : ''}{d.operator && d.country ? ' · ' : ''}{d.country ?? ''}
+              </div>
+              {d.notes && <div style={{ fontSize: '10.5px', color: 'var(--text2)', lineHeight: 1.5, marginTop: 2 }}>{d.notes}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div style={{ padding: '3px 8px', borderTop: '1px solid var(--border)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.08em', flexShrink: 0 }}>
+        SOURCE: OPENSTREETMAP (telecom=data_center)
+      </div>
     </div>
   )
 }

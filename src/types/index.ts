@@ -97,6 +97,8 @@ export interface PanelState {
   resources:      boolean
   tradeStats:     boolean
   militaryPersonnel: boolean
+  datacenters:    boolean
+  infraIndicators: boolean
 }
 
 export interface MapMarker {

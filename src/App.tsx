@@ -30,7 +30,7 @@ const DEFAULT_PANEL_STATE: PanelState = {
   oil: false, gas: false, gpsjam: false, ports: false, pipelines: false,
   chokepoints: false, supplychain: false, shippingRoutes: false, shippingDensity: false,
   outages: false, resources: false, tradeStats: false,
-  militaryPersonnel: false,
+  militaryPersonnel: false, datacenters: false, infraIndicators: false,
 }
 
 function loadPanelState(): PanelState {
@@ -205,6 +205,7 @@ export default function App() {
             showSanctions={panelState.sanctions}
             showCameras={panelState.cameras}
             showInfrastructure={panelState.infrastructure}
+            showDatacenters={panelState.datacenters}
             showAirspace={panelState.airspace}
             showHumanitarian={panelState.humanitarian}
             vessels={vessels}
@@ -223,6 +224,7 @@ export default function App() {
             showResources={panelState.resources}
             showTradeStats={panelState.tradeStats}
             showMilitaryPersonnel={panelState.militaryPersonnel}
+            showInfraIndicators={panelState.infraIndicators}
             flyToQuery={searchQuery}
             geoFlyTo={geoFlyTo}
             onCountryClick={setSelectedCountry}
