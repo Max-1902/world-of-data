@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import path from 'path'
 
 // Local dev: run `vercel dev` instead of `vite` directly so the /api/* serverless
 // functions (which hold the real provider keys server-side) run alongside Vite.
@@ -7,6 +8,11 @@ import react from '@vitejs/plugin-react'
 // Vite server automatically — see README "Running it locally".
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
   server: {
     port: 3000,
     proxy: {
