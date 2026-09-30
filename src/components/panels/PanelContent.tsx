@@ -3846,3 +3846,55 @@ export function DataCentersPanel({ onGeoSearch }: { onGeoSearch?: (q: string) =>
     </div>
   )
 }
+
+// ── Live TV Feed ───────────────────────────────────────────────────────────────
+// Each entry is a channel's official YouTube live stream (embedded via YouTube's
+// standard embed URL — free, keyless, no API involved).
+interface LiveChannel {
+  id: string
+  label: string
+  videoId: string
+}
+
+const LIVE_CHANNELS: LiveChannel[] = [
+  { id: 'cnn', label: 'CNN', videoId: 'GotlA1KKWoo' },
+  { id: 'fox', label: 'FOX', videoId: 'C96oohpWBGw' },
+  { id: 'nbc', label: 'NBC', videoId: 'ScfK6qmxoqE' },
+  { id: 'cbs', label: 'CBS', videoId: 'bftI1brf9Mw' },
+]
+
+export function LiveFeedPanel() {
+  const [active, setActive] = useState<LiveChannel>(LIVE_CHANNELS[0])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        {LIVE_CHANNELS.map(ch => (
+          <button key={ch.id} onClick={() => setActive(ch)}
+            className={`news-tab ${active.id === ch.id ? 'active' : ''}`}
+          >{ch.label}</button>
+        ))}
+      </div>
+      <div style={{ position: 'relative', flex: 1, background: '#000', minHeight: 0 }}>
+        <iframe
+          key={active.id}
+          src={`https://www.youtube.com/embed/${active.videoId}?autoplay=1&mute=1`}
+          title={`${active.label} live feed`}
+          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+        <div style={{ position: 'absolute', top: 6, left: 6, display: 'flex', alignItems: 'center', gap: 5, background: 'rgba(0,0,0,0.55)', padding: '2px 8px', borderRadius: 'var(--r-pill)' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red)', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
+          <span style={{ fontSize: '9.5px', fontWeight: 700, letterSpacing: '.06em', color: '#fff' }}>LIVE</span>
+        </div>
+      </div>
+      <div style={{ padding: '3px 8px', borderTop: '1px solid var(--border)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.08em', flexShrink: 0, display: 'flex', justifyContent: 'space-between' }}>
+        <span>SOURCE: YOUTUBE — {active.label} OFFICIAL</span>
+        <a href={`https://www.youtube.com/watch?v=${active.videoId}`} target="_blank" rel="noopener noreferrer"
+          style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text3)', textDecoration: 'none' }}
+        >OPEN <ExternalLink size={9} /></a>
+      </div>
+    </div>
+  )
+}
