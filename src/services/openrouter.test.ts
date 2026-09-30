@@ -123,6 +123,13 @@ describe('buildDashboardContext', () => {
     country: 'A', date: '2025-01-01', description: '', source: 't', ...o,
   })
 
+  it('includes a data-health block only when a summary is given', () => {
+    expect(buildDashboardContext([], [])).not.toContain('DATA SOURCE HEALTH')
+    const ctx = buildDashboardContext([], [], [], '  • Conflict events (ACLED): DOWN (HTTP 401)')
+    expect(ctx).toContain('DATA SOURCE HEALTH')
+    expect(ctx).toContain('ACLED): DOWN (HTTP 401)')
+  })
+
   it('reports severity totals that add up', () => {
     const ctx = buildDashboardContext([
       crisis({ severity: 'critical' }), crisis({ severity: 'critical' }),

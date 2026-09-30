@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Search, X, RefreshCw, Globe2 } from 'lucide-react'
 import type { MapViewMode, CrisisEvent } from '../types'
 import OSINTSearch from './OSINTSearch'
+import SourceHealth from './SourceHealth'
 
 const VIEW_MODES: { id: MapViewMode; label: string }[] = [
   { id: 'earth',       label: 'EARTH' },
@@ -193,6 +194,8 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, live
           <RefreshCw size={11} className={reloading ? 'animate-spin' : ''} />
           Reload
         </button>
+
+        <SourceHealth />
 
         <button
           onClick={onSettingsOpen}
