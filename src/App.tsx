@@ -8,6 +8,7 @@ import { useStocks }      from './hooks/useStocks'
 import { useEarthquakes } from './hooks/useEarthquakes'
 import { useWildfires }   from './hooks/useWildfires'
 import { useVessels }    from './hooks/useVessels'
+import { useOutages }    from './hooks/useOutages'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import MapView      from './components/Map/MapView'
 import TopBar       from './components/TopBar'
@@ -28,6 +29,7 @@ const DEFAULT_PANEL_STATE: PanelState = {
   infrastructure: false, airspace: false, humanitarian: false, vessels: false,
   oil: false, gas: false, gpsjam: false, ports: false, pipelines: false,
   chokepoints: false, supplychain: false, shippingRoutes: false,
+  outages: false, resources: false, tradeStats: false,
 }
 
 function loadPanelState(): PanelState {
@@ -47,7 +49,17 @@ function loadViewMode(): MapViewMode {
 }
 
 function loadGroup(): PanelGroup {
-  try { return (localStorage.getItem('ws-dock-group') as PanelGroup) || 'intel' } catch { return 'intel' }
+  const oldGroupMap: Record<string, PanelGroup> = {
+    intel: 'overview',
+    mil: 'security',
+    fin: 'markets',
+    ai: 'analysis',
+  }
+  try {
+    const saved = localStorage.getItem('ws-dock-group')
+    if (saved && ['overview', 'news', 'geo', 'security', 'markets', 'analysis'].includes(saved)) return saved as PanelGroup
+    return saved ? oldGroupMap[saved] ?? 'overview' : 'overview'
+  } catch { return 'overview' }
 }
 
 export default function App() {
@@ -80,6 +92,7 @@ export default function App() {
   const { earthquakes, refresh: refreshEarthquakes } = useEarthquakes(panelState.crises)
   const { fires, refresh: refreshFires }             = useWildfires(panelState.wildfires)
   const { vessels, refresh: refreshVessels }         = useVessels(panelState.vessels)
+  const { outages, refresh: refreshOutages }         = useOutages(panelState.outages)
 
   void stocks
 
@@ -93,9 +106,10 @@ export default function App() {
     refreshEarthquakes()
     refreshFires()
     refreshVessels()
+    refreshOutages()
     triggerGlobalReload()
     window.setTimeout(() => setReloading(false), 900)
-  }, [refreshFlights, refreshCrises, refreshNews, refreshStocks, refreshEarthquakes, refreshFires, refreshVessels])
+  }, [refreshFlights, refreshCrises, refreshNews, refreshStocks, refreshEarthquakes, refreshFires, refreshVessels, refreshOutages])
 
   // Persist preferences
   useEffect(() => { try { localStorage.setItem('ws-panel-state', JSON.stringify(panelState)) } catch {} }, [panelState])
@@ -196,6 +210,10 @@ export default function App() {
             showChokepoints={panelState.chokepoints}
             showSupplyChain={panelState.supplychain}
             showShippingRoutes={panelState.shippingRoutes}
+            outages={outages}
+            showOutages={panelState.outages}
+            showResources={panelState.resources}
+            showTradeStats={panelState.tradeStats}
             flyToQuery={searchQuery}
             geoFlyTo={geoFlyTo}
             onCountryClick={setSelectedCountry}
@@ -215,7 +233,7 @@ export default function App() {
               onFlyTo={handleGeoSearch}
             />
           )}
-          <OutlookCard crises={crises} flights={flights} onOpen={() => setActiveGroup('ai')} />
+          <OutlookCard crises={crises} flights={flights} onOpen={() => setActiveGroup('analysis')} />
           <SettingsModal
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}

@@ -97,6 +97,9 @@ const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
   { id: 'supplychain', label: 'SUPPLY CHAIN', desc: 'Semiconductor fabs, rare earth, lithium, cobalt' },
   { id: 'shippingRoutes', label: 'SHIPPING', desc: 'Major trade corridor lanes' },
   { id: 'gpsjam', label: 'GPS JAM', desc: 'Interference zones' },
+  { id: 'outages', label: 'OUTAGES', desc: 'Internet/power outages (IODA)' },
+  { id: 'resources', label: 'RESOURCES', desc: 'Critical mineral producers' },
+  { id: 'tradeStats', label: 'TRADE', desc: 'Trade partners & balance' },
 ]
 
 const VIEW_MODES: { id: MapViewMode; label: string }[] = [

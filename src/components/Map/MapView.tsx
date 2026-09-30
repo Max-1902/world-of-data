@@ -33,6 +33,9 @@ import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from '../../services/gpsj
 import { CHOKEPOINTS, CHOKEPOINT_COLORS } from '../../services/chokepoints'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../services/supplychain'
 import { SHIPPING_ROUTES } from '../../services/shippingRoutes'
+import { getCountryCentroid, type OutageEvent } from '../../services/outages'
+import { RESOURCE_PROFILES } from '../../services/resources'
+import { TRADE_PROFILES } from '../../services/tradeStats'
 import {
   UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS,
   CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS,
@@ -169,6 +172,10 @@ interface Props {
   showChokepoints:    boolean
   showSupplyChain:    boolean
   showShippingRoutes: boolean
+  outages:            OutageEvent[]
+  showOutages:        boolean
+  showResources:      boolean
+  showTradeStats:     boolean
   flyToQuery?:        string
   geoFlyTo?:          string
   onCountryClick?:    (country: string) => void
@@ -527,6 +534,7 @@ export default function MapView({
   showCameras, showInfrastructure, showAirspace, showHumanitarian,
   vessels, showVessels, showOil, showGas, showGPSJam, showPorts, showPipelines,
   showChokepoints, showSupplyChain, showShippingRoutes,
+  outages, showOutages, showResources, showTradeStats,
   flyToQuery, geoFlyTo, onCountryClick,
   reticleColor = '#00ff88',
   panelState, onToggleLayer,
@@ -640,19 +648,11 @@ export default function MapView({
       // ── Atmosphere ───────────────────────────────────────────────────────
       map.addLayer({ id: 'sky', type: 'sky', paint: {
         'sky-type': 'atmosphere',
-        'sky-atmosphere-sun': [0.0, 0.0],
-        'sky-atmosphere-sun-intensity': 15,
+        'sky-atmosphere-sun-intensity': 0,
       }})
 
-      // Fog (space + horizon haze — the "Google Earth" atmosphere ring)
-      map.setFog({
-        range:           [0.8, 8],
-        color:           '#1a2040',
-        'high-color':    '#0d1530',
-        'space-color':   '#08091a',
-        'star-intensity': 0.18,
-        'horizon-blend': 0.04,
-      } as Parameters<typeof map.setFog>[0])
+      // Mapbox default fog/space background
+      map.setFog({})
 
       // ── 3D buildings layer (for city3d view mode) ────────────────────────
       map.addLayer({
@@ -896,6 +896,153 @@ export default function MapView({
       })
       map.on('mouseenter', 'sanctions-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
       map.on('mouseleave', 'sanctions-fill', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Critical minerals / resources country fill layer ────────────────
+      map.addSource('resources-countries', {
+        type: 'vector',
+        url:  'mapbox://mapbox.country-boundaries-v1',
+      })
+      map.addLayer({
+        id: 'resources-fill', type: 'fill',
+        source: 'resources-countries',
+        'source-layer': 'country_boundaries',
+        paint: {
+          'fill-color': [
+            'match', ['get', 'iso_3166_1'],
+            ...RESOURCE_PROFILES.flatMap(p => [p.iso2, '#d97706']),
+            'transparent',
+          ],
+          'fill-opacity': 0.22,
+        },
+        layout: { visibility: 'none' },
+      } as Parameters<typeof map.addLayer>[0])
+      map.addLayer({
+        id: 'resources-outline', type: 'line',
+        source: 'resources-countries',
+        'source-layer': 'country_boundaries',
+        paint: {
+          'line-color': [
+            'match', ['get', 'iso_3166_1'],
+            ...RESOURCE_PROFILES.flatMap(p => [p.iso2, '#d97706']),
+            'transparent',
+          ],
+          'line-width': 1.2,
+          'line-opacity': 0.55,
+        },
+        layout: { visibility: 'none' },
+      } as Parameters<typeof map.addLayer>[0])
+
+      map.on('click', 'resources-fill', (e) => {
+        const iso2 = e.features?.[0]?.properties?.iso_3166_1 as string | undefined
+        if (!iso2) return
+        const p = RESOURCE_PROFILES.find(r => r.iso2 === iso2)
+        if (!p) return
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:300px;">
+          <div style="font-size:13px;font-weight:800;color:#14161a;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">${p.name}</div>
+          ${p.resources.slice(0, 6).map(r => `<div style="font-size:11px;color:#374151;margin-bottom:2px;">⛏ <b>${r.mineral}</b>${r.rank ? ` — #${r.rank}${r.shareOfWorld ? ` (${r.shareOfWorld}% world share)` : ''}` : ''}</div>`).join('')}
+          ${p.strategic ? `<div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">${p.strategic}</div>` : ''}
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' })
+          .setLngLat(e.lngLat).setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'resources-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
+      map.on('mouseleave', 'resources-fill', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Trade statistics country fill layer ──────────────────────────────
+      map.addSource('tradestats-countries', {
+        type: 'vector',
+        url:  'mapbox://mapbox.country-boundaries-v1',
+      })
+      map.addLayer({
+        id: 'tradestats-fill', type: 'fill',
+        source: 'tradestats-countries',
+        'source-layer': 'country_boundaries',
+        paint: {
+          'fill-color': [
+            'match', ['get', 'iso_3166_1'],
+            ...TRADE_PROFILES.flatMap(p => [p.iso2, '#0891b2']),
+            'transparent',
+          ],
+          'fill-opacity': 0.2,
+        },
+        layout: { visibility: 'none' },
+      } as Parameters<typeof map.addLayer>[0])
+      map.addLayer({
+        id: 'tradestats-outline', type: 'line',
+        source: 'tradestats-countries',
+        'source-layer': 'country_boundaries',
+        paint: {
+          'line-color': [
+            'match', ['get', 'iso_3166_1'],
+            ...TRADE_PROFILES.flatMap(p => [p.iso2, '#0891b2']),
+            'transparent',
+          ],
+          'line-width': 1.2,
+          'line-opacity': 0.55,
+        },
+        layout: { visibility: 'none' },
+      } as Parameters<typeof map.addLayer>[0])
+
+      map.on('click', 'tradestats-fill', (e) => {
+        const iso2 = e.features?.[0]?.properties?.iso_3166_1 as string | undefined
+        if (!iso2) return
+        const p = TRADE_PROFILES.find(t => t.iso2 === iso2)
+        if (!p) return
+        const topExp = p.topExportPartners.slice(0, 3).map(x => `${x.country} (${x.pct}%)`).join(', ')
+        const topImp = p.topImportPartners.slice(0, 3).map(x => `${x.country} (${x.pct}%)`).join(', ')
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:300px;">
+          <div style="font-size:13px;font-weight:800;color:#14161a;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">${p.name}</div>
+          <div style="font-size:11px;color:#374151;margin-bottom:3px;">Exports to: ${topExp}</div>
+          <div style="font-size:11px;color:#374151;margin-bottom:3px;">Imports from: ${topImp}</div>
+          ${p.tradeBalance != null ? `<div style="font-size:11px;color:#374151;">Trade balance: <b style="color:${p.tradeBalance >= 0 ? '#16a34a' : '#dc2626'}">${p.tradeBalance >= 0 ? '+' : ''}$${p.tradeBalance}B</b></div>` : ''}
+          ${p.dependencies?.length ? `<div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">${p.dependencies.join(' · ')}</div>` : ''}
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' })
+          .setLngLat(e.lngLat).setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'tradestats-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
+      map.on('mouseleave', 'tradestats-fill', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Internet/power outage GeoJSON source (live, IODA) ─────────────────
+      map.addSource('outages', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer({
+        id: 'outages-circles', type: 'circle', source: 'outages',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 5, 5, 8, 8, 12],
+          'circle-color': ['get', 'color'],
+          'circle-opacity': 0.75,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': 'rgba(255,255,255,0.3)',
+        },
+        layout: { visibility: 'none' },
+      })
+      map.on('click', 'outages-circles', (e) => {
+        if (!e.features?.[0]) return
+        const p = e.features[0].properties as Record<string, unknown>
+        const color = String(p.color || '#dc2626')
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:200px;max-width:280px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
+            <span style="font-size:13px;font-weight:800;color:#14161a;">${p.entityName}</span>
+            <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;">${String(p.level).toUpperCase()}</span>
+          </div>
+          <div style="font-size:11px;color:#6b7280;">Entity type: ${p.entityType}</div>
+          <div style="font-size:11px;color:#6b7280;">Severity score: <b style="color:${color}">${p.score}</b></div>
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '300px', className: 'cy-popup' })
+          .setLngLat((e.features[0].geometry as GeoJSON.Point).coordinates as [number, number])
+          .setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'outages-circles', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'outages-circles', () => { map.getCanvas().style.cursor = '' })
 
       // ── Military facilities GeoJSON source ───────────────────────────────
       map.addSource('military', {
@@ -2376,6 +2523,52 @@ export default function MapView({
     if (map.getLayer('sanctions-fill'))    map.setLayoutProperty('sanctions-fill',    'visibility', vis)
     if (map.getLayer('sanctions-outline')) map.setLayoutProperty('sanctions-outline', 'visibility', vis)
   }, [showSanctions, mapReady])
+
+  // ── Resources layer visibility ───────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const vis = showResources ? 'visible' : 'none'
+    if (map.getLayer('resources-fill'))    map.setLayoutProperty('resources-fill',    'visibility', vis)
+    if (map.getLayer('resources-outline')) map.setLayoutProperty('resources-outline', 'visibility', vis)
+  }, [showResources, mapReady])
+
+  // ── Trade stats layer visibility ─────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const vis = showTradeStats ? 'visible' : 'none'
+    if (map.getLayer('tradestats-fill'))    map.setLayoutProperty('tradestats-fill',    'visibility', vis)
+    if (map.getLayer('tradestats-outline')) map.setLayoutProperty('tradestats-outline', 'visibility', vis)
+  }, [showTradeStats, mapReady])
+
+  // ── Outages GeoJSON (live) ────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const src = map.getSource('outages') as mapboxgl.GeoJSONSource | undefined
+    if (!src) return
+    const vis = showOutages ? 'visible' : 'none'
+    if (map.getLayer('outages-circles')) map.setLayoutProperty('outages-circles', 'visibility', vis)
+    if (!showOutages) { src.setData({ type: 'FeatureCollection', features: [] }); return }
+    const features: GeoJSON.Feature[] = []
+    for (const o of outages) {
+      const centroid = getCountryCentroid(o.entityCode)
+      if (!centroid) continue
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: centroid },
+        properties: {
+          entityName: o.entityName,
+          entityType: o.entityType,
+          level:      o.level,
+          score:      o.score,
+          color:      o.level === 'critical' ? '#dc2626' : '#d97706',
+        },
+      })
+    }
+    src.setData({ type: 'FeatureCollection', features })
+  }, [outages, showOutages, mapReady])
 
   // ── Military facilities GeoJSON ───────────────────────────────────────────
   useEffect(() => {

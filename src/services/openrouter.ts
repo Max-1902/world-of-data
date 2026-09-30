@@ -1,5 +1,6 @@
 import type { CrisisEvent, Flight } from '../types'
 import type { TrajectoryEntry } from '../utils/trajectory'
+import { resourceCapabilitySummary } from './resources'
 
 const BASE = '/api/openrouter'
 
@@ -149,39 +150,34 @@ DASHBOARD CAPABILITIES
   Energy infrastructure (dams, LNG, pipelines, refineries)
   Airspace closure overlays (FIR regions)
   EarthCam live CCTV cameras (45 locations worldwide)
+  ${resourceCapabilitySummary()}
 ===================================================`
 }
 
 // ── Preset quick-prompts ───────────────────────────────────────────────────
-export const QUICK_PROMPTS: { label: string; icon: string; prompt: string }[] = [
+export const QUICK_PROMPTS: { label: string; prompt: string }[] = [
   {
     label:  'Threat Brief',
-    icon:   '🎯',
     prompt: 'Give me a concise intelligence brief on the current global threat landscape based on the active data. Highlight the most critical situations and any notable patterns.',
   },
   {
     label:  'Conflict Map',
-    icon:   '⚔',
     prompt: 'Analyze the active conflict zones. Which regions are most destabilized? Are there any escalation risks or interconnected conflicts I should monitor closely?',
   },
   {
     label:  'Air Traffic',
-    icon:   '✈',
     prompt: 'Based on current flight data, what anomalies or noteworthy patterns can you identify? Are there any airspace restrictions or unusual military air activity worth noting?',
   },
   {
     label:  'Geo Risk',
-    icon:   '🌍',
     prompt: 'What are the top 5 geopolitical flashpoints right now, and what second-order effects could they have on global stability, markets, and trade routes?',
   },
   {
     label:  'Markets',
-    icon:   '📈',
     prompt: 'How are the current conflict zones and geopolitical tensions likely to impact global markets, energy prices, and supply chains? What sectors are most exposed?',
   },
   {
     label:  'Cyber',
-    icon:   '⚡',
     prompt: 'Assess internet outage patterns and their potential geopolitical causes. Are any outages consistent with information operations, conflict-related infrastructure attacks, or government shutdowns?',
   },
 ]

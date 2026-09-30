@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import type { CrisisEvent, PanelState, Flight } from '../../types'
-import { panelsForGroup } from '../../panels/registry'
+import { GROUP_ORDER, panelsForGroup } from '../../panels/registry'
 import type { PanelGroup, PanelProps } from '../../panels/types'
 
 interface Props {
@@ -36,6 +36,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
   // Derive visible panels from registry
   const groupPanels = panelsForGroup(activeGroup)
   const visibleDefs = groupPanels.filter(p => !poppedOut.has(p.id))
+  const groupLabel = GROUP_ORDER.find(group => group.id === activeGroup)?.label ?? activeGroup
 
   // Shared props for all panels
   const panelProps: PanelProps = { crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick }
@@ -79,6 +80,13 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
 
       {/* panels — scrollable, each with proper min-height */}
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 8 }}>
+        <div className="dock-workspace-heading">
+          <div>
+            <div className="dock-workspace-eyebrow">WORKSPACE</div>
+            <div className="dock-workspace-title">{groupLabel}</div>
+          </div>
+          <span>{visibleDefs.length} {visibleDefs.length === 1 ? 'panel' : 'panels'}</span>
+        </div>
         {visibleDefs.map((def) => {
           // Give each panel a sensible min-height based on type
           const isAI = def.id === 'analyst'
@@ -100,7 +108,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
                 onDragStart={e => { e.dataTransfer.setData('panelId', def.id); e.dataTransfer.effectAllowed = 'move' }}
                 style={{ cursor: 'grab' }}
               >
-                <span style={{ fontSize: 10, color: 'var(--text3)', marginRight: 2 }}>::</span>
+                <span className="dock-grip" aria-hidden="true" />
                 {isAI ? <span className="ai-pulse-dot" /> : def.dotColor && <span className={`live-dot ${def.dotColor}`} />}
                 <span className="panel-title" style={{ flex: 1 }}>{def.title}</span>
               </div>

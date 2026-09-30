@@ -10,7 +10,7 @@ import {
   OutagesPanel, CrisisWatchPanel, IntelBriefPanel, DrugTrafficPanel,
   SanctionsPanel, MilitaryPanel, NuclearPanel, AirspacePanel,
   CNNLivePanel, USWebcamsPanel, CryptoPanel, ForexPanel, ExchangesPanel,
-  StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, AIAnalystPanel,
+  StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, AIAnalystPanel,
   SECTORS,
 } from '../components/panels/PanelContent'
 
@@ -19,37 +19,32 @@ import {
 export const PANELS: PanelDef[] = [
   // ── INTEL ───────────────────────────────────────────────────────────────────
   {
-    id: 'crisiswatch', title: 'Crisis Monitor', group: 'intel',
+    id: 'crisiswatch', title: 'Crisis Monitor', group: 'overview',
     dotColor: 'orange', desc: 'ICG conflict tracking — 70+ states',
     render: () => <CrisisWatchPanel />,
   },
   {
-    id: 'intel', title: 'Incidents', group: 'intel',
+    id: 'intel', title: 'Incidents', group: 'overview',
     dotColor: 'red', desc: 'Active conflict & event tracking',
     render: (p) => <IntelPanel crises={p.crises} />,
   },
   {
-    id: 'risk', title: 'Risk Matrix', group: 'intel',
+    id: 'risk', title: 'Risk Matrix', group: 'overview',
     dotColor: 'red', desc: 'Country-level threat assessment',
     render: (p) => <RiskPanel crises={p.crises} />,
   },
   {
-    id: 'threat', title: 'Threat Level', group: 'intel',
+    id: 'threat', title: 'Threat Level', group: 'overview',
     dotColor: 'orange', desc: 'Composite global threat index',
     render: (p) => <ThreatPanel crises={p.crises} flights={p.flights} />,
   },
   {
-    id: 'brief', title: 'Briefing', group: 'intel',
-    dotColor: 'red', desc: 'Correlated intel for active query',
-    render: (p) => <IntelBriefPanel query={p.searchQuery ?? ''} crises={p.crises} flights={p.flights} />,
-  },
-  {
-    id: 'news', title: 'Signals', group: 'intel',
+    id: 'news', title: 'Signals', group: 'news',
     dotColor: 'grn', desc: 'Aggregated open-source reporting',
     render: () => <NewsPanel />,
   },
   {
-    id: 'outages', title: 'Connectivity', group: 'intel',
+    id: 'outages', title: 'Connectivity', group: 'geo',
     dotColor: 'yellow', desc: 'Internet disruption monitoring',
     render: (p) => <OutagesPanel onGeoSearch={p.onGeoSearch} />,
   },
@@ -61,12 +56,12 @@ export const PANELS: PanelDef[] = [
     render: (p) => <HumanitarianPanel crises={p.crises} flights={p.flights} onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'drugs', title: 'Narcotics', group: 'geo',
+    id: 'drugs', title: 'Narcotics', group: 'security',
     dotColor: 'red', desc: 'Trafficking routes & seizure data',
     render: () => <DrugTrafficPanel />,
   },
   {
-    id: 'sanctions', title: 'Sanctions', group: 'geo',
+    id: 'sanctions', title: 'Sanctions', group: 'security',
     dotColor: 'red', desc: 'OFAC EU UN UK sanctions registry',
     render: () => <SanctionsPanel />,
   },
@@ -78,48 +73,58 @@ export const PANELS: PanelDef[] = [
 
   // ── MIL ─────────────────────────────────────────────────────────────────────
   {
-    id: 'military', title: 'Installations', group: 'mil',
+    id: 'military', title: 'Installations', group: 'security',
     dotColor: 'blue', desc: 'Military bases & force posture',
     render: (p) => <MilitaryPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'nuclear', title: 'Nuclear', group: 'mil',
+    id: 'nuclear', title: 'Nuclear', group: 'security',
     dotColor: 'yellow', desc: 'Reactors & weapons storage sites',
     render: () => <NuclearPanel />,
   },
   {
-    id: 'airspace', title: 'Airspace', group: 'mil',
+    id: 'airspace', title: 'Airspace', group: 'security',
     dotColor: 'red', desc: 'FIR status & NOTAM alerts',
     render: (p) => <AirspacePanel flights={p.flights} />,
   },
   {
-    id: 'cnn', title: 'Live Feeds', group: 'mil',
+    id: 'cnn', title: 'Live Feeds', group: 'news',
     dotColor: 'red', desc: 'Regional surveillance streams',
     render: () => <CNNLivePanel />,
   },
   {
-    id: 'webcams', title: 'US Webcams', group: 'mil',
+    id: 'webcams', title: 'US Webcams', group: 'news',
     dotColor: 'grn', desc: 'SkylineWebcams & EarthCam — live US grid',
     render: () => <USWebcamsPanel />,
   },
 
   // ── FIN ─────────────────────────────────────────────────────────────────────
   {
-    id: 'economy', title: 'Economy', group: 'fin',
+    id: 'economy', title: 'Economy', group: 'markets',
     dotColor: 'blue', desc: 'Global trade profiles & World Bank data',
     render: (p) => <GlobalEconomyPanel onCountryClick={p.onCountryClick} />,
   },
   {
-    id: 'markets', title: 'Markets', group: 'fin',
+    id: 'markets', title: 'Markets', group: 'markets',
     dotColor: 'grn', desc: 'Consolidated financial data feed',
     render: () => <MarketsPanel />,
+  },
+  {
+    id: 'resources', title: 'Resources', group: 'markets',
+    dotColor: 'amber', desc: 'Critical minerals, reserves & production by country',
+    render: (p) => <ResourcesPanel onCountryClick={p.onCountryClick} />,
   },
 
   // ── AI ──────────────────────────────────────────────────────────────────────
   {
-    id: 'analyst', title: 'Analysis', group: 'ai',
+    id: 'analyst', title: 'Analyst chat', group: 'analysis',
     dotColor: 'blue', desc: 'AI-assisted situational assessment',
     render: (p) => <AIAnalystPanel crises={p.crises} flights={p.flights} onGeoSearch={p.onGeoSearch} onCountryClick={p.onCountryClick} onToggleLayer={p.onToggleLayer} panelState={p.panelState} />,
+  },
+  {
+    id: 'brief', title: 'Briefing', group: 'analysis',
+    dotColor: 'red', desc: 'Correlated intel for active query',
+    render: (p) => <IntelBriefPanel query={p.searchQuery ?? ''} crises={p.crises} flights={p.flights} />,
   },
 ]
 
@@ -135,11 +140,12 @@ export function panelsForGroup(group: PanelGroup): PanelDef[] {
 
 /** All group IDs in display order */
 export const GROUP_ORDER: { id: PanelGroup; label: string }[] = [
-  { id: 'intel',  label: 'INTEL' },
-  { id: 'geo',    label: 'GEO' },
-  { id: 'mil',    label: 'MIL' },
-  { id: 'fin',    label: 'FIN' },
-  { id: 'ai',     label: 'AI' },
+  { id: 'overview', label: 'OVERVIEW' },
+  { id: 'news',     label: 'NEWS' },
+  { id: 'geo',      label: 'GEO & INFRA' },
+  { id: 'security', label: 'SECURITY' },
+  { id: 'markets',  label: 'MARKETS' },
+  { id: 'analysis', label: 'ANALYSIS' },
 ]
 
 /** All panel IDs (for backwards compat) */
