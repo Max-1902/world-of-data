@@ -3861,6 +3861,9 @@ const LIVE_CHANNELS: LiveChannel[] = [
   { id: 'fox', label: 'FOX', videoId: 'C96oohpWBGw' },
   { id: 'nbc', label: 'NBC', videoId: 'ScfK6qmxoqE' },
   { id: 'cbs', label: 'CBS', videoId: 'bftI1brf9Mw' },
+  { id: 'euronews', label: 'EURONEWS', videoId: 'pykpO5kQJ98' },
+  { id: 'dw', label: 'DW', videoId: 'LuKwFajn37U' },
+  { id: 'sky', label: 'SKY NEWS', videoId: 'xDWQ3LkccY8' },
 ]
 
 export function LiveFeedPanel() {

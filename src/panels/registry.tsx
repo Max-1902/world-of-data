@@ -98,7 +98,7 @@ export const PANELS: PanelDef[] = [
   },
   {
     id: 'livefeed', title: 'Live Feed', group: 'news',
-    dotColor: 'red', desc: 'Live news broadcasts — CNN, FOX, NBC, CBS',
+    dotColor: 'red', desc: 'Live news broadcasts — CNN, FOX, NBC, CBS, Euronews, DW, Sky News',
     render: () => <LiveFeedPanel />,
   },
 
