@@ -16,15 +16,15 @@ const VIEW_MODES: { id: MapViewMode; label: string }[] = [
   { id: 'thermal',     label: 'HEAT' },
 ]
 
-function computeThreatLevel(crises: CrisisEvent[]): { level: number; label: string; color: string } {
+function computeThreatLevel(crises: CrisisEvent[]): { level: number; label: string; color: string; soft: string } {
   const critical = crises.filter((c) => c.severity === 'critical').length
   const high     = crises.filter((c) => c.severity === 'high').length
   const score    = critical * 4 + high * 2 + crises.length
-  if (score > 500) return { level: 1, label: 'CRITICAL', color: '#dc2626' }
-  if (score > 250) return { level: 2, label: 'ELEVATED', color: '#ea580c' }
-  if (score > 100) return { level: 3, label: 'HIGH',     color: '#d97706' }
-  if (score > 40)  return { level: 4, label: 'MODERATE', color: '#ca8a04' }
-  return               { level: 5, label: 'NORMAL',   color: '#16a34a' }
+  if (score > 500) return { level: 1, label: 'CRITICAL', color: 'var(--red)',   soft: 'var(--red-soft)' }
+  if (score > 250) return { level: 2, label: 'ELEVATED', color: 'var(--red)',   soft: 'var(--red-soft)' }
+  if (score > 100) return { level: 3, label: 'HIGH',     color: 'var(--amber)', soft: 'var(--amber-soft)' }
+  if (score > 40)  return { level: 4, label: 'MODERATE', color: 'var(--amber)', soft: 'var(--amber-soft)' }
+  return               { level: 5, label: 'NORMAL',   color: 'var(--green)', soft: 'var(--green-soft)' }
 }
 
 interface Props {
@@ -98,7 +98,7 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
         <div className="hud-sep" />
 
         {/* threat level */}
-        <div className="defcon-badge" style={{ color: threat.color, borderColor: threat.color, background: `${threat.color}12` }}>
+        <div className="defcon-badge" style={{ color: threat.color, borderColor: threat.color, background: threat.soft }}>
           <span style={{ fontSize: 8, color: 'var(--text3)' }}>DEFCON</span>
           <span>{threat.level}</span>
           <span style={{ fontSize: 9 }}>{threat.label}</span>
