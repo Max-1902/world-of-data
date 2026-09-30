@@ -27,7 +27,7 @@ export default function NewsTicker() {
   const items = [...headlines, ...headlines]
 
   return (
-    <div style={{
+    <div className="news-ticker" style={{
       height: 28,
       background: 'var(--surface)',
       borderBottom: '1px solid var(--border)',

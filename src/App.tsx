@@ -17,6 +17,7 @@ import ObserveTray  from './components/PanelDock/ObserveTray'
 import SettingsModal from './components/SettingsModal'
 import CountryDrawer from './components/CountryDrawer'
 import NewsTicker   from './components/NewsTicker'
+import OutlookCard from './components/OutlookCard'
 import { triggerGlobalReload } from './utils/reloadBus'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
@@ -157,7 +158,7 @@ export default function App() {
       <NewsTicker />
 
       {/* ── Main area: sidebar + map + command panel ──────────── */}
-      <div style={{ display: 'flex', flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
+      <div className="dashboard-main" style={{ display: 'flex', flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
         <Sidebar activeGroup={activeGroup} onGroupChange={setActiveGroup} poppedOut={poppedOut} />
 
         {/* Map area */}
@@ -214,6 +215,7 @@ export default function App() {
               onFlyTo={handleGeoSearch}
             />
           )}
+          <OutlookCard crises={crises} flights={flights} onOpen={() => setActiveGroup('ai')} />
           <SettingsModal
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}

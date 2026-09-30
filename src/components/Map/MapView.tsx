@@ -19,7 +19,8 @@ import {
   FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS,
   type FlightType,
 } from '../../utils/flightType'
-import { EARTHCAM_CAMERAS } from '../../services/earthcam'
+import { EARTHCAM_CAMERAS, type LiveCamera } from '../../services/earthcam'
+import { registerUSWebcams } from '../panels/PanelContent'
 import { ALL_INFRA_POINTS, PIPELINE_ROUTES, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS } from '../../services/infrastructure'
 import { FIR_REGIONS, analyzeAirspace } from '../../services/notam'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../services/aisstream'
@@ -2998,7 +2999,8 @@ export default function MapView({
 
     // Wait for map to be ready
     const add = () => {
-      EARTHCAM_CAMERAS.forEach(cam => {
+      const allCameras: LiveCamera[] = [...EARTHCAM_CAMERAS, ...registerUSWebcams()]
+      allCameras.forEach(cam => {
         const el = document.createElement('div')
         el.title = `${cam.name} — ${cam.city}, ${cam.country}`
         el.style.cssText = [
@@ -3217,9 +3219,9 @@ export default function MapView({
 
   if (!TOKEN) {
     return (
-      <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'#020408', flexDirection:'column', gap:12, fontFamily:'monospace', fontSize:11, color:'#4a6a50' }}>
-        <div style={{ fontSize:14, color:'#00ff88' }}>◆ MAPBOX TOKEN REQUIRED</div>
-        <div style={{ color:'#2a3e2e', fontSize:9, letterSpacing:'.1em' }}>Add VITE_MAPBOX_TOKEN to .env</div>
+      <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'#080e13', flexDirection:'column', gap:12, fontFamily:'monospace', fontSize:11, color:'#98aab4' }}>
+        <div style={{ fontSize:14, color:'#d5a85f' }}>◆ MAPBOX TOKEN REQUIRED</div>
+        <div style={{ color:'#647883', fontSize:9, letterSpacing:'.1em' }}>Add VITE_MAPBOX_TOKEN to .env</div>
       </div>
     )
   }
@@ -3249,15 +3251,15 @@ export default function MapView({
               display:'flex', alignItems:'center', gap:5,
               padding:'3px 10px', fontSize:8.5, fontWeight:700,
               letterSpacing:'.14em', textTransform:'uppercase',
-              border:`1px solid ${showFilter ? '#00ff8855' : '#141e16'}`,
-              background: showFilter ? 'rgba(0,255,136,0.1)' : 'rgba(8,14,10,0.88)',
-              color: showFilter ? '#00ff88' : '#4a6a50',
+              border:`1px solid ${showFilter ? 'rgba(105,201,167,.55)' : '#263843'}`,
+              background: showFilter ? 'rgba(105,201,167,.10)' : 'rgba(9,16,22,.9)',
+              color: showFilter ? '#69c9a7' : '#c0cbd0',
               cursor:'pointer', transition:'all .15s', fontFamily:'monospace',
               backdropFilter:'blur(8px)',
             }}
           >
             ✈ FILTER
-            <span style={{ fontSize:7, color: showFilter ? '#00ff8888' : '#2a3e2e', fontVariantNumeric:'tabular-nums' }}>
+            <span style={{ fontSize:7, color: showFilter ? '#9ad9c2' : '#7c909a', fontVariantNumeric:'tabular-nums' }}>
               {filteredCount.toLocaleString()}
             </span>
           </button>
@@ -3266,35 +3268,35 @@ export default function MapView({
           {showFilter && (
             <div style={{
               marginTop:3,
-              background:'rgba(8,14,10,0.96)',
-              border:'1px solid #141e16', borderLeft:'2px solid #00ff8844',
+              background:'rgba(9,16,22,0.97)',
+              border:'1px solid #263843', borderLeft:'2px solid rgba(105,201,167,.55)',
               backdropFilter:'blur(10px)',
               width:230,
               boxShadow:'0 4px 20px rgba(0,0,0,0.7)',
             }}>
               {/* Search input */}
-              <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 8px', borderBottom:'1px solid #141e16' }}>
-                <span style={{ fontSize:9, color:'#2a3e2e', flexShrink:0 }}>⌕</span>
+              <div style={{ display:'flex', alignItems:'center', gap:5, padding:'5px 8px', borderBottom:'1px solid #263843' }}>
+                <span style={{ fontSize:9, color:'#7c909a', flexShrink:0 }}>⌕</span>
                 <input
                   value={filterQuery}
                   onChange={e => setFilterQuery(e.target.value)}
                   placeholder="callsign · country · icao24"
                   style={{
                     flex:1, background:'transparent', border:'none', outline:'none',
-                    fontSize:9, color:'#c0dcc4', fontFamily:'monospace', letterSpacing:'.03em',
+                    fontSize:9, color:'#e5ecef', fontFamily:'monospace', letterSpacing:'.03em',
                   }}
                 />
                 {filterQuery && (
-                  <button onClick={() => setFilterQuery('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#4a6a50', fontSize:10, padding:0 }}>×</button>
+                  <button onClick={() => setFilterQuery('')} style={{ background:'none', border:'none', cursor:'pointer', color:'#98aab4', fontSize:10, padding:0 }}>×</button>
                 )}
               </div>
 
               {/* Type filters with count badges */}
-              <div style={{ padding:'5px 8px', borderBottom:'1px solid #141e16' }}>
-                <div style={{ fontSize:7, color:'#2a3e2e', letterSpacing:'.15em', marginBottom:4 }}>// TYPE</div>
+              <div style={{ padding:'5px 8px', borderBottom:'1px solid #263843' }}>
+                <div style={{ fontSize:7, color:'#7c909a', letterSpacing:'.15em', marginBottom:4 }}>// TYPE</div>
                 <div style={{ display:'flex', flexWrap:'wrap', gap:3 }}>
                   <button onClick={() => setFilterTypes(new Set(ALL_TYPES))}
-                    style={{ padding:'2px 6px', fontSize:7.5, fontWeight:700, letterSpacing:'.1em', border:'1px solid #141e16', background:'rgba(255,255,255,0.04)', color:'#8aac90', cursor:'pointer' }}>
+                    style={{ padding:'2px 6px', fontSize:7.5, fontWeight:700, letterSpacing:'.1em', border:'1px solid #31434d', background:'rgba(255,255,255,0.04)', color:'#c0cbd0', cursor:'pointer' }}>
                     ALL
                   </button>
                   {ALL_TYPES.map(type => {
@@ -3307,9 +3309,9 @@ export default function MapView({
                       <button key={type} onClick={() => toggleType(type)} style={{
                         display:'flex', alignItems:'center', gap:3,
                         padding:'2px 6px', fontSize:7.5, fontWeight:700, letterSpacing:'.08em',
-                        border:`1px solid ${on ? color + '66' : '#141e16'}`,
+                        border:`1px solid ${on ? color + '66' : '#263843'}`,
                         background: on ? color + '18' : 'transparent',
-                        color: on ? color : '#2a3e2e', cursor:'pointer', transition:'all .12s',
+                        color: on ? color : '#7c909a', cursor:'pointer', transition:'all .12s',
                       }}>
                         {icon} {label}
                         <span style={{ fontSize:7, opacity:.7, fontVariantNumeric:'tabular-nums' }}>{count.toLocaleString()}</span>
@@ -3320,17 +3322,17 @@ export default function MapView({
               </div>
 
               {/* Size shortcuts */}
-              <div style={{ padding:'5px 8px', borderBottom:'1px solid #141e16' }}>
-                <div style={{ fontSize:7, color:'#2a3e2e', letterSpacing:'.15em', marginBottom:4 }}>// SIZE</div>
+              <div style={{ padding:'5px 8px', borderBottom:'1px solid #263843' }}>
+                <div style={{ fontSize:7, color:'#7c909a', letterSpacing:'.15em', marginBottom:4 }}>// SIZE</div>
                 <div style={{ display:'flex', gap:3 }}>
                   {SIZE_GROUPS.map(g => {
                     const on = g.types.every(t => filterTypes.has(t))
                     return (
                       <button key={g.label} onClick={() => setFilterTypes(new Set(g.types))} style={{
                         padding:'2px 7px', fontSize:7.5, fontWeight:700, letterSpacing:'.08em',
-                        border:`1px solid ${on ? g.color + '55' : '#141e16'}`,
+                        border:`1px solid ${on ? g.color + '55' : '#263843'}`,
                         background: on ? g.color + '14' : 'transparent',
-                        color: on ? g.color : '#2a3e2e', cursor:'pointer', transition:'all .12s',
+                        color: on ? g.color : '#7c909a', cursor:'pointer', transition:'all .12s',
                       }}>
                         {g.label}
                       </button>
@@ -3349,11 +3351,11 @@ export default function MapView({
                   return (
                     <div key={type} style={{ display:'flex', alignItems:'center', gap:5, marginBottom:3, opacity: on ? 1 : 0.35 }}>
                       <div style={{ width:4, height:4, background:color, flexShrink:0 }} />
-                      <span style={{ fontSize:7, color:'#4a6a50', width:22, letterSpacing:'.06em', flexShrink:0, textTransform:'uppercase' }}>{type.slice(0,3)}</span>
-                      <div style={{ flex:1, height:2, background:'#141e16', position:'relative', borderRadius:1 }}>
+                      <span style={{ fontSize:7, color:'#98aab4', width:22, letterSpacing:'.06em', flexShrink:0, textTransform:'uppercase' }}>{type.slice(0,3)}</span>
+                      <div style={{ flex:1, height:2, background:'#263843', position:'relative', borderRadius:1 }}>
                         <div style={{ position:'absolute', left:0, top:0, bottom:0, width:`${pct}%`, background:color, opacity:.6, transition:'width .5s', borderRadius:1 }} />
                       </div>
-                      <span style={{ fontSize:7, color:'#2a3e2e', width:28, textAlign:'right', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>{count.toLocaleString()}</span>
+                      <span style={{ fontSize:7, color:'#7c909a', width:28, textAlign:'right', fontVariantNumeric:'tabular-nums', flexShrink:0 }}>{count.toLocaleString()}</span>
                     </div>
                   )
                 })}
@@ -3375,15 +3377,15 @@ export default function MapView({
               display:'flex', alignItems:'center', gap:5,
               padding:'3px 10px', fontSize:8.5, fontWeight:700,
               letterSpacing:'.14em', textTransform:'uppercase',
-              border:`1px solid ${showOverlays ? '#44aaff55' : '#141e16'}`,
-              background: showOverlays ? 'rgba(68,170,255,0.1)' : 'rgba(8,14,10,0.88)',
-              color: showOverlays ? '#44aaff' : '#4a6a50',
+              border:`1px solid ${showOverlays ? 'rgba(213,168,95,.58)' : '#263843'}`,
+              background: showOverlays ? 'rgba(213,168,95,.10)' : 'rgba(9,16,22,.9)',
+              color: showOverlays ? '#d5a85f' : '#c0cbd0',
               cursor:'pointer', transition:'all .15s', fontFamily:'monospace',
               backdropFilter:'blur(8px)',
             }}
           >
             ◈ OVERLAYS
-            <span style={{ fontSize:7, color: showOverlays ? '#44aaff88' : '#2a3e2e' }}>
+            <span style={{ fontSize:7, color: showOverlays ? '#e5c997' : '#7c909a' }}>
               {Object.values(panelState).filter(Boolean).length}
             </span>
           </button>
@@ -3391,8 +3393,8 @@ export default function MapView({
           {showOverlays && (
             <div style={{
               marginTop:3,
-              background:'rgba(8,14,10,0.96)',
-              border:'1px solid #141e16', borderLeft:'2px solid #44aaff44',
+              background:'rgba(9,16,22,0.97)',
+              border:'1px solid #263843', borderLeft:'2px solid rgba(213,168,95,.58)',
               backdropFilter:'blur(10px)',
               width:200,
               boxShadow:'0 4px 20px rgba(0,0,0,0.7)',
@@ -3430,20 +3432,20 @@ export default function MapView({
                       display:'flex', alignItems:'center', gap:6, width:'100%',
                       padding:'5px 8px', fontSize:8, fontWeight:600,
                       letterSpacing:'.08em', textAlign:'left',
-                      border:'none', borderBottom:'1px solid #0a120c',
+                      border:'none', borderBottom:'1px solid #1c2b35',
                       background: on ? item.color + '0c' : 'transparent',
-                      color: on ? item.color : '#2a3e2e',
+                      color: on ? item.color : '#98aab4',
                       cursor:'pointer', transition:'all .12s', fontFamily:'monospace',
                     }}
-                    onMouseEnter={e => { if (!on) (e.currentTarget as HTMLButtonElement).style.color = '#4a6a50' }}
-                    onMouseLeave={e => { if (!on) (e.currentTarget as HTMLButtonElement).style.color = '#2a3e2e' }}
+                    onMouseEnter={e => { if (!on) (e.currentTarget as HTMLButtonElement).style.color = '#e5ecef' }}
+                    onMouseLeave={e => { if (!on) (e.currentTarget as HTMLButtonElement).style.color = '#98aab4' }}
                   >
                     <span style={{ width:14, textAlign:'center', fontSize:9 }}>{item.icon}</span>
                     <span style={{ flex:1 }}>{item.label}</span>
                     <span style={{
                       width:6, height:6, borderRadius:'50%',
-                      background: on ? item.color : '#1a1a1a',
-                      border: `1px solid ${on ? item.color + '88' : '#2a2a2a'}`,
+                      background: on ? item.color : '#263843',
+                      border: `1px solid ${on ? item.color + '88' : '#31434d'}`,
                       transition:'all .15s',
                     }} />
                   </button>
@@ -3479,13 +3481,13 @@ export default function MapView({
             onClick={() => setShowReticle(v => !v)}
             style={{
               background: showReticle ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
-              border:`1px solid ${showReticle ? reticleColor + '44' : '#1e1e1e'}`,
-              color: showReticle ? reticleColor : '#3a3a3a',
+              border:`1px solid ${showReticle ? reticleColor + '66' : '#31434d'}`,
+              color: showReticle ? reticleColor : '#c0cbd0',
               padding:'3px 8px', fontSize:8, fontFamily:'IBM Plex Mono, monospace',
               fontWeight:500, letterSpacing:'.1em', cursor:'pointer', transition:'all .15s',
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = reticleColor }}
-            onMouseLeave={e => { if (!showReticle) (e.currentTarget as HTMLButtonElement).style.color = '#3a3a3a' }}
+            onMouseLeave={e => { if (!showReticle) (e.currentTarget as HTMLButtonElement).style.color = '#c0cbd0' }}
           >
             RETICLE
           </button>

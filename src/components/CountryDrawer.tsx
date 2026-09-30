@@ -173,7 +173,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     || !!getTradeProfile(country)
 
   return (
-    <div style={{
+    <div className="country-drawer" style={{
       position: 'absolute', top: 16, right: 16, zIndex: 40,
       width: 320, maxHeight: 'calc(100% - 32px)',
       background: 'var(--surface)', border: '1px solid var(--border)',

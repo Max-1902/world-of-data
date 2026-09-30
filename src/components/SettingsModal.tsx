@@ -149,6 +149,7 @@ export default function SettingsModal({ open, onClose, viewMode, onViewMode, pan
 
   return (
     <div
+      className="settings-backdrop"
       onClick={onClose}
       style={{
         position: 'fixed', inset: 0, zIndex: 200,
@@ -158,6 +159,7 @@ export default function SettingsModal({ open, onClose, viewMode, onViewMode, pan
       }}
     >
       <div
+        className="settings-dialog"
         onClick={e => e.stopPropagation()}
         style={{
           width: 720, maxWidth: '95vw', maxHeight: '85vh',
@@ -400,12 +402,12 @@ function DisplayTab({ reticleColor, onReticleColor }: { reticleColor?: string; o
 
       <div style={s.sectionTitle}>Colors</div>
       {[
-        { label: 'Background', value: '#f4f5f7' },
-        { label: 'Surface', value: '#ffffff' },
-        { label: 'Border', value: '#e5e7eb' },
-        { label: 'Text primary', value: '#14161a' },
-        { label: 'Text secondary', value: '#6b7280' },
-        { label: 'Accent', value: '#2563eb' },
+        { label: 'Background', value: '#080e13' },
+        { label: 'Surface', value: '#0d161d' },
+        { label: 'Border', value: '#1c2b35' },
+        { label: 'Text primary', value: '#e5ecef' },
+        { label: 'Text secondary', value: '#98aab4' },
+        { label: 'Accent', value: '#d5a85f' },
       ].map(c => (
         <div key={c.label} style={s.row}>
           <span style={s.label}>{c.label}</span>

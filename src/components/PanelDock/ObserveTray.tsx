@@ -158,6 +158,7 @@ export default function ObserveTray({ ids, crises, flights, panelState, onToggle
 
   return (
     <div
+      className="observe-tray"
       onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragHover(true) }}
       onDragLeave={() => setDragHover(false)}
       onDrop={e => {
