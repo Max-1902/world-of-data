@@ -13,7 +13,7 @@ import {
   StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, InfraIndicatorsPanel, AIAnalystPanel,
   MilitaryInstallationsByCountryPanel, NuclearFacilitiesByCountryPanel, InfrastructureByCountryPanel,
   ResourcesByCountryPanel, TradePartnersByCountryPanel, TradeProductsByCountryPanel,
-  DataCentersPanel,
+  DataCentersPanel, LiveFeedPanel,
   SECTORS,
 } from '../components/panels/PanelContent'
 
@@ -95,6 +95,11 @@ export const PANELS: PanelDef[] = [
     id: 'webcams', title: 'US Webcams', group: 'news',
     dotColor: 'grn', desc: 'SkylineWebcams & EarthCam — live US grid',
     render: () => <USWebcamsPanel />,
+  },
+  {
+    id: 'livefeed', title: 'Live Feed', group: 'news',
+    dotColor: 'red', desc: 'Live news broadcasts — CNN, FOX, NBC, CBS',
+    render: () => <LiveFeedPanel />,
   },
 
   // ── ECONOMY ─────────────────────────────────────────────────────────────────
