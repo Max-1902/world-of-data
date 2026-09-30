@@ -30,6 +30,8 @@ const INDICATORS = {
   'TX.VAL.TECH.MF.ZS':     'High-tech exports (%)',
   'TM.TAX.MRCH.WM.AR.ZS':  'Tariff rate, applied (%)',
   'MS.MIL.XPND.GD.ZS':   'Military spending (% GDP)',
+  'MS.MIL.TOTL.P1':      'Armed forces personnel (total)',
+  'MS.MIL.TOTL.TF.ZS':   'Armed forces personnel (% labor force)',
   'EG.USE.PCAP.KG.OE':    'Energy use (kg oil eq/cap)',
   'SP.DYN.LE00.IN':       'Life expectancy (years)',
   'SE.ADT.LITR.ZS':       'Literacy rate (%)',
@@ -192,8 +194,8 @@ export function formatEconValue(id: IndicatorId, val: number): string {
     if (abs >= 1e3) return `$${(val / 1e3).toFixed(0)}K`
     return `$${val.toFixed(0)}`
   }
-  // Population
-  if (id === 'SP.POP.TOTL') {
+  // Population / personnel counts
+  if (id === 'SP.POP.TOTL' || id === 'MS.MIL.TOTL.P1') {
     if (val >= 1e9) return `${(val / 1e9).toFixed(2)}B`
     if (val >= 1e6) return `${(val / 1e6).toFixed(1)}M`
     if (val >= 1e3) return `${(val / 1e3).toFixed(0)}K`
