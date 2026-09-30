@@ -13,6 +13,17 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // mapbox-gl is the bulk of the bundle and rarely changes; its own chunk stays cached across deploys.
+        manualChunks: (id) => {
+          if (id.includes('node_modules/mapbox-gl')) return 'vendor-mapbox'
+          if (id.includes('node_modules/react')) return 'vendor-react'
+        },
+      },
+    },
+  },
   server: {
     port: 3000,
     proxy: {
