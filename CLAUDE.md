@@ -56,7 +56,7 @@ Before assuming your own edits are broken or reverted, check `git status`/`git d
 
 ## Conventions to follow when extending this repo
 
-- New data source → new file in `services/`, new hook in `hooks/`, new entry in `src/panels/registry.tsx`. Don't bypass the registry with ad-hoc panel wiring.
+- New data source → new file in `services/`, new hook in `hooks/`, new entry in `src/panels/registry.tsx`, and a matching rule in `SOURCE_RULES` (`services/sourceHealth.ts`) so its health shows in the TopBar. Don't bypass the registry with ad-hoc panel wiring. Panels live in `src/components/panels/` (one file per theme or panel) and are lazy-loaded; don't import a panel file from `MapView`/`CountryDrawer`.
 - New map layer → follow the existing `addSource`/`addLayer` pairing pattern in `MapView.tsx`, gate visibility behind a new `PanelState` boolean (`src/types/index.ts`), wire the toggle through `SettingsModal`'s `LAYER_IDS` list.
 - Styling: use the CSS custom properties defined in `src/index.css` (`--surface`, `--text1/2/3`, `--accent`, `--red/amber/green` + `-soft` tints, `--r-sm/md/lg/pill`, `--shadow-sm/md/lg`) rather than hardcoding hex values, so the whole app stays reskinnable from one place.
 - Run `npm run typecheck` **and** `npm test` before considering any change done. Typecheck covers `src/` (browser/Vite types), `api/` (Node/Vercel serverless types) and `tests/` — three different `tsconfig`s. `npm test` (Vitest) runs fully offline in ~2s.

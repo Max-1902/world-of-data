@@ -140,11 +140,14 @@ describe('/api/rss handler', () => {
 describe('allowlist stays in sync with the feeds the app reads', () => {
   const root = path.resolve(__dirname, '../..')
   const read = (p: string) => fs.readFileSync(path.join(root, p), 'utf8')
+  // Panel implementations live in several files under src/components/panels/.
+  const readPanels = () => fs.readdirSync(path.join(root, 'src/components/panels'))
+    .filter(f => f.endsWith('.tsx')).map(f => read(`src/components/panels/${f}`)).join('\n')
 
   it('every RSS feed URL in src/ is on the proxy allowlist', () => {
     const urls = new Set<string>([
       ...[...read('src/services/news.ts').matchAll(/url:\s*'(https?:\/\/[^']+)'/g)].map(m => m[1]),
-      ...[...read('src/components/panels/PanelContent.tsx').matchAll(/fetchRSSFeed\(\s*'(https?:\/\/[^']+)'/g)].map(m => m[1]),
+      ...[...readPanels().matchAll(/fetchRSSFeed\(\s*'(https?:\/\/[^']+)'/g)].map(m => m[1]),
     ])
     expect(urls.size).toBeGreaterThan(50)   // guards against the regexes silently matching nothing
     const missing = [...urls].map(u => new URL(u).hostname).filter(h => !ALLOWED_FEED_HOSTS.has(h))
@@ -152,7 +155,7 @@ describe('allowlist stays in sync with the feeds the app reads', () => {
   })
 
   it('has no stale hosts that no feed uses', () => {
-    const src = read('src/services/news.ts') + read('src/components/panels/PanelContent.tsx')
+    const src = read('src/services/news.ts') + readPanels()
     const unused = [...ALLOWED_FEED_HOSTS].filter(h => !src.includes(`//${h}/`))
     expect(unused).toEqual([])
   })

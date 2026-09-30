@@ -1,38 +1,22 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import type { Flight, CrisisEvent, NewsArticle, MapViewMode } from '../../types'
-import type { FirePoint } from '../../services/wildfires'
-import type { Earthquake } from '../../services/earthquakes'
+import { Flight, CrisisEvent, NewsArticle, MapViewMode } from '../../types'
+import { FirePoint } from '../../services/wildfires'
+import { Earthquake } from '../../services/earthquakes'
 import { MARKET_HUBS } from '../../services/stocks'
-import {
-  MILITARY_FACILITIES, NUCLEAR_PLANTS,
-  FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS,
-} from '../../services/military'
-import {
-  SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2,
-} from '../../services/sanctions'
+import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from '../../services/military'
+import { SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2 } from '../../services/sanctions'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from '../../services/ports'
-import {
-  PIPELINE_COLORS, PIPELINE_LABELS, PIPELINE_ATTRIBUTION, PIPELINE_DETAIL_MIN_ZOOM,
-  fetchTrunkPipelines, fetchPipelineCell, cellsForBounds, type PipelineFeature,
-} from '../../services/pipelines'
-import {
-  detectFlightType, countFlightTypes, headingToCompass,
-  FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS,
-  type FlightType,
-} from '../../utils/flightType'
+import { PIPELINE_COLORS, PIPELINE_LABELS, PIPELINE_ATTRIBUTION, PIPELINE_DETAIL_MIN_ZOOM, fetchTrunkPipelines, fetchPipelineCell, cellsForBounds, type PipelineFeature } from '../../services/pipelines'
+import { countFlightTypes, FLIGHT_TYPE_COLORS, type FlightType } from '../../utils/flightType'
 import { EARTHCAM_CAMERAS, type LiveCamera } from '../../services/earthcam'
-import { registerUSWebcams } from '../panels/PanelContent'
+import { registerUSWebcams } from '../../services/usWebcams'
 import { ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchTopPowerPlants, type InfraPoint } from '../../services/infrastructure'
 import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
 import { FIR_REGIONS, analyzeAirspace } from '../../services/notam'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../services/aisstream'
-import {
-  OIL_GAS_DATA, getMaxValue, formatValue, getRegionTotals,
-  METRIC_COLORS, METRIC_LABELS,
-  type OilGasMetric,
-} from '../../services/oilgas'
+import { OIL_GAS_DATA, getMaxValue, formatValue, getRegionTotals, METRIC_COLORS, METRIC_LABELS, type OilGasMetric } from '../../services/oilgas'
 import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from '../../services/gpsjam'
 import { CHOKEPOINTS, CHOKEPOINT_COLORS, SHIPPING_LANE_LABEL_IDS } from '../../services/chokepoints'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../services/supplychain'
@@ -41,109 +25,19 @@ import { RESOURCE_PROFILES, fetchResourceRents } from '../../services/resources'
 import { fetchMilitaryPersonnelRanking, type MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
 import { fetchInfraIndicatorRanking, type CountryInfraEntry } from '../../services/infraIndicators'
 import { TRADE_PROFILES } from '../../services/tradeStats'
-import {
-  UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS,
-  CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS,
-  REFUGEE_FLOWS, COUNTRY_DISPLACEMENT,
-} from '../../services/unhcr'
+import { UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS, REFUGEE_FLOWS, COUNTRY_DISPLACEMENT } from '../../services/unhcr'
+import { CANVAS_FILTERS, VISION_OVERLAYS } from './viewModes'
+import { ALL_TYPES, destinationPoint, buildFlightGeoJSON, aircraftCache, fetchAircraftMeta, buildFlightHTML, addAirplaneImage } from './flightLayer'
+import { addVesselImages } from './vesselImages'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
-
-// ── Vision mode CSS canvas filters ──────────────────────────────────────────
-// Pure CSS filters work reliably on WebGL canvases (SVG url() filters do NOT
-// render properly on <canvas> in most browsers — they produce blank/broken output).
-// The distinctive look of each mode comes from the filter + colored overlays.
-const CANVAS_FILTERS: Partial<Record<MapViewMode, string>> = {
-  dark:        'brightness(0.35) contrast(1.4) saturate(0.3)',
-  nightvision: 'brightness(0.75) contrast(1.7) saturate(0)',
-  bw:          'grayscale(100%) contrast(1.3) brightness(0.95)',
-  infrared:    'brightness(1.15) contrast(1.5) saturate(0) invert(1)',
-  snow:        'brightness(1.5) contrast(1.15) saturate(0.25) sepia(0.08)',
-  thermal:     'brightness(0.9) contrast(1.7) saturate(0)',
-  // Crisp, high-clarity satellite-imagery look — punchier than the neutral globe default
-  satellite:   'brightness(1.05) contrast(1.25) saturate(1.3)',
-  // Flattened, cartographic look — desaturated and brightened to read like a vector road map
-  standard:    'brightness(1.2) contrast(0.92) saturate(0.35)',
-}
-
-// Overlay configs per mode — multiple overlay layers for realistic look
-interface VisionOverlay {
-  layers: {
-    background?: string
-    mixBlendMode?: string
-    opacity?: number
-    boxShadow?: string
-  }[]
-  scanlines?: boolean
-  noise?: { opacity: number; blend: string }
-}
-const VISION_OVERLAYS: Partial<Record<MapViewMode, VisionOverlay>> = {
-  nightvision: {
-    layers: [
-      // P43 phosphor green tint
-      { background: 'rgba(0,255,16,0.2)', mixBlendMode: 'multiply', opacity: 1 },
-      // Green color cast
-      { background: 'rgba(0,200,0,0.25)', mixBlendMode: 'color', opacity: 1 },
-      // Tube vignette — softer so center stays readable
-      { background: 'radial-gradient(circle at center, transparent 45%, rgba(0,6,0,0.3) 65%, rgba(0,2,0,0.6) 85%, rgba(0,0,0,0.85) 100%)' },
-      { boxShadow: 'inset 0 0 120px 30px rgba(0,0,0,0.5)' },
-    ],
-    scanlines: true,
-    noise: { opacity: 0.05, blend: 'overlay' },
-  },
-  infrared: {
-    layers: [
-      // Warm amber on bright (hot) regions
-      { background: 'rgba(255,190,100,0.1)', mixBlendMode: 'screen', opacity: 1 },
-      // Light cool blue in shadows
-      { background: 'linear-gradient(180deg, rgba(0,15,50,0.08) 0%, rgba(0,8,30,0.12) 100%)', mixBlendMode: 'multiply', opacity: 1 },
-      // Gentle sensor vignette
-      { background: 'radial-gradient(circle at center, transparent 55%, rgba(0,0,0,0.3) 85%, rgba(0,0,0,0.55) 100%)' },
-      { boxShadow: 'inset 0 0 80px 20px rgba(0,0,0,0.35)' },
-    ],
-    noise: { opacity: 0.03, blend: 'overlay' },
-  },
-  thermal: {
-    layers: [
-      // Iron palette: violet/blue shadows → red/orange mids → yellow peaks
-      { background: 'linear-gradient(180deg, rgba(80,0,180,0.15) 0%, rgba(20,0,80,0.18) 100%)', mixBlendMode: 'screen', opacity: 1 },
-      // Red/orange color cast
-      { background: 'rgba(255,50,0,0.15)', mixBlendMode: 'color', opacity: 1 },
-      // Yellow center hotspot
-      { background: 'radial-gradient(ellipse at 50% 45%, rgba(255,240,0,0.07) 0%, transparent 50%)', mixBlendMode: 'screen', opacity: 1 },
-      // Moderate vignette
-      { background: 'radial-gradient(circle at center, transparent 50%, rgba(0,0,10,0.35) 80%, rgba(0,0,0,0.6) 100%)' },
-      { boxShadow: 'inset 0 0 100px 25px rgba(0,0,10,0.4)' },
-    ],
-    noise: { opacity: 0.04, blend: 'overlay' },
-  },
-  snow: {
-    layers: [
-      // Light blue-white wash
-      { background: 'rgba(210,230,255,0.15)', mixBlendMode: 'screen', opacity: 1 },
-      // Subtle desaturation so markers pop
-      { background: 'rgba(230,238,250,0.1)', mixBlendMode: 'saturation', opacity: 1 },
-      // Very light edge shading
-      { background: 'radial-gradient(circle at center, transparent 65%, rgba(160,180,210,0.12) 90%, rgba(120,140,180,0.2) 100%)' },
-      { boxShadow: 'inset 0 0 60px 15px rgba(180,200,230,0.1)' },
-    ],
-  },
-  dark: {
-    layers: [
-      // Moderate vignette — keep center bright enough to read
-      { background: 'radial-gradient(circle at center, transparent 45%, rgba(0,0,0,0.35) 75%, rgba(0,0,0,0.6) 100%)' },
-      { boxShadow: 'inset 0 0 100px 30px rgba(0,0,0,0.4)' },
-    ],
-  },
-}
 
 const CRISIS_COLORS: Record<string, string> = {
   war:'#ff1a2e', conflict:'#ff6600', terrorism:'#cc0033',
   protest:'#ffcc00', political:'#aa44ff', disaster:'#ff8800',
 }
-const SEV_SIZE: Record<string, number> = { critical: 16, high: 11, medium: 8, low: 5 }
 
-const ALL_TYPES: FlightType[] = ['passenger', 'cargo', 'military', 'private', 'unknown']
+const SEV_SIZE: Record<string, number> = { critical: 16, high: 11, medium: 8, low: 5 }
 
 interface Props {
   viewMode:      MapViewMode
@@ -191,346 +85,6 @@ interface Props {
   reticleColor?:      string
   panelState?:        import('../../types').PanelState
   onToggleLayer?:     (id: keyof import('../../types').PanelState) => void
-}
-
-// ── Geodesic destination point: given [lng,lat], bearing (deg), distance (km) ──
-function destinationPoint(lng: number, lat: number, bearingDeg: number, distKm: number): [number, number] {
-  const R = 6371
-  const brng = (bearingDeg * Math.PI) / 180
-  const lat1 = (lat * Math.PI) / 180
-  const lon1 = (lng * Math.PI) / 180
-  const dR = distKm / R
-  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(dR) + Math.cos(lat1) * Math.sin(dR) * Math.cos(brng))
-  const lon2 = lon1 + Math.atan2(
-    Math.sin(brng) * Math.sin(dR) * Math.cos(lat1),
-    Math.cos(dR) - Math.sin(lat1) * Math.sin(lat2),
-  )
-  return [(lon2 * 180) / Math.PI, (lat2 * 180) / Math.PI]
-}
-
-// ── Build GeoJSON for all (optionally filtered) flights ──────────────────────
-function buildFlightGeoJSON(
-  flights: Flight[],
-  query   = '',
-  types:    Set<FlightType> = new Set(ALL_TYPES),
-  visible = true,
-): GeoJSON.FeatureCollection {
-  if (!visible) return { type: 'FeatureCollection', features: [] }
-  const q = query.toLowerCase().trim()
-  const features: GeoJSON.Feature[] = []
-  for (const f of flights) {
-    if (f.latitude === null || f.longitude === null) continue
-    const type = detectFlightType(f.callsign || '', f.icao24 || '')
-    if (!types.has(type)) continue
-    if (q) {
-      const cs      = (f.callsign      || '').toLowerCase()
-      const country = (f.origin_country|| '').toLowerCase()
-      const icao    = (f.icao24        || '').toLowerCase()
-      if (!cs.includes(q) && !country.includes(q) && !icao.includes(q)) continue
-    }
-    features.push({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: [f.longitude, f.latitude] },
-      properties: {
-        callsign:  (f.callsign || f.icao24 || '').trim(),
-        icao24:     f.icao24,
-        country:    f.origin_country,
-        altitude:   f.altitude,
-        velocity:   f.velocity,
-        heading:    f.heading ?? 0,
-        on_ground:  f.on_ground,
-        flightType: type,
-      },
-    })
-  }
-  return { type: 'FeatureCollection', features }
-}
-
-// ── Aircraft metadata cache (hexdb.io + planespotters.net) ───────────────────
-interface AircraftMeta {
-  registration?: string
-  manufacturer?: string
-  type?: string
-  icaoType?: string
-  owner?: string
-  operator?: string
-  photoUrl?: string
-  photographer?: string
-}
-const aircraftCache = new Map<string, AircraftMeta>()
-
-async function fetchAircraftMeta(icao24: string): Promise<AircraftMeta> {
-  const cached = aircraftCache.get(icao24)
-  if (cached) return cached
-
-  const meta: AircraftMeta = {}
-
-  // Fetch aircraft database + photo in parallel
-  const [dbRes, photoRes] = await Promise.allSettled([
-    fetch(`/api/hexdb/api/v1/aircraft/${icao24}`, { signal: AbortSignal.timeout(5000) }),
-    fetch(`/api/planespotters/pub/photos/hex/${icao24}`, { signal: AbortSignal.timeout(5000) }),
-  ])
-
-  if (dbRes.status === 'fulfilled' && dbRes.value.ok) {
-    const db = await dbRes.value.json()
-    meta.registration = db.Registration || undefined
-    meta.manufacturer = db.Manufacturer || undefined
-    meta.type = db.Type || undefined
-    meta.icaoType = db.ICAOTypeCode || undefined
-    meta.owner = db.RegisteredOwners || undefined
-    meta.operator = db.OperatorFlagCode || undefined
-  }
-
-  if (photoRes.status === 'fulfilled' && photoRes.value.ok) {
-    const pd = await photoRes.value.json()
-    const photo = pd.photos?.[0]
-    if (photo) {
-      meta.photoUrl = photo.thumbnail_large?.src || photo.thumbnail?.src || undefined
-      meta.photographer = photo.photographer || undefined
-    }
-  }
-
-  aircraftCache.set(icao24, meta)
-  return meta
-}
-
-// ── Flight popup HTML ────────────────────────────────────────────────────────
-function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta): string {
-  const cs        = String(p.callsign || p.icao24 || 'UNKNOWN')
-  const type      = String(p.flightType || 'unknown') as FlightType
-  const typeColor = FLIGHT_TYPE_COLORS[type] || '#888'
-  const typeLabel = FLIGHT_TYPE_LABELS[type] || type.toUpperCase()
-
-  const altM   = p.altitude ? Math.round(Number(p.altitude)) : null
-  const altFt  = altM ? Math.round(altM * 3.28084) : null
-  const spdKmh = p.velocity ? Math.round(Number(p.velocity) * 3.6) : null
-  const spdKts = p.velocity ? Math.round(Number(p.velocity) * 1.944) : null
-  const hdg    = p.heading != null ? `${Math.round(Number(p.heading))}° ${headingToCompass(Number(p.heading))}` : '—'
-  const status = p.on_ground ? 'ON GROUND' : 'AIRBORNE'
-  const statusColor = p.on_ground ? '#d97706' : '#16a34a'
-
-  const row = (label: string, val: string) =>
-    `<tr><td style="color:#6b7280;font-size:10px;letter-spacing:.1em;padding:2px 8px 2px 0;text-transform:uppercase;white-space:nowrap;">${label}</td><td style="color:#14161a;text-align:right;">${val}</td></tr>`
-
-  // Aircraft info section (from hexdb)
-  let aircraftSection = ''
-  if (meta) {
-    const parts: string[] = []
-    if (meta.type || meta.icaoType) {
-      const label = meta.type || meta.icaoType || ''
-      parts.push(`<span style="color:#14161a;font-size:11px;font-weight:600;">${label}</span>`)
-    }
-    if (meta.manufacturer) {
-      parts.push(`<span style="color:#6b7280;font-size:10px;letter-spacing:.05em;">${meta.manufacturer}</span>`)
-    }
-    if (meta.owner) {
-      parts.push(`<span style="color:#16a34a;font-size:10px;">${meta.owner}</span>`)
-    }
-    if (meta.registration) {
-      parts.push(`<span style="color:#6b7280;font-size:10px;letter-spacing:.06em;">${meta.registration}</span>`)
-    }
-    if (parts.length) {
-      aircraftSection = `<div style="display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid #e5e7eb;margin-bottom:4px;">${parts.join('')}</div>`
-    }
-  }
-
-  // Photo section
-  let photoSection = ''
-  if (meta?.photoUrl) {
-    photoSection = `
-      <div style="margin-top:6px;border-top:1px solid #e5e7eb;padding-top:6px;">
-        <img src="${meta.photoUrl}" style="width:100%;height:auto;display:block;border:1px solid #e5e7eb;opacity:0.96;" onerror="this.style.display='none'" />
-        ${meta.photographer ? `<div style="font-size:9px;color:#9ca3af;letter-spacing:.06em;margin-top:2px;text-align:right;">photo: ${meta.photographer}</div>` : ''}
-      </div>`
-  }
-
-  // Loading indicator when meta hasn't arrived yet
-  const loadingSection = meta === undefined
-    ? `<div id="flight-meta-loading" style="padding:4px 0;font-size:10px;color:#9ca3af;letter-spacing:.1em;text-align:center;">LOADING AIRCRAFT DATA…</div>`
-    : ''
-
-  return `
-    <div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:280px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #e5e7eb;">
-        <span style="font-size:15px;font-weight:800;color:#14161a;letter-spacing:.06em;font-family:monospace;">${cs}</span>
-        <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${typeColor};border:1px solid ${typeColor}55;padding:1px 6px;">${typeLabel.toUpperCase()}</span>
-      </div>
-      ${aircraftSection}
-      ${loadingSection}
-      <table style="width:100%;border-collapse:collapse;font-size:11px;">
-        ${row('ICAO24',    String(p.icao24    || '—'))}
-        ${row('COUNTRY',   String(p.country   || '—'))}
-        ${row('ALTITUDE',  altM  ? `${altM.toLocaleString()} m / ${altFt!.toLocaleString()} ft` : '—')}
-        ${row('SPEED',     spdKmh? `${spdKmh} km/h / ${spdKts} kts` : '—')}
-        ${row('HEADING',   hdg)}
-        ${row('STATUS',    `<span style="color:${statusColor};font-weight:700;">● ${status}</span>`)}
-      </table>
-      ${photoSection}
-    </div>`
-}
-
-// ── Airplane SDF icon (allows icon-color per feature) ───────────────────────
-function addAirplaneImage(map: mapboxgl.Map) {
-  const size = 28
-  const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = size
-  const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, size, size)
-  ctx.fillStyle = '#fff'
-  // Airplane silhouette pointing up (north)
-  ctx.beginPath()
-  ctx.moveTo(14, 1);   ctx.lineTo(16, 9)
-  ctx.lineTo(26, 14);  ctx.lineTo(16, 17)
-  ctx.lineTo(16, 22);  ctx.lineTo(18, 26)
-  ctx.lineTo(14, 24);  ctx.lineTo(10, 26)
-  ctx.lineTo(12, 22);  ctx.lineTo(12, 17)
-  ctx.lineTo(2,  14);  ctx.lineTo(12, 9)
-  ctx.closePath()
-  ctx.fill()
-  map.addImage('airplane-sdf', ctx.getImageData(0, 0, size, size), { sdf: true })
-}
-
-// ── Vessel SDF icons — one per vessel type, sized small→large ────────────────
-function addVesselImages(map: mapboxgl.Map) {
-  // Helper: create SDF image from a drawing function
-  function makeSDF(name: string, size: number, draw: (ctx: CanvasRenderingContext2D, s: number) => void) {
-    const canvas = document.createElement('canvas')
-    canvas.width = canvas.height = size
-    const ctx = canvas.getContext('2d')!
-    ctx.fillStyle = '#000'
-    ctx.fillRect(0, 0, size, size)
-    ctx.fillStyle = '#fff'
-    draw(ctx, size)
-    map.addImage(name, ctx.getImageData(0, 0, size, size), { sdf: true })
-  }
-
-  // Cargo — large boxy freighter (28px)
-  makeSDF('vessel-cargo', 28, (ctx, s) => {
-    ctx.beginPath()
-    ctx.moveTo(14, 1)    // bow
-    ctx.lineTo(21, 7)
-    ctx.lineTo(22, 22)
-    ctx.lineTo(20, 26)
-    ctx.lineTo(8, 26)
-    ctx.lineTo(6, 22)
-    ctx.lineTo(7, 7)
-    ctx.closePath()
-    ctx.fill()
-    // Containers on deck
-    ctx.fillRect(9, 10, 10, 3)
-    ctx.fillRect(9, 14, 10, 3)
-    ctx.fillRect(9, 18, 10, 3)
-    // Bridge
-    ctx.fillRect(10, 22, 8, 3)
-  })
-
-  // Tanker — long hull with rounded bow (28px)
-  makeSDF('vessel-tanker', 28, (ctx) => {
-    ctx.beginPath()
-    ctx.moveTo(14, 1)
-    ctx.lineTo(20, 6)
-    ctx.lineTo(21, 24)
-    ctx.lineTo(18, 27)
-    ctx.lineTo(10, 27)
-    ctx.lineTo(7, 24)
-    ctx.lineTo(8, 6)
-    ctx.closePath()
-    ctx.fill()
-    // Deck pipes
-    ctx.fillRect(12, 8, 4, 14)
-    // Bridge at stern
-    ctx.fillRect(10, 23, 8, 3)
-  })
-
-  // Passenger — cruise ship with multiple decks (26px)
-  makeSDF('vessel-passenger', 26, (ctx) => {
-    ctx.beginPath()
-    ctx.moveTo(13, 1)
-    ctx.lineTo(19, 6)
-    ctx.lineTo(20, 20)
-    ctx.lineTo(18, 24)
-    ctx.lineTo(8, 24)
-    ctx.lineTo(6, 20)
-    ctx.lineTo(7, 6)
-    ctx.closePath()
-    ctx.fill()
-    // Multiple deck lines
-    ctx.clearRect(8, 9, 10, 1)
-    ctx.clearRect(8, 13, 10, 1)
-    ctx.clearRect(8, 17, 10, 1)
-    // Funnel
-    ctx.fillRect(11, 2, 4, 4)
-  })
-
-  // Fishing — small boat with mast (20px)
-  makeSDF('vessel-fishing', 20, (ctx) => {
-    ctx.beginPath()
-    ctx.moveTo(10, 2)   // bow
-    ctx.lineTo(15, 6)
-    ctx.lineTo(16, 15)
-    ctx.lineTo(14, 18)
-    ctx.lineTo(6, 18)
-    ctx.lineTo(4, 15)
-    ctx.lineTo(5, 6)
-    ctx.closePath()
-    ctx.fill()
-    // Mast/boom
-    ctx.fillRect(9, 3, 2, 10)
-    // Outrigger lines
-    ctx.fillRect(5, 7, 10, 1)
-  })
-
-  // Military — sleek warship (26px)
-  makeSDF('vessel-military', 26, (ctx) => {
-    ctx.beginPath()
-    ctx.moveTo(13, 0)   // sharp bow
-    ctx.lineTo(18, 7)
-    ctx.lineTo(19, 20)
-    ctx.lineTo(17, 24)
-    ctx.lineTo(9, 24)
-    ctx.lineTo(7, 20)
-    ctx.lineTo(8, 7)
-    ctx.closePath()
-    ctx.fill()
-    // Superstructure
-    ctx.fillRect(10, 10, 6, 6)
-    // Forward gun
-    ctx.fillRect(12, 4, 2, 5)
-    // Radar mast
-    ctx.fillRect(12, 8, 2, 2)
-  })
-
-  // Tug — small stubby vessel (18px)
-  makeSDF('vessel-tug', 18, (ctx) => {
-    ctx.beginPath()
-    ctx.moveTo(9, 2)    // bow
-    ctx.lineTo(14, 5)
-    ctx.lineTo(14, 14)
-    ctx.lineTo(12, 16)
-    ctx.lineTo(6, 16)
-    ctx.lineTo(4, 14)
-    ctx.lineTo(4, 5)
-    ctx.closePath()
-    ctx.fill()
-    // Wheelhouse
-    ctx.fillRect(6, 6, 6, 5)
-  })
-
-  // Other — generic small boat (20px)
-  makeSDF('vessel-other', 20, (ctx) => {
-    ctx.beginPath()
-    ctx.moveTo(10, 2)
-    ctx.lineTo(15, 6)
-    ctx.lineTo(15, 16)
-    ctx.lineTo(13, 18)
-    ctx.lineTo(7, 18)
-    ctx.lineTo(5, 16)
-    ctx.lineTo(5, 6)
-    ctx.closePath()
-    ctx.fill()
-    ctx.fillRect(8, 8, 4, 4)
-  })
 }
 
 export default function MapView({
@@ -3690,7 +3244,7 @@ export default function MapView({
         container.querySelectorAll('.sv-vision-overlay, .sv-scanlines, .sv-noise').forEach(el => el.remove())
       }
     }
-  }, [viewMode])
+  }, [viewMode, mapReady])
 
   // ── Crisis / earthquake markers ───────────────────────────────────────────
   const buildCrisisMarkers = useCallback(() => {
