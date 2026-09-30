@@ -1,4 +1,4 @@
-import type { CrisisEvent, Flight } from '../types'
+import type { CrisisEvent, Flight, NewsArticle } from '../types'
 
 export interface TrajectoryEntry {
   country: string
@@ -10,6 +10,7 @@ export interface TrajectoryEntry {
   recentCount: number
   priorCount: number
   reason: string
+  newsHit?: string
 }
 
 const SEV_WEIGHT: Record<CrisisEvent['severity'], number> = {
@@ -25,18 +26,35 @@ function parseDate(d: string): number {
   return Number.isNaN(t) ? Date.now() : t
 }
 
-function reasonFor(country: string, recentCount: number, priorCount: number, delta: number, flightBoost: boolean): string {
+function reasonFor(country: string, recentCount: number, priorCount: number, delta: number, flightBoost: boolean, newsHit: boolean): string {
+  const suffix = [flightBoost && 'elevated air traffic nearby', newsHit && 'hot in recent news']
+    .filter(Boolean).join('; ')
   if (delta > 0) {
     const base = priorCount === 0
       ? `${recentCount} new event${recentCount === 1 ? '' : 's'} in 72h, no prior activity`
       : `${recentCount} events in 72h, up from ${priorCount} in the prior week`
-    return flightBoost ? `${base}; elevated air traffic nearby` : base
+    return suffix ? `${base}; ${suffix}` : base
   }
   const plural = (n: number) => n === 1 ? 'event' : 'events'
   if (delta < 0) {
-    return `${recentCount} ${plural(recentCount)} in 72h, down from ${priorCount} in the prior week`
+    const base = `${recentCount} ${plural(recentCount)} in 72h, down from ${priorCount} in the prior week`
+    return suffix ? `${base}; ${suffix}` : base
   }
-  return `Steady at ~${recentCount} ${plural(recentCount)} in 72h`
+  const base = `Steady at ~${recentCount} ${plural(recentCount)} in 72h`
+  return suffix ? `${base}; ${suffix}` : base
+}
+
+const RECENT_NEWS_WINDOW_MS = 48 * 60 * 60 * 1000  // last 48h
+
+function findNewsHit(country: string, articles: NewsArticle[]): NewsArticle | undefined {
+  const lc = country.toLowerCase()
+  const now = Date.now()
+  return articles.find(a => {
+    const t = Date.parse(a.publishedAt)
+    if (!Number.isNaN(t) && now - t > RECENT_NEWS_WINDOW_MS) return false
+    const text = `${a.title} ${a.description}`.toLowerCase()
+    return text.includes(lc)
+  })
 }
 
 /**
@@ -44,7 +62,7 @@ function reasonFor(country: string, recentCount: number, priorCount: number, del
  * last 3 days against the 4–10 day-prior window (using each event's own date),
  * ranking the fastest-rising regions. Pure function, no network calls.
  */
-export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], limit = 6): TrajectoryEntry[] {
+export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], limit = 6, articles: NewsArticle[] = []): TrajectoryEntry[] {
   const now = Date.now()
   const byCountry: Record<string, { recent: CrisisEvent[]; prior: CrisisEvent[] }> = {}
 
@@ -78,9 +96,13 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
         )).length
       : 0
     const flightBoost = nearbyFlights > 15
-    const adjustedDelta = flightBoost ? delta + 2 : delta
 
-    const maxPossible = Math.max(recentScore, priorScore, 1) + (flightBoost ? 2 : 0)
+    // Cross-check: is this country mentioned in recent (48h) news coverage?
+    const newsHit = findNewsHit(country, articles)
+
+    const adjustedDelta = delta + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)
+
+    const maxPossible = Math.max(recentScore, priorScore, 1) + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)
     const velocity = Math.max(0, Math.min(100, Math.round((adjustedDelta / maxPossible) * 50 + 50)))
 
     return {
@@ -91,7 +113,8 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
       velocity,
       recentCount: recent.length,
       priorCount: prior.length,
-      reason: reasonFor(country, recent.length, prior.length, adjustedDelta, flightBoost),
+      reason: reasonFor(country, recent.length, prior.length, adjustedDelta, flightBoost, !!newsHit),
+      newsHit: newsHit?.title,
     }
   })
 

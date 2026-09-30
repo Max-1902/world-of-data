@@ -233,7 +233,7 @@ export default function App() {
               onFlyTo={handleGeoSearch}
             />
           )}
-          <OutlookCard crises={crises} flights={flights} onOpen={() => setActiveGroup('analysis')} />
+          <OutlookCard crises={crises} flights={flights} articles={articles} onSelectCountry={setSelectedCountry} />
           <SettingsModal
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
