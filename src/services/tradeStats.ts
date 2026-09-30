@@ -811,7 +811,8 @@ export function getTradeProfile(countryName: string): TradeProfile | null {
   if (iso) return PROFILE_MAP.get(iso) ?? null
   // ISO2 match
   if (/^[A-Z]{2}$/.test(countryName)) return PROFILE_MAP.get(countryName) ?? null
-  // Partial match
+  // Partial match — blank/very short input would otherwise be a substring of every name
+  if (lc.length < 3) return null
   for (const [name, code] of Object.entries(NAME_TO_ISO2)) {
     if (lc.includes(name) || name.includes(lc)) return PROFILE_MAP.get(code) ?? null
   }

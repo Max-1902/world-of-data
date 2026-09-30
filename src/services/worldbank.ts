@@ -104,7 +104,8 @@ export function resolveISO2(countryName: string): string | null {
   if (NAME_TO_ISO2[lc]) return NAME_TO_ISO2[lc]
   // 2-letter code already
   if (/^[A-Z]{2}$/.test(countryName)) return countryName
-  // Partial match
+  // Partial match — blank/very short input would otherwise be a substring of every name
+  if (lc.length < 3) return null
   for (const [name, code] of Object.entries(NAME_TO_ISO2)) {
     if (lc.includes(name) || name.includes(lc)) return code
   }

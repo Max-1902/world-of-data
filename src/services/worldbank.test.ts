@@ -19,10 +19,7 @@ describe('resolveISO2', () => {
     expect(resolveISO2('Atlantis')).toBeNull()
   })
 
-  // KNOWN BUG: the partial-match fallback does `name.includes(lc)`, and every string
-  // includes ''. Blank or very short input therefore resolves to an arbitrary country
-  // ('' and ' ' -> 'AF', 'a' -> 'AF'). Remove `.fails` once resolveISO2 guards against it.
-  it.fails('returns null for blank input instead of matching an arbitrary country', () => {
+  it('returns null for blank input instead of matching an arbitrary country', () => {
     expect(resolveISO2('')).toBeNull()
     expect(resolveISO2('   ')).toBeNull()
   })

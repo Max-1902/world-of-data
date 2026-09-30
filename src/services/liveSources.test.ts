@@ -259,11 +259,7 @@ describe('power plants (WRI GPPD)', () => {
     await expect(fetchTopPowerPlants()).rejects.toThrow('GPPD HTTP 500')
   })
 
-  // KNOWN BUG: fetchGppd() never clears `gppdPromise` when the download rejects (unlike
-  // datacenters.ts / militaryPersonnel.ts, which reset their in-flight promise in `finally`),
-  // so one transient failure makes every later call re-throw until the page is reloaded.
-  // Remove `.fails` once the rejected promise is cleared.
-  it.fails('recovers on a later call after a failed download', async () => {
+  it('recovers on a later call after a failed download', async () => {
     const { fetchTopPowerPlants } = await loadMod()
     mockFetch(() => textResponse('', { status: 500 }))
     await expect(fetchTopPowerPlants()).rejects.toThrow('GPPD HTTP 500')
