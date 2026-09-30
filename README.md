@@ -59,12 +59,10 @@ Each data source follows the same shape: a `services/*.ts` client, a `hooks/use*
 ```bash
 npm install
 cp .env.example .env   # fill in API keys — see below
-npx vercel dev          # serves Vite + the /api/* serverless functions together
+npm run dev            # Vite + the /api/*.ts functions (dev plugin reads server-only keys from .env)
 ```
 
-Requires Node 18+. Open the printed local URL (defaults to `localhost:3000`). The first `vercel dev` run may ask you to link the directory to a Vercel project (or run without deploying) — either is fine for local dev.
-
-Run `vercel dev` directly rather than through an npm script — Vercel's CLI refuses to run if `package.json`'s own `dev` script also invokes `vercel dev` (recursive-invocation guard), so `npm run dev` intentionally stays plain Vite. If you only need the map/panels and don't need the server-proxied sources (market data, news via Guardian/NYT, AI Analyst, conflict data, flight tracking), `npm run dev` is enough on its own.
+Requires Node 18+. Open the printed local URL (defaults to `localhost:3000`). `npm run dev` serves the `api/*.ts` functions itself via `vite.api-dev.ts`, so flights (OpenSky), conflict data (ACLED), markets, Guardian/NYT news and the AI Analyst all work locally with no Vercel account. `npx vercel dev` still works if you want to mimic production exactly (it intercepts `/api/*` before it reaches Vite; it may ask to link a Vercel project — running without deploying is fine).
 
 ### API keys
 

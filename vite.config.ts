@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
+import { apiDevPlugin } from './vite.api-dev'
 
-// Local dev: run `vercel dev` instead of `vite` directly so the /api/* serverless
-// functions (which hold the real provider keys server-side) run alongside Vite.
-// `vercel dev` reads the same .env file and proxies non-API requests to this
-// Vite server automatically — see README "Running it locally".
+// Local dev: `npm run dev` serves the /api/*.ts functions itself via apiDevPlugin
+// (vite.api-dev.ts), reading server-only keys from .env — no Vercel CLI needed.
+// `vercel dev` still works too; it intercepts /api/* before it reaches Vite.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), apiDevPlugin()],
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -47,8 +47,8 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api\/gdelt/, '/api'),
       },
       // opensky / acled / finnhub / guardian / nyt / openrouter are NOT proxied
-      // here — they require a real key injected server-side and are served by
-      // the /api/*.ts serverless functions (run via `vercel dev`, not `vite`).
+      // here — they need a key injected server-side, so they're served by the
+      // /api/*.ts functions (apiDevPlugin locally, Vercel in production).
     },
   },
 })
