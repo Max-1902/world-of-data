@@ -3,7 +3,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  const path = Array.isArray(req.query.path) ? req.query.path.join('/') : ''
+  // `vercel dev`'s local (unlinked) mode puts the catch-all segment under the
+  // literal key "...path" instead of "path" (production doesn't) — read both.
+  const rawPath = req.query.path ?? req.query['...path']
+  const path = Array.isArray(rawPath) ? rawPath.join('/') : (rawPath ?? '')
   const query = req.url?.split('?')[1]
   const url = `https://acleddata.com/api/acled/${path}${query ? `?${query}` : ''}`
 
