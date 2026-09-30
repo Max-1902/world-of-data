@@ -50,10 +50,7 @@ describe('trade profile lookup', () => {
   it('every profile is reachable via its ISO2 code', () => {
     for (const p of TRADE_PROFILES) expect(getTradeProfile(p.iso2)?.iso2, p.name).toBe(p.iso2)
   })
-  // KNOWN BUG (same root cause as resolveISO2 in worldbank.ts): the partial-match fallback treats
-  // '' / very short input as a substring of every name, so blank input returns the first match
-  // (the United States). Remove `.fails` once getTradeProfile guards against it.
-  it.fails('returns null for blank input instead of an arbitrary profile', () => {
+  it('returns null for blank input instead of an arbitrary profile', () => {
     expect(getTradeProfile('')).toBeNull()
     expect(getTradeProfile('   ')).toBeNull()
   })

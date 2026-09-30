@@ -253,6 +253,8 @@ async function fetchGppd(): Promise<PowerPlantRow[]> {
     gppdRows = rows
     return rows
   })()
+  // Clear a rejected download so a later call can retry instead of re-throwing forever.
+  gppdPromise.catch(() => { gppdPromise = null })
   return gppdPromise
 }
 

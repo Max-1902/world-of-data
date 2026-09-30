@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import type { CrisisEvent, PanelState, Flight } from '../../types'
 import { PANEL_MAP } from '../../panels/registry'
 import type { PanelProps } from '../../panels/types'
+import ErrorBoundary from '../ErrorBoundary'
 
 const MAX_SLOTS = 6
 const MIN_H     = 80
@@ -147,7 +148,7 @@ export default function ObserveTray({ ids, crises, flights, panelState, onToggle
           </button>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-          {def.render(panelProps)}
+          <ErrorBoundary label={def.title}>{def.render(panelProps)}</ErrorBoundary>
         </div>
       </div>
     )

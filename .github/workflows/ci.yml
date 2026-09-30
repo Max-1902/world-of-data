@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Covers src/ (browser), api/ (Node/Vercel) and tests/ — three separate tsconfigs.
+      - run: npm run typecheck
+      # Hermetic: any unmocked fetch throws, so no network or secrets are needed.
+      - run: npm test
+      - run: npm run build
