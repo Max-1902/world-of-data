@@ -120,8 +120,12 @@ html, body, #root {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   transition: background 0.12s, color 0.12s;
-  white-space: nowrap;
   overflow: hidden;
+}
+.sidebar-item .sidebar-label {
+  white-space: normal;
+  line-height: 1.25;
+  word-break: break-word;
 }
 .sidebar-item:hover { background: var(--surface2); color: var(--text1); }
 .sidebar-item.active { background: var(--accent-soft); color: var(--accent); }
