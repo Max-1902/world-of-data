@@ -13,7 +13,7 @@ import {
   StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, InfraIndicatorsPanel, AIAnalystPanel,
   MilitaryInstallationsByCountryPanel, NuclearFacilitiesByCountryPanel, InfrastructureByCountryPanel,
   ResourcesByCountryPanel, TradePartnersByCountryPanel, TradeProductsByCountryPanel,
-  DataCentersPanel, LiveFeedPanel,
+  DataCentersPanel, LiveFeedPanel, OwidPanel,
   SECTORS,
 } from '../components/panels/PanelContent'
 
@@ -127,6 +127,11 @@ export const PANELS: PanelDef[] = [
     id: 'infraIndicators', title: 'Infra Access', group: 'security',
     dotColor: 'blue', desc: 'Electricity, internet, water/sanitation access by country (World Bank)',
     render: (p) => <InfraIndicatorsPanel onCountryClick={p.onCountryClick} />,
+  },
+  {
+    id: 'owid', title: 'Global Trends', group: 'markets',
+    dotColor: 'amber', desc: 'Agriculture, violence & war, energy & environment, innovation & tech (Our World in Data)',
+    render: (p) => <OwidPanel onCountryClick={p.onCountryClick} />,
   },
 
   // ── AI ──────────────────────────────────────────────────────────────────────
