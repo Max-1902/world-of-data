@@ -12,6 +12,7 @@ interface Props {
   onDeepstateToggle: () => void
   onGeoSearch?: (q: string) => void
   onCountryClick?: (country: string) => void
+  searchQuery?: string
   poppedOut: Set<string>
   onPopOut: (id: string) => void
   onPopIn:  (id: string) => void
@@ -29,7 +30,7 @@ function loadWidth(): number {
   return Math.round(window.innerWidth * 0.28)
 }
 
-export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, poppedOut, activeGroup }: Props) {
+export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, activeGroup }: Props) {
   const [panelW, setPanelW] = useState(loadWidth)
   const resizeRef = useRef<{ startX: number; startW: number } | null>(null)
 
@@ -39,7 +40,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
   const groupLabel = GROUP_ORDER.find(group => group.id === activeGroup)?.label ?? activeGroup
 
   // Shared props for all panels
-  const panelProps: PanelProps = { crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick }
+  const panelProps: PanelProps = { crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery }
 
   // Resize dock width
   function onResizeDown(e: React.MouseEvent) {
