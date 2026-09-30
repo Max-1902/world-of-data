@@ -3165,7 +3165,7 @@ export default function MapView({
   useEffect(() => {
     if (!showDatacenters) return
     let cancelled = false
-    fetchDataCenters().then(pts => { if (!cancelled) setDatacenters(pts) }).catch(() => {})
+    fetchDataCenters().then(pts => { if (!cancelled) setDatacenters(pts) }).catch(err => console.warn('[DataCenters] load failed:', err))
     return () => { cancelled = true }
   }, [showDatacenters])
 

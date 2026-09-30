@@ -25,13 +25,18 @@ export interface DataCenterPoint {
   notes?:    string
 }
 
+// The worldwide query returns ~4.7k elements (~1.6 MB) and takes 35–55 s on the
+// public mirrors, so the per-request timeout has to be generous and the list
+// needs several mirrors (any one of them is frequently slow, blocked, or down).
 const OVERPASS_ENDPOINTS = [
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.openstreetmap.fr/api/interpreter',
   'https://overpass-api.de/api/interpreter',
   'https://overpass.kumi.systems/api/interpreter',
 ]
 
 const QUERY = `
-[out:json][timeout:50];
+[out:json][timeout:90];
 (
   node["telecom"="data_center"];
   way["telecom"="data_center"];
@@ -60,7 +65,7 @@ async function queryOverpass(): Promise<OverpassElement[]> {
         method: 'POST',
         body: 'data=' + encodeURIComponent(QUERY),
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal: AbortSignal.timeout(45_000),
+        signal: AbortSignal.timeout(100_000),
       })
       if (!res.ok) throw new Error(`Overpass HTTP ${res.status}`)
       const json = await res.json()
