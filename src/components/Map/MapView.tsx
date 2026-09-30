@@ -33,7 +33,6 @@ import {
 import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from '../../services/gpsjam'
 import { CHOKEPOINTS, CHOKEPOINT_COLORS, SHIPPING_LANE_LABEL_IDS } from '../../services/chokepoints'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../services/supplychain'
-import { SHIPPING_ROUTES } from '../../services/shippingRoutes'
 import { getCountryCentroid, type OutageEvent } from '../../services/outages'
 import { RESOURCE_PROFILES, fetchResourceRents } from '../../services/resources'
 import { fetchMilitaryPersonnelRanking, type MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
@@ -175,7 +174,6 @@ interface Props {
   showPipelines:      boolean
   showChokepoints:    boolean
   showSupplyChain:    boolean
-  showShippingRoutes: boolean
   showShippingDensity: boolean
   outages:            OutageEvent[]
   showOutages:        boolean
@@ -541,7 +539,7 @@ export default function MapView({
   showMilitary, showNuclear, showSanctions,
   showCameras, showInfrastructure, showDatacenters, showAirspace, showHumanitarian,
   vessels, showVessels, showOil, showGas, showGPSJam, showPorts, showPipelines,
-  showChokepoints, showSupplyChain, showShippingRoutes, showShippingDensity,
+  showChokepoints, showSupplyChain, showShippingDensity,
   outages, showOutages, showResources, showTradeStats, showMilitaryPersonnel,
   showInfraIndicators,
   flyToQuery, geoFlyTo, onCountryClick, selectedCountry,
@@ -2643,60 +2641,6 @@ export default function MapView({
         },
       } as Parameters<typeof map.addLayer>[0])
 
-      // ── Shipping Routes GeoJSON source ────────────────────────────────────
-      map.addSource('shipping-routes', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-      })
-      map.addLayer({
-        id: 'shipping-route-lines', type: 'line', source: 'shipping-routes',
-        paint: {
-          'line-color': ['get', 'color'],
-          'line-width': ['interpolate', ['linear'], ['zoom'], 1, 1, 3, 2, 6, 3, 10, 4],
-          'line-opacity': 0.6,
-        },
-        layout: {
-          'line-cap': 'round',
-          'line-join': 'round',
-          visibility: 'none',
-        },
-      })
-      map.addLayer({
-        id: 'shipping-route-labels', type: 'symbol', source: 'shipping-routes', minzoom: 3,
-        layout: {
-          'symbol-placement': 'line-center',
-          'text-field': ['get', 'name'],
-          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': ['interpolate', ['linear'], ['zoom'], 3, 8, 6, 10, 10, 12],
-          'text-allow-overlap': false,
-          'text-optional': true,
-          visibility: 'none',
-        } as Record<string, unknown>,
-        paint: {
-          'text-color': ['get', 'color'],
-          'text-halo-color': 'rgba(0,0,0,0.85)',
-          'text-halo-width': 1.5,
-        },
-      } as Parameters<typeof map.addLayer>[0])
-
-      map.on('click', 'shipping-route-lines', (e) => {
-        if (!e.features?.[0]) return
-        const p = e.features[0].properties as Record<string, unknown>
-        const color = String(p.color || '#00aaff')
-        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:300px;">
-          <div style="font-size:12px;font-weight:800;color:${color};margin-bottom:6px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">${p.name}</div>
-          <div style="font-size:11px;color:#d97706;font-weight:700;margin-bottom:5px;">${p.annualTonnageMt}M tonnes/year</div>
-          <div style="font-size:11px;color:#14161a;"><b>Key goods:</b> ${p.keyGoods}</div>
-          <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: UNCTAD REVIEW OF MARITIME TRANSPORT</div>
-        </div>`
-        if (popupRef.current) popupRef.current.remove()
-        popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' })
-          .setLngLat(e.lngLat).setHTML(html).addTo(map)
-        ;(map as any).__markFeatureClick?.()
-      })
-      map.on('mouseenter', 'shipping-route-lines', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'shipping-route-lines', () => { map.getCanvas().style.cursor = '' })
-
       // ── Country click — reverse geocode any click on the map ─────────
       let featureClickedFlag = false
       let featureClickTimer: ReturnType<typeof setTimeout> | null = null
@@ -3072,28 +3016,6 @@ export default function MapView({
     }))
     src.setData({ type: 'FeatureCollection', features })
   }, [showSupplyChain, mapReady])
-
-  // ── Shipping Routes GeoJSON ───────────────────────────────────────────────
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !layersReadyRef.current) return
-    const src = map.getSource('shipping-routes') as mapboxgl.GeoJSONSource | undefined
-    if (!src) return
-    const vis = showShippingRoutes ? 'visible' : 'none'
-    if (map.getLayer('shipping-route-lines'))  map.setLayoutProperty('shipping-route-lines',  'visibility', vis)
-    if (map.getLayer('shipping-route-labels')) map.setLayoutProperty('shipping-route-labels', 'visibility', vis)
-    if (!showShippingRoutes) { src.setData({ type: 'FeatureCollection', features: [] }); return }
-    const features: GeoJSON.Feature[] = SHIPPING_ROUTES.map(r => ({
-      type: 'Feature',
-      geometry: { type: 'LineString', coordinates: r.path },
-      properties: {
-        name: r.name, color: r.color,
-        annualTonnageMt: r.annualTonnageMt,
-        keyGoods: r.keyGoods.join(', '),
-      },
-    }))
-    src.setData({ type: 'FeatureCollection', features })
-  }, [showShippingRoutes, mapReady])
 
   // ── Shipping density raster toggle ────────────────────────────────────────
   useEffect(() => {
@@ -4024,8 +3946,7 @@ export default function MapView({
                 { key: 'gpsjam',         label: 'GPS JAM',        icon: '◌', color: '#ff3344' },
                 { key: 'chokepoints',    label: 'CHOKEPOINTS',    icon: '⊘', color: '#ff4466' },
                 { key: 'supplychain',    label: 'SUPPLY CHAIN',   icon: '◆', color: '#00ccff' },
-                { key: 'shippingRoutes', label: 'SHIPPING',       icon: '≈', color: '#44ff88' },
-                { key: 'shippingDensity', label: 'SHIP DENSITY',  icon: '≋', color: '#ff4466' },
+                { key: 'shippingDensity', label: 'SHIPPING',       icon: '≋', color: '#ff4466' },
                 { key: 'militaryPersonnel', label: 'FORCE SIZE',  icon: '⚔', color: '#dc2626' },
                 { key: 'infraIndicators',   label: 'INFRA ACCESS', icon: '⚡', color: '#22d3ee' },
                 { key: 'datacenters',       label: 'DATA CENTERS', icon: '🖥', color: '#a855f7' },

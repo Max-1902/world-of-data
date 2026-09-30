@@ -15,7 +15,6 @@ import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } f
 import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from './gpsjam'
 import { EARTHCAM_CAMERAS } from './earthcam'
 import { GAS_PIPELINES, PIPELINE_STATUS_COLORS, PIPELINE_STATUS_LABELS } from './pipelines'
-import { SHIPPING_ROUTES } from './shippingRoutes'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS } from './sanctions'
 import { OIL_GAS_DATA } from './oilgas'
 import { RESOURCE_PROFILES } from './resources'
@@ -200,7 +199,7 @@ describe('live cameras', () => {
   })
 })
 
-describe('gas pipelines & shipping routes', () => {
+describe('gas pipelines', () => {
   it('pipelines have unique ids, known status, valid paths and non-negative metrics', () => {
     expectUnique('GAS_PIPELINES', GAS_PIPELINES.map(p => p.id))
     for (const p of GAS_PIPELINES) {
@@ -209,16 +208,6 @@ describe('gas pipelines & shipping routes', () => {
       expectRing(`pipeline ${p.id}`, p.path)
       if (p.capacityBcmYr !== undefined) expect(p.capacityBcmYr, p.id).toBeGreaterThan(0)
       if (p.lengthKm !== undefined) expect(p.lengthKm, p.id).toBeGreaterThan(0)
-    }
-  })
-
-  it('shipping routes have unique ids, valid paths, positive tonnage and a colour', () => {
-    expectUnique('SHIPPING_ROUTES', SHIPPING_ROUTES.map(r => r.id))
-    for (const r of SHIPPING_ROUTES) {
-      expectRing(`route ${r.id}`, r.path)
-      expect(r.annualTonnageMt, r.id).toBeGreaterThan(0)
-      expect(r.color, r.id).toMatch(HEX)
-      expect(r.keyGoods.length, r.id).toBeGreaterThan(0)
     }
   })
 })

@@ -18,7 +18,7 @@ const LAYER_KEYS: Record<string, keyof PanelState> = {
   '7': 'humanitarian',
   '8': 'ports',
   '9': 'chokepoints',
-  '0': 'shippingRoutes',
+  '0': 'shippingDensity',
 }
 
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {

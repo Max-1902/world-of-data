@@ -113,7 +113,6 @@ export const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string
   { id: 'pipelines',     label: 'GAS PIPELINES',            color: 'var(--series-3)', tag: 'GAS' },
   { id: 'chokepoints',   label: 'CHOKEPOINTS',              color: 'var(--red)', tag: 'TRD' },
   { id: 'supplychain',   label: 'SUPPLY CHAIN',             color: 'var(--accent)', tag: 'TRD' },
-  { id: 'shippingRoutes',label: 'SHIPPING ROUTES',          color: 'var(--accent)', tag: 'TRD' },
   { id: 'gpsjam',        label: 'GPS INTERFERENCE',        color: 'var(--red)', tag: 'GPS' },
   { id: 'outages',       label: 'NETWORK OUTAGES',          color: 'var(--red)', tag: 'NET' },
   { id: 'resources',     label: 'CRITICAL MINERALS',        color: 'var(--amber)', tag: 'RES' },

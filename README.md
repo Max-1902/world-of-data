@@ -15,7 +15,7 @@ World Map renders a live Mapbox GL globe with ten selectable view modes (satelli
 - **Crises & conflict** — ACLED conflict events and ICG crisis-watch data, scored into a composite DEFCON-style threat index
 - **Wildfires** — NASA FIRMS active fire detections
 - **Markets** — indices, commodities, energy, tech, healthcare, and defense-sector tickers (Finnhub)
-- **Trade & supply chain** — chokepoints, shipping routes, pipelines, ports, and World Bank country economic indicators
+- **Trade & supply chain** — chokepoints, shipping density, pipelines, ports, and World Bank country economic indicators
 - **News & OSINT** — aggregated reporting from Guardian, NYT, and NewsAPI, plus a keyword/coordinate search
 - **AI Analyst** — an LLM-backed panel (via OpenRouter) that answers situational questions and can drive the map (fly-to, layer toggles) from natural language
 
@@ -107,7 +107,7 @@ Every polled source runs at a rate chosen to respect its provider's free-tier li
 
 ## Status
 
-Actively developed. Current focus: trade/supply-chain overlays (chokepoints, shipping lanes, pipelines, ports) and World Bank country economic profiles.
+Actively developed. Current focus: trade/supply-chain overlays (chokepoints, shipping density, pipelines, ports) and World Bank country economic profiles.
 
 ## Security notes
 
