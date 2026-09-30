@@ -65,7 +65,7 @@ const DATA_SOURCES: { category: string; items: { label: string; source: string; 
       { label: 'Nuclear facilities', source: 'IAEA PRIS / open sources', notes: 'Power plants, research reactors.' },
       { label: 'Energy infrastructure', source: 'EIA / OPEC / BP Statistical Review', notes: 'Oil/gas reserves, production, pipelines.' },
       { label: 'Live cameras', source: 'SkylineWebcams', notes: '190+ cameras across 75+ countries.' },
-      { label: 'Shipping-lane density', source: 'NOAA / NCEAS / ICOADS via Resource Watch (com.012)', notes: 'Oct 2004–Oct 2005 position reports from 3,374 voluntary-observing ships (~11% of ships at sea). Historical, not live; busy lanes under-counted. Free, keyless; RW lists license as "Restrictions Apply".' },
+      { label: 'Shipping', source: 'NOAA / NCEAS / ICOADS via Resource Watch (com.012)', notes: 'Oct 2004–Oct 2005 position reports from 3,374 voluntary-observing ships (~11% of ships at sea). Historical, not live; busy lanes under-counted. Free, keyless; RW lists license as "Restrictions Apply".' },
     ],
   },
   {
@@ -96,8 +96,7 @@ const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
   { id: 'pipelines', label: 'PIPELINES', desc: 'Global gas pipeline network' },
   { id: 'chokepoints', label: 'CHOKEPOINTS', desc: 'Strategic maritime chokepoints' },
   { id: 'supplychain', label: 'SUPPLY CHAIN', desc: 'Semiconductor fabs, rare earth, lithium, cobalt' },
-  { id: 'shippingRoutes', label: 'SHIPPING', desc: 'Major trade corridor lanes' },
-  { id: 'shippingDensity', label: 'SHIP DENSITY', desc: 'Global shipping-lane density, 2004–05 (NOAA/NCEAS/ICOADS via Resource Watch)' },
+  { id: 'shippingDensity', label: 'SHIPPING', desc: 'Global shipping-lane density, 2004–05 (NOAA/NCEAS/ICOADS via Resource Watch)' },
   { id: 'gpsjam', label: 'GPS JAM', desc: 'Interference zones' },
   { id: 'outages', label: 'OUTAGES', desc: 'Internet/power outages (IODA)' },
   { id: 'resources', label: 'RESOURCES', desc: 'Critical mineral producers' },

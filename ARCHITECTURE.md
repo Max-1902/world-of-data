@@ -57,7 +57,7 @@ Refresh rates are chosen per-provider to stay under free-tier rate limits, not f
 
 ## Map layer system (`MapView.tsx`)
 
-One Mapbox GL instance, ~20 independently toggleable `addSource`/`addLayer` pairs (flights, vessels, crises, military, nuclear, pipelines, ports, chokepoints, supply chain, shipping routes, humanitarian, GPS jamming, etc.), each gated by a boolean in `PanelState` (`src/types/index.ts`). `App.tsx` owns `panelState` and passes `showX` booleans down; `MapView` adds/removes layer visibility, it never owns the toggle state itself.
+One Mapbox GL instance, ~20 independently toggleable `addSource`/`addLayer` pairs (flights, vessels, crises, military, nuclear, pipelines, ports, chokepoints, supply chain, shipping density, humanitarian, GPS jamming, etc.), each gated by a boolean in `PanelState` (`src/types/index.ts`). `App.tsx` owns `panelState` and passes `showX` booleans down; `MapView` adds/removes layer visibility, it never owns the toggle state itself.
 
 Ten view modes (`earth/standard/dark/satellite/city3d/nightvision/bw/infrared/snow/thermal`) are implemented two ways: `city3d` tilts the camera and shows a real `fill-extrusion` buildings layer; the rest (`nightvision/bw/infrared/snow/thermal`) are CSS `filter()` overlays on the canvas element (`src/index.css`), not different Mapbox styles — cheap to add, no extra tile requests.
 

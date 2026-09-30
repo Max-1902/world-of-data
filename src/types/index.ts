@@ -91,7 +91,6 @@ export interface PanelState {
   pipelines:      boolean
   chokepoints:    boolean
   supplychain:    boolean
-  shippingRoutes: boolean
   shippingDensity: boolean
   outages:        boolean
   resources:      boolean
