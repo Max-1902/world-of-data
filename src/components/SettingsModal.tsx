@@ -405,18 +405,18 @@ function DisplayTab({ reticleColor, onReticleColor }: { reticleColor?: string; o
 
       <div style={s.sectionTitle}>Colors</div>
       {[
-        { label: 'Background', value: '#080e13' },
-        { label: 'Surface', value: '#0d161d' },
-        { label: 'Border', value: '#1c2b35' },
-        { label: 'Text primary', value: '#e5ecef' },
-        { label: 'Text secondary', value: '#98aab4' },
-        { label: 'Accent', value: '#d5a85f' },
+        { label: 'Background', token: '--bg' },
+        { label: 'Surface', token: '--surface' },
+        { label: 'Border', token: '--border' },
+        { label: 'Text primary', token: '--text1' },
+        { label: 'Text secondary', token: '--text2' },
+        { label: 'Accent', token: '--accent' },
       ].map(c => (
         <div key={c.label} style={s.row}>
           <span style={s.label}>{c.label}</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 14, height: 14, borderRadius: 'var(--r-sm)', background: c.value, border: '1px solid var(--border)' }} />
-            <span style={{ ...s.value, fontSize: 10.5 }}>{c.value}</span>
+            <div style={{ width: 14, height: 14, borderRadius: 'var(--r-sm)', background: `var(${c.token})`, border: '1px solid var(--border)' }} />
+            <span style={{ ...s.value, fontSize: 10.5 }}>{c.token}</span>
           </div>
         </div>
       ))}
