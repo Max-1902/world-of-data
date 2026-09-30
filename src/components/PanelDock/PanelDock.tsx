@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import type { CrisisEvent, PanelState, Flight } from '../../types'
 import { GROUP_ORDER, panelsForGroup } from '../../panels/registry'
 import type { PanelGroup, PanelProps } from '../../panels/types'
-import ErrorBoundary from '../ErrorBoundary'
+import PanelHost from '../PanelHost'
 
 interface Props {
   crises: CrisisEvent[]
@@ -115,7 +115,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
                 <span className="panel-title" style={{ flex: 1 }}>{def.title}</span>
               </div>
               <div className="dock-body" style={{ flex: '1 1 0', minHeight: 0, overflow: 'auto' }}>
-                <ErrorBoundary label={def.title}>{def.render(panelProps)}</ErrorBoundary>
+                <PanelHost label={def.title}>{def.render(panelProps)}</PanelHost>
               </div>
             </div>
           )

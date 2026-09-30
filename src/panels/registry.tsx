@@ -4,18 +4,42 @@
  * Adding a panel: add one entry here. The dock, observe tray, and settings
  * automatically pick it up via group/order.
  */
+import { lazy } from 'react'
 import type { PanelDef, PanelGroup } from './types'
-import {
-  NewsPanel, IntelPanel, LayersPanel, RiskPanel, ThreatPanel,
-  OutagesPanel, CrisisWatchPanel, IntelBriefPanel, DrugTrafficPanel,
-  SanctionsPanel, MilitaryPanel, NuclearPanel, AirspacePanel,
-  USWebcamsPanel, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, InfraIndicatorsPanel, AIAnalystPanel,
-  MilitaryInstallationsByCountryPanel, NuclearFacilitiesByCountryPanel, InfrastructureByCountryPanel,
-  ResourcesByCountryPanel, TradePartnersByCountryPanel, TradeProductsByCountryPanel,
-  DataCentersPanel, LiveFeedPanel, OwidPanel,
-} from '../components/panels/PanelContent'
-import { DisasterAlertsPanel } from '../components/panels/DisasterAlertsPanel'
-import { WatchlistPanel } from '../components/panels/WatchlistPanel'
+// Every panel is code-split: its chunk (and the datasets it pulls in) loads only when the panel is first shown.
+// PanelHost supplies the Suspense boundary.
+const NewsPanel = lazy(() => import('../components/panels/NewsPanels').then(m => ({ default: m.NewsPanel })))
+const CrisisWatchPanel = lazy(() => import('../components/panels/NewsPanels').then(m => ({ default: m.CrisisWatchPanel })))
+const IntelBriefPanel = lazy(() => import('../components/panels/NewsPanels').then(m => ({ default: m.IntelBriefPanel })))
+const IntelPanel = lazy(() => import('../components/panels/OverviewPanels').then(m => ({ default: m.IntelPanel })))
+const LayersPanel = lazy(() => import('../components/panels/OverviewPanels').then(m => ({ default: m.LayersPanel })))
+const RiskPanel = lazy(() => import('../components/panels/OverviewPanels').then(m => ({ default: m.RiskPanel })))
+const ThreatPanel = lazy(() => import('../components/panels/OverviewPanels').then(m => ({ default: m.ThreatPanel })))
+const MarketsPanel = lazy(() => import('../components/panels/MarketPanels').then(m => ({ default: m.MarketsPanel })))
+const OutagesPanel = lazy(() => import('../components/panels/OutagesPanel').then(m => ({ default: m.OutagesPanel })))
+const DrugTrafficPanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.DrugTrafficPanel })))
+const SanctionsPanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.SanctionsPanel })))
+const MilitaryPanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.MilitaryPanel })))
+const NuclearPanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.NuclearPanel })))
+const AirspacePanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.AirspacePanel })))
+const USWebcamsPanel = lazy(() => import('../components/panels/WebcamPanels').then(m => ({ default: m.USWebcamsPanel })))
+const LiveFeedPanel = lazy(() => import('../components/panels/WebcamPanels').then(m => ({ default: m.LiveFeedPanel })))
+const GlobalEconomyPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.GlobalEconomyPanel })))
+const ResourcesPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.ResourcesPanel })))
+const MilitaryInstallationsByCountryPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.MilitaryInstallationsByCountryPanel })))
+const NuclearFacilitiesByCountryPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.NuclearFacilitiesByCountryPanel })))
+const InfrastructureByCountryPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.InfrastructureByCountryPanel })))
+const ResourcesByCountryPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.ResourcesByCountryPanel })))
+const TradePartnersByCountryPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.TradePartnersByCountryPanel })))
+const TradeProductsByCountryPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.TradeProductsByCountryPanel })))
+const MilitaryPersonnelPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.MilitaryPersonnelPanel })))
+const InfraIndicatorsPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.InfraIndicatorsPanel })))
+const OwidPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.OwidPanel })))
+const DataCentersPanel = lazy(() => import('../components/panels/CountryDataPanels').then(m => ({ default: m.DataCentersPanel })))
+const AIAnalystPanel = lazy(() => import('../components/panels/AIAnalystPanel').then(m => ({ default: m.AIAnalystPanel })))
+const HumanitarianPanel = lazy(() => import('../components/panels/HumanitarianPanel').then(m => ({ default: m.HumanitarianPanel })))
+const DisasterAlertsPanel = lazy(() => import('../components/panels/DisasterAlertsPanel').then(m => ({ default: m.DisasterAlertsPanel })))
+const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
 

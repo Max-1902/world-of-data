@@ -40,10 +40,10 @@ No backend — the app talks directly to public APIs from the browser, using Vit
 src/
   App.tsx                    # root composition: TopBar + MapView + panel dock
   components/
-    Map/MapView.tsx          # Mapbox globe, all GeoJSON layers, view-mode logic
+    Map/MapView.tsx          # Mapbox globe, all GeoJSON layers (helpers in Map/flightLayer, vesselImages, viewModes)
     TopBar.tsx                # live counters, threat index, view switcher, search
     PanelDock/                # draggable/collapsible dock + pop-out observe tray
-    panels/PanelContent.tsx  # panel implementations
+    panels/*.tsx              # panel implementations, code-split and lazy-loaded via the registry
   panels/
     registry.tsx              # single source of truth: panel → group → render fn
     types.ts                   # shared PanelProps contract

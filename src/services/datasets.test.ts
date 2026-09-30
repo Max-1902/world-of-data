@@ -14,6 +14,7 @@ import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from './ports'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from './supplychain'
 import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from './gpsjam'
 import { EARTHCAM_CAMERAS } from './earthcam'
+import { US_WEBCAMS, registerUSWebcams } from './usWebcams'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS } from './sanctions'
 import { OIL_GAS_DATA } from './oilgas'
 import { RESOURCE_PROFILES } from './resources'
@@ -182,6 +183,16 @@ describe('live cameras', () => {
   })
   it('has no duplicate stream URLs', () => {
     expectUnique('camera urls', EARTHCAM_CAMERAS.map(c => c.url))
+  })
+  it('US webcam directory has valid coordinates, unique ids/urls, https URLs on the named source', () => {
+    expectPoints('US_WEBCAMS', US_WEBCAMS, 'lat', 'lng', 'label', 'id')
+    expectUnique('US webcam urls', US_WEBCAMS.map(w => w.url))
+    for (const w of US_WEBCAMS) {
+      const host = new URL(w.url)
+      expect(host.protocol, w.id).toBe('https:')
+      expect(host.hostname, w.id).toContain(w.source === 'skyline' ? 'skylinewebcams.com' : 'earthcam.com')
+    }
+    expect(registerUSWebcams()).toHaveLength(US_WEBCAMS.length)
   })
 })
 

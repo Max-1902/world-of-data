@@ -22,6 +22,12 @@ const DATA_SOURCES: { category: string; items: { label: string; source: string; 
     ],
   },
   {
+    category: 'DISASTERS',
+    items: [
+      { label: 'Disaster alerts', source: 'GDACS (EU JRC / UN OCHA)', notes: 'Orange/Red quake, cyclone, flood, volcano, drought and wildfire alerts. Free, no key.' },
+    ],
+  },
+  {
     category: 'NETWORK',
     items: [
       { label: 'Outage detection', source: 'IODA (Georgia Tech)', notes: 'BGP routing + active probing + network telescope. No auth.' },
@@ -273,6 +279,7 @@ function GeneralTab({ viewMode, onViewMode, deepstateMode, onDeepstateToggle }: 
         { label: 'News feeds', value: 'On demand' },
         { label: 'Wildfires (FIRMS)', value: '5 min' },
         { label: 'Outages (IODA)', value: '5 min' },
+        { label: 'Disaster alerts (GDACS)', value: '15 min' },
       ].map(r => (
         <div key={r.label} style={s.row}>
           <span style={s.label}>{r.label}</span>

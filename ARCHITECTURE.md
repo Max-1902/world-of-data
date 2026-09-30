@@ -18,8 +18,11 @@ src/
       PanelDock.tsx               # right-hand panel stack — resizable, drag-to-reorder
       ObserveTray.tsx             # bottom tray for panels popped out of the dock (up to 6)
       FloatingPanel.tsx           # legacy single floating panel (pre-registry)
-    panels/
-      PanelContent.tsx            # every panel's implementation lives here (~25 components)
+    panels/                       # panel implementations, grouped by theme (NewsPanels, SecurityPanels,
+                                  #   MarketPanels, CountryDataPanels, AIAnalystPanel, HumanitarianPanel, ...)
+    PanelHost.tsx                 # per-panel ErrorBoundary + Suspense (panels are lazy-loaded)
+    Map/flightLayer.ts            # flight GeoJSON/popup/icon helpers (pure, no React)
+    Map/vesselImages.ts           # vessel SDF icons; Map/viewModes.ts: CSS filter + overlay configs
   panels/
     registry.tsx                  # single source of truth: id → group → title → render fn
     types.ts                       # PanelDef / PanelProps / PanelGroup contract
@@ -49,7 +52,7 @@ Every live data source follows the same three-layer shape:
 
 1. **`services/*.ts`** — a fetch/parse client for one provider. No React, no state. Example: `services/opensky.ts` handles OpenSky's OAuth2 token exchange and state-vector parsing.
 2. **`hooks/use*.ts`** — owns the polling interval and exposes `{ data, loading, error }`. Example: `useFlights` polls OpenSky every 15s.
-3. **Panel component** (`PanelContent.tsx`) or **map layer** (`MapView.tsx`) — renders the hook's output.
+3. **Panel component** (`components/panels/*.tsx`) or **map layer** (`MapView.tsx`) — renders the hook's output.
 
 Refresh rates are chosen per-provider to stay under free-tier rate limits, not for UX reasons: flights 15s (OpenSky's polite ceiling), crises 5min, markets 60s, wildfires/earthquakes 5-10min, news on-demand.
 
@@ -81,3 +84,17 @@ The AI Analyst panel doesn't just answer prompts — `computeTrajectories()` is 
 ## State ownership
 
 `App.tsx` is the single owner of cross-cutting state: `viewMode`, `panelState` (21 layer toggles, persisted to `localStorage`), `activeGroup` (which sidebar group is open), `selectedCountry` (drives `CountryDrawer`), and the observe-tray pop-out set. Everything else is local to its own hook or component. There is no global store (Redux/Zustand/Context) — prop drilling through `App.tsx` → `PanelDock`/`MapView` is deliberate and has stayed manageable at this size; revisit if panel count or prop surface grows significantly.
+
+
+## Local history, alerts and source health
+
+None of these need a backend; all state lives in the browser.
+
+- **Snapshot history** (`services/history.ts`, `hooks/useHistory.ts`). While the app is open it records, at most every 30 min, the global threat score, per-country risk scores (same severity weights as the Risk Matrix, top 40) and the flight count into IndexedDB, keeping 30 days. Feeds the sparklines in Risk Matrix / Threat Level and the "since your last visit" list in `OutlookCard`. There is no backfill: gaps are real gaps, and `flights` is stored as `null` (not 0) when the layer was off. "Last seen" is a localStorage timestamp, stamped on tab hide / pagehide / every 5 min.
+- **Source health** (`services/sourceHealth.ts`, `components/SourceHealth.tsx`). Nearly every service swallows errors and returns `[]`, so a hook can't tell "empty" from "down". `installFetchObserver` wraps `fetch` once and attributes each request to a named source by URL (`SOURCE_RULES`). Add a rule there when you add a service — otherwise it won't show up in the TopBar health popover. The summary is also appended to the AI Analyst's context so it can say when a feed is unreliable. The wrapper only records source id, ok/fail and timestamps; it never alters requests or responses.
+- **Watchlist alerts** (`services/watchlist.ts`, `hooks/useWatchlist.ts`, Watchlist panel, `AlertToasts`). The user stars countries; `evaluateWatch` (pure) raises an alert for each *new* live high/critical event in a watched country and when its trajectory flips to "rising". Seen event ids persist, so events that arrived while the app was closed alert on the next visit. The first evaluation with live data only records what exists (no flood), and baseline entries never alert. Browser notifications are opt-in, requested only from a click.
+- **GDACS** (`services/gdacs.ts`, Disaster Alerts panel): free, keyless, CORS-enabled Orange/Red alerts from the EU JRC / UN OCHA.
+
+## Code splitting
+
+`panels/registry.tsx` wraps every panel in `React.lazy`, so each panel file (and the datasets it imports) is fetched on first display; `PanelHost` provides the Suspense boundary. Keep shared, non-component helpers out of panel files (e.g. `utils/risk.ts`, `services/usWebcams.ts`) — `CountryDrawer` and `MapView` import those, and importing from a panel file would pull panel code back into the main bundle. `MapView`'s component body is still one large function; extract further only with the visual e2e test covering the layer you touch.
