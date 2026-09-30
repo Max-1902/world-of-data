@@ -9,7 +9,7 @@ import {
   NewsPanel, IntelPanel, LayersPanel, RiskPanel, ThreatPanel,
   OutagesPanel, CrisisWatchPanel, IntelBriefPanel, DrugTrafficPanel,
   SanctionsPanel, MilitaryPanel, NuclearPanel, AirspacePanel,
-  CNNLivePanel, USWebcamsPanel, CryptoPanel, ForexPanel, ExchangesPanel,
+  USWebcamsPanel, CryptoPanel, ForexPanel, ExchangesPanel,
   StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, AIAnalystPanel,
   SECTORS,
 } from '../components/panels/PanelContent'
@@ -43,18 +43,25 @@ export const PANELS: PanelDef[] = [
     dotColor: 'grn', desc: 'Aggregated open-source reporting',
     render: () => <NewsPanel />,
   },
+
+  // ── INFRASTRUCTURE ──────────────────────────────────────────────────────────
   {
     id: 'outages', title: 'Connectivity', group: 'geo',
     dotColor: 'yellow', desc: 'Internet disruption monitoring',
     render: (p) => <OutagesPanel onGeoSearch={p.onGeoSearch} />,
   },
-
-  // ── GEO ─────────────────────────────────────────────────────────────────────
   {
     id: 'humanitarian', title: 'Humanitarian', group: 'geo',
     dotColor: 'blue', desc: 'UNHCR displacement & border status',
     render: (p) => <HumanitarianPanel crises={p.crises} flights={p.flights} onGeoSearch={p.onGeoSearch} />,
   },
+  {
+    id: 'layers', title: 'Overlays', group: 'geo',
+    dotColor: 'blue', desc: 'Map layer configuration',
+    render: (p) => <LayersPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} deepstateMode={p.deepstateMode} onDeepstateToggle={p.onDeepstateToggle} />,
+  },
+
+  // ── SECURITY & DEFENSE ──────────────────────────────────────────────────────
   {
     id: 'drugs', title: 'Narcotics', group: 'security',
     dotColor: 'red', desc: 'Trafficking routes & seizure data',
@@ -65,13 +72,7 @@ export const PANELS: PanelDef[] = [
     dotColor: 'red', desc: 'OFAC EU UN UK sanctions registry',
     render: () => <SanctionsPanel />,
   },
-  {
-    id: 'layers', title: 'Overlays', group: 'geo',
-    dotColor: 'blue', desc: 'Map layer configuration',
-    render: (p) => <LayersPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} deepstateMode={p.deepstateMode} onDeepstateToggle={p.onDeepstateToggle} />,
-  },
 
-  // ── MIL ─────────────────────────────────────────────────────────────────────
   {
     id: 'military', title: 'Installations', group: 'security',
     dotColor: 'blue', desc: 'Military bases & force posture',
@@ -88,17 +89,12 @@ export const PANELS: PanelDef[] = [
     render: (p) => <AirspacePanel flights={p.flights} />,
   },
   {
-    id: 'cnn', title: 'Live Feeds', group: 'news',
-    dotColor: 'red', desc: 'Regional surveillance streams',
-    render: () => <CNNLivePanel />,
-  },
-  {
     id: 'webcams', title: 'US Webcams', group: 'news',
     dotColor: 'grn', desc: 'SkylineWebcams & EarthCam — live US grid',
     render: () => <USWebcamsPanel />,
   },
 
-  // ── FIN ─────────────────────────────────────────────────────────────────────
+  // ── ECONOMY ─────────────────────────────────────────────────────────────────
   {
     id: 'economy', title: 'Economy', group: 'markets',
     dotColor: 'blue', desc: 'Global trade profiles & World Bank data',
@@ -141,10 +137,10 @@ export function panelsForGroup(group: PanelGroup): PanelDef[] {
 /** All group IDs in display order */
 export const GROUP_ORDER: { id: PanelGroup; label: string }[] = [
   { id: 'overview', label: 'OVERVIEW' },
-  { id: 'news',     label: 'NEWS' },
-  { id: 'geo',      label: 'GEO & INFRA' },
-  { id: 'security', label: 'SECURITY' },
-  { id: 'markets',  label: 'MARKETS' },
+  { id: 'news',     label: 'NEWS & MEDIA' },
+  { id: 'geo',      label: 'INFRASTRUCTURE' },
+  { id: 'security', label: 'SECURITY & DEFENSE' },
+  { id: 'markets',  label: 'ECONOMY' },
   { id: 'analysis', label: 'ANALYSIS' },
 ]
 

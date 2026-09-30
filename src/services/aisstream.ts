@@ -7,8 +7,11 @@
  */
 
 const AISSTREAM_KEY = import.meta.env.VITE_AISSTREAM_KEY || ''
-// Browser WS connections to aisstream.io are blocked — must go through Vite proxy
-const AISSTREAM_URL = `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/api/aisstream`
+// WebSocket handshakes aren't subject to fetch/CORS restrictions, so the
+// browser can connect straight to AISStream's public endpoint — this also
+// means it works the same in `vite dev` and in any production deployment,
+// with no server-side proxy needed.
+const AISSTREAM_URL = 'wss://stream.aisstream.io/v0/stream'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
