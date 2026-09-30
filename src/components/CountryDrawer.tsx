@@ -12,6 +12,7 @@ import { computeCountryRisk } from './panels/PanelContent'
 import { detectFlightType, FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS } from '../utils/flightType'
 import { fetchCountryEcon, formatEconValue, groupIndicators, resolveISO2, type CountryEconData } from '../services/worldbank'
 import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../services/militaryPersonnel'
+import { fetchInfraIndicatorRanking, formatInfraValue, type CountryInfraEntry } from '../services/infraIndicators'
 import { getTradeProfile } from '../services/tradeStats'
 import { fetchCivilFacilities, CIVIL_FACILITY_COLORS, CIVIL_FACILITY_LABELS, type CivilFacility } from '../services/civilFacilities'
 
@@ -180,6 +181,19 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     }).catch(() => {})
   }, [country])
 
+  // ── Infrastructure access indicators (World Bank, WDI) ──────────────────────
+  const [infraIndicators, setInfraIndicators] = useState<CountryInfraEntry | null>(null)
+  const [infraIndicatorsTotal, setInfraIndicatorsTotal] = useState(0)
+  useEffect(() => {
+    setInfraIndicators(null)
+    const iso2 = resolveISO2(country)
+    if (!iso2) return
+    fetchInfraIndicatorRanking().then(ranking => {
+      setInfraIndicatorsTotal(ranking.length)
+      setInfraIndicators(ranking.find(r => r.iso2 === iso2) ?? null)
+    }).catch(() => {})
+  }, [country])
+
   const riskScore = risk?.score ?? 0
   const sevColor = riskScore >= 40 ? 'var(--red)' : riskScore >= 20 ? 'var(--amber)' : riskScore >= 10 ? 'var(--amber)' : 'var(--green)'
 
@@ -236,7 +250,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     || camps.length > 0 || milBases.length > 0 || nukes.length > 0 || sanction
     || infra.length > 0 || nearbyFlights > 0 || nearbyQuakes.length > 0
     || powerPlants.length > 0 || civilFacilities.length > 0 || civilLoading
-    || !!getTradeProfile(country) || !!milPersonnel
+    || !!getTradeProfile(country) || !!milPersonnel || !!infraIndicators
 
   return (
     <div className="country-drawer" style={{
@@ -395,6 +409,29 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
               </div>
             </div>
             <div style={{ fontSize: 9, color: 'var(--text3)' }}>Source: World Bank (IISS Military Balance), {milPersonnel.year}</div>
+          </Section>
+        )}
+
+        {/* ── Infrastructure access indicators (World Bank, WDI) ────────── */}
+        {infraIndicators && (
+          <Section title="INFRASTRUCTURE ACCESS" color="var(--blue)">
+            <div style={{ display: 'flex', gap: 6, marginBottom: 5 }}>
+              <div style={{ flex: 1, padding: '3px 6px', background: soft('var(--blue)', 8), borderRadius: 'var(--r-sm)' }}>
+                <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '.1em' }}>ELECTRICITY ACCESS</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>{infraIndicators.electricityAccessPct.toFixed(1)}%</div>
+              </div>
+              <div style={{ flex: 1, padding: '3px 6px', background: soft('var(--blue)', 8), borderRadius: 'var(--r-sm)' }}>
+                <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '.1em' }}>WORLD RANK</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>#{infraIndicators.rank} / {infraIndicatorsTotal}</div>
+              </div>
+            </div>
+            {infraIndicators.indicators.filter(i => i.id !== 'EG.ELC.ACCS.ZS').map(i => (
+              <Row key={i.id}>
+                <span style={{ color: 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.label}</span>
+                <span style={{ fontSize: 10, color: 'var(--text1)', fontWeight: 700, flexShrink: 0 }}>{formatInfraValue(i.id, i.value)}</span>
+              </Row>
+            ))}
+            <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 2 }}>Source: World Bank (World Development Indicators), {infraIndicators.year}</div>
           </Section>
         )}
 

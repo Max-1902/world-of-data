@@ -10,9 +10,10 @@ import {
   OutagesPanel, CrisisWatchPanel, IntelBriefPanel, DrugTrafficPanel,
   SanctionsPanel, MilitaryPanel, NuclearPanel, AirspacePanel,
   USWebcamsPanel, CryptoPanel, ForexPanel, ExchangesPanel,
-  StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, AIAnalystPanel,
+  StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, InfraIndicatorsPanel, AIAnalystPanel,
   MilitaryInstallationsByCountryPanel, NuclearFacilitiesByCountryPanel, InfrastructureByCountryPanel,
   ResourcesByCountryPanel, TradePartnersByCountryPanel, TradeProductsByCountryPanel,
+  DataCentersPanel,
   SECTORS,
 } from '../components/panels/PanelContent'
 
@@ -117,6 +118,11 @@ export const PANELS: PanelDef[] = [
     dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
     render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} />,
   },
+  {
+    id: 'infraIndicators', title: 'Infra Access', group: 'security',
+    dotColor: 'blue', desc: 'Electricity, internet, water/sanitation access by country (World Bank)',
+    render: (p) => <InfraIndicatorsPanel onCountryClick={p.onCountryClick} />,
+  },
 
   // ── AI ──────────────────────────────────────────────────────────────────────
   {
@@ -171,6 +177,11 @@ export const PANELS: PanelDef[] = [
     dotColor: 'blue', desc: 'World Bank indicators by country',
     render: (p) => <GlobalEconomyPanel onCountryClick={p.onCountryClick} />,
   },
+  {
+    id: 'datacenters', title: 'Data Centers', group: 'datacenters',
+    dotColor: 'blue', desc: 'Data center facilities worldwide (OpenStreetMap) — click to fly to',
+    render: (p) => <DataCentersPanel onGeoSearch={p.onGeoSearch} />,
+  },
 ]
 
 /* ── Lookup helpers ────────────────────────────────────────────────────────── */
@@ -199,6 +210,7 @@ export const GROUP_ORDER: { id: PanelGroup; label: string }[] = [
   { id: 'tradePartnersByCountry',  label: 'TRADE PARTNERS' },
   { id: 'tradeProductsByCountry',  label: 'TRADE PRODUCTS' },
   { id: 'economicData',            label: 'ECON DATA' },
+  { id: 'datacenters',             label: 'DATA CENTERS' },
 ]
 
 /** All panel IDs (for backwards compat) */

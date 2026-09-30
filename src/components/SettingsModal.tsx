@@ -101,7 +101,9 @@ const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
   { id: 'outages', label: 'OUTAGES', desc: 'Internet/power outages (IODA)' },
   { id: 'resources', label: 'RESOURCES', desc: 'Critical mineral producers' },
   { id: 'militaryPersonnel', label: 'FORCE SIZE', desc: 'Armed forces personnel by country (World Bank)' },
+  { id: 'infraIndicators', label: 'INFRA ACCESS', desc: 'Electricity, internet, water/sanitation access by country (World Bank)' },
   { id: 'tradeStats', label: 'TRADE', desc: 'Trade partners & balance' },
+  { id: 'datacenters', label: 'DATA CENTERS', desc: 'Data center facilities worldwide (OpenStreetMap)' },
 ]
 
 const VIEW_MODES: { id: MapViewMode; label: string }[] = [
