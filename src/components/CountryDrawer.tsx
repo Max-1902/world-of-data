@@ -9,6 +9,7 @@ import { CHOKEPOINTS } from '../services/chokepoints'
 import { TRADE_PROFILES } from '../services/tradeStats'
 import { ALL_INFRA_POINTS, fetchPowerPlantsForCountry, INFRA_LABELS, type InfraPoint } from '../services/infrastructure'
 import { computeCountryRisk } from './panels/PanelContent'
+import WatchButton from './WatchButton'
 import { detectFlightType, FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS } from '../utils/flightType'
 import { fetchCountryEcon, formatEconValue, groupIndicators, resolveISO2, type CountryEconData } from '../services/worldbank'
 import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../services/militaryPersonnel'
@@ -284,6 +285,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
             padding: '2px 7px', borderRadius: 'var(--r-pill)',
           }}>SANCTIONED</span>
         )}
+        <WatchButton country={country} />
         <button onClick={onClose} style={{
           background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer',
           fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 'var(--r-sm)',
