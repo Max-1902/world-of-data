@@ -21,7 +21,7 @@ import {
 } from '../../utils/flightType'
 import { EARTHCAM_CAMERAS, type LiveCamera } from '../../services/earthcam'
 import { registerUSWebcams } from '../panels/PanelContent'
-import { ALL_INFRA_POINTS, PIPELINE_ROUTES, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS } from '../../services/infrastructure'
+import { ALL_INFRA_POINTS, PIPELINE_ROUTES, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchTopPowerPlants, type InfraPoint } from '../../services/infrastructure'
 import { FIR_REGIONS, analyzeAirspace } from '../../services/notam'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../services/aisstream'
 import {
@@ -2799,6 +2799,14 @@ export default function MapView({
   }, [flights, showAirspace])
 
   // ── Critical Infrastructure GeoJSON ───────────────────────────────────────
+  const [powerPlants, setPowerPlants] = useState<InfraPoint[]>([])
+  useEffect(() => {
+    if (!showInfrastructure) return
+    let cancelled = false
+    fetchTopPowerPlants().then(pts => { if (!cancelled) setPowerPlants(pts) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [showInfrastructure])
+
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layersReadyRef.current) return
@@ -2814,8 +2822,8 @@ export default function MapView({
       pipelineSrc.setData({ type: 'FeatureCollection', features: [] })
       return
     }
-    // Populate infra points
-    const infraFeatures: GeoJSON.Feature[] = ALL_INFRA_POINTS.map(p => ({
+    // Populate infra points (curated static + live power plants)
+    const infraFeatures: GeoJSON.Feature[] = [...ALL_INFRA_POINTS, ...powerPlants].map(p => ({
       type: 'Feature',
       geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
       properties: {
@@ -2844,7 +2852,7 @@ export default function MapView({
       },
     }))
     pipelineSrc.setData({ type: 'FeatureCollection', features: pipeFeatures })
-  }, [showInfrastructure, mapReady])
+  }, [showInfrastructure, mapReady, powerPlants])
 
   // ── Humanitarian (UNHCR) layers ───────────────────────────────────────────
   useEffect(() => {
