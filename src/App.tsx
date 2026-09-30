@@ -58,7 +58,13 @@ function loadGroup(): PanelGroup {
   }
   try {
     const saved = localStorage.getItem('ws-dock-group')
-    if (saved && ['overview', 'news', 'geo', 'security', 'markets', 'analysis'].includes(saved)) return saved as PanelGroup
+    const validGroups = [
+      'overview', 'news', 'geo', 'security', 'markets', 'analysis',
+      'militaryInstallations', 'nuclearFacilities', 'infrastructureSites',
+      'resourcesByCountry', 'forceSize', 'tradePartnersByCountry',
+      'tradeProductsByCountry', 'economicData',
+    ]
+    if (saved && validGroups.includes(saved)) return saved as PanelGroup
     return saved ? oldGroupMap[saved] ?? 'overview' : 'overview'
   } catch { return 'overview' }
 }
@@ -237,7 +243,7 @@ export default function App() {
               onFlyTo={handleGeoSearch}
             />
           )}
-          <OutlookCard crises={crises} flights={flights} articles={articles} onSelectCountry={setSelectedCountry} />
+          <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={setSelectedCountry} />
           <SettingsModal
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
