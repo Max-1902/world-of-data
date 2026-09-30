@@ -21,6 +21,13 @@ This file exists so any agent (Claude or otherwise) picks up context fast and do
 - Prefer sources that are free and keyless (no signup at all) — e.g. World Bank Open Data, WRI's Global Power Plant Database (static CC-BY file), OSM Overpass API. When a key is genuinely required (Guardian, NYT, Finnhub, ACLED, Mapbox), it must be on that provider's free tier with no paid upgrade path wired in, and the key goes in `.env` per the Secrets section above — never assume the user wants a paid plan.
 - Before adding a new external data source, confirm it's free/keyless (or free-tier-with-key) and say so explicitly when introducing it, so the user isn't surprised by a service that could later bill them.
 
+## Always commit and push when done — non-negotiable
+
+- **At the end of any task that changes files, commit and push, without waiting to be asked.** This is a standing instruction, not a one-off — it overrides the general default of only committing when explicitly requested.
+- Stage only the files you actually changed for the task at hand (`git add <specific files>`, not `git add -A`/`git add .`) — see the Multi-session hazard section below for why a broad add is dangerous in this repo specifically.
+- Still apply normal judgment: don't commit secrets (see Secrets section), and if `git status` shows unrelated in-progress changes from a sibling session, leave those unstaged and only commit/push your own files.
+- Push to `main` directly unless the user says otherwise — this repo has no branch-protection workflow in place that requires PRs.
+
 ## Multi-session hazard
 
 This repo has been worked on by multiple concurrent Claude Code sessions pointed at the same working directory at once. There is no isolation between sessions sharing one folder — a write from one session is immediately visible to (and overwritable by) every other. Symptoms seen in practice: a finished redesign silently reverting because a sibling session wrote over the same files; orphaned dead files appearing (e.g. an unused `LeftPanel.tsx` from an abandoned parallel attempt) that nothing imports.
