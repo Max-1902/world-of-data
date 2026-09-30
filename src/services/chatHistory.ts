@@ -46,10 +46,6 @@ export function deleteSession(id: string) {
   writeAll(readAll().filter(s => s.id !== id))
 }
 
-export function clearAllSessions() {
-  try { localStorage.removeItem(LS_KEY) } catch {}
-}
-
 export function newSessionId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }

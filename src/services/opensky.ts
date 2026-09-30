@@ -67,61 +67,6 @@ export async function fetchFlights(): Promise<Flight[]> {
   }
 }
 
-// ── Flight track ──────────────────────────────────────────────────────────────
-export interface FlightWaypoint {
-  time:      number
-  lat:       number
-  lng:       number
-  altitude:  number | null
-  heading:   number | null
-  on_ground: boolean
-}
-
-export interface FlightTrack {
-  icao24:    string
-  callsign:  string
-  startTime: number
-  endTime:   number
-  path:      FlightWaypoint[]
-}
-
-export async function fetchFlightTrack(icao24: string): Promise<FlightTrack | null> {
-  try {
-    const token   = await getBearerToken()
-    const headers: Record<string, string> = { Accept: 'application/json' }
-    if (token) headers.Authorization = `Bearer ${token}`
-
-    const res = await fetch(`${BASE}/tracks/all?icao24=${icao24.toLowerCase()}&time=0`, {
-      headers,
-      signal: AbortSignal.timeout(10_000),
-    })
-    if (!res.ok) {
-      console.warn(`[OpenSky] track ${icao24} HTTP ${res.status}`)
-      return null
-    }
-    const json = await res.json()
-    if (!json || !Array.isArray(json.path)) return null
-
-    return {
-      icao24:    String(json.icao24   || icao24),
-      callsign:  String(json.callsign || '').trim(),
-      startTime: Number(json.startTime || 0),
-      endTime:   Number(json.endTime   || 0),
-      path: (json.path as unknown[][]).map(p => ({
-        time:      Number(p[0]),
-        lat:       Number(p[1]),
-        lng:       Number(p[2]),
-        altitude:  p[3] != null ? Number(p[3]) : null,
-        heading:   p[4] != null ? Number(p[4]) : null,
-        on_ground: Boolean(p[5]),
-      })),
-    }
-  } catch (err) {
-    console.warn('[OpenSky] track fetch error:', err)
-    return null
-  }
-}
-
 function parseStates(data: { states?: unknown[][] }): Flight[] {
   if (!data.states || !Array.isArray(data.states)) {
     console.warn('[OpenSky] no states in response')

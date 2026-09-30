@@ -143,13 +143,6 @@ export async function fetchOwidChart(slug: string): Promise<OwidChartData | null
   return promise
 }
 
-/** Fetch all charts for a given topic in parallel. */
-export async function fetchOwidTopic(topic: OwidTopic): Promise<OwidChartData[]> {
-  const slugs = OWID_CHARTS.filter(c => c.topic === topic).map(c => c.slug)
-  const results = await Promise.all(slugs.map(fetchOwidChart))
-  return results.filter((r): r is OwidChartData => r !== null)
-}
-
 export function formatOwidValue(unit: string, value: number): string {
   if (unit === '%') return `${value.toFixed(1)}%`
   if (value >= 1e9) return `${(value / 1e9).toFixed(2)}B`

@@ -18,7 +18,7 @@ import { TRADE_PROFILES } from '../../services/tradeStats'
 import { fetchCountryEcon, formatEconValue, groupIndicators, type CountryEconData } from '../../services/worldbank'
 import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
 import { fetchInfraIndicatorRanking, formatInfraValue, type CountryInfraEntry } from '../../services/infraIndicators'
-import { RESOURCE_PROFILES, getResourceProfile, fetchResourceRents, type ResourceRent } from '../../services/resources'
+import { RESOURCE_PROFILES, fetchResourceRents, type ResourceRent } from '../../services/resources'
 import { ALL_INFRA_POINTS, INFRA_COLORS } from '../../services/infrastructure'
 import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
 import { OWID_CHARTS, fetchOwidChart, formatOwidValue, TOPIC_LABELS, type OwidTopic, type OwidChartData } from '../../services/owid'
@@ -29,58 +29,11 @@ import {
   CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS,
   REFUGEE_FLOWS, COUNTRY_DISPLACEMENT,
   fetchUNHCRPopulation,
-  type UNHCRStat, type UNHCROffice, type BorderCrossing, type RefugeeCamp,
+  type UNHCRStat,
 } from '../../services/unhcr'
 
-// ── Panel ID type + metadata ──────────────────────────────────────────────────
-export type PanelId =
-  | 'news' | 'layers' | 'intel' | 'risk' | 'threat'
-  | 'indices' | 'commodities' | 'energy' | 'tech' | 'healthcare' | 'defense'
-  | 'crypto' | 'forex' | 'bonds' | 'exchanges'
-  | 'markets'
-  | 'drugs' | 'sanctions' | 'military' | 'nuclear' | 'airspace'
-  | 'outages' | 'brief' | 'crisiswatch' | 'analyst' | 'humanitarian' | 'webcams'
-
-export const PANEL_META: Record<PanelId, { title: string; dotColor?: string; width: number; desc: string }> = {
-  news:        { title: 'Signals',       dotColor: 'grn',    width: 240, desc: 'Aggregated open-source reporting' },
-  layers:      { title: 'Overlays',      dotColor: 'blue',   width: 190, desc: 'Map layer configuration' },
-  intel:       { title: 'Incidents',     dotColor: 'red',    width: 260, desc: 'Active conflict & event tracking' },
-  risk:        { title: 'Risk Matrix',   dotColor: 'red',    width: 210, desc: 'Country-level threat assessment' },
-  threat:      { title: 'Threat Level',  dotColor: 'orange', width: 152, desc: 'Composite global threat index' },
-  indices:     { title: 'Indices',       width: 230, desc: 'SPY QQQ DIA EEM VGK' },
-  commodities: { title: 'Commodities',   width: 200, desc: 'GLD SLV GSG DBA CPER' },
-  energy:      { title: 'Energy',        width: 200, desc: 'XLE USO CVX XOM BP SLB' },
-  tech:        { title: 'Technology',    width: 200, desc: 'XLK AAPL MSFT NVDA GOOGL META' },
-  healthcare:  { title: 'Healthcare',    width: 200, desc: 'XLV JNJ PFE UNH MRK AMGN' },
-  defense:     { title: 'Defense',       width: 200, desc: 'ITA LMT RTX NOC BA GD' },
-  crypto:      { title: 'Digital Assets',width: 200, desc: 'BTC ETH SOL BNB XRP' },
-  forex:       { title: 'FX Rates',      width: 210, desc: 'EUR/USD GBP JPY CNY DXY' },
-  bonds:       { title: 'Fixed Income',  width: 210, desc: 'US 10Y 30Y TLT HYG LQD' },
-  exchanges:   { title: 'Exchanges',     width: 280, desc: 'Global exchange indices by region' },
-  markets:     { title: 'Markets',       dotColor: 'grn', width: 340, desc: 'Consolidated financial data feed' },
-  drugs:       { title: 'Narcotics',     dotColor: 'red',    width: 280, desc: 'Trafficking routes & seizure data' },
-  sanctions:   { title: 'Sanctions',     dotColor: 'red',    width: 280, desc: 'OFAC EU UN UK sanctions registry' },
-  military:    { title: 'Installations', dotColor: 'blue',   width: 300, desc: 'Military bases & force posture' },
-  nuclear:     { title: 'Nuclear',       dotColor:'yellow',  width: 300, desc: 'Reactors & weapons storage sites' },
-  airspace:    { title: 'Airspace',      dotColor: 'red',    width: 300, desc: 'FIR status & NOTAM alerts' },
-  outages:     { title: 'Connectivity',  dotColor: 'yellow', width: 280, desc: 'Internet disruption monitoring' },
-  brief:       { title: 'Briefing',      dotColor: 'red',    width: 240, desc: 'Correlated intel for active query' },
-  crisiswatch: { title: 'Crisis Monitor',dotColor: 'orange', width: 290, desc: 'ICG conflict tracking — 70+ states' },
-  analyst:     { title: 'Analyst chat',  dotColor: 'blue',   width: 480, desc: 'Briefings grounded in live dashboard data' },
-  humanitarian:{ title: 'Humanitarian',  dotColor: 'blue',   width: 320, desc: 'UNHCR displacement & border status' },
-  webcams:     { title: 'US Webcams',    dotColor: 'grn',    width: 320, desc: 'SkylineWebcams & EarthCam — live US grid' },
-}
-
-export const DEFAULT_ORDER: PanelId[] = [
-  'news', 'crisiswatch', 'layers', 'intel', 'humanitarian', 'risk', 'threat',
-  'markets',
-  'analyst',
-  'drugs', 'sanctions', 'military', 'nuclear', 'airspace', 'webcams',
-  'outages',
-]
-
 // ── Market sectors ─────────────────────────────────────────────────────────────
-export const SECTORS: Record<string, string[]> = {
+const SECTORS: Record<string, string[]> = {
   // ── Equities ──────────────────────────────────────────────────────────────
   indices:     ['SPY', 'QQQ', 'DIA', 'IWM', 'EEM', 'VGK', 'EWU', 'EWG', 'EWJ', 'EWH', 'FXI', 'EWZ', 'EWA'],
   commodities: ['GLD', 'SLV', 'GSG', 'PDBC', 'CPER', 'WEAT', 'CORN', 'UNG', 'DBA', 'SOYB'],
@@ -93,7 +46,7 @@ export const SECTORS: Record<string, string[]> = {
 }
 
 // ── Map layer configs ──────────────────────────────────────────────────────────
-export const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string; tag: string }[] = [
+const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string; tag: string }[] = [
   { id: 'flights',   label: 'AIR TRAFFIC',          color: 'var(--accent)', tag: 'AIR' },
   { id: 'crises',    label: 'CONFLICT ZONES',       color: 'var(--red)', tag: 'GEO' },
   { id: 'wildfires', label: 'WILDFIRES',             color: 'var(--amber)', tag: 'FIRE' },
@@ -121,7 +74,7 @@ export const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string
 ]
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
-export function safeTimeAgo(d: string) {
+function safeTimeAgo(d: string) {
   try {
     if (!d) return ''
     const date = new Date(d)
@@ -147,14 +100,14 @@ export function computeCountryRisk(crises: CrisisEvent[]) {
   return Object.entries(m).map(([country, v]) => ({ country, ...v })).sort((a, b) => b.score - a.score).slice(0, 12)
 }
 
-export function riskColor(score: number) {
+function riskColor(score: number) {
   if (score >= 40) return 'var(--red)'
   if (score >= 20) return 'var(--amber)'
   if (score >= 10) return 'var(--amber)'
   return 'var(--accent)'
 }
 
-export function computeThreatScore(crises: CrisisEvent[], flights: Flight[]) {
+function computeThreatScore(crises: CrisisEvent[], flights: Flight[]) {
   const base = crises.reduce((acc, c) => {
     const w: Record<string, number> = { critical: 8, high: 4, medium: 2, low: 1 }
     return acc + (w[c.severity] ?? 1)
@@ -164,7 +117,7 @@ export function computeThreatScore(crises: CrisisEvent[], flights: Flight[]) {
 
 // ── Panel sub-components ───────────────────────────────────────────────────────
 
-export function ArticleRow({ a }: { a: NewsArticle }) {
+function ArticleRow({ a }: { a: NewsArticle }) {
   const [open, setOpen] = useState(false)
   return (
     <div
@@ -474,7 +427,7 @@ export function ThreatPanel({ crises, flights }: { crises: CrisisEvent[]; flight
   )
 }
 
-export function StockRow({ s }: { s: Stock }) {
+function StockRow({ s }: { s: Stock }) {
   const pos = s.changePercent >= 0
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '3px 10px', borderBottom: '1px solid var(--border)', borderLeft: '2px solid transparent', transition: 'all .1s' }}
@@ -496,7 +449,7 @@ export function StockRow({ s }: { s: Stock }) {
   )
 }
 
-export function StockList({ symbols }: { symbols: string[] }) {
+function StockList({ symbols }: { symbols: string[] }) {
   const [stocks, setStocks] = useState<Stock[]>([])
   const [loading, setLoading] = useState(true)
   const [retryCount, setRetryCount] = useState(0)
@@ -1020,20 +973,6 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
   )
 }
 
-// ── Unified PanelContent renderer ─────────────────────────────────────────────
-export interface PanelContentProps {
-  id: PanelId
-  crises: CrisisEvent[]
-  flights: Flight[]
-  panelState: PanelState
-  onToggleLayer: (id: keyof PanelState) => void
-  deepstateMode: boolean
-  onDeepstateToggle: () => void
-  searchQuery?: string
-  onGeoSearch?: (q: string) => void
-  onCountryClick?: (country: string) => void
-}
-
 // ── Drug Trafficking Panel ─────────────────────────────────────────────────────
 const DRUG_TABS = [
   { id: 'Global',   q: 'drug trafficking seizure cartel narcotics bust' },
@@ -1157,7 +1096,7 @@ const WORLD_EXCHANGES: { country: string; flag: string; exchange: string; ticker
   { country: 'Romania',       flag: '🇷🇴', exchange: 'BVB',               ticker: 'MSFT',     url: 'https://www.bvb.ro' },
 ]
 
-export function ExchangesPanel() {
+function ExchangesPanel() {
   const [search, setSearch] = useState('')
   const tickers = WORLD_EXCHANGES.map(e => e.ticker)
   const { stocks, loading } = useStockQuotes(tickers)
@@ -1523,7 +1462,7 @@ const COINGECKO_IDS: Record<string, string> = {
 }
 const CRYPTO_LIST = Object.entries(COINGECKO_IDS).map(([sym, id]) => ({ sym, id }))
 
-export function CryptoPanel() {
+function CryptoPanel() {
   const [data, setData] = useState<{ sym: string; price: number; change: number }[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -1601,7 +1540,7 @@ const FOREX_PAIRS = [
   { pair: 'USD/MXN', base: 'USD', quote: 'MXN', flag: '🇲🇽' },
 ]
 
-export function ForexPanel() {
+function ForexPanel() {
   const [rates, setRates] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
 
@@ -1867,36 +1806,6 @@ export function USWebcamsPanel() {
       {active && <WebcamBox cam={active} onClose={() => setActive(null)} />}
     </div>
   )
-}
-
-export function PanelContent({ id, crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, searchQuery, onGeoSearch, onCountryClick }: PanelContentProps) {
-  switch (id) {
-    case 'news':    return <NewsPanel />
-    case 'intel':   return <IntelPanel crises={crises} />
-    case 'layers':  return <LayersPanel panelState={panelState} onToggleLayer={onToggleLayer} deepstateMode={deepstateMode} onDeepstateToggle={onDeepstateToggle} />
-    case 'risk':    return <RiskPanel crises={crises} />
-    case 'threat':  return <ThreatPanel crises={crises} flights={flights} />
-    case 'outages':      return <OutagesPanel onGeoSearch={onGeoSearch} />
-    case 'crisiswatch':  return <CrisisWatchPanel />
-    case 'brief':        return <IntelBriefPanel query={searchQuery ?? ''} crises={crises} flights={flights} />
-    case 'exchanges':    return <ExchangesPanel />
-    case 'drugs':        return <DrugTrafficPanel />
-    case 'sanctions':    return <SanctionsPanel />
-    case 'military':     return <MilitaryPanel onGeoSearch={onGeoSearch} />
-    case 'nuclear':      return <NuclearPanel />
-    case 'airspace':     return <AirspacePanel flights={flights} />
-    case 'webcams':      return <USWebcamsPanel />
-    case 'crypto':       return <CryptoPanel />
-    case 'forex':        return <ForexPanel />
-    case 'analyst':      return <AIAnalystPanel crises={crises} flights={flights} onGeoSearch={onGeoSearch} onCountryClick={onCountryClick} onToggleLayer={onToggleLayer} panelState={panelState} />
-    case 'humanitarian': return <HumanitarianPanel crises={crises} flights={flights} onGeoSearch={onGeoSearch} />
-    case 'markets':      return <MarketsPanel />
-
-    default: {
-      const syms = SECTORS[id]
-      return syms ? <StockList symbols={syms} /> : null
-    }
-  }
 }
 
 // ── Global Economy Panel ──────────────────────────────────────────────────

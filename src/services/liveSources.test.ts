@@ -97,16 +97,6 @@ describe('data centers (OSM Overpass)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
-  it('fetchDataCentersForCountry matches tagged country exactly or the name loosely', async () => {
-    mockFetch(() => jsonResponse({ elements: [
-      el(1, { tags: { name: 'Alpha', 'addr:country': 'Germany' } }),
-      el(2, { tags: { name: 'Berlin Hub' } }),
-      el(3, { tags: { name: 'Other', 'addr:country': 'France' } }),
-    ] }))
-    const { fetchDataCentersForCountry } = await loadMod()
-    expect((await fetchDataCentersForCountry('germany')).map(p => p.id)).toEqual(['osm-node-1'])
-    expect((await fetchDataCentersForCountry('berlin')).map(p => p.id)).toEqual(['osm-node-2'])
-  })
 })
 
 describe('civil facilities (OSM Overpass)', () => {

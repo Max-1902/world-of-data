@@ -230,16 +230,6 @@ export const SANCTIONS_BY_ISO2 = Object.fromEntries(
   SANCTIONED_COUNTRIES.map(c => [c.iso2, c])
 )
 
-// Mapbox match expression value for the fill layer
-// Returns array: [iso2, color, iso2, color, ..., 'transparent']
-export function buildSanctionMatchExpression(): (string | string[])[] {
-  const pairs: string[] = []
-  for (const c of SANCTIONED_COUNTRIES) {
-    pairs.push(c.iso2, SANCTION_COLORS[c.severity])
-  }
-  return [...pairs, 'transparent']
-}
-
 // Fetch recent sanctions news from GDELT
 export async function fetchSanctionsNews(country?: string): Promise<{ title: string; url: string; domain: string; seendate: string }[]> {
   const q = country

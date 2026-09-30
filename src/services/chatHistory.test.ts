@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { listSessions, saveSession, deleteSession, clearAllSessions, newSessionId, type ChatSession } from './chatHistory'
+import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from './chatHistory'
 import { installLocalStorage } from '../test/helpers'
 
 const LS_KEY = 'worldview.aiChatSessions'
@@ -44,13 +44,6 @@ describe('chatHistory', () => {
     expect(listSessions().map(s => s.id)).toEqual(['b'])
     deleteSession('does-not-exist')
     expect(listSessions().map(s => s.id)).toEqual(['b'])
-  })
-
-  it('clearAllSessions removes everything', () => {
-    saveSession(session('a', 1))
-    clearAllSessions()
-    expect(listSessions()).toEqual([])
-    expect(ctx.store.has(LS_KEY)).toBe(false)
   })
 
   it('keeps only the 50 most recently added sessions', () => {

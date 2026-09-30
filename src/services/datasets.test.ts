@@ -7,7 +7,7 @@
  * and enum typos that would break colour/label lookups at runtime.
  */
 import { describe, it, expect } from 'vitest'
-import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS, FACILITIES_BY_ID, PLANTS_BY_ID } from './military'
+import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from './military'
 import { MAJOR_DAMS, LNG_TERMINALS, MAJOR_REFINERIES, ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS } from './infrastructure'
 import { CHOKEPOINTS } from './chokepoints'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from './ports'
@@ -77,10 +77,6 @@ describe('military & nuclear', () => {
     }
   })
 
-  it('lookup maps cover every entry', () => {
-    expect(Object.keys(FACILITIES_BY_ID)).toHaveLength(MILITARY_FACILITIES.length)
-    expect(Object.keys(PLANTS_BY_ID)).toHaveLength(NUCLEAR_PLANTS.length)
-  })
 })
 
 describe('infrastructure', () => {

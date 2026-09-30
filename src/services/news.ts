@@ -446,21 +446,6 @@ function detectTrend(text: string): CrisisWatchEntry['trend'] {
   return 'unknown'
 }
 
-export async function fetchCrisisWatch(region = 'Global'): Promise<CrisisWatchEntry[]> {
-  const feed = CRISISWATCH_FEEDS.find(f => f.region === region) ?? CRISISWATCH_FEEDS[0]
-  try {
-    const articles = await fetchRSSFeed(feed.url, feed.name)
-    return articles.map(a => ({
-      ...a,
-      trend:  detectTrend((a.title || '') + ' ' + (a.description || '')),
-      region: feed.region,
-    }))
-  } catch (err) {
-    console.warn('[CrisisWatch]', err)
-    return []
-  }
-}
-
 export async function fetchAllCrisisWatch(): Promise<CrisisWatchEntry[]> {
   const results = await Promise.allSettled(
     CRISISWATCH_FEEDS.map(f =>

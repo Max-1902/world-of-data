@@ -62,16 +62,6 @@ export const VESSEL_TYPE_COLORS: Record<VesselType, string> = {
   other:     '#888888',
 }
 
-export const VESSEL_TYPE_LABELS: Record<VesselType, string> = {
-  cargo:     'Cargo',
-  tanker:    'Tanker',
-  passenger: 'Passenger',
-  fishing:   'Fishing',
-  military:  'Military',
-  tug:       'Tug/Pilot',
-  other:     'Other',
-}
-
 // ── In-memory store ──────────────────────────────────────────────────────────
 const vesselStore = new Map<number, Vessel>()
 const metaCache = new Map<number, { name: string; shipType: number; destination: string }>()

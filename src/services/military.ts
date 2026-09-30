@@ -781,15 +781,6 @@ export const NUCLEAR_PLANTS: NuclearPlant[] = [
   { id:'np-kanupp',        name:'Chashma Nuclear Power Complex',     country:'Pakistan',lat:32.395,lng:71.468,  reactors:4, capacity:1212, status:'operating', type:'PWR',  notes:'PAEC. Punjab. 4 × Chinese-designed (CNP-300/ACP-1000) reactors. Indus River. Chashma 5 (Hualong One) under construction. China-Pakistan nuclear cooperation outside NSG guidelines.', since:'2000' },
 ]
 
-// Fast lookup by id
-export const FACILITIES_BY_ID = Object.fromEntries(
-  MILITARY_FACILITIES.map(f => [f.id, f])
-)
-
-export const PLANTS_BY_ID = Object.fromEntries(
-  NUCLEAR_PLANTS.map(p => [p.id, p])
-)
-
 export const PLANT_STATUS_COLORS: Record<NuclearPlant['status'], string> = {
   operating:          '#ffdd00',
   under_construction: '#ff8800',

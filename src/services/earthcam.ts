@@ -346,22 +346,3 @@ export const EARTHCAM_CAMERAS: LiveCamera[] = [
   { id: 'au-sydney', name: 'Sydney Harbour', city: 'Sydney', country: 'Australia', lat: -33.8568, lng: 151.2153, url: `${SKY}/australia/new-south-wales/sydney/sydney.html`, source: 'skyline' },
   { id: 'au-brisbane', name: 'Brisbane River', city: 'Brisbane', country: 'Australia', lat: -27.4698, lng: 153.0251, url: `${SKY}/australia/queensland/brisbane/brisbane-river.html`, source: 'skyline' },
 ]
-
-/** Get cameras for a specific country name */
-export function getCamerasForCountry(country: string): LiveCamera[] {
-  const lc = country.toLowerCase()
-  return EARTHCAM_CAMERAS.filter(c => c.country.toLowerCase() === lc)
-}
-
-/** Get nearest camera to a coordinate */
-export function getNearestCamera(lat: number, lng: number): LiveCamera | null {
-  let best: LiveCamera | null = null
-  let bestDist = Infinity
-  for (const cam of EARTHCAM_CAMERAS) {
-    const dlat = cam.lat - lat
-    const dlng = cam.lng - lng
-    const dist = dlat * dlat + dlng * dlng
-    if (dist < bestDist) { bestDist = dist; best = cam }
-  }
-  return best
-}

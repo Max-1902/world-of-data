@@ -90,38 +90,6 @@ describe('fetchQuote / fetchMultipleQuotes', () => {
   })
 })
 
-describe('fetchCandles', () => {
-  beforeEach(() => quietConsole())
-
-  it('zips column arrays into candles with millisecond timestamps', async () => {
-    mockFetch(() => jsonResponse({ s: 'ok', t: [100, 200], o: [1, 2], h: [3, 4], l: [0, 1], c: [2, 3], v: [10, 20] }))
-    const { fetchCandles } = await load()
-    expect(await fetchCandles('SPY')).toEqual([
-      { time: 100_000, open: 1, high: 3, low: 0, close: 2, volume: 10 },
-      { time: 200_000, open: 2, high: 4, low: 1, close: 3, volume: 20 },
-    ])
-  })
-
-  it('returns [] for "no_data" status, HTTP errors and network failures', async () => {
-    const { fetchCandles } = await load()
-    mockFetch(() => jsonResponse({ s: 'no_data' }))
-    expect(await fetchCandles('SPY')).toEqual([])
-    mockFetch(() => jsonResponse({}, { status: 500 }))
-    expect(await fetchCandles('SPY')).toEqual([])
-    mockFetch(() => { throw new Error('offline') })
-    expect(await fetchCandles('SPY')).toEqual([])
-  })
-
-  it('requests a window of `days` ending now', async () => {
-    const fetchMock = mockFetch(() => jsonResponse({ s: 'no_data' }))
-    const { fetchCandles } = await load()
-    await fetchCandles('SPY', 'D', 10)
-    const params = new URL(String(fetchMock.mock.calls[0][0]), 'http://x').searchParams
-    expect(Number(params.get('to')) - Number(params.get('from'))).toBe(10 * 86400)
-    expect(params.get('resolution')).toBe('D')
-  })
-})
-
 describe('searchSymbol', () => {
   beforeEach(() => quietConsole())
 
