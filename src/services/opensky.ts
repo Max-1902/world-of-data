@@ -7,27 +7,15 @@ import type { Flight } from '../types'
 const BASE      = '/api/opensky'
 const TOKEN_URL = '/api/opensky-token'
 
-const CLIENT_ID     = import.meta.env.VITE_OPENSKY_USER || ''
-const CLIENT_SECRET = import.meta.env.VITE_OPENSKY_PASS || ''
-
 // ── Token cache ───────────────────────────────────────────────────────────────
 let cachedToken    = ''
 let tokenExpiresAt = 0   // ms timestamp
 
 async function getBearerToken(): Promise<string> {
-  if (!CLIENT_ID || !CLIENT_SECRET) return ''
   if (cachedToken && Date.now() < tokenExpiresAt - 30_000) return cachedToken
-
-  const body = new URLSearchParams({
-    grant_type:    'client_credentials',
-    client_id:     CLIENT_ID,
-    client_secret: CLIENT_SECRET,
-  })
 
   const res = await fetch(TOKEN_URL, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
     signal: AbortSignal.timeout(10_000),
   })
 

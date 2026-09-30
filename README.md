@@ -59,24 +59,36 @@ Each data source follows the same shape: a `services/*.ts` client, a `hooks/use*
 ```bash
 npm install
 cp .env.example .env   # fill in API keys — see below
-npm run dev
+npm run dev            # runs `vercel dev` — serves Vite + the /api/* serverless functions together
 ```
 
-Requires Node 18+. Open the printed local URL (defaults to `localhost:3000`).
+Requires Node 18+. Open the printed local URL (defaults to `localhost:3000`). The first `vercel dev` run may ask you to link the directory to a Vercel project (or run without deploying) — either is fine for local dev.
+
+If you only need the map/panels and don't need the server-proxied sources (market data, news via Guardian/NYT, AI Analyst, conflict data, flight tracking), `npm run dev:vite-only` runs plain Vite without the `/api` functions.
 
 ### API keys
 
-Only `VITE_MAPBOX_TOKEN` is required to run the app. Everything else is optional — panels for missing keys degrade gracefully (empty state) rather than crashing. All listed providers have free tiers:
+Only `VITE_MAPBOX_TOKEN` is required to run the app. Everything else is optional — panels for missing keys degrade gracefully (empty state) rather than crashing. All listed providers have free tiers.
+
+Two kinds of keys, because of how they're used:
+
+**Client-side** (`VITE_`-prefixed, bundled into the browser build — safe here because these either have no billing risk or are meant to be public):
 
 | Key | Service | Powers |
 |---|---|---|
-| `VITE_MAPBOX_TOKEN` | [Mapbox](https://console.mapbox.com) | the globe itself (**required**) |
-| `VITE_OPENSKY_USER/PASS` | [OpenSky Network](https://opensky-network.org) | live flight tracking |
-| `VITE_AISSTREAM_KEY` | [AISStream](https://aisstream.io) | live vessel tracking |
-| `VITE_ACLED_EMAIL/PASSWORD` | [ACLED](https://acleddata.com) | conflict event data |
-| `VITE_FINNHUB_KEY` | [Finnhub](https://finnhub.io) | market/sector panels |
-| `VITE_GUARDIAN_KEY` / `VITE_NYT_KEY` / `VITE_NEWSAPI_KEY` | Guardian / NYT / NewsAPI | news aggregation |
-| `VITE_OPENROUTER_KEY` | [OpenRouter](https://openrouter.ai) | AI Analyst panel |
+| `VITE_MAPBOX_TOKEN` | [Mapbox](https://console.mapbox.com) | the globe itself (**required**) — public by design, scope it to your domain from the Mapbox dashboard |
+| `VITE_NEWSAPI_KEY` | [NewsAPI](https://newsapi.org) | general news search |
+| `VITE_AISSTREAM_KEY` | [AISStream](https://aisstream.io) | live vessel tracking (WebSocket; read-only public AIS data) |
+
+**Server-only** (no `VITE_` prefix — read only by the `api/*.ts` serverless functions, never shipped to the browser; set these in Vercel's project env vars for production, or in `.env` for local `vercel dev`):
+
+| Key | Service | Powers |
+|---|---|---|
+| `OPENSKY_USER` / `OPENSKY_PASS` | [OpenSky Network](https://opensky-network.org) | live flight tracking |
+| `ACLED_EMAIL` / `ACLED_PASSWORD` | [ACLED](https://acleddata.com) | conflict event data |
+| `FINNHUB_KEY` | [Finnhub](https://finnhub.io) | market/sector panels |
+| `GUARDIAN_KEY` / `NYT_KEY` | Guardian / NYT | news aggregation |
+| `OPENROUTER_KEY` | [OpenRouter](https://openrouter.ai) | AI Analyst panel |
 
 ## Refresh budgeting
 

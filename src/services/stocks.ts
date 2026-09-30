@@ -1,7 +1,6 @@
 import type { Stock, StockCandle } from '../types'
 
-const FINNHUB_KEY = import.meta.env.VITE_FINNHUB_KEY || ''
-const BASE = 'https://finnhub.io/api/v1'
+const BASE = '/api/finnhub'
 
 // ── Static name lookup (avoids profile2 API call, halving request count) ──────
 const SYMBOL_NAMES: Record<string, string> = {
@@ -62,9 +61,8 @@ async function runBatch() {
 
 // Raw single-symbol fetch (quote only — no profile2)
 async function fetchQuoteRaw(symbol: string): Promise<Stock | null> {
-  if (!FINNHUB_KEY) return null
   try {
-    const res = await fetch(`${BASE}/quote?symbol=${symbol}&token=${FINNHUB_KEY}`)
+    const res = await fetch(`${BASE}/quote?symbol=${symbol}`)
     if (!res.ok) throw new Error(`Finnhub ${res.status}`)
     const q = await res.json()
     if (q.c == null || q.c === 0) return null
@@ -90,7 +88,6 @@ async function fetchQuoteRaw(symbol: string): Promise<Stock | null> {
 
 // Public fetchQuote — goes through the shared global pool
 export async function fetchQuote(symbol: string): Promise<Stock | null> {
-  if (!FINNHUB_KEY) return null
   return new Promise(resolve => {
     if (!symbolQueue.has(symbol)) symbolQueue.set(symbol, [])
     symbolQueue.get(symbol)!.push(resolve)
@@ -110,12 +107,11 @@ export async function fetchCandles(
   resolution = 'D',
   days = 30
 ): Promise<StockCandle[]> {
-  if (!FINNHUB_KEY) return []
   try {
     const to   = Math.floor(Date.now() / 1000)
     const from = to - days * 86400
     const res  = await fetch(
-      `${BASE}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}&token=${FINNHUB_KEY}`
+      `${BASE}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}`
     )
     if (!res.ok) throw new Error(`Finnhub candles ${res.status}`)
     const data = await res.json()
@@ -135,9 +131,8 @@ export async function fetchCandles(
 }
 
 export async function searchSymbol(query: string): Promise<{ symbol: string; name: string }[]> {
-  if (!FINNHUB_KEY) return []
   try {
-    const res  = await fetch(`${BASE}/search?q=${encodeURIComponent(query)}&token=${FINNHUB_KEY}`)
+    const res  = await fetch(`${BASE}/search?q=${encodeURIComponent(query)}`)
     if (!res.ok) return []
     const data = await res.json()
     return (data.result || [])

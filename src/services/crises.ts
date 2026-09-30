@@ -2,8 +2,6 @@ import type { CrisisEvent } from '../types'
 
 // ── ACLED OAuth ──────────────────────────────────────────────────────────────
 // Docs: https://apidocs.acleddata.com/
-const ACLED_EMAIL = import.meta.env.VITE_ACLED_EMAIL || ''
-const ACLED_PASSWORD = import.meta.env.VITE_ACLED_PASSWORD || ''
 const ACLED_TOKEN_URL = '/api/acled-token'
 const ACLED_API = '/api/acled/read'
 
@@ -12,22 +10,10 @@ let _token: string | null = null
 let _tokenExpiry = 0
 
 async function getACLEDToken(): Promise<string | null> {
-  if (!ACLED_EMAIL || !ACLED_PASSWORD) return null
   if (_token && Date.now() < _tokenExpiry) return _token
 
   try {
-    const body = new URLSearchParams({
-      username: ACLED_EMAIL,
-      password: ACLED_PASSWORD,
-      grant_type: 'password',
-      client_id: 'acled',
-    })
-
-    const res = await fetch(ACLED_TOKEN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    })
+    const res = await fetch(ACLED_TOKEN_URL, { method: 'POST' })
 
     if (!res.ok) {
       console.warn('[ACLED OAuth] token request failed:', res.status)
