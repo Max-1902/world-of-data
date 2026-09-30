@@ -21,6 +21,7 @@ export const SOURCE_RULES: SourceRule[] = [
   { id: 'opensky',   label: 'Flights (OpenSky)',         match: has('/api/opensky', 'opensky-network.org') },
   { id: 'usgs',      label: 'Earthquakes (USGS)',        match: has('earthquake.usgs.gov') },
   { id: 'firms',     label: 'Wildfires (NASA FIRMS)',    match: has('/api/firms', 'firms.modaps.eosdis.nasa.gov') },
+  { id: 'gdacs',     label: 'Disaster alerts (GDACS)',   match: has('gdacs.org') },
   { id: 'ioda',      label: 'Internet outages (IODA)',   match: has('api.ioda.inetintel.cc.gatech.edu') },
   { id: 'rss',       label: 'RSS headlines',             match: has('/api/rss') },
   { id: 'gdelt',     label: 'GDELT news search',         match: has('/api/gdelt', 'api.gdeltproject.org') },
