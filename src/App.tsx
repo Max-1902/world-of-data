@@ -72,7 +72,7 @@ export default function App() {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [reticleColor, setReticleColor] = useState(() => {
-    try { return localStorage.getItem('ws-reticle-color') || '#00ff88' } catch { return '#00ff88' }
+    try { return localStorage.getItem('ws-reticle-color') || '#16a34a' } catch { return '#16a34a' }
   })
 
   // Panels popped out to the bottom-left observe tray (up to 6)

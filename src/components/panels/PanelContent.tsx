@@ -95,7 +95,7 @@ export const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string
   { id: 'military',  label: 'MILITARY INSTALLATIONS',color: 'var(--green)', tag: 'MIL' },
   { id: 'nuclear',   label: 'NUCLEAR SITES',         color: 'var(--amber)', tag: 'NUC' },
   { id: 'sanctions', label: 'SANCTIONED STATES',     color: 'var(--red)', tag: 'SAN' },
-  { id: 'news',      label: 'MEDIA SIGNALS',         color: '#aa44ff', tag: 'SIG' },
+  { id: 'news',      label: 'MEDIA SIGNALS',         color: 'var(--series-5)', tag: 'SIG' },
   { id: 'stocks',    label: 'FINANCIAL CENTRES',     color: 'var(--accent)', tag: 'FIN' },
   { id: 'cameras',        label: 'LIVE CAMERAS',          color: 'var(--accent)', tag: 'CAM' },
   { id: 'infrastructure', label: 'CRITICAL INFRASTRUCTURE',color: 'var(--amber)', tag: 'CI' },
@@ -105,7 +105,7 @@ export const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string
   { id: 'oil',            label: 'OIL RESERVES',            color: 'var(--amber)', tag: 'OIL' },
   { id: 'gas',            label: 'GAS RESERVES',            color: 'var(--accent)', tag: 'GAS' },
   { id: 'ports',          label: 'GLOBAL PORTS',             color: 'var(--accent)', tag: 'PRT' },
-  { id: 'pipelines',     label: 'GAS PIPELINES',            color: '#44ddaa', tag: 'GAS' },
+  { id: 'pipelines',     label: 'GAS PIPELINES',            color: 'var(--series-3)', tag: 'GAS' },
   { id: 'chokepoints',   label: 'CHOKEPOINTS',              color: 'var(--red)', tag: 'TRD' },
   { id: 'supplychain',   label: 'SUPPLY CHAIN',             color: 'var(--accent)', tag: 'TRD' },
   { id: 'shippingRoutes',label: 'SHIPPING ROUTES',          color: 'var(--accent)', tag: 'TRD' },
@@ -1283,7 +1283,7 @@ export function SanctionsPanel() {
         {(['all','critical','high','medium','low'] as const).map(s => (
           <button key={s} onClick={() => setSevFilter(s)}
             className={`news-tab ${sevFilter === s ? 'active' : ''}`}
-            style={sevFilter === s && s !== 'all' ? { color: s === 'critical' ? 'var(--red)' : s === 'high' ? 'var(--amber)' : s === 'medium' ? 'var(--amber)' : '#8888ff', borderColor: `${SANCTION_COLORS[s as SanctionedCountry['severity']]}44` } : {}}>
+            style={sevFilter === s && s !== 'all' ? { color: s === 'critical' ? 'var(--red)' : s === 'high' ? 'var(--amber)' : s === 'medium' ? 'var(--amber)' : 'var(--blue)', borderColor: `color-mix(in srgb, ${SANCTION_COLORS[s as SanctionedCountry['severity']]} 27%, transparent)` } : {}}>
             {s.toUpperCase()}
           </button>
         ))}
@@ -2045,7 +2045,7 @@ export function GlobalEconomyPanel({ onCountryClick }: { onCountryClick?: (count
                         <span style={{ fontSize: 9, padding: '1px 4px', background: 'var(--amber-soft)', border: '1px solid var(--amber)22', color: 'var(--amber)' }}>
                           {t.currency}
                         </span>
-                        <span style={{ fontSize: 9, padding: '1px 4px', background: 'rgba(170,136,255,0.08)', border: '1px solid #aa88ff22', color: '#aa88ff' }}>
+                        <span style={{ fontSize: 9, padding: '1px 4px', background: 'color-mix(in srgb, var(--series-5) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--series-5) 13%, transparent)', color: 'var(--series-5)' }}>
                           {t.incomeGroup}
                         </span>
                       </div>
@@ -2924,7 +2924,7 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
                 { label: 'REFUGEES (UNHCR)',   value: g.refugees_unhcr,           color: 'var(--amber)' },
                 { label: 'INT. DISPLACED',     value: g.idps,                     color: 'var(--amber)' },
                 { label: 'ASYLUM SEEKERS',     value: g.asylum_seekers,           color: 'var(--accent)' },
-                { label: 'STATELESS',          value: g.stateless,                color: '#aa44ff' },
+                { label: 'STATELESS',          value: g.stateless,                color: 'var(--series-5)' },
                 { label: 'RETURNEES',          value: g.returnees,                color: 'var(--accent)' },
               ].map(({ label, value, color }) => (
                 <div key={label} style={{ background: 'var(--surface2)', padding: '5px 7px', border: '1px solid var(--border)' }}>
@@ -3092,7 +3092,7 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
                           <span style={{ flex: 1 }}>{dest}</span>
                           <span style={{ fontSize: 9.5, color: 'var(--amber)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(f.count)}</span>
                           {camps.length > 0 && <span style={{ fontSize: 8.5, color: 'var(--accent)' }}>{camps.length} sites</span>}
-                          {nearbyFlights > 0 && <span style={{ fontSize: 8.5, color: '#aa44ff' }}>✈{nearbyFlights}</span>}
+                          {nearbyFlights > 0 && <span style={{ fontSize: 8.5, color: 'var(--series-5)' }}>✈{nearbyFlights}</span>}
                         </div>
                       )
                     })}
@@ -3274,7 +3274,7 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
             {filteredCamps.map((c, i) => {
               const maxPop = REFUGEE_CAMPS[0].population
               const pct = (c.population / maxPop) * 100
-              const color = c.type === 'camp' ? 'var(--accent)' : c.type === 'settlement' ? 'var(--accent)' : c.type === 'poc_site' ? 'var(--amber)' : c.type === 'transit' ? 'var(--amber)' : '#8844ff'
+              const color = c.type === 'camp' ? 'var(--accent)' : c.type === 'settlement' ? 'var(--accent)' : c.type === 'poc_site' ? 'var(--amber)' : c.type === 'transit' ? 'var(--amber)' : 'var(--series-5)'
               return (
                 <div
                   key={c.id}
