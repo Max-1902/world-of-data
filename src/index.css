@@ -28,6 +28,13 @@
   --green-soft: rgba(105,201,167,0.12);
   --blue:    #78b9d1;
 
+  /* ── Chart categorical series (validated for dark surface, CVD-safe adjacent order) ── */
+  --series-1: #3987e5; /* blue */
+  --series-2: #d95926; /* orange */
+  --series-3: #199e70; /* aqua */
+  --series-4: #c98500; /* yellow */
+  --series-5: #d55181; /* magenta */
+
   /* legacy aliases used across older components — keep mapped to new palette */
   --pri:   #78b9d1;
   --pri06: rgba(120,185,209,0.06);

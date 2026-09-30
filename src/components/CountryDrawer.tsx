@@ -7,7 +7,7 @@ import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, 
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS, type SanctionedCountry } from '../services/sanctions'
 import { CHOKEPOINTS } from '../services/chokepoints'
 import { TRADE_PROFILES } from '../services/tradeStats'
-import { ALL_INFRA_POINTS, fetchPowerPlantsForCountry, type InfraPoint } from '../services/infrastructure'
+import { ALL_INFRA_POINTS, fetchPowerPlantsForCountry, INFRA_LABELS, type InfraPoint } from '../services/infrastructure'
 import { computeCountryRisk } from './panels/PanelContent'
 import { detectFlightType, FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS } from '../utils/flightType'
 import { fetchCountryEcon, formatEconValue, groupIndicators, resolveISO2, type CountryEconData } from '../services/worldbank'
@@ -191,6 +191,30 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
   )
 
+  // Horizontal bar chart: one bar per category, length proportional to value.
+  // Direct labels (name + value) so identity never depends on color alone.
+  const MiniBarChart = ({ data, unit }: { data: { label: string; value: number; color: string }[]; unit?: string }) => {
+    const max = Math.max(...data.map(d => d.value), 1)
+    return (
+      <div role="img" aria-label={`Bar chart: ${data.map(d => `${d.label} ${d.value}${unit ?? ''}`).join(', ')}`}>
+        {data.map(d => (
+          <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '2px 0' }}>
+            <span style={{ width: 74, flexShrink: 0, fontSize: 10, color: 'var(--text2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.label}</span>
+            <div style={{ flex: 1, height: 8, background: 'var(--surface2)', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{
+                width: `${Math.max((d.value / max) * 100, 3)}%`, height: '100%',
+                background: d.color, borderRadius: 4,
+              }} />
+            </div>
+            <span style={{ width: 54, flexShrink: 0, textAlign: 'right', fontSize: 10, fontWeight: 700, color: d.color, fontVariantNumeric: 'tabular-nums' }}>
+              {d.value.toLocaleString()}{unit ?? ''}
+            </span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   const hasData = linkedCrises.length > 0 || outflows.length > 0 || inflows.length > 0
     || camps.length > 0 || milBases.length > 0 || nukes.length > 0 || sanction
     || infra.length > 0 || nearbyFlights > 0 || nearbyQuakes.length > 0
@@ -343,6 +367,16 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
         {/* ── Infrastructure ────────────────────────────────── */}
         {infra.length > 0 && (
           <Section title="CRITICAL INFRASTRUCTURE" color="#ea580c" count={infra.length}>
+            {(() => {
+              const byType = infra.reduce((acc, p) => { acc[p.type] = (acc[p.type] ?? 0) + 1; return acc }, {} as Record<string, number>)
+              const seriesColors = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)']
+              const chartData = Object.entries(byType)
+                .sort((a, b) => b[1] - a[1])
+                .map(([type, count], i) => ({ label: (INFRA_LABELS[type as keyof typeof INFRA_LABELS] ?? type).toUpperCase(), value: count, color: seriesColors[i % seriesColors.length] }))
+              return chartData.length > 1
+                ? <div style={{ marginBottom: 6 }}><MiniBarChart data={chartData} /></div>
+                : null
+            })()}
             {infra.slice(0, 6).map(p => (
               <Row key={p.id} onClick={() => onFlyTo?.(`${p.lat},${p.lng}`)}>
                 <Dot color={p.type === 'dam' ? '#2563eb' : p.type === 'refinery' ? '#ea580c' : p.type === 'lng' ? '#16a34a' : '#d97706'} />
@@ -358,6 +392,21 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
         {/* ── Power plants (live, WRI Global Power Plant Database) ────────── */}
         {powerPlants.length > 0 && (
           <Section title="POWER PLANTS" color="#d97706" count={powerPlants.length}>
+            {(() => {
+              const seriesColors = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)', 'var(--series-5)']
+              const top = [...powerPlants].sort((a, b) => {
+                const mwA = parseFloat(a.capacity ?? '0') || 0
+                const mwB = parseFloat(b.capacity ?? '0') || 0
+                return mwB - mwA
+              }).slice(0, 5)
+              const chartData = top.map((p, i) => ({
+                label: p.name, value: parseFloat((p.capacity ?? '0').replace(/,/g, '')) || 0,
+                color: seriesColors[i % seriesColors.length],
+              }))
+              return chartData.length > 1
+                ? <div style={{ marginBottom: 6 }}><MiniBarChart data={chartData} unit=" MW" /></div>
+                : null
+            })()}
             {powerPlants.slice(0, 8).map(p => (
               <Row key={p.id} onClick={() => onFlyTo?.(`${p.lat},${p.lng}`)}>
                 <Dot color={p.type === 'power_coal' ? '#6b7280' : p.type === 'power_gas' ? '#f97316' : p.type === 'power_wind' ? '#22d3ee' : p.type === 'power_solar' ? '#facc15' : '#d97706'} />
