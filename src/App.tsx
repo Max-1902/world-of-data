@@ -93,7 +93,7 @@ export default function App() {
   }, [])
 
   const { flights, refresh: refreshFlights }         = useFlights(panelState.flights)
-  const { crises, refresh: refreshCrises }           = useCrises(panelState.crises)
+  const { crises, liveCount: liveCrisisCount, refresh: refreshCrises } = useCrises(panelState.crises)
   const { articles, loadHeadlines: refreshNews }     = useNews()
   const { stocks, refresh: refreshStocks }           = useStocks(panelState.stocks)
   const { earthquakes, refresh: refreshEarthquakes } = useEarthquakes(panelState.crises)
@@ -170,6 +170,7 @@ export default function App() {
         onViewMode={setViewMode}
         flightCount={flights.length}
         crises={crises}
+        liveCrisisCount={liveCrisisCount}
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
         onSettingsOpen={() => setSettingsOpen(true)}

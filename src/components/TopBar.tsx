@@ -32,6 +32,8 @@ interface Props {
   onViewMode: (m: MapViewMode) => void
   flightCount: number
   crises: CrisisEvent[]
+  /** Events from a live feed, excluding the hand-entered baseline list. */
+  liveCrisisCount: number
   searchQuery: string
   onSearch: (q: string) => void
   onSettingsOpen?: () => void
@@ -39,10 +41,11 @@ interface Props {
   reloading?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, flightCount, crises, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
+export default function TopBar({ viewMode, onViewMode, flightCount, crises, liveCrisisCount, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
   const [expanded, setExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const threat = computeThreatLevel(crises)
+  const hasLiveCrises = liveCrisisCount > 0
   const now = new Date()
   const utc = now.toUTCString().replace(/ GMT$/, '').split(' ').slice(1, 5).join(' ')
 
@@ -93,16 +96,26 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
 
         <div className="hud-sep" />
 
-        <HudStat label="INCIDENTS" value={crises.length} />
+        <span title={hasLiveCrises ? 'Events from live conflict feeds' : 'No live conflict feed is connected — the map shows only the long-running-conflict baseline'}>
+          <HudStat label="INCIDENTS" value={liveCrisisCount} />
+        </span>
 
         <div className="hud-sep" />
 
-        {/* threat level */}
-        <div className="defcon-badge" style={{ color: threat.color, borderColor: threat.color, background: threat.soft }}>
-          <span style={{ fontSize: 8, color: 'var(--text3)' }}>DEFCON</span>
-          <span>{threat.level}</span>
-          <span style={{ fontSize: 9 }}>{threat.label}</span>
-        </div>
+        {/* threat level — only meaningful when computed from live events, not the fixed baseline list */}
+        {hasLiveCrises ? (
+          <div className="defcon-badge" style={{ color: threat.color, borderColor: threat.color, background: threat.soft }}>
+            <span style={{ fontSize: 8, color: 'var(--text3)' }}>DEFCON</span>
+            <span>{threat.level}</span>
+            <span style={{ fontSize: 9 }}>{threat.label}</span>
+          </div>
+        ) : (
+          <div className="defcon-badge" title="Threat level needs a live conflict feed (ACLED). Only the fixed baseline list is loaded."
+            style={{ color: 'var(--text3)', borderColor: 'var(--border)', background: 'transparent' }}>
+            <span style={{ fontSize: 8 }}>DEFCON</span>
+            <span style={{ fontSize: 9 }}>NO LIVE FEED</span>
+          </div>
+        )}
 
         <div className="hud-sep" />
 

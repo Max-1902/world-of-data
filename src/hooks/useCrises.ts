@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { fetchACLEDEvents, fetchGDELTCrises } from '../services/crises'
+import { fetchACLEDEvents } from '../services/crises'
 import type { CrisisEvent } from '../types'
 
 // ── Baseline: major ongoing conflicts (always visible even if APIs fail) ─────
@@ -31,17 +31,18 @@ export function useCrises(enabled: boolean) {
   const [crises, setCrises] = useState<CrisisEvent[]>(BASELINE)
   const [loading, setLoading] = useState(false)
   const [error, setError]   = useState<string | null>(null)
+  // Events that came from a live feed (not the hand-entered BASELINE). 0 means the map is showing
+  // only the long-running-conflict baseline — callers should say so rather than imply live coverage.
+  const [liveCount, setLiveCount] = useState(0)
 
   async function load() {
     setLoading(true)
     setError(null)
     try {
-      const [acled, gdelt] = await Promise.all([
-        fetchACLEDEvents(14),
-        fetchGDELTCrises('war conflict attack protest coup crisis'),
-      ])
-
-      const live   = [...acled, ...gdelt]
+      // ACLED is the only live conflict source: it's curated, geolocated and fatality-counted. GDELT was
+      // dropped — its GEO API is gone and its raw event codes are too noisy to plot (see services/crises.ts).
+      const live   = await fetchACLEDEvents(14)
+      setLiveCount(live.length)
       const merged = [...BASELINE, ...live]
       const deduped = merged.filter((ev, i) =>
         !merged.slice(0, i).some(
@@ -67,5 +68,5 @@ export function useCrises(enabled: boolean) {
     return () => clearInterval(timer)
   }, [enabled]) // eslint-disable-line
 
-  return { crises, loading, error, refresh: load }
+  return { crises, loading, error, liveCount, refresh: load }
 }

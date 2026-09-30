@@ -102,64 +102,8 @@ export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
   }
 }
 
-// GDELT GEO 2.0 — free, no key
-const GDELT_GEO = '/api/gdelt/v2/geo/geo'
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type GDELTFeature = any
-
-export async function fetchGDELTCrises(query = 'war conflict attack protest crisis'): Promise<CrisisEvent[]> {
-  try {
-    const params = new URLSearchParams({
-      query,
-      mode: 'pointdata',
-      maxrecords: '250',
-    })
-
-    const res = await fetch(`${GDELT_GEO}?${params}`)
-    if (!res.ok) throw new Error(`GDELT ${res.status}`)
-
-    const text = await res.text()
-    if (!text.trim()) return []
-
-    let json: { features?: GDELTFeature[] } | GDELTFeature[]
-    try { json = JSON.parse(text) } catch { return [] }
-
-    const features: GDELTFeature[] = Array.isArray(json)
-      ? json
-      : (json as { features?: GDELTFeature[] }).features ?? []
-
-    return features
-      .filter((f: GDELTFeature) => f?.geometry?.coordinates?.length >= 2)
-      .map((f: GDELTFeature, i: number) => {
-        const props = f.properties ?? {}
-        const title = props.urlsharetitle || props.name || props.title || 'Conflict Event'
-        const type  = guessType(title)
-        return {
-          id:          `gdelt-${i}-${Date.now()}`,
-          title,
-          type,
-          severity:    SEVERITY_MAP[type] ?? 'medium',
-          latitude:    f.geometry.coordinates[1],
-          longitude:   f.geometry.coordinates[0],
-          country:     props.countrycode || props.sourcecountry || '',
-          date:        props.dateadded ?? new Date().toISOString().split('T')[0],
-          description: '',
-          source:      'GDELT',
-        } satisfies CrisisEvent
-      })
-  } catch (err) {
-    console.warn('[GDELT Crises] fetch error:', err)
-    return []
-  }
-}
-
-function guessType(title: string): CrisisEvent['type'] {
-  const t = title.toLowerCase()
-  if (t.includes('war') || t.includes('attack') || t.includes('military')) return 'war'
-  if (t.includes('terror') || t.includes('bomb') || t.includes('explos')) return 'terrorism'
-  if (t.includes('protest') || t.includes('demonstrat') || t.includes('riot')) return 'protest'
-  if (t.includes('election') || t.includes('coup') || t.includes('politic')) return 'political'
-  if (t.includes('earthquake') || t.includes('flood') || t.includes('hurricane') || t.includes('disaster')) return 'disaster'
-  return 'conflict'
-}
+// No GDELT here on purpose. The GEO 2.0 API this used to call (/api/v2/geo/geo) now 404s for every
+// query, and the replacement — GDELT's raw 15-minute event exports — was measured against live data
+// (Sep 2026): even restricted to armed-violence CAMEO codes, city-level geocodes and armed actors,
+// only ~1 in 3 of the top events was actual armed conflict (the rest were a cockpit scuffle, a football
+// transfer, a book award…). Plotting that as "war" markers would present noise as fact.
