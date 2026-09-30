@@ -90,6 +90,17 @@ Two kinds of keys, because of how they're used:
 | `GUARDIAN_KEY` / `NYT_KEY` | Guardian / NYT | news aggregation |
 | `OPENROUTER_KEY` | [OpenRouter](https://openrouter.ai) | AI Analyst panel |
 
+## Testing
+
+```bash
+npm test               # run the whole suite once (~2s, fully offline)
+npm run test:watch     # re-run on change
+npm run test:coverage  # v8 coverage report
+npm run typecheck      # src/ + api/ + tests/
+```
+
+The suite is hermetic: `fetch` is stubbed to throw by default, so no test can touch a live API (or a paid one). It covers the pure logic (trajectory engine, flight/vessel classification), every service's parsing/caching/failure paths against mocked responses, integrity checks for the static datasets, the serverless key-injecting proxies (`tests/api/`), and repo policy checks (no committed secrets, server keys never in the client bundle). `npm run test:visual` is a separate Playwright screenshot check.
+
 ## Refresh budgeting
 
 Every polled source runs at a rate chosen to respect its provider's free-tier limits: flights every 15s (OpenSky's polite ceiling), crises every 5 minutes, market data every 60s, news on-demand. This is deliberate — the app is designed to run indefinitely without hitting a 429.

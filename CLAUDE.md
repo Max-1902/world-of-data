@@ -59,4 +59,13 @@ Before assuming your own edits are broken or reverted, check `git status`/`git d
 - New data source → new file in `services/`, new hook in `hooks/`, new entry in `src/panels/registry.tsx`. Don't bypass the registry with ad-hoc panel wiring.
 - New map layer → follow the existing `addSource`/`addLayer` pairing pattern in `MapView.tsx`, gate visibility behind a new `PanelState` boolean (`src/types/index.ts`), wire the toggle through `SettingsModal`'s `LAYER_IDS` list.
 - Styling: use the CSS custom properties defined in `src/index.css` (`--surface`, `--text1/2/3`, `--accent`, `--red/amber/green` + `-soft` tints, `--r-sm/md/lg/pill`, `--shadow-sm/md/lg`) rather than hardcoding hex values, so the whole app stays reskinnable from one place.
-- Run `npm run typecheck` before considering any change done — this repo has no test suite; strict typechecking is the primary safety net. It checks both `src/` (browser/Vite types) and `api/` (Node/Vercel serverless function types) since they use different `tsconfig`s.
+- Run `npm run typecheck` **and** `npm test` before considering any change done. Typecheck covers `src/` (browser/Vite types), `api/` (Node/Vercel serverless types) and `tests/` — three different `tsconfig`s. `npm test` (Vitest) runs fully offline in ~2s.
+
+## Testing conventions
+
+- Tests sit next to the code (`foo.ts` → `foo.test.ts`). Serverless-function tests live in `tests/api/` — **never** put test or helper files under `api/`, because Vercel deploys every file there as a function (`tests/policy.test.ts` enforces this).
+- The suite is hermetic: `src/test/setup.ts` makes any unmocked `fetch` throw. Use `mockFetch` / `jsonResponse` / `installLocalStorage` from `src/test/helpers.ts`; never point a test at a live API. Services cache at module level, so reload them per test with `vi.resetModules()` + dynamic `import()`. Use fake timers (`vi.useFakeTimers()`) rather than real waits.
+- New static dataset → add it to `src/services/datasets.test.ts` (valid lat/lng, no `(0,0)` placeholders, unique ids, known enum values). That check can't prove an entry is *true* — the sourcing rule above still applies.
+- New service/hook → cover the success path, malformed/partial payloads, HTTP errors and network failure (services here return `[]`/`null` rather than throw unless documented otherwise).
+- `it.fails(...)` marks a **known, documented bug** (three exist: blank input in `resolveISO2`/`getTradeProfile`, and `fetchGppd` never clearing a rejected promise). When you fix one, the test flips to failing — delete the `.fails` then. Don't add new `.fails` to hide flaky tests.
+- New key-bearing endpoint in `api/` → add a proxy test asserting the server key is injected, cannot be overridden by the client query, and is never echoed back; add its env var to `.env.example`.
