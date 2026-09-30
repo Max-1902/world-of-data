@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { healthTracker, installFetchObserver, type HealthStatus } from '../services/sourceHealth'
 
@@ -10,13 +11,25 @@ export default function SourceHealth() {
   const sources = useSyncExternalStore(healthTracker.subscribe, healthTracker.getAll)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const popRef = useRef<HTMLDivElement>(null)
+  const [pos, setPos] = useState<{ top: number; right: number }>({ top: 0, right: 0 })
+
+  function toggle() {
+    // The TopBar clips overflow, so the popover is portalled to <body> and positioned from the button.
+    const r = ref.current?.getBoundingClientRect()
+    if (r) setPos({ top: r.bottom + 8, right: Math.max(8, window.innerWidth - r.right) })
+    setOpen(o => !o)
+  }
 
   // Installed from a child effect so it is in place before App's hooks issue their first requests.
   useEffect(() => installFetchObserver(), [])
 
   useEffect(() => {
     if (!open) return
-    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false) }
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (!ref.current?.contains(t) && !popRef.current?.contains(t)) setOpen(false)
+    }
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
     document.addEventListener('mousedown', onDown)
     document.addEventListener('keydown', onKey)
@@ -30,7 +43,7 @@ export default function SourceHealth() {
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         className="cy-btn"
-        onClick={() => setOpen(o => !o)}
+        onClick={toggle}
         aria-expanded={open}
         aria-haspopup="dialog"
         title="Data source health"
@@ -38,8 +51,8 @@ export default function SourceHealth() {
         <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: '50%', background: sources.length ? STATUS_COLOR[worst] : 'var(--text3)', display: 'inline-block' }} />
         {bad > 0 ? `${bad} issue${bad === 1 ? '' : 's'}` : 'Data'}
       </button>
-      {open && (
-        <div className="source-health-pop" role="dialog" aria-label="Data source health">
+      {open && createPortal(
+        <div ref={popRef} className="source-health-pop" role="dialog" aria-label="Data source health" style={{ top: pos.top, right: pos.right }}>
           <div className="source-health-head">DATA SOURCES · THIS SESSION</div>
           {sources.length === 0 && <div className="source-health-empty">No requests observed yet.</div>}
           {sources.map(s => (
@@ -56,7 +69,8 @@ export default function SourceHealth() {
             </div>
           ))}
           <div className="source-health-foot">Based on this browser's recent requests. A source only appears once its layer or panel has loaded.</div>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

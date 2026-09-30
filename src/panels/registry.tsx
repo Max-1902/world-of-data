@@ -15,6 +15,7 @@ import {
   DataCentersPanel, LiveFeedPanel, OwidPanel,
 } from '../components/panels/PanelContent'
 import { DisasterAlertsPanel } from '../components/panels/DisasterAlertsPanel'
+import { WatchlistPanel } from '../components/panels/WatchlistPanel'
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
 
@@ -24,6 +25,11 @@ const PANELS: PanelDef[] = [
     id: 'crisiswatch', title: 'Crisis Monitor', group: 'overview',
     dotColor: 'orange', desc: 'ICG conflict tracking — 70+ states',
     render: () => <CrisisWatchPanel />,
+  },
+  {
+    id: 'watchlist', title: 'Watchlist', group: 'overview',
+    dotColor: 'yellow', desc: 'Countries you watch — alerts on new events & rising trends',
+    render: (p) => <WatchlistPanel crises={p.crises} onCountryClick={p.onCountryClick} />,
   },
   {
     id: 'intel', title: 'Incidents', group: 'overview',

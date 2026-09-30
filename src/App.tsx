@@ -11,6 +11,8 @@ import { useVessels }    from './hooks/useVessels'
 import { useOutages }    from './hooks/useOutages'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 import { useHistoryRecorder } from './hooks/useHistory'
+import { useWatchEvaluator } from './hooks/useWatchlist'
+import AlertToasts from './components/AlertToasts'
 import MapView      from './components/Map/MapView'
 import TopBar       from './components/TopBar'
 import Sidebar      from './components/Sidebar'
@@ -122,6 +124,7 @@ export default function App() {
   void stocks
 
   useHistoryRecorder(crises, flights, panelState.flights)
+  useWatchEvaluator(crises, flights, articles)
 
   const [reloading, setReloading] = useState(false)
   const handleReloadAll = useCallback(() => {
@@ -296,6 +299,7 @@ export default function App() {
               />
             )}
           </Suspense>
+          <AlertToasts onSelectCountry={setSelectedCountry} />
           <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={setSelectedCountry} />
           <Suspense fallback={null}>
           <SettingsModal
