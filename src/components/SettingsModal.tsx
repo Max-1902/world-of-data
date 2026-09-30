@@ -462,7 +462,7 @@ function AboutTab() {
   return (
     <div>
       <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)', marginTop: 12, marginBottom: 3 }}>
-        WORLDVIEW
+        WORLD MAP
       </div>
       <div style={{ fontSize: 11, color: 'var(--text2)', marginBottom: 18 }}>
         Global Situational Awareness Platform
