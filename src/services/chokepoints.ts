@@ -142,6 +142,16 @@ export const CHOKEPOINTS: Chokepoint[] = [
   },
 ]
 
+/**
+ * Chokepoints that get a ringed label on the shipping-density overlay — the same
+ * seven the NOAA "Shipping Routes with Labels" visualization calls out
+ * (https://sos.noaa.gov/datasets/shipping-routes-with-labels-one-year/).
+ * Coordinates come from CHOKEPOINTS above.
+ */
+export const SHIPPING_LANE_LABEL_IDS = [
+  'suez', 'babel-mandeb', 'gibraltar', 'cape-good-hope', 'malacca', 'magellan', 'panama',
+] as const
+
 export const CHOKEPOINT_COLORS = {
   zone: '#ff4466',
   zoneBorder: '#ff2244',
