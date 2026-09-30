@@ -7,11 +7,12 @@ import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, 
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS, type SanctionedCountry } from '../services/sanctions'
 import { CHOKEPOINTS } from '../services/chokepoints'
 import { TRADE_PROFILES } from '../services/tradeStats'
-import { ALL_INFRA_POINTS } from '../services/infrastructure'
+import { ALL_INFRA_POINTS, fetchPowerPlantsForCountry, type InfraPoint } from '../services/infrastructure'
 import { computeCountryRisk } from './panels/PanelContent'
 import { detectFlightType, FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS } from '../utils/flightType'
-import { fetchCountryEcon, formatEconValue, groupIndicators, type CountryEconData } from '../services/worldbank'
+import { fetchCountryEcon, formatEconValue, groupIndicators, resolveISO2, type CountryEconData } from '../services/worldbank'
 import { getTradeProfile } from '../services/tradeStats'
+import { fetchCivilFacilities, CIVIL_FACILITY_COLORS, CIVIL_FACILITY_LABELS, type CivilFacility } from '../services/civilFacilities'
 
 interface Props {
   country: string
@@ -139,6 +140,29 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     }).catch(() => setEconLoading(false))
   }, [country])
 
+  // ── Live power plants (WRI Global Power Plant Database, async fetch) ───────
+  const [powerPlants, setPowerPlants] = useState<InfraPoint[]>([])
+  useEffect(() => {
+    setPowerPlants([])
+    let cancelled = false
+    fetchPowerPlantsForCountry(country).then(pts => { if (!cancelled) setPowerPlants(pts) }).catch(() => {})
+    return () => { cancelled = true }
+  }, [country])
+
+  // ── Live civil facilities: hospitals / police / telecom (OSM Overpass) ─────
+  const [civilFacilities, setCivilFacilities] = useState<CivilFacility[]>([])
+  const [civilLoading, setCivilLoading] = useState(false)
+  useEffect(() => {
+    setCivilFacilities([])
+    const iso2 = resolveISO2(country)
+    if (!iso2) return
+    setCivilLoading(true)
+    fetchCivilFacilities(iso2).then(f => {
+      setCivilFacilities(f)
+      setCivilLoading(false)
+    }).catch(() => setCivilLoading(false))
+  }, [country])
+
   const riskScore = risk?.score ?? 0
   const sevColor = riskScore >= 40 ? '#dc2626' : riskScore >= 20 ? '#ea580c' : riskScore >= 10 ? '#d97706' : '#16a34a'
 
@@ -170,6 +194,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
   const hasData = linkedCrises.length > 0 || outflows.length > 0 || inflows.length > 0
     || camps.length > 0 || milBases.length > 0 || nukes.length > 0 || sanction
     || infra.length > 0 || nearbyFlights > 0 || nearbyQuakes.length > 0
+    || powerPlants.length > 0 || civilFacilities.length > 0 || civilLoading
     || !!getTradeProfile(country)
 
   return (
@@ -327,6 +352,48 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
               </Row>
             ))}
             {infra.length > 6 && <div style={{ fontSize: 10, color: 'var(--text3)' }}>+{infra.length - 6} more</div>}
+          </Section>
+        )}
+
+        {/* ── Power plants (live, WRI Global Power Plant Database) ────────── */}
+        {powerPlants.length > 0 && (
+          <Section title="POWER PLANTS" color="#d97706" count={powerPlants.length}>
+            {powerPlants.slice(0, 8).map(p => (
+              <Row key={p.id} onClick={() => onFlyTo?.(`${p.lat},${p.lng}`)}>
+                <Dot color={p.type === 'power_coal' ? '#6b7280' : p.type === 'power_gas' ? '#f97316' : p.type === 'power_wind' ? '#22d3ee' : p.type === 'power_solar' ? '#facc15' : '#d97706'} />
+                <span style={{ color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                <span style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase' }}>{p.type.replace('power_', '')}</span>
+                {p.capacity && <span style={{ fontSize: 10, color: '#d97706' }}>{p.capacity}</span>}
+              </Row>
+            ))}
+            {powerPlants.length > 8 && <div style={{ fontSize: 10, color: 'var(--text3)' }}>+{powerPlants.length - 8} more</div>}
+            <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 2 }}>Source: WRI Global Power Plant Database</div>
+          </Section>
+        )}
+
+        {/* ── Civil facilities: hospitals / police / telecom (live OSM) ────── */}
+        {(civilLoading || civilFacilities.length > 0) && (
+          <Section title="CIVIL FACILITIES" color="#a855f7" count={civilLoading ? undefined : civilFacilities.length}>
+            {civilLoading && <div style={{ fontSize: 10, color: 'var(--text3)' }}>Loading from OpenStreetMap…</div>}
+            {(['hospital', 'police', 'telecom'] as const).map(t => {
+              const items = civilFacilities.filter(f => f.type === t)
+              if (items.length === 0) return null
+              return (
+                <div key={t} style={{ marginBottom: 4 }}>
+                  <div style={{ fontSize: 9, color: CIVIL_FACILITY_COLORS[t], fontWeight: 700, marginBottom: 2 }}>
+                    {CIVIL_FACILITY_LABELS[t]} ({items.length})
+                  </div>
+                  {items.slice(0, 4).map(f => (
+                    <Row key={f.id} onClick={() => onFlyTo?.(`${f.lat},${f.lng}`)}>
+                      <Dot color={CIVIL_FACILITY_COLORS[t]} />
+                      <span style={{ color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                    </Row>
+                  ))}
+                  {items.length > 4 && <div style={{ fontSize: 10, color: 'var(--text3)' }}>+{items.length - 4} more</div>}
+                </div>
+              )
+            })}
+            <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 2 }}>Source: OpenStreetMap (live, community-mapped — coverage varies by country)</div>
           </Section>
         )}
 

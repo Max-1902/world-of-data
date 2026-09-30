@@ -96,7 +96,7 @@ const NAME_TO_ISO2: Record<string, string> = {
   's.china sea':'CN','n.korea':'KP',
 }
 
-function resolveISO2(countryName: string): string | null {
+export function resolveISO2(countryName: string): string | null {
   const lc = countryName.toLowerCase().trim()
   // Direct match
   if (NAME_TO_ISO2[lc]) return NAME_TO_ISO2[lc]

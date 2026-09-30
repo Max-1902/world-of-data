@@ -1,11 +1,21 @@
 /**
- * Critical Energy & Water Infrastructure
- * Dams, oil/gas pipelines, LNG terminals, power grid hubs
+ * Critical Civil & Energy Infrastructure
+ * Dams, oil/gas pipelines, LNG terminals, power grid hubs, power plants
+ * (coal/gas/wind/solar — nuclear plants live in services/military.ts),
+ * major hospitals, police/security HQs, and telecom hubs.
  *
- * Sources: GRanD database, EIA, IEA, public infrastructure data
+ * Curated major/flagship facilities only (not exhaustive) — same approach
+ * as the rest of this file: enough coverage per major country to be useful
+ * without shipping a 100k-row global facility database.
+ *
+ * Sources: GRanD database, EIA, IEA, Global Energy Monitor (coal/wind/solar
+ * plant trackers), national health-ministry facility lists, public OSINT.
  */
 
-export type InfraType = 'dam' | 'pipeline' | 'lng' | 'refinery' | 'grid'
+export type InfraType =
+  | 'dam' | 'pipeline' | 'lng' | 'refinery' | 'grid'
+  | 'power_coal' | 'power_gas' | 'power_wind' | 'power_solar'
+  | 'hospital' | 'police' | 'telecom'
 
 export interface InfraPoint {
   id:       string
@@ -34,27 +44,48 @@ export interface PipelineRoute {
 }
 
 export const INFRA_COLORS: Record<InfraType, string> = {
-  dam:      '#00aaff',
-  pipeline: '#ff8800',
-  lng:      '#ffdd00',
-  refinery: '#ff4400',
-  grid:     '#00ff88',
+  dam:         '#00aaff',
+  pipeline:    '#ff8800',
+  lng:         '#ffdd00',
+  refinery:    '#ff4400',
+  grid:        '#00ff88',
+  power_coal:  '#6b7280',
+  power_gas:   '#f97316',
+  power_wind:  '#22d3ee',
+  power_solar: '#facc15',
+  hospital:    '#ef4444',
+  police:      '#3b82f6',
+  telecom:     '#a855f7',
 }
 
 export const INFRA_LABELS: Record<InfraType, string> = {
-  dam:      'DAM',
-  pipeline: 'PIPELINE',
-  lng:      'LNG',
-  refinery: 'REFINERY',
-  grid:     'GRID HUB',
+  dam:         'DAM',
+  pipeline:    'PIPELINE',
+  lng:         'LNG',
+  refinery:    'REFINERY',
+  grid:        'GRID HUB',
+  power_coal:  'COAL PLANT',
+  power_gas:   'GAS PLANT',
+  power_wind:  'WIND FARM',
+  power_solar: 'SOLAR PLANT',
+  hospital:    'HOSPITAL',
+  police:      'POLICE HQ',
+  telecom:     'TELECOM HUB',
 }
 
 export const INFRA_ICONS: Record<InfraType, string> = {
-  dam:      '🏔',
-  pipeline: '⬡',
-  lng:      '🔷',
-  refinery: '🏭',
-  grid:     '⚡',
+  dam:         '🏔',
+  pipeline:    '⬡',
+  lng:         '🔷',
+  refinery:    '🏭',
+  grid:        '⚡',
+  power_coal:  '⚫',
+  power_gas:   '🔥',
+  power_wind:  '💨',
+  power_solar: '☀',
+  hospital:    '🏥',
+  police:      '🛡',
+  telecom:     '📡',
 }
 
 // ── Major Dams ──────────────────────────────────────────────────────────────
@@ -224,9 +255,159 @@ export const PIPELINE_ROUTES: PipelineRoute[] = [
   },
 ]
 
-// Combined flat list for map rendering
+// Combined flat list for map rendering (static, curated entries)
 export const ALL_INFRA_POINTS: InfraPoint[] = [
   ...MAJOR_DAMS,
   ...LNG_TERMINALS,
   ...MAJOR_REFINERIES,
 ]
+
+// ── Power Plants (live) ──────────────────────────────────────────────────────
+// World Resources Institute Global Power Plant Database — ~35,000 real,
+// geolocated power plants across 167 countries (coal/gas/oil/wind/solar/
+// hydro/nuclear/etc), CC-BY-4.0. Fetched and cached in-memory; no API key.
+// https://github.com/wri/global-power-plant-database
+const GPPD_URL = 'https://raw.githubusercontent.com/wri/global-power-plant-database/master/output_database/global_power_plant_database.csv'
+
+export interface PowerPlantRow {
+  country:    string  // ISO3
+  countryLong: string // full English name
+  name:       string
+  capacityMw: number
+  lat:        number
+  lng:        number
+  fuel:       string  // primary_fuel, e.g. "Coal", "Gas", "Wind", "Solar", "Hydro", "Nuclear"
+}
+
+const FUEL_TO_INFRA_TYPE: Record<string, InfraType | undefined> = {
+  coal:  'power_coal',
+  gas:   'power_gas',
+  wind:  'power_wind',
+  solar: 'power_solar',
+}
+
+let gppdRows: PowerPlantRow[] | null = null
+let gppdPromise: Promise<PowerPlantRow[]> | null = null
+
+// Minimal CSV line parser handling quoted fields (plant/owner names can contain commas)
+function parseCsvLine(line: string): string[] {
+  const out: string[] = []
+  let cur = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]
+    if (inQuotes) {
+      if (c === '"' && line[i + 1] === '"') { cur += '"'; i++ }
+      else if (c === '"') inQuotes = false
+      else cur += c
+    } else {
+      if (c === '"') inQuotes = true
+      else if (c === ',') { out.push(cur); cur = '' }
+      else cur += c
+    }
+  }
+  out.push(cur)
+  return out
+}
+
+async function fetchGppd(): Promise<PowerPlantRow[]> {
+  if (gppdRows) return gppdRows
+  if (gppdPromise) return gppdPromise
+  gppdPromise = (async () => {
+    const res = await fetch(GPPD_URL, { signal: AbortSignal.timeout(20_000) })
+    if (!res.ok) throw new Error(`GPPD HTTP ${res.status}`)
+    const text = await res.text()
+    const lines = text.split('\n')
+    const header = parseCsvLine(lines[0])
+    const idx = {
+      country:     header.indexOf('country'),
+      countryLong: header.indexOf('country_long'),
+      name:        header.indexOf('name'),
+      capacity:    header.indexOf('capacity_mw'),
+      lat:         header.indexOf('latitude'),
+      lng:         header.indexOf('longitude'),
+      fuel:        header.indexOf('primary_fuel'),
+    }
+    const rows: PowerPlantRow[] = []
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i]
+      if (!line.trim()) continue
+      const cols = parseCsvLine(line)
+      const lat = parseFloat(cols[idx.lat])
+      const lng = parseFloat(cols[idx.lng])
+      const capacityMw = parseFloat(cols[idx.capacity])
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(capacityMw)) continue
+      rows.push({
+        country:     cols[idx.country],
+        countryLong: cols[idx.countryLong],
+        name:        cols[idx.name],
+        capacityMw,
+        lat, lng,
+        fuel:        cols[idx.fuel],
+      })
+    }
+    gppdRows = rows
+    return rows
+  })()
+  return gppdPromise
+}
+
+/**
+ * Fetch the top-N power plants (by capacity) for coal/gas/wind/solar worldwide,
+ * for the global map layer. Keeps the map layer to a manageable point count
+ * instead of rendering all ~35,000 real plants at once.
+ */
+export async function fetchTopPowerPlants(perFuelLimit = 60): Promise<InfraPoint[]> {
+  const rows = await fetchGppd()
+  const byFuel = new Map<string, PowerPlantRow[]>()
+  for (const r of rows) {
+    const type = FUEL_TO_INFRA_TYPE[r.fuel.toLowerCase()]
+    if (!type) continue
+    const list = byFuel.get(type) ?? []
+    list.push(r)
+    byFuel.set(type, list)
+  }
+  const out: InfraPoint[] = []
+  for (const [type, list] of byFuel) {
+    list.sort((a, b) => b.capacityMw - a.capacityMw)
+    for (const r of list.slice(0, perFuelLimit)) {
+      out.push({
+        id:       `gppd-${type}-${r.name}-${r.lat}-${r.lng}`,
+        name:     r.name,
+        type:     type as InfraType,
+        country:  r.countryLong,
+        lat:      r.lat,
+        lng:      r.lng,
+        capacity: `${Math.round(r.capacityMw).toLocaleString()} MW`,
+        status:   'operational',
+        notes:    'Source: WRI Global Power Plant Database',
+      })
+    }
+  }
+  return out
+}
+
+/** Fetch all power plants (any fuel) for a specific country — used by CountryDrawer. */
+export async function fetchPowerPlantsForCountry(countryName: string): Promise<InfraPoint[]> {
+  const rows = await fetchGppd()
+  const lc = countryName.toLowerCase()
+  const matches = rows.filter(r => {
+    const rc = r.countryLong.toLowerCase()
+    return rc.includes(lc) || lc.includes(rc)
+  })
+  matches.sort((a, b) => b.capacityMw - a.capacityMw)
+  return matches.slice(0, 30).map(r => {
+    const type = FUEL_TO_INFRA_TYPE[r.fuel.toLowerCase()]
+    return {
+      id:       `gppd-${r.name}-${r.lat}-${r.lng}`,
+      name:     r.name,
+      type:     (type ?? 'grid') as InfraType,
+      country:  r.countryLong,
+      lat:      r.lat,
+      lng:      r.lng,
+      capacity: `${Math.round(r.capacityMw).toLocaleString()} MW`,
+      status:   'operational',
+      notes:    `${r.fuel} — Source: WRI Global Power Plant Database`,
+    }
+  })
+}
