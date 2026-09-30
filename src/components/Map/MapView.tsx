@@ -2463,11 +2463,24 @@ export default function MapView({
       map.addLayer({
         id: 'shipping-density-layer', type: 'raster', source: 'shipping-density',
         paint: {
-          'raster-opacity': ['interpolate', ['linear'], ['zoom'], 1, 0.85, 6, 0.6],
+          'raster-opacity': ['interpolate', ['linear'], ['zoom'], 1, 0.9, 6, 0.7],
           'raster-fade-duration': 300,
-        },
+          // Recolor the source PNG's luminance into a black->red->orange->white "hot" ramp
+          // to match the traffic-density look (source tiles ship in a green/viridis ramp).
+          'raster-color-mix': [0.30, 0.59, 0.11, 0],
+          'raster-color-range': [0.38, 0.68],
+          'raster-color': [
+            'interpolate', ['linear'], ['raster-value'],
+            0,    'rgba(0,0,0,0)',
+            0.35, 'rgba(0,0,0,0)',
+            0.5,  'rgba(160,10,10,0.55)',
+            0.7,  'rgba(230,40,20,0.8)',
+            0.85, 'rgba(255,130,30,0.92)',
+            1,    'rgba(255,255,255,1)',
+          ] as unknown as [string, ...unknown[]],
+        } as Record<string, unknown>,
         layout: { visibility: 'none' },
-      })
+      } as Parameters<typeof map.addLayer>[0])
 
       // ── Shipping Routes GeoJSON source ────────────────────────────────────
       map.addSource('shipping-routes', {
@@ -2535,7 +2548,7 @@ export default function MapView({
           }
           if (!onCountryClickRef.current) return
           // Reverse geocode — works for every click on land
-          fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${e.lngLat.lng},${e.lngLat.lat}.json?types=country&access_token=${mapboxgl.accessToken}`)
+          fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${e.lngLat.lng},${e.lngLat.lat}.json?types=country&access_token=${TOKEN}`)
             .then(r => r.json())
             .then(json => {
               const countryName = json.features?.[0]?.text || json.features?.[0]?.place_name
