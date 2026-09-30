@@ -82,17 +82,6 @@ describe('fetchOwidChart', () => {
   })
 })
 
-describe('fetchOwidTopic', () => {
-  it('fetches every chart for the topic and drops failed ones', async () => {
-    const topic = 'violence' as const
-    const slugs = OWID_CHARTS.filter(c => c.topic === topic).map(c => c.slug)
-    expect(slugs.length).toBeGreaterThan(1)
-    mockFetch(url => url.includes(slugs[0]) ? textResponse('x', { status: 500 }) : textResponse(csv('Chad,TCD,2021,1')))
-    const charts = await (await load()).fetchOwidTopic(topic)
-    expect(charts.map(c => c.slug)).toEqual(slugs.slice(1))
-  })
-})
-
 describe('OWID catalogue', () => {
   it('has unique slugs and a label for every topic in use', () => {
     expect(new Set(OWID_CHARTS.map(c => c.slug)).size).toBe(OWID_CHARTS.length)

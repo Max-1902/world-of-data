@@ -9,17 +9,15 @@ import {
   NewsPanel, IntelPanel, LayersPanel, RiskPanel, ThreatPanel,
   OutagesPanel, CrisisWatchPanel, IntelBriefPanel, DrugTrafficPanel,
   SanctionsPanel, MilitaryPanel, NuclearPanel, AirspacePanel,
-  USWebcamsPanel, CryptoPanel, ForexPanel, ExchangesPanel,
-  StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, InfraIndicatorsPanel, AIAnalystPanel,
+  USWebcamsPanel, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, InfraIndicatorsPanel, AIAnalystPanel,
   MilitaryInstallationsByCountryPanel, NuclearFacilitiesByCountryPanel, InfrastructureByCountryPanel,
   ResourcesByCountryPanel, TradePartnersByCountryPanel, TradeProductsByCountryPanel,
   DataCentersPanel, LiveFeedPanel, OwidPanel,
-  SECTORS,
 } from '../components/panels/PanelContent'
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
 
-export const PANELS: PanelDef[] = [
+const PANELS: PanelDef[] = [
   // ── INTEL ───────────────────────────────────────────────────────────────────
   {
     id: 'crisiswatch', title: 'Crisis Monitor', group: 'overview',
@@ -222,9 +220,3 @@ export const GROUP_ORDER: { id: PanelGroup; label: string }[] = [
   { id: 'economicData',            label: 'ECON DATA' },
   { id: 'datacenters',             label: 'DATA CENTERS' },
 ]
-
-/** All panel IDs (for backwards compat) */
-export const ALL_PANEL_IDS = PANELS.map(p => p.id)
-
-// Re-export SECTORS for market sub-panels
-export { SECTORS }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { streamAI, buildDashboardContext, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS } from './openrouter'
-import { mockFetch, jsonResponse, streamResponse, textResponse } from '../test/helpers'
+import { mockFetch, streamResponse, textResponse } from '../test/helpers'
 import type { CrisisEvent, Flight } from '../types'
 import type { TrajectoryEntry } from '../utils/trajectory'
 

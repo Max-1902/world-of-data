@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS, VESSEL_TYPE_LABELS } from './aisstream'
+import { vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from './aisstream'
 
 describe('vesselTypeFromCode (AIS ship type codes)', () => {
   it.each([
@@ -53,7 +53,6 @@ describe('vessel type lookup tables', () => {
   it('cover every vessel type', () => {
     for (const t of types) {
       expect(VESSEL_TYPE_COLORS[t]).toMatch(/^#[0-9a-f]{6}$/i)
-      expect(VESSEL_TYPE_LABELS[t]).toBeTruthy()
     }
   })
 })

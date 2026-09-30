@@ -109,13 +109,3 @@ export async function fetchDataCenters(): Promise<DataCenterPoint[]> {
     inflight = null
   }
 }
-
-/** Data centers within a given country name (loose match against tagged country/name text). */
-export async function fetchDataCentersForCountry(countryName: string): Promise<DataCenterPoint[]> {
-  const all = await fetchDataCenters()
-  const lc = countryName.toLowerCase()
-  return all.filter(p =>
-    (p.country && p.country.toLowerCase() === lc) ||
-    p.name.toLowerCase().includes(lc)
-  )
-}

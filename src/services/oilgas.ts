@@ -36,13 +36,6 @@ export const METRIC_COLORS: Record<OilGasMetric, string> = {
   gasProduction: '#44ccff',
 }
 
-export const METRIC_UNITS: Record<OilGasMetric, string> = {
-  oilReserves:   'Gbbl',
-  gasReserves:   'Tcm',
-  oilProduction: 'Mbbl/d',
-  gasProduction: 'Gm³/yr',
-}
-
 // ── COMPLETE global dataset — 98 countries ──────────────────────────────────────
 export const OIL_GAS_DATA: OilGasCountry[] = [
   // ═══════════════ MIDDLE EAST ═══════════════
@@ -180,16 +173,6 @@ export function getMaxValue(metric: OilGasMetric): number {
   return Math.max(...OIL_GAS_DATA.map(c => c[metric]))
 }
 
-/** Get top N countries for a metric */
-export function getTopCountries(metric: OilGasMetric, n = 10): OilGasCountry[] {
-  return [...OIL_GAS_DATA].sort((a, b) => b[metric] - a[metric]).slice(0, n)
-}
-
-/** Get countries with nonzero value for a metric */
-export function getActiveCountries(metric: OilGasMetric): OilGasCountry[] {
-  return OIL_GAS_DATA.filter(c => c[metric] > 0).sort((a, b) => b[metric] - a[metric])
-}
-
 /** Aggregate by region */
 export function getRegionTotals(metric: OilGasMetric): { region: string; total: number }[] {
   const map = new Map<string, number>()
@@ -208,9 +191,4 @@ export function formatValue(val: number, metric: OilGasMetric): string {
   if (metric === 'gasReserves') return val >= 1 ? val.toFixed(1) + ' Tcm' : (val * 1000).toFixed(0) + ' Gcm'
   if (metric === 'oilProduction') return val >= 1 ? val.toFixed(1) + ' Mbbl/d' : (val * 1000).toFixed(0) + ' kbbl/d'
   return val >= 1 ? val.toFixed(0) + ' Gm³/yr' : (val * 1000).toFixed(0) + ' Mm³/yr'
-}
-
-/** Get global total for a metric */
-export function getGlobalTotal(metric: OilGasMetric): number {
-  return OIL_GAS_DATA.reduce((sum, c) => sum + c[metric], 0)
 }

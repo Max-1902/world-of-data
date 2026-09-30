@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { mockFetch, jsonResponse, textResponse, quietConsole } from '../test/helpers'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mockFetch, jsonResponse, quietConsole } from '../test/helpers'
 
 // crises.ts caches the ACLED token at module level — reload it for each test.
 async function load() {

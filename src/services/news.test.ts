@@ -134,17 +134,9 @@ describe('CrisisWatch', () => {
     ['Something neutral happened', 'unknown'],
   ])('classifies "%s" as %s', async (title, trend) => {
     mockFetch(() => rssBody([rssItem(1, { title, description: '' })]))
-    const { fetchCrisisWatch } = await load()
-    const [entry] = await settle(fetchCrisisWatch())
+    const { fetchAllCrisisWatch } = await load()
+    const [entry] = await settle(fetchAllCrisisWatch())
     expect(entry.trend).toBe(trend)
-    expect(entry.region).toBe('Global')
-  })
-
-  it('fetchCrisisWatch falls back to the global feed for unknown regions', async () => {
-    mockFetch(() => rssBody([rssItem(1)]))
-    const { fetchCrisisWatch } = await load()
-    const [entry] = await settle(fetchCrisisWatch('Atlantis'))
-    expect(entry.region).toBe('Global')
   })
 
   it('fetchAllCrisisWatch de-duplicates by URL, tags regions and sorts newest-first', async () => {

@@ -54,22 +54,6 @@ export interface Stock {
   lastUpdated: string
 }
 
-export interface StockCandle {
-  time: number
-  open: number
-  high: number
-  low: number
-  close: number
-  volume: number
-}
-
-export interface MarketEvent {
-  date: string
-  description: string
-  impact: 'positive' | 'negative' | 'neutral'
-  symbols: string[]
-}
-
 export interface PanelState {
   flights:   boolean
   crises:    boolean
@@ -98,12 +82,4 @@ export interface PanelState {
   militaryPersonnel: boolean
   datacenters:    boolean
   infraIndicators: boolean
-}
-
-export interface MapMarker {
-  id: string
-  type: 'flight' | 'crisis' | 'news' | 'stock'
-  latitude: number
-  longitude: number
-  data: Flight | CrisisEvent | NewsArticle
 }

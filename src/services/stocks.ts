@@ -1,4 +1,4 @@
-import type { Stock, StockCandle } from '../types'
+import type { Stock } from '../types'
 
 const BASE = '/api/finnhub'
 
@@ -99,35 +99,6 @@ export async function fetchQuote(symbol: string): Promise<Stock | null> {
 export async function fetchMultipleQuotes(symbols: string[]): Promise<Stock[]> {
   const results = await Promise.all(symbols.map(fetchQuote))
   return results.filter((r): r is Stock => r !== null)
-}
-
-// ── Candles ───────────────────────────────────────────────────────────────────
-export async function fetchCandles(
-  symbol: string,
-  resolution = 'D',
-  days = 30
-): Promise<StockCandle[]> {
-  try {
-    const to   = Math.floor(Date.now() / 1000)
-    const from = to - days * 86400
-    const res  = await fetch(
-      `${BASE}/stock/candle?symbol=${symbol}&resolution=${resolution}&from=${from}&to=${to}`
-    )
-    if (!res.ok) throw new Error(`Finnhub candles ${res.status}`)
-    const data = await res.json()
-    if (data.s !== 'ok') return []
-    return data.t.map((t: number, i: number) => ({
-      time:   t * 1000,
-      open:   data.o[i],
-      high:   data.h[i],
-      low:    data.l[i],
-      close:  data.c[i],
-      volume: data.v[i],
-    }))
-  } catch (err) {
-    console.warn(`[Finnhub candles] ${symbol}:`, err)
-    return []
-  }
 }
 
 export async function searchSymbol(query: string): Promise<{ symbol: string; name: string }[]> {
