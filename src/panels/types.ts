@@ -20,7 +20,7 @@ export type PanelGroup =
   | 'overview' | 'news' | 'geo' | 'security' | 'markets' | 'analysis'
   | 'militaryInstallations' | 'nuclearFacilities' | 'infrastructureSites'
   | 'resourcesByCountry' | 'forceSize' | 'tradePartnersByCountry'
-  | 'tradeProductsByCountry' | 'economicData'
+  | 'tradeProductsByCountry' | 'economicData' | 'datacenters'
 
 export interface PanelDef {
   id: string

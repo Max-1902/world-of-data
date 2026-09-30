@@ -1,6 +1,6 @@
 import {
   BookOpen, LayoutDashboard, LineChart, Radio, ShieldHalf, Network,
-  Swords, Radiation, Factory, Pickaxe, Users, ArrowLeftRight, Package, Landmark,
+  Swords, Radiation, Factory, Pickaxe, Users, ArrowLeftRight, Package, Landmark, Server,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { GROUP_ORDER, panelsForGroup } from '../panels/registry'
@@ -21,6 +21,7 @@ const GROUP_ICONS: Record<PanelGroup, LucideIcon> = {
   tradePartnersByCountry: ArrowLeftRight,
   tradeProductsByCountry: Package,
   economicData:           Landmark,
+  datacenters:            Server,
 }
 
 const GROUP_HINTS: Record<PanelGroup, string> = {
@@ -38,6 +39,7 @@ const GROUP_HINTS: Record<PanelGroup, string> = {
   tradePartnersByCountry: 'Top export/import partner countries by country',
   tradeProductsByCountry: 'Top exported/imported product categories by country',
   economicData: 'World Bank economic indicators by country',
+  datacenters: 'Data center facilities worldwide (OpenStreetMap) — click to fly to',
 }
 
 interface Props {
