@@ -1036,16 +1036,14 @@ export interface PanelContentProps {
 
 // ── Drug Trafficking Panel ─────────────────────────────────────────────────────
 const DRUG_TABS = [
-  { id: 'Global',   q: 'drug trafficking seizure cartel narcotics bust sourcelang:english' },
-  { id: 'Americas', q: 'cartel cocaine fentanyl smuggling Mexico Colombia sourcelang:english' },
-  { id: 'Europe',   q: 'drug seizure narcotics trafficking Europe Europol sourcelang:english' },
-  { id: 'Asia',     q: 'drug trafficking methamphetamine heroin Asia sourcelang:english' },
-  { id: 'Africa',   q: 'drug trafficking narcotics seizure Africa sourcelang:english' },
-  { id: 'MENA',     q: 'drug trafficking narcotics Captagon Middle East sourcelang:english' },
+  { id: 'Global',   q: 'drug trafficking seizure cartel narcotics bust' },
+  { id: 'Americas', q: 'cartel cocaine fentanyl smuggling Mexico Colombia' },
+  { id: 'Europe',   q: 'drug seizure narcotics trafficking Europe Europol' },
+  { id: 'Asia',     q: 'drug trafficking methamphetamine heroin Asia' },
+  { id: 'Africa',   q: 'drug trafficking narcotics seizure Africa' },
+  { id: 'MENA',     q: 'drug trafficking narcotics Captagon Middle East' },
 ] as const
 type DrugTab = typeof DRUG_TABS[number]['id']
-
-const drugInFlight = new Map<DrugTab, Promise<NewsArticle[]>>()
 
 export function DrugTrafficPanel() {
   const [tab, setTab]         = useState<DrugTab>('Global')
@@ -1057,34 +1055,14 @@ export function DrugTrafficPanel() {
   const load = useCallback(async (t: DrugTab) => {
     const entry = DRUG_TABS.find(d => d.id === t)
     if (!entry) return
-    // GDELT enforces ~1 req/5s per IP; dedupe concurrent calls for the same tab
-    // (StrictMode double-invoke, rapid tab switches, global reload) so we don't
-    // trip its rate limit and land on a silent 429.
-    let pending = drugInFlight.get(t)
-    if (!pending) {
-      pending = (async () => {
-        const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(entry.q)}&mode=artlist&maxrecords=50&format=json&sort=DateDesc`
-        const res = await fetch(url)
-        if (!res.ok) throw new Error(res.status === 429 ? 'Rate limited by GDELT — retrying shortly' : `GDELT ${res.status}`)
-        const json = await res.json()
-        return (json.articles || []).map((a: { url: string; title: string; seendate: string; socialimage?: string; domain: string }, i: number) => ({
-          id:          `drug-${t}-${i}`,
-          title:       a.title,
-          description: '',
-          url:         a.url,
-          source:      a.domain,
-          publishedAt: a.seendate,
-          imageUrl:    a.socialimage,
-        }))
-      })()
-      drugInFlight.set(t, pending)
-      pending.finally(() => drugInFlight.delete(t))
-    }
     setLoading(true); setError(null)
     try {
-      const mapped = await pending
-      setArticles(mapped)
-      setLastFetch(Date.now())
+      // searchGDELTNews goes through our /api/gdelt proxy (GDELT sends no CORS headers, so a direct
+      // browser call fails) and handles GDELT's 1-req/5s limit with queueing, caching and a 429 cooldown.
+      const mapped = await searchGDELTNews(entry.q)
+      setArticles(mapped.map((a, i) => ({ ...a, id: `drug-${t}-${i}` })))
+      // searchGDELTNews returns [] when rate-limited/failed — don't stamp that as a live update
+      setLastFetch(mapped.length > 0 ? Date.now() : null)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load')
     } finally { setLoading(false) }
