@@ -14,6 +14,7 @@ import {
   ResourcesByCountryPanel, TradePartnersByCountryPanel, TradeProductsByCountryPanel,
   DataCentersPanel, LiveFeedPanel, OwidPanel,
 } from '../components/panels/PanelContent'
+import { DisasterAlertsPanel } from '../components/panels/DisasterAlertsPanel'
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
 
@@ -50,6 +51,11 @@ const PANELS: PanelDef[] = [
     id: 'outages', title: 'Connectivity', group: 'geo',
     dotColor: 'yellow', desc: 'Internet disruption monitoring',
     render: (p) => <OutagesPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
+    id: 'disasters', title: 'Disaster Alerts', group: 'geo',
+    dotColor: 'orange', desc: 'GDACS Orange/Red: quakes, cyclones, floods, volcanoes, drought',
+    render: (p) => <DisasterAlertsPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
     id: 'humanitarian', title: 'Humanitarian', group: 'geo',
