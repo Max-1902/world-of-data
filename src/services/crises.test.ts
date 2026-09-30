@@ -80,6 +80,20 @@ describe('fetchACLEDEvents', () => {
     expect(await (await load()).fetchACLEDEvents()).toEqual([])
   })
 
+  it('does not retry a failed token request until the cooldown has passed', async () => {
+    vi.useFakeTimers()
+    try {
+      const fetchMock = mockFetch(() => jsonResponse({ error: 'flood_user_blocked' }, { status: 403 }))
+      const { fetchACLEDEvents } = await load()
+      await fetchACLEDEvents()
+      await fetchACLEDEvents()
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      vi.advanceTimersByTime(31 * 60 * 1000)
+      await fetchACLEDEvents()
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    } finally { vi.useRealTimers() }
+  })
+
   it('caches the token between calls', async () => {
     const fetchMock = mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [] }))
     const { fetchACLEDEvents } = await load()
