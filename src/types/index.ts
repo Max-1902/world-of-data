@@ -92,6 +92,9 @@ export interface PanelState {
   chokepoints:    boolean
   supplychain:    boolean
   shippingRoutes: boolean
+  outages:        boolean
+  resources:      boolean
+  tradeStats:     boolean
 }
 
 export interface MapMarker {

@@ -1,13 +1,24 @@
-import { Radio, MapPinned, ShieldHalf, LineChart, Sparkles } from 'lucide-react'
+import { BookOpen, LayoutDashboard, LineChart, MapPinned, Newspaper, ShieldHalf } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { GROUP_ORDER, panelsForGroup } from '../panels/registry'
 import type { PanelGroup } from '../panels/types'
 
-const GROUP_ICONS: Record<PanelGroup, typeof Radio> = {
-  intel: Radio,
-  geo:   MapPinned,
-  mil:   ShieldHalf,
-  fin:   LineChart,
-  ai:    Sparkles,
+const GROUP_ICONS: Record<PanelGroup, LucideIcon> = {
+  overview: LayoutDashboard,
+  news:     Newspaper,
+  geo:      MapPinned,
+  security: ShieldHalf,
+  markets:  LineChart,
+  analysis: BookOpen,
+}
+
+const GROUP_HINTS: Record<PanelGroup, string> = {
+  overview: 'Global situation and active risk',
+  news: 'Reporting and live media sources',
+  geo: 'Places, networks, and humanitarian data',
+  security: 'Defense, airspace, and restrictions',
+  markets: 'Economy and financial activity',
+  analysis: 'Briefings and regional outlook',
 }
 
 interface Props {
@@ -19,6 +30,7 @@ interface Props {
 export default function Sidebar({ activeGroup, onGroupChange, poppedOut }: Props) {
   return (
     <div className="sidebar expanded">
+      <div className="sidebar-heading">WORKSPACES</div>
       {GROUP_ORDER.map(g => {
         const Icon = GROUP_ICONS[g.id]
         const isActive = g.id === activeGroup
@@ -28,10 +40,11 @@ export default function Sidebar({ activeGroup, onGroupChange, poppedOut }: Props
             key={g.id}
             onClick={() => onGroupChange(g.id)}
             className={`sidebar-item${isActive ? ' active' : ''}`}
-            title={g.label}
+            title={GROUP_HINTS[g.id]}
+            aria-pressed={isActive}
           >
-            <Icon size={15} strokeWidth={2} />
-            <span>{g.label}</span>
+            <Icon size={14} strokeWidth={1.8} />
+            <span className="sidebar-label">{g.label}</span>
             <span className="count">{count}</span>
           </button>
         )

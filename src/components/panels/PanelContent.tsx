@@ -3,7 +3,7 @@
  */
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
-import { ExternalLink, RefreshCw, TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, Terminal, Sparkles } from 'lucide-react'
+import { ExternalLink, RefreshCw, TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { CrisisEvent, NewsArticle, PanelState, Stock, Flight } from '../../types'
 import { fetchRSSFeed, searchGDELTNews, searchGuardian, searchNYT, searchNewsAPI, fetchAllCrisisWatch, CRISISWATCH_FEEDS, type CrisisWatchEntry, COUNTRY_NEWS_SOURCES, fetchCountryNews } from '../../services/news'
@@ -16,6 +16,7 @@ import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MO
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
 import { TRADE_PROFILES } from '../../services/tradeStats'
 import { fetchCountryEcon, formatEconValue, groupIndicators, type CountryEconData } from '../../services/worldbank'
+import { RESOURCE_PROFILES, getResourceProfile, fetchResourceRents, type ResourceRent } from '../../services/resources'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
 import {
@@ -61,7 +62,7 @@ export const PANEL_META: Record<PanelId, { title: string; dotColor?: string; wid
   outages:     { title: 'Connectivity',  dotColor: 'yellow', width: 280, desc: 'Internet disruption monitoring' },
   brief:       { title: 'Briefing',      dotColor: 'red',    width: 240, desc: 'Correlated intel for active query' },
   crisiswatch: { title: 'Crisis Monitor',dotColor: 'orange', width: 290, desc: 'ICG conflict tracking — 70+ states' },
-  analyst:     { title: 'Analysis',      dotColor: 'blue',   width: 480, desc: 'AI-assisted situational assessment' },
+  analyst:     { title: 'Analyst chat',  dotColor: 'blue',   width: 480, desc: 'Briefings grounded in live dashboard data' },
   humanitarian:{ title: 'Humanitarian',  dotColor: 'blue',   width: 320, desc: 'UNHCR displacement & border status' },
   webcams:     { title: 'US Webcams',    dotColor: 'grn',    width: 320, desc: 'SkylineWebcams & EarthCam — live US grid' },
 }
@@ -110,6 +111,9 @@ export const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string
   { id: 'supplychain',   label: 'SUPPLY CHAIN',             color: 'var(--accent)', tag: 'TRD' },
   { id: 'shippingRoutes',label: 'SHIPPING ROUTES',          color: 'var(--accent)', tag: 'TRD' },
   { id: 'gpsjam',        label: 'GPS INTERFERENCE',        color: 'var(--red)', tag: 'GPS' },
+  { id: 'outages',       label: 'NETWORK OUTAGES',          color: 'var(--red)', tag: 'NET' },
+  { id: 'resources',     label: 'CRITICAL MINERALS',        color: 'var(--amber)', tag: 'RES' },
+  { id: 'tradeStats',    label: 'TRADE FLOWS',              color: 'var(--accent)', tag: 'TRD' },
 ]
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
@@ -1038,33 +1042,49 @@ const DRUG_TABS = [
 ] as const
 type DrugTab = typeof DRUG_TABS[number]['id']
 
+const drugInFlight = new Map<DrugTab, Promise<NewsArticle[]>>()
+
 export function DrugTrafficPanel() {
   const [tab, setTab]         = useState<DrugTab>('Global')
   const [articles, setArticles] = useState<NewsArticle[]>([])
   const [loading, setLoading]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
   const [lastFetch, setLastFetch] = useState<number | null>(null)
 
   const load = useCallback(async (t: DrugTab) => {
     const entry = DRUG_TABS.find(d => d.id === t)
     if (!entry) return
-    setLoading(true); setArticles([])
+    // GDELT enforces ~1 req/5s per IP; dedupe concurrent calls for the same tab
+    // (StrictMode double-invoke, rapid tab switches, global reload) so we don't
+    // trip its rate limit and land on a silent 429.
+    let pending = drugInFlight.get(t)
+    if (!pending) {
+      pending = (async () => {
+        const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(entry.q)}&mode=artlist&maxrecords=50&format=json&sort=DateDesc`
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(res.status === 429 ? 'Rate limited by GDELT — retrying shortly' : `GDELT ${res.status}`)
+        const json = await res.json()
+        return (json.articles || []).map((a: { url: string; title: string; seendate: string; socialimage?: string; domain: string }, i: number) => ({
+          id:          `drug-${t}-${i}`,
+          title:       a.title,
+          description: '',
+          url:         a.url,
+          source:      a.domain,
+          publishedAt: a.seendate,
+          imageUrl:    a.socialimage,
+        }))
+      })()
+      drugInFlight.set(t, pending)
+      pending.finally(() => drugInFlight.delete(t))
+    }
+    setLoading(true); setError(null)
     try {
-      const url = `https://api.gdeltproject.org/api/v2/doc/doc?query=${encodeURIComponent(entry.q)}&mode=artlist&maxrecords=50&format=json&sort=DateDesc`
-      const res = await fetch(url)
-      if (!res.ok) throw new Error(`GDELT ${res.status}`)
-      const json = await res.json()
-      const mapped: NewsArticle[] = (json.articles || []).map((a: { url: string; title: string; seendate: string; socialimage?: string; domain: string }, i: number) => ({
-        id:          `drug-${t}-${i}`,
-        title:       a.title,
-        description: '',
-        url:         a.url,
-        source:      a.domain,
-        publishedAt: a.seendate,
-        imageUrl:    a.socialimage,
-      }))
+      const mapped = await pending
       setArticles(mapped)
       setLastFetch(Date.now())
-    } catch { /* silent */ } finally { setLoading(false) }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load')
+    } finally { setLoading(false) }
   }, [])
 
   useEffect(() => { load(tab) }, [tab, load])
@@ -1098,8 +1118,9 @@ export function DrugTrafficPanel() {
         </div>
       )}
       <div style={{ flex: 1, overflowY: 'auto' }}>
-        {loading && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// QUERYING INTEL…</div>}
-        {!loading && articles.length === 0 && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO REPORTS</div>}
+        {loading && articles.length === 0 && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// QUERYING INTEL…</div>}
+        {error && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--red)', letterSpacing: '.1em' }}>// {error.toUpperCase()}</div>}
+        {!loading && !error && articles.length === 0 && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO REPORTS</div>}
         {articles.map(a => <ArticleRow key={a.id} a={a} />)}
       </div>
     </>
@@ -2175,6 +2196,120 @@ export function GlobalEconomyPanel({ onCountryClick }: { onCountryClick?: (count
   )
 }
 
+// ── Resources Panel — critical minerals, reserves & production by country ──
+export function ResourcesPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
+  const [selected, setSelected] = useState<string | null>(null)
+  const [rents, setRents] = useState<ResourceRent[]>([])
+  const [rentsLoading, setRentsLoading] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const resourceMap = useMemo(() => new Map(RESOURCE_PROFILES.map(r => [r.iso2, r])), [])
+  const allEntries = useMemo(
+    () => ALL_COUNTRIES.map(c => ({ ...c, res: resourceMap.get(c.iso2) ?? null })),
+    [resourceMap],
+  )
+  const sorted = useMemo(() => allEntries.slice().sort((a, b) => {
+    if (a.res && !b.res) return -1
+    if (!a.res && b.res) return 1
+    if (a.res && b.res) return b.res.resources.length - a.res.resources.length
+    return a.name.localeCompare(b.name)
+  }), [allEntries])
+  const filtered = search.trim()
+    ? sorted.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.iso2.toLowerCase().includes(search.toLowerCase()))
+    : sorted
+
+  useEffect(() => {
+    if (!selected) { setRents([]); return }
+    const entry = allEntries.find(c => c.name === selected)
+    if (!entry) return
+    setRentsLoading(true)
+    fetchResourceRents(entry.iso2).then(r => { setRents(r); setRentsLoading(false) }).catch(() => setRentsLoading(false))
+  }, [selected, allEntries])
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder={`Search ${ALL_COUNTRIES.length} countries…`}
+          style={{
+            width: '100%', background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--text1)',
+            padding: '4px 6px', fontSize: 10.5, fontFamily: 'inherit', outline: 'none',
+          }}
+        />
+      </div>
+      <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
+        {filtered.length} countries · {RESOURCE_PROFILES.length} major producers profiled · click any country for live World Bank resource-rent data
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
+        {filtered.map(c => {
+          const r = c.res
+          const isOpen = selected === c.name
+          return (
+            <div key={c.iso2} style={{ borderBottom: '1px solid var(--border)', marginBottom: 1 }}>
+              <button
+                onClick={() => { setSelected(isOpen ? null : c.name); onCountryClick?.(c.name) }}
+                style={{
+                  width: '100%', textAlign: 'left', background: isOpen ? 'var(--accent-soft)' : 'none',
+                  border: 'none', padding: '3px 0', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
+                }}
+              >
+                <span style={{ fontSize: 9.5, fontWeight: 700, color: r ? 'var(--accent)' : 'var(--text3)', width: 20, flexShrink: 0 }}>{c.iso2}</span>
+                <span style={{ fontSize: 10.5, color: r ? 'var(--text1)' : 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+                {r && (
+                  <span style={{ fontSize: 9, color: 'var(--amber)', fontWeight: 700, flexShrink: 0 }}>
+                    {r.resources.length} resource{r.resources.length !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </button>
+              {isOpen && (
+                <div style={{ padding: '4px 0 6px 20px' }}>
+                  {r && (
+                    <>
+                      {r.strategic && (
+                        <div style={{ fontSize: 9.5, color: 'var(--text2)', marginBottom: 4, fontStyle: 'italic', lineHeight: 1.4 }}>
+                          {r.strategic}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 9, color: 'var(--text2)', marginBottom: 2 }}>PRODUCTION / RESERVES</div>
+                      {r.resources.map(m => (
+                        <div key={m.mineral} style={{ fontSize: 9.5, color: 'var(--text2)', padding: '1.5px 0' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--text1)' }}>{m.mineral}</span>
+                            <span style={{ color: 'var(--amber)', fontWeight: 700 }}>
+                              {m.rank ? `#${m.rank}` : ''}{m.shareOfWorld != null ? ` · ${m.shareOfWorld}% world` : ''}
+                            </span>
+                          </div>
+                          {m.note && <div style={{ fontSize: 8.5, color: 'var(--text3)' }}>{m.note}</div>}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {rentsLoading && <div style={{ fontSize: 9.5, color: 'var(--text2)', marginTop: 4, fontStyle: 'italic' }}>Loading World Bank resource-rent data…</div>}
+                  {rents.length > 0 && (
+                    <div style={{ marginTop: 4 }}>
+                      <div style={{ fontSize: 9, color: 'var(--text2)', letterSpacing: '.08em', marginBottom: 2 }}>RESOURCE RENTS (% OF GDP)</div>
+                      {rents.map(rt => (
+                        <div key={rt.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5, padding: '0.5px 0' }}>
+                          <span style={{ color: 'var(--text2)' }}>{rt.label}</span>
+                          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{rt.value.toFixed(2)}% <span style={{ fontSize: 8, color: 'var(--text2)' }}>{rt.year}</span></span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {!r && !rentsLoading && rents.length === 0 && (
+                    <div style={{ fontSize: 9.5, color: 'var(--text2)', fontStyle: 'italic' }}>Click to load World Bank resource-rent data</div>
+                  )}
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── Unified Markets Panel ─────────────────────────────────────────────────
 const MARKET_TABS = [
   { id: 'indices',     label: 'IDX' },
@@ -2227,10 +2362,9 @@ export function MarketsPanel() {
 }
 
 // ── Watchlist card — rule-based trajectory forecast, rendered inside AIAnalystPanel ──
-function WatchlistCard({ entry, onExplain }: { entry: TrajectoryEntry; onExplain: () => void }) {
+function WatchlistCard({ entry, onExplain, disabled = false }: { entry: TrajectoryEntry; onExplain: () => void; disabled?: boolean }) {
   const Icon = entry.trend === 'rising' ? TrendingUp : entry.trend === 'falling' ? TrendingDown : Minus
   const color = entry.trend === 'rising' ? 'var(--red)' : entry.trend === 'falling' ? 'var(--green)' : 'var(--text3)'
-  const bars = Math.max(1, Math.min(5, Math.round(entry.velocity / 20)))
   return (
     <div style={{
       background: 'var(--surface2)', border: '1px solid var(--border)',
@@ -2240,29 +2374,22 @@ function WatchlistCard({ entry, onExplain }: { entry: TrajectoryEntry; onExplain
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
         <Icon size={14} color={color} style={{ flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)', flex: 1 }}>{entry.country}</span>
-        <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
-          {[1, 2, 3, 4, 5].map(i => (
-            <span key={i} style={{
-              width: 3, height: i * 2 + 2, borderRadius: 1,
-              background: i <= bars ? color : 'var(--border-strong)',
-            }} />
-          ))}
-        </div>
-        <span style={{ fontSize: 10.5, color, fontWeight: 700, letterSpacing: '.03em', textTransform: 'uppercase' }}>
+        <span className={`ai-trend-badge ${entry.trend}`}>
           {entry.trend}
         </span>
       </div>
       <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>{entry.reason}</div>
       <button
         onClick={onExplain}
+        disabled={disabled}
         style={{
-          alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
-          color: 'var(--accent)', fontSize: 11.5, padding: 0, fontFamily: 'inherit',
+          alignSelf: 'flex-start', background: 'none', border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
+          color: disabled ? 'var(--text3)' : 'var(--accent)', fontSize: 11, padding: 0, fontFamily: 'inherit', opacity: disabled ? .7 : 1,
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.7' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
+        onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLButtonElement).style.opacity = '0.7' }}
+        onMouseLeave={e => { if (!disabled) (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
       >
-        Explain this trend →
+        {disabled ? 'Connect a model to ask about this trend' : 'Ask about this trend →'}
       </button>
     </div>
   )
@@ -2295,7 +2422,6 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   const [pastSessions, setPastSessions] = useState<ChatSession[]>([])
   const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
   const [followUps, setFollowUps] = useState<string[]>([])
-  const [reasoning, setReasoning] = useState('')
   const abortRef  = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const hasKey    = !!import.meta.env.VITE_OPENROUTER_KEY
@@ -2335,7 +2461,6 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setError('')
     setActionLog([])
     setFollowUps([])
-    setReasoning('')
   }
 
   function startNewSession() {
@@ -2346,7 +2471,6 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setShowHistory(false)
     setActionLog([])
     setFollowUps([])
-    setReasoning('')
   }
 
   // Contextual follow-up chips — derived client-side from the response text and
@@ -2378,14 +2502,13 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setResponse('')
     setActionLog([])
     setFollowUps([])
-    setReasoning('')
     setStreaming(true)
     abortRef.current = new AbortController()
 
     const context  = buildDashboardContext(crises, flights, trajectories)
     const sysMsg: DSMessage = {
       role: 'system',
-      content: `You are an elite intelligence analyst embedded in a real-time global surveillance dashboard called WORLDVIEW. You have access to live data, including a rule-based TRAJECTORY SIGNALS section (computed locally, not by you) that tracks whether each region's crisis activity is rising, falling, or flat over the last 3 days vs. the prior week. Ground your analysis in these computed trajectories when discussing risk or escalation — explicitly distinguish current state ("X active events") from direction of change ("rising/falling, because..."). Provide concise, actionable analysis. Use a professional intelligence briefing tone. Format with clear sections when appropriate. Be direct and fact-focused.
+      content: `You are the analyst in WORLDVIEW, a global intelligence dashboard. You have access to current crisis and flight data, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
 
 IMPORTANT: You can execute dashboard commands by including them in your response. Commands are on their own line:
 
@@ -2468,18 +2591,21 @@ ${context}`,
         },
         abortRef.current.signal,
         model,
-        token => setReasoning(prev => (prev + token).slice(-220)),
       )
       const cleanResponse = full.split('\n').filter(l => !l.trim().match(/^\[(FLY|COUNTRY|LAYER|DEEPSTATE):.+\]$/)).join('\n')
-      setHistory(prev => [
-        ...prev.slice(-10),
-        userMsg,
-        { role: 'assistant', content: cleanResponse },
-      ])
-      setFollowUps(deriveFollowUps(cleanResponse, loggedActions))
+      if (!cleanResponse.trim()) {
+        setError('The selected model did not return a briefing. Try a different model.')
+      } else {
+        setHistory(prev => [
+          ...prev.slice(-10),
+          userMsg,
+          { role: 'assistant', content: cleanResponse },
+        ])
+        setFollowUps(deriveFollowUps(cleanResponse, loggedActions))
+      }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setError((err as Error).message)
+        setError('The analysis request could not be completed. Try again or choose a different model.')
       }
     } finally {
       setStreaming(false)
@@ -2498,89 +2624,52 @@ ${context}`,
   // Render markdown-ish text: bold **text**, bullet — text
   function renderText(text: string) {
     return text.split('\n').map((line, i) => {
-      const bold = line.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      const isHeader = /^#+\s/.test(line)
+      const isHeader = /^#{1,3}\s/.test(line)
       const isBullet = /^[\-\•\*]\s/.test(line)
+      const content = line.replace(/^#{1,3}\s/, '').replace(/^[\-\•\*]\s/, '')
+      const parts = content.split(/(\*\*[^*]+\*\*)/g)
       return (
-        <div key={i} style={{
-          marginBottom: isHeader ? 9 : isBullet ? 3 : 2,
-          paddingLeft: isBullet ? 12 : 0,
-          borderLeft: isBullet ? '2px solid var(--accent)' : 'none',
-          color: isHeader ? 'var(--accent)' : 'var(--text1)',
-          fontWeight: isHeader ? 700 : 400,
-          fontSize: isHeader ? 14 : 13.5,
-          letterSpacing: isHeader ? '.03em' : 'normal',
-          lineHeight: 1.7,
-        }}
-          dangerouslySetInnerHTML={{ __html: bold.replace(/^#+\s/, '').replace(/^[\-\•\*]\s/, '') }}
-        />
+        <div key={i} className={`ai-response-line${isHeader ? ' heading' : ''}${isBullet ? ' bullet' : ''}`}>
+          {isBullet && <span className="ai-bullet-mark" />}
+          {parts.map((part, index) => part.startsWith('**') && part.endsWith('**')
+            ? <strong key={index}>{part.slice(2, -2)}</strong>
+            : <span key={index}>{part}</span>)}
+        </div>
       )
     })
   }
 
-  // Lightweight, cosmetic "reasoning trace" — cycles through a few
-  // transient status lines while a response is streaming/loading.
-  // Vocabulary drawn only from this panel's own quick-prompt labels / context.
-  const TRACE_STEPS = [
-    'Cross-referencing crisis feed…',
-    'Checking airspace status…',
-    'Correlating market signals…',
-    'Scanning humanitarian corridors…',
-  ]
-  const [traceIdx, setTraceIdx] = useState(0)
-  useEffect(() => {
-    if (!streaming) { setTraceIdx(0); return }
-    const t = window.setInterval(() => setTraceIdx(i => (i + 1) % TRACE_STEPS.length), 1100)
-    return () => clearInterval(t)
-  }, [streaming]) // eslint-disable-line
-
-  // Cosmetic, client-side confidence heuristic derived from the response itself —
-  // not a backend field. Longer, more structured answers read as higher confidence.
-  function confidenceOf(text: string): { label: string; bars: number } {
-    if (!text) return { label: 'Low confidence', bars: 1 }
-    const len = text.length
-    const hasStructure = /\n[\-\•\*]\s|\n#+\s|\d/.test(text)
-    let bars = 1
-    if (len > 200) bars = 2
-    if (len > 500) bars = 3
-    if (len > 900 && hasStructure) bars = 4
-    const label = bars >= 4 ? 'High confidence' : bars === 3 ? 'Good confidence' : bars === 2 ? 'Moderate confidence' : 'Low confidence'
-    return { label, bars }
-  }
-
-  if (!hasKey) return (
-    <div className="ai-surface" style={{ height: '100%', padding: '20px 22px', fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.8 }}>
-      OPENROUTER KEY REQUIRED<br />
-      Add VITE_OPENROUTER_KEY to .env
-    </div>
-  )
-
-  const confidence = confidenceOf(response)
-
   return (
     <div className="ai-surface" style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }}>
 
-      {/* Console header */}
-      <div className="ai-header" style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, position: 'relative' }}>
-        <Terminal size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-        <span className="ai-pulse-dot" />
+      {/* Analyst workspace header */}
+      <div className="ai-header" style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, position: 'relative' }}>
+        <div className="ai-brand-mark"><MessageSquare size={15} /></div>
+        <div className="ai-brand-copy">
+          <div className="ai-brand-title">Analyst chat</div>
+          <div className="ai-brand-subtitle">Briefings grounded in live incidents and regional trends</div>
+        </div>
         <select
+          className="ai-model-select"
+          aria-label="Analysis model"
+          title="Choose analysis model"
           value={model}
           onChange={e => setModel(e.target.value)}
           disabled={streaming}
           style={{
-            flex: 1, background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text1)',
-            fontSize: 12.5, fontFamily: 'inherit', letterSpacing: '.01em', padding: '5px 7px', borderRadius: 'var(--r-sm)',
+            width: 122, background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text2)',
+            fontSize: 10.5, fontFamily: 'inherit', letterSpacing: '.01em', padding: '6px 7px', borderRadius: 'var(--r-sm)',
             outline: 'none', cursor: 'pointer',
           }}
         >
           {FREE_MODELS.map(m => (
-            <option key={m.id} value={m.id}>{m.label} · {m.ctx} ctx · FREE</option>
+            <option key={m.id} value={m.id}>{m.label}</option>
           ))}
         </select>
         <button
           onClick={startNewSession}
           title="New conversation"
+          aria-label="New conversation"
           style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r-sm)', color: 'var(--text2)', cursor: 'pointer', padding: '6px 7px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)' }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-strong)' }}
@@ -2590,6 +2679,7 @@ ${context}`,
         <button
           onClick={() => (showHistory ? setShowHistory(false) : openHistory())}
           title="Chat history"
+          aria-label="Conversation history"
           style={{ background: showHistory ? 'var(--accent-soft)' : 'var(--surface)', border: `1px solid ${showHistory ? 'var(--accent)' : 'var(--border-strong)'}`, borderRadius: 'var(--r-sm)', color: showHistory ? 'var(--accent)' : 'var(--text2)', cursor: 'pointer', padding: '6px 7px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)' }}
           onMouseLeave={e => { if (!showHistory) (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)' }}
@@ -2604,7 +2694,7 @@ ${context}`,
             borderRadius: 'var(--r-md)', maxHeight: 280, overflowY: 'auto', marginTop: 4,
           }}>
             <div style={{ padding: '8px 11px', fontSize: 11, color: 'var(--text2)', letterSpacing: '.06em', borderBottom: '1px solid var(--border)' }}>
-              PAST CONVERSATIONS ({pastSessions.length})
+              Past conversations · {pastSessions.length}
             </div>
             {pastSessions.length === 0 && (
               <div style={{ padding: '12px 11px', fontSize: 12.5, color: 'var(--text3)' }}>No saved conversations yet</div>
@@ -2628,7 +2718,7 @@ ${context}`,
                       {firstUser?.content || '(empty)'}
                     </div>
                     <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
-                      {new Date(s.updatedAt).toLocaleString()} · {s.messages.length} MSGS
+                      {new Date(s.updatedAt).toLocaleString()} · {s.messages.length} messages
                     </div>
                   </div>
                   <button
@@ -2649,13 +2739,13 @@ ${context}`,
 
       {/* Watchlist — proactive trajectory forecast, no prompt required */}
       {trajectories.length > 0 && (
-        <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div style={{ fontSize: 11, color: 'var(--text3)', letterSpacing: '.06em', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-            <span className="ai-pulse-dot" /> WATCHLIST — 72H TRAJECTORY
+        <div className="ai-watchlist" style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div className="ai-section-heading">
+            <span>Regional outlook</span><span>72-hour activity trends</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {trajectories.map(t => (
-              <WatchlistCard key={t.country} entry={t} onExplain={() => {
+              <WatchlistCard key={t.country} entry={t} disabled={!hasKey} onExplain={() => {
                 ask(`Explain the ${t.trend} trend for ${t.country}: ${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore}). What's driving this and what should I watch for next?`)
               }} />
             ))}
@@ -2665,26 +2755,27 @@ ${context}`,
 
       {/* Quick prompts */}
       {!response && !streaming && history.length === 0 && (
-        <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div style={{ fontSize: 11, color: 'var(--text3)', letterSpacing: '.06em', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-            <span className="ai-pulse-dot" /> QUICK ANALYSIS
+        <div className="ai-prompts" style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div className="ai-section-heading">
+            <span>Suggested questions</span><span>Choose a starting point</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
             {QUICK_PROMPTS.map(qp => (
               <button
                 key={qp.label}
                 onClick={() => { ask(qp.prompt) }}
+                disabled={!hasKey}
                 style={{
                   background: 'var(--surface2)', border: '1px solid var(--border-strong)',
-                  borderRadius: 'var(--r-pill)',
-                  color: 'var(--accent)', fontSize: 12.5, padding: '6px 13px',
-                  cursor: 'pointer', fontFamily: 'inherit',
-                  transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 5,
+                  borderRadius: 6,
+                  color: hasKey ? 'var(--text2)' : 'var(--text3)', fontSize: 11, padding: '7px 10px',
+                  cursor: hasKey ? 'pointer' : 'not-allowed', fontFamily: 'inherit', opacity: hasKey ? 1 : .6,
+                  transition: 'all .12s', display: 'flex', alignItems: 'center',
                 }}
-                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.background = 'var(--accent-soft)' }}
+                onMouseEnter={e => { if (!hasKey) return; const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.background = 'var(--accent-soft)' }}
                 onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border-strong)'; el.style.background = 'var(--surface2)' }}
               >
-                {qp.icon} {qp.label}
+                {qp.label}
               </button>
             ))}
           </div>
@@ -2693,12 +2784,12 @@ ${context}`,
 
       {/* Conversation history */}
       {history.length > 0 && (
-        <div style={{ padding: '12px 14px 0', flexShrink: 0 }}>
+        <div className="ai-user-questions" style={{ padding: '12px 14px 0', flexShrink: 0 }}>
           {history.filter(m => m.role === 'user').slice(-2).map((m, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
               <span style={{
-                background: 'var(--accent)', color: '#ffffff',
-                borderRadius: '16px 16px 4px 16px', padding: '8px 14px', fontSize: 13.5,
+                background: 'var(--surface2)', color: 'var(--text1)', border: '1px solid var(--border-strong)',
+                borderRadius: '12px 12px 3px 12px', padding: '8px 12px', fontSize: 12,
                 maxWidth: '85%', lineHeight: 1.5,
               }}>
                 {m.content.slice(0, 140)}{m.content.length > 140 ? '…' : ''}
@@ -2709,34 +2800,23 @@ ${context}`,
       )}
 
       {/* Response area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', minHeight: 0 }}>
+      <div className="ai-conversation" style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', minHeight: 0 }}>
         {!response && !streaming && history.length === 0 && (
-          <div style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.9, paddingTop: 4 }}>
-            AI ANALYST READY<br />
-            {crises.length} active crises · {flights.length.toLocaleString()} flights tracked<br />
-            {trajectories.length > 0
-              ? `Watchlist above is tracking ${trajectories.length} regions — select an entry or ask below`
-              : 'Select a quick analysis or type your query below'}
+          <div className="ai-welcome">
+            <div className="ai-welcome-title">What would you like to understand?</div>
+            <div className="ai-welcome-copy">
+              Ask about the current situation, compare regional activity, or explore what a developing event could mean.
+            </div>
+            <div className="ai-welcome-context">
+              <span><b>{crises.length.toLocaleString()}</b> incidents</span>
+              <span><b>{flights.length.toLocaleString()}</b> flights tracked</span>
+              <span><b>{trajectories.length}</b> regional trends</span>
+            </div>
           </div>
         )}
 
-        {streaming && !response && !reasoning && (
-          <div style={{ marginBottom: 10 }}>
-            {TRACE_STEPS.slice(0, traceIdx + 1).map((step, i) => (
-              <div key={step} className="ai-trace-item" style={{ opacity: i === traceIdx ? 1 : 0.5, fontSize: 12.5 }}>
-                <span className="ai-pulse-dot" style={{ width: 5, height: 5 }} />
-                {step}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Live reasoning trace — real model "thinking" text, shown until visible content starts */}
-        {streaming && !response && reasoning && (
-          <div style={{ marginBottom: 10, fontSize: 12, color: 'var(--text3)', lineHeight: 1.6, fontStyle: 'italic' }}>
-            {reasoning}
-            <span className="ai-cursor" />
-          </div>
+        {streaming && !response && (
+          <div className="ai-loading"><span className="ai-loading-dot" />Preparing your briefing…</div>
         )}
 
         {/* Live action timeline — every dashboard command the AI has executed this turn */}
@@ -2749,11 +2829,11 @@ ${context}`,
                   display: 'flex', alignItems: 'center', gap: 7, fontSize: 12,
                   padding: '6px 10px', borderRadius: 'var(--r-sm)',
                   background: 'var(--accent-soft)', color: 'var(--accent)',
-                  border: '1px solid rgba(37,99,235,0.18)',
+                  border: '1px solid rgba(213,168,95,0.22)',
                 }}>
                   <Icon size={12} style={{ flexShrink: 0 }} />
                   <span style={{ fontWeight: 600 }}>
-                    {a.kind === 'fly' ? 'Flew to' : a.kind === 'country' ? 'Opened' : a.kind === 'layer' ? 'Toggled layer' : 'Toggled overlay'}
+                    {a.kind === 'fly' ? 'Map moved to' : a.kind === 'country' ? 'Opened country brief' : a.kind === 'layer' ? 'Map layer updated' : 'Frontline view updated'}
                   </span>
                   <span style={{ color: 'var(--text1)' }}>{a.label}</span>
                 </div>
@@ -2766,24 +2846,11 @@ ${context}`,
           <div style={{ padding: '2px 0' }}>
             {renderText(response)}
             {streaming && <span className="ai-cursor" />}
-            {!streaming && response && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', gap: 2 }}>
-                  {[1, 2, 3, 4].map(i => (
-                    <span key={i} style={{
-                      width: 4, height: i * 2 + 3, borderRadius: 1, alignSelf: 'flex-end',
-                      background: i <= confidence.bars ? 'var(--accent)' : 'var(--border-strong)',
-                    }} />
-                  ))}
-                </div>
-                <span style={{ fontSize: 11, color: 'var(--text3)' }}>{confidence.label}</span>
-              </div>
-            )}
           </div>
         )}
 
         {/* Auto-suggested follow-ups — derived from the response, one tap to continue */}
-        {!streaming && followUps.length > 0 && (
+        {!streaming && hasKey && followUps.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>
             {followUps.map(fu => (
               <button
@@ -2799,34 +2866,39 @@ ${context}`,
                 onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--accent)' }}
                 onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border-strong)'; el.style.color = 'var(--text2)' }}
               >
-                <Sparkles size={11} /> {fu}
+                {fu}
               </button>
             ))}
           </div>
         )}
 
         {error && (
-          <div style={{ fontSize: 12.5, color: 'var(--red)', marginTop: 8 }}>
-            ⚠ {error}
+          <div className="ai-error" style={{ fontSize: 12.5, color: 'var(--red)', marginTop: 8 }}>
+            {error}
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
       {/* Context pill */}
-      <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ fontSize: 11, color: 'var(--text3)', display: 'flex', gap: 11, alignItems: 'center' }}>
-          <span style={{ color: 'var(--red)' }}>⬤</span> {crises.length} CRISES
-          <span style={{ color: 'var(--accent)' }}>⬤</span> {flights.length.toLocaleString()} FLIGHTS
-          <span className="ai-pulse-dot" /> LIVE
+      {!hasKey && (
+        <div className="ai-key-notice">
+          Set up OpenRouter from Settings → API Keys to enable chat. The regional outlook remains available.
+        </div>
+      )}
+
+      <div className="ai-context-bar">
+        <div className="ai-context-items">
+          <span><i className="incidents" />{crises.length.toLocaleString()} incidents</span>
+          <span><i className="flights" />{flights.length.toLocaleString()} flights</span>
+          <span className="ai-live-status"><i />Live data</span>
         </div>
         {history.length > 0 && (
           <button
             onClick={startNewSession}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 11, fontFamily: 'inherit' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)' }}
-          >↺ CLEAR</button>
+            className="ai-new-thread"
+            title="Start a new conversation"
+          ><Plus size={12} /> New conversation</button>
         )}
       </div>
 
@@ -2836,14 +2908,16 @@ ${context}`,
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
-          placeholder="Ask anything about current events, threats, markets…"
+          disabled={!hasKey}
+          placeholder={hasKey ? 'Ask about a country, event, or emerging trend…' : 'Connect an analysis model to start a conversation'}
           rows={3}
           style={{
             flex: 1, background: 'var(--surface)', border: '1px solid var(--border-strong)',
             borderRadius: 'var(--r-md)',
-            color: 'var(--text1)', fontSize: 13.5, fontFamily: 'inherit',
+            color: 'var(--text1)', fontSize: 13, fontFamily: 'inherit',
             padding: '9px 12px', resize: 'none', outline: 'none', lineHeight: 1.5,
             transition: 'border-color .12s',
+            opacity: hasKey ? 1 : .65,
           }}
           onFocus={e  => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--accent)' }}
           onBlur={e   => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--border-strong)' }}
@@ -2855,8 +2929,8 @@ ${context}`,
         ) : (
           <button
             onClick={() => { ask(input); setInput('') }}
-            disabled={!input.trim()}
-            style={{ background: input.trim() ? 'var(--accent)' : 'var(--surface2)', border: `1px solid ${input.trim() ? 'var(--accent)' : 'var(--border-strong)'}`, borderRadius: 'var(--r-md)', color: input.trim() ? '#ffffff' : 'var(--text3)', cursor: input.trim() ? 'pointer' : 'default', padding: '9px 11px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
+            disabled={!hasKey || !input.trim()}
+            style={{ background: input.trim() && hasKey ? 'var(--accent)' : 'var(--surface2)', border: `1px solid ${input.trim() && hasKey ? 'var(--accent)' : 'var(--border-strong)'}`, borderRadius: 'var(--r-md)', color: input.trim() && hasKey ? '#111820' : 'var(--text3)', cursor: input.trim() && hasKey ? 'pointer' : 'default', padding: '9px 11px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
           >
             <Send size={14} />
           </button>
