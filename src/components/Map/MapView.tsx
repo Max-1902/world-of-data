@@ -35,6 +35,7 @@ import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } f
 import { SHIPPING_ROUTES } from '../../services/shippingRoutes'
 import { getCountryCentroid, type OutageEvent } from '../../services/outages'
 import { RESOURCE_PROFILES, fetchResourceRents } from '../../services/resources'
+import { fetchMilitaryPersonnelRanking, type MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
 import { TRADE_PROFILES } from '../../services/tradeStats'
 import {
   UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS,
@@ -172,13 +173,16 @@ interface Props {
   showChokepoints:    boolean
   showSupplyChain:    boolean
   showShippingRoutes: boolean
+  showShippingDensity: boolean
   outages:            OutageEvent[]
   showOutages:        boolean
   showResources:      boolean
   showTradeStats:     boolean
+  showMilitaryPersonnel: boolean
   flyToQuery?:        string
   geoFlyTo?:          string
   onCountryClick?:    (country: string) => void
+  selectedCountry?:   string | null
   reticleColor?:      string
   panelState?:        import('../../types').PanelState
   onToggleLayer?:     (id: keyof import('../../types').PanelState) => void
@@ -533,9 +537,9 @@ export default function MapView({
   showMilitary, showNuclear, showSanctions,
   showCameras, showInfrastructure, showAirspace, showHumanitarian,
   vessels, showVessels, showOil, showGas, showGPSJam, showPorts, showPipelines,
-  showChokepoints, showSupplyChain, showShippingRoutes,
-  outages, showOutages, showResources, showTradeStats,
-  flyToQuery, geoFlyTo, onCountryClick,
+  showChokepoints, showSupplyChain, showShippingRoutes, showShippingDensity,
+  outages, showOutages, showResources, showTradeStats, showMilitaryPersonnel,
+  flyToQuery, geoFlyTo, onCountryClick, selectedCountry,
   reticleColor = '#00ff88',
   panelState, onToggleLayer,
 }: Props) {
@@ -548,6 +552,7 @@ export default function MapView({
   const flightDataRef  = useRef<Flight[]>([])
   const onCountryClickRef = useRef(onCountryClick)
   onCountryClickRef.current = onCountryClick
+  const militaryPersonnelRef = useRef<MilitaryPersonnelEntry[]>([])
 
   // Filter state
   const [filterQuery, setFilterQuery] = useState('')
@@ -897,6 +902,23 @@ export default function MapView({
       map.on('mouseenter', 'sanctions-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
       map.on('mouseleave', 'sanctions-fill', () => { map.getCanvas().style.cursor = '' })
 
+      // ── Selected-country border highlight ────────────────────────────────
+      map.addSource('selected-country-boundary', {
+        type: 'vector',
+        url:  'mapbox://mapbox.country-boundaries-v1',
+      })
+      map.addLayer({
+        id: 'selected-country-outline', type: 'line',
+        source: 'selected-country-boundary',
+        'source-layer': 'country_boundaries',
+        paint: {
+          'line-color': '#ef4444',
+          'line-width': 1.5,
+          'line-opacity': 0.7,
+        },
+        filter: ['==', ['get', 'name_en'], ''],
+      } as Parameters<typeof map.addLayer>[0])
+
       // ── Critical minerals / resources country fill layer ────────────────
       map.addSource('resources-countries', {
         type: 'vector',
@@ -1040,6 +1062,50 @@ export default function MapView({
       })
       map.on('mouseenter', 'tradestats-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
       map.on('mouseleave', 'tradestats-fill', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Armed forces personnel country fill layer (World Bank, live-ranked) ──
+      // Colors/opacity are set once the ranking loads (see effect below) since
+      // rank order depends on live data rather than a static curated list.
+      map.addSource('military-personnel-countries', {
+        type: 'vector',
+        url:  'mapbox://mapbox.country-boundaries-v1',
+      })
+      map.addLayer({
+        id: 'military-personnel-fill', type: 'fill',
+        source: 'military-personnel-countries',
+        'source-layer': 'country_boundaries',
+        paint: { 'fill-color': '#dc2626', 'fill-opacity': 0.08 },
+        layout: { visibility: 'none' },
+      } as Parameters<typeof map.addLayer>[0])
+      map.addLayer({
+        id: 'military-personnel-outline', type: 'line',
+        source: 'military-personnel-countries',
+        'source-layer': 'country_boundaries',
+        paint: { 'line-color': '#dc2626', 'line-width': 1.2, 'line-opacity': 0.25 },
+        layout: { visibility: 'none' },
+      } as Parameters<typeof map.addLayer>[0])
+
+      map.on('click', 'military-personnel-fill', (e) => {
+        const feat = e.features?.[0]
+        const iso2 = feat?.properties?.iso_3166_1 as string | undefined
+        if (!iso2) return
+        const nameEn = (feat?.properties?.name_en as string | undefined) || iso2
+        const entry = militaryPersonnelRef.current.find(m => m.iso2 === iso2)
+        const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:280px;">
+          <div style="font-size:13px;font-weight:800;color:#14161a;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">${entry?.country || nameEn}</div>
+          ${entry
+            ? `<div style="font-size:11px;color:#374151;margin-bottom:3px;">Rank: <b style="color:#dc2626;">#${entry.rank}</b> of ${militaryPersonnelRef.current.length} (world)</div>
+               <div style="font-size:11px;color:#374151;">Armed forces personnel: <b>${entry.personnel.toLocaleString()}</b></div>
+               <div style="font-size:9px;color:#9ca3af;margin-top:3px;">World Bank (IISS Military Balance), ${entry.year}</div>`
+            : `<div style="font-size:11px;color:#9ca3af;">No World Bank armed-forces personnel data for this country.</div>`}
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '300px', className: 'cy-popup' })
+          .setLngLat(e.lngLat).setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'military-personnel-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
+      map.on('mouseleave', 'military-personnel-fill', () => { map.getCanvas().style.cursor = '' })
 
       // ── Internet/power outage GeoJSON source (live, IODA) ─────────────────
       map.addSource('outages', {
@@ -2387,6 +2453,22 @@ export default function MapView({
       map.on('mouseenter', 'supplychain-circles', () => { map.getCanvas().style.cursor = 'pointer' })
       map.on('mouseleave', 'supplychain-circles', () => { map.getCanvas().style.cursor = '' })
 
+      // ── Shipping density heatmap (real AIS traffic, Resource Watch / World Bank–IMF) ──
+      map.addSource('shipping-density', {
+        type: 'raster',
+        tiles: ['https://api.resourcewatch.org/v1/layer/096b7e26-a2b9-4c17-a32c-07ceed9dc27a/tile/gee/{z}/{x}/{y}'],
+        tileSize: 256,
+        attribution: 'World Bank / IMF AIS ship density via Resource Watch',
+      })
+      map.addLayer({
+        id: 'shipping-density-layer', type: 'raster', source: 'shipping-density',
+        paint: {
+          'raster-opacity': ['interpolate', ['linear'], ['zoom'], 1, 0.85, 6, 0.6],
+          'raster-fade-duration': 300,
+        },
+        layout: { visibility: 'none' },
+      })
+
       // ── Shipping Routes GeoJSON source ────────────────────────────────────
       map.addSource('shipping-routes', {
         type: 'geojson',
@@ -2549,6 +2631,14 @@ export default function MapView({
     src.setData({ type: 'FeatureCollection', features })
   }, [vessels, showVessels, mapReady])
 
+  // ── Selected-country border highlight ────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    if (!map.getLayer('selected-country-outline')) return
+    map.setFilter('selected-country-outline', ['==', ['get', 'name_en'], selectedCountry || ''])
+  }, [selectedCountry, mapReady])
+
   // ── Sanctions layer visibility ─────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current
@@ -2575,6 +2665,36 @@ export default function MapView({
     if (map.getLayer('tradestats-fill'))    map.setLayoutProperty('tradestats-fill',    'visibility', vis)
     if (map.getLayer('tradestats-outline')) map.setLayoutProperty('tradestats-outline', 'visibility', vis)
   }, [showTradeStats, mapReady])
+
+  // ── Armed forces personnel layer visibility + live World Bank ranking ────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const vis = showMilitaryPersonnel ? 'visible' : 'none'
+    if (map.getLayer('military-personnel-fill'))    map.setLayoutProperty('military-personnel-fill',    'visibility', vis)
+    if (map.getLayer('military-personnel-outline')) map.setLayoutProperty('military-personnel-outline', 'visibility', vis)
+    if (!showMilitaryPersonnel || militaryPersonnelRef.current.length > 0) return
+
+    fetchMilitaryPersonnelRanking().then(ranking => {
+      militaryPersonnelRef.current = ranking
+      const m = mapRef.current
+      if (!m || !m.getLayer('military-personnel-fill')) return
+      // Strongest militaries (by personnel) get the deepest red; opacity fades
+      // out toward the rest of the ranked list rather than a hard cutoff.
+      const top = ranking.slice(0, 30)
+      const maxRank = top.length
+      m.setPaintProperty('military-personnel-fill', 'fill-opacity', [
+        'match', ['get', 'iso_3166_1'],
+        ...top.flatMap((e, i) => [e.iso2, 0.55 - (i / maxRank) * 0.4]),
+        0.05,
+      ])
+      m.setPaintProperty('military-personnel-outline', 'line-opacity', [
+        'match', ['get', 'iso_3166_1'],
+        ...top.flatMap(e => [e.iso2, 0.7]),
+        0.15,
+      ])
+    }).catch(() => { /* live lookup unavailable; layer stays visible with base styling */ })
+  }, [showMilitaryPersonnel, mapReady])
 
   // ── Outages GeoJSON (live) ────────────────────────────────────────────────
   useEffect(() => {
@@ -2770,6 +2890,14 @@ export default function MapView({
     }))
     src.setData({ type: 'FeatureCollection', features })
   }, [showShippingRoutes, mapReady])
+
+  // ── Shipping density raster toggle ────────────────────────────────────────
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    if (!map.getLayer('shipping-density-layer')) return
+    map.setLayoutProperty('shipping-density-layer', 'visibility', showShippingDensity ? 'visible' : 'none')
+  }, [showShippingDensity, mapReady])
 
   // ── Nuclear power plants GeoJSON ──────────────────────────────────────────
   useEffect(() => {
@@ -3657,6 +3785,8 @@ export default function MapView({
                 { key: 'chokepoints',    label: 'CHOKEPOINTS',    icon: '⊘', color: '#ff4466' },
                 { key: 'supplychain',    label: 'SUPPLY CHAIN',   icon: '◆', color: '#00ccff' },
                 { key: 'shippingRoutes', label: 'SHIPPING',       icon: '≈', color: '#44ff88' },
+                { key: 'shippingDensity', label: 'SHIP DENSITY',  icon: '≋', color: '#ff4466' },
+                { key: 'militaryPersonnel', label: 'FORCE SIZE',  icon: '⚔', color: '#dc2626' },
               ] as { key: keyof import('../../types').PanelState; label: string; icon: string; color: string }[]).map(item => {
                 const on = panelState[item.key]
                 return (

@@ -96,9 +96,11 @@ const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
   { id: 'chokepoints', label: 'CHOKEPOINTS', desc: 'Strategic maritime chokepoints' },
   { id: 'supplychain', label: 'SUPPLY CHAIN', desc: 'Semiconductor fabs, rare earth, lithium, cobalt' },
   { id: 'shippingRoutes', label: 'SHIPPING', desc: 'Major trade corridor lanes' },
+  { id: 'shippingDensity', label: 'SHIP DENSITY', desc: 'Real AIS vessel traffic density (World Bank/IMF)' },
   { id: 'gpsjam', label: 'GPS JAM', desc: 'Interference zones' },
   { id: 'outages', label: 'OUTAGES', desc: 'Internet/power outages (IODA)' },
   { id: 'resources', label: 'RESOURCES', desc: 'Critical mineral producers' },
+  { id: 'militaryPersonnel', label: 'FORCE SIZE', desc: 'Armed forces personnel by country (World Bank)' },
   { id: 'tradeStats', label: 'TRADE', desc: 'Trade partners & balance' },
 ]
 
