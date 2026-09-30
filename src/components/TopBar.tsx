@@ -58,24 +58,24 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, sear
   function clearSearch() { onSearch(''); setExpanded(false) }
 
   return (
-    <div className="topbar" style={{ height: 48 }}>
+    <div className="topbar" style={{ height: 52 }}>
       {/* left: branding */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
             width: 26, height: 26, borderRadius: 7,
-            background: 'linear-gradient(135deg,#2563eb,#1d4ed8)',
+            background: 'linear-gradient(135deg,#e2bb78,#bd8747)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
           }}>
-            <Globe2 size={15} color="#fff" />
+            <Globe2 size={15} color="#111820" />
           </div>
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.02em', color: 'var(--text1)', lineHeight: 1.1, fontFamily: 'Inter, -apple-system, sans-serif' }}>
               WORLDVIEW
             </div>
             <div style={{ fontSize: 8.5, letterSpacing: '.06em', color: 'var(--text3)', lineHeight: 1.3, fontFamily: 'Inter, -apple-system, sans-serif' }}>
-              SITUATIONAL AWARENESS
+              GLOBAL INTELLIGENCE
             </div>
           </div>
         </div>

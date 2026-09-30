@@ -5,18 +5,18 @@ export default {
     extend: {
       colors: {
         surface: {
-          900: '#0a0d08',
-          800: '#0d1210',
-          700: '#141e16',
-          600: '#1c2e20',
-          500: '#2a3e2e',
+          900: '#080e13',
+          800: '#0d161d',
+          700: '#111d26',
+          600: '#1c2b35',
+          500: '#2a3d49',
         },
         accent: {
-          green: '#00ff88',
-          blue: '#44aaff',
-          red: '#ff3344',
-          yellow: '#ccaa00',
-          orange: '#ff6600',
+          green: '#69c9a7',
+          blue: '#78b9d1',
+          red: '#ef7373',
+          yellow: '#e1b66c',
+          orange: '#d5a85f',
         },
       },
       fontFamily: {

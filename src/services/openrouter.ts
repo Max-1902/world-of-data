@@ -9,22 +9,32 @@ export interface DSMessage {
 }
 
 // ── Available free models on OpenRouter ────────────────────────────────────
+// OpenRouter's free-tier catalog rotates — these IDs are checked live against
+// GET /api/v1/models. If chat requests start 404ing again, the slugs below
+// have likely been retired; re-verify against that endpoint.
 export const FREE_MODELS: { id: string; label: string; ctx: string }[] = [
-  { id: 'nvidia/nemotron-3-nano-30b-a3b:free',         label: 'Nemotron 30B',       ctx: '32k'  },
-  { id: 'stepfun/step-3.5-flash:free',                 label: 'Step 3.5 Flash',     ctx: '32k'  },
-  { id: 'arcee-ai/trinity-large-preview:free',         label: 'Trinity Large',      ctx: '32k'  },
-  { id: 'arcee-ai/trinity-mini:free',                  label: 'Trinity Mini',       ctx: '32k'  },
-  { id: 'liquid/lfm-2.5-1.2b-thinking:free',           label: 'LFM Thinking',       ctx: '32k'  },
-  { id: 'liquid/lfm-2.5-1.2b-instruct:free',           label: 'LFM Instruct',       ctx: '32k'  },
+  { id: 'liquid/lfm-2.5-2.6b:free',                           label: 'LFM 2.6B',          ctx: '32k' },
+  { id: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', label: 'Nemotron Omni 30B', ctx: '32k' },
+  { id: 'nvidia/nemotron-3-super-120b-a12b:free',             label: 'Nemotron Super 120B', ctx: '32k' },
+  { id: 'google/gemma-4-26b-a4b-it:free',                     label: 'Gemma 4 26B',       ctx: '32k' },
+  { id: 'google/gemma-4-31b-it:free',                         label: 'Gemma 4 31B',       ctx: '32k' },
+  { id: 'qwen/qwen3.8-27b:free',                              label: 'Qwen 3.8 27B',      ctx: '32k' },
 ]
 export const DEFAULT_MODEL = FREE_MODELS[0].id
 
 // ── Streaming call ─────────────────────────────────────────────────────────
+// Some free models are "reasoning" variants that stream their internal
+// chain-of-thought via delta.reasoning before any delta.content appears —
+// on a tight max_tokens budget the whole turn can be consumed by reasoning,
+// leaving content empty and the UI looking dead. We surface reasoning text
+// too (via onReasoning) so streaming is always visibly alive, and give a
+// generous budget so real content still gets a chance to follow.
 export async function streamAI(
   messages: DSMessage[],
   onToken:  (token: string) => void,
   signal?:  AbortSignal,
   model     = DEFAULT_MODEL,
+  onReasoning?: (token: string) => void,
 ): Promise<void> {
   const key = import.meta.env.VITE_OPENROUTER_KEY
   if (!key) throw new Error('VITE_OPENROUTER_KEY not set')
@@ -41,7 +51,7 @@ export async function streamAI(
       model,
       messages,
       stream:      true,
-      max_tokens:  1800,
+      max_tokens:  4000,
       temperature: 0.65,
     }),
     signal,
@@ -56,6 +66,7 @@ export async function streamAI(
   const reader  = res.body.getReader()
   const decoder = new TextDecoder()
   let   buf     = ''
+  let   gotContent = false
 
   while (true) {
     const { done, value } = await reader.read()
@@ -71,9 +82,16 @@ export async function streamAI(
       if (data === '[DONE]') return
       try {
         const json  = JSON.parse(data)
-        const token = json.choices?.[0]?.delta?.content ?? ''
-        if (token) onToken(token)
-      } catch { /* ignore partial JSON */ }
+        if (json.error) throw new Error(json.error.message || 'Upstream provider error')
+        const delta = json.choices?.[0]?.delta ?? {}
+        const token = delta.content ?? ''
+        if (token) { gotContent = true; onToken(token) }
+        else if (!gotContent && typeof delta.reasoning === 'string' && delta.reasoning) {
+          onReasoning?.(delta.reasoning)
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message !== 'Unexpected end of JSON input') throw e
+      }
     }
   }
 }

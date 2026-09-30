@@ -81,29 +81,30 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 8 }}>
         {visibleDefs.map((def) => {
           // Give each panel a sensible min-height based on type
-          const isLarge = def.id === 'analyst' || def.id === 'markets' || def.id === 'cnn' || def.id === 'humanitarian'
-          const minH = isLarge ? 400 : 240
           const isAI = def.id === 'analyst'
+          const isLarge = isAI || def.id === 'markets' || def.id === 'cnn' || def.id === 'humanitarian'
+          const minH = isAI ? 640 : isLarge ? 400 : 240
           return (
             <div
               key={def.id}
-              className={`dock-panel${isAI ? ' ai-glow-border' : ''}`}
+              className="dock-panel"
               style={{
+                height: isAI ? minH : undefined,
                 minHeight: minH,
                 display: 'flex', flexDirection: 'column',
               }}
             >
               <div
-                className={`dock-header${isAI ? ' ai-header' : ''}`}
+                className="dock-header"
                 draggable
                 onDragStart={e => { e.dataTransfer.setData('panelId', def.id); e.dataTransfer.effectAllowed = 'move' }}
                 style={{ cursor: 'grab' }}
               >
                 <span style={{ fontSize: 10, color: 'var(--text3)', marginRight: 2 }}>::</span>
                 {isAI ? <span className="ai-pulse-dot" /> : def.dotColor && <span className={`live-dot ${def.dotColor}`} />}
-                <span className="panel-title" style={{ flex: 1, color: isAI ? '#e6e9f5' : undefined }}>{def.title}</span>
+                <span className="panel-title" style={{ flex: 1 }}>{def.title}</span>
               </div>
-              <div className={`dock-body${isAI ? ' ai-surface' : ''}`} style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <div className="dock-body" style={{ flex: '1 1 0', minHeight: 0, overflow: 'auto' }}>
                 {def.render(panelProps)}
               </div>
             </div>

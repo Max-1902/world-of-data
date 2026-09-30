@@ -2,7 +2,8 @@
  * Shared panel content components — used by both PanelDock and CornerWidget
  */
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react'
-import { ExternalLink, RefreshCw, TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { ExternalLink, RefreshCw, TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, Terminal, Sparkles } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import type { CrisisEvent, NewsArticle, PanelState, Stock, Flight } from '../../types'
 import { fetchRSSFeed, searchGDELTNews, searchGuardian, searchNYT, searchNewsAPI, fetchAllCrisisWatch, CRISISWATCH_FEEDS, type CrisisWatchEntry, COUNTRY_NEWS_SOURCES, fetchCountryNews } from '../../services/news'
@@ -60,7 +61,7 @@ export const PANEL_META: Record<PanelId, { title: string; dotColor?: string; wid
   outages:     { title: 'Connectivity',  dotColor: 'yellow', width: 280, desc: 'Internet disruption monitoring' },
   brief:       { title: 'Briefing',      dotColor: 'red',    width: 240, desc: 'Correlated intel for active query' },
   crisiswatch: { title: 'Crisis Monitor',dotColor: 'orange', width: 290, desc: 'ICG conflict tracking — 70+ states' },
-  analyst:     { title: 'Analysis',      dotColor: 'blue',   width: 360, desc: 'AI-assisted situational assessment' },
+  analyst:     { title: 'Analysis',      dotColor: 'blue',   width: 480, desc: 'AI-assisted situational assessment' },
   humanitarian:{ title: 'Humanitarian',  dotColor: 'blue',   width: 320, desc: 'UNHCR displacement & border status' },
   webcams:     { title: 'US Webcams',    dotColor: 'grn',    width: 320, desc: 'SkylineWebcams & EarthCam — live US grid' },
 }
@@ -1751,43 +1752,53 @@ interface WebcamEntry {
   state: string
   source: WebcamSource
   url: string
+  lat: number
+  lng: number
 }
 
 const US_WEBCAMS: WebcamEntry[] = [
   // ── SkylineWebcams ──
-  { id: 'sw-times-square',   label: 'Times Square',          state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/times-square.html' },
-  { id: 'sw-empire-state',   label: 'Empire State Building', state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/empire-state-building.html' },
-  { id: 'sw-nyc-skyline',    label: 'NYC Skyline',           state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/new-york-skyline.html' },
-  { id: 'sw-nyc-46th',       label: 'NYC — 46th Street',     state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/nyc-46th-street.html' },
-  { id: 'sw-broadway',       label: 'Broadway Billboards',   state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/new-york-city.html' },
-  { id: 'sw-las-vegas',      label: 'Las Vegas Strip',       state: 'NV', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/nevada/las-vegas/las-vegas.html' },
-  { id: 'sw-the-strat',      label: 'The Strat, Las Vegas',  state: 'NV', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/nevada/las-vegas/the-strat.html' },
-  { id: 'sw-laguna',         label: 'Laguna Beach',          state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/laguna-beach/laguna-beach.html' },
-  { id: 'sw-santa-barbara',  label: 'Santa Barbara',         state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/santa-barbara/santa-barbara.html' },
-  { id: 'sw-encinitas',      label: 'Encinitas',             state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/encinitas/encinitas-california.html' },
-  { id: 'sw-miami',          label: 'Miami',                 state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/miami/miami.html' },
-  { id: 'sw-venetian',       label: 'Venetian Marina',       state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/miami/venetian-marina-biscayne-bay.html' },
-  { id: 'sw-fort-myers',     label: 'Fort Myers Beach',      state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/fort-myers-beach/fort-myers-beach.html' },
-  { id: 'sw-boston',         label: 'Boston Common',         state: 'MA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/massachusetts/boston/boston.html' },
-  { id: 'sw-philly',         label: 'Rittenhouse Square',    state: 'PA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/pennsylvania/philadelphia/rittenhouse-square-park.html' },
-  { id: 'sw-atlantic-city',  label: 'Atlantic City Boardwalk',state:'NJ', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-jersey/atlantic-city/atlantic-city-boardwalk.html' },
-  { id: 'sw-ocean-city',     label: 'Ocean City Boardwalk',  state: 'NJ', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-jersey/ocean-city/boardwalk.html' },
-  { id: 'sw-gatlinburg',     label: 'Gatlinburg',            state: 'TN', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/tennessee/gatlinburg/tennessee-gatlinburg.html' },
-  { id: 'sw-smoky-mtns',     label: 'Great Smoky Mountains', state: 'TN', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/tennessee/pigeon-forge/great-smoky-mountains.html' },
-  { id: 'sw-kahului',        label: 'Kahului, Maui',         state: 'HI', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/hawaii/maui/kahului.html' },
-  { id: 'sw-newport-or',     label: 'Yaquina Bay, Newport',  state: 'OR', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/oregon/newport/yaquina-bay-newport-oregon-coast.html' },
+  { id: 'sw-times-square',   label: 'Times Square',          state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/times-square.html', lat: 40.7580, lng: -73.9855 },
+  { id: 'sw-empire-state',   label: 'Empire State Building', state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/empire-state-building.html', lat: 40.7484, lng: -73.9857 },
+  { id: 'sw-nyc-skyline',    label: 'NYC Skyline',           state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/new-york-skyline.html', lat: 40.7128, lng: -74.0060 },
+  { id: 'sw-nyc-46th',       label: 'NYC — 46th Street',     state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/nyc-46th-street.html', lat: 40.7580, lng: -73.9855 },
+  { id: 'sw-broadway',       label: 'Broadway Billboards',   state: 'NY', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-york/new-york/new-york-city.html', lat: 40.7590, lng: -73.9845 },
+  { id: 'sw-las-vegas',      label: 'Las Vegas Strip',       state: 'NV', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/nevada/las-vegas/las-vegas.html', lat: 36.1147, lng: -115.1729 },
+  { id: 'sw-the-strat',      label: 'The Strat, Las Vegas',  state: 'NV', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/nevada/las-vegas/the-strat.html', lat: 36.1474, lng: -115.1558 },
+  { id: 'sw-laguna',         label: 'Laguna Beach',          state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/laguna-beach/laguna-beach.html', lat: 33.5427, lng: -117.7854 },
+  { id: 'sw-santa-barbara',  label: 'Santa Barbara',         state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/santa-barbara/santa-barbara.html', lat: 34.4208, lng: -119.6982 },
+  { id: 'sw-encinitas',      label: 'Encinitas',             state: 'CA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/california/encinitas/encinitas-california.html', lat: 33.0370, lng: -117.2920 },
+  { id: 'sw-miami',          label: 'Miami',                 state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/miami/miami.html', lat: 25.7907, lng: -80.1300 },
+  { id: 'sw-venetian',       label: 'Venetian Marina',       state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/miami/venetian-marina-biscayne-bay.html', lat: 25.7909, lng: -80.1615 },
+  { id: 'sw-fort-myers',     label: 'Fort Myers Beach',      state: 'FL', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/florida/fort-myers-beach/fort-myers-beach.html', lat: 26.4529, lng: -81.9500 },
+  { id: 'sw-boston',         label: 'Boston Common',         state: 'MA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/massachusetts/boston/boston.html', lat: 42.3554, lng: -71.0655 },
+  { id: 'sw-philly',         label: 'Rittenhouse Square',    state: 'PA', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/pennsylvania/philadelphia/rittenhouse-square-park.html', lat: 39.9496, lng: -75.1719 },
+  { id: 'sw-atlantic-city',  label: 'Atlantic City Boardwalk',state:'NJ', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-jersey/atlantic-city/atlantic-city-boardwalk.html', lat: 39.3643, lng: -74.4229 },
+  { id: 'sw-ocean-city',     label: 'Ocean City Boardwalk',  state: 'NJ', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/new-jersey/ocean-city/boardwalk.html', lat: 39.2776, lng: -74.5746 },
+  { id: 'sw-gatlinburg',     label: 'Gatlinburg',            state: 'TN', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/tennessee/gatlinburg/tennessee-gatlinburg.html', lat: 35.7143, lng: -83.5102 },
+  { id: 'sw-smoky-mtns',     label: 'Great Smoky Mountains', state: 'TN', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/tennessee/pigeon-forge/great-smoky-mountains.html', lat: 35.7325, lng: -83.5486 },
+  { id: 'sw-kahului',        label: 'Kahului, Maui',         state: 'HI', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/hawaii/maui/kahului.html', lat: 20.8893, lng: -156.4729 },
+  { id: 'sw-newport-or',     label: 'Yaquina Bay, Newport',  state: 'OR', source: 'skyline',  url: 'https://www.skylinewebcams.com/en/webcam/united-states/oregon/newport/yaquina-bay-newport-oregon-coast.html', lat: 44.6183, lng: -124.0512 },
   // ── EarthCam ──
-  { id: 'ec-times-square',   label: 'Times Square South 4K', state: 'NY', source: 'earthcam', url: 'https://www.earthcam.com/usa/newyork/timessquare/' },
-  { id: 'ec-vegas-strip',    label: 'Las Vegas Strip',       state: 'NV', source: 'earthcam', url: 'https://www.earthcam.com/usa/nevada/lasvegas/?cam=lasvegas' },
-  { id: 'ec-miami-south',    label: 'Miami South Beach',     state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/miamibeach/?cam=miamibeach' },
-  { id: 'ec-key-west',       label: 'Key West Sunset Pier',  state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/keywest/?cam=sunsetpier' },
-  { id: 'ec-new-orleans',    label: 'Bourbon Street',        state: 'LA', source: 'earthcam', url: 'https://www.earthcam.com/usa/louisiana/neworleans/bourbonstreet/?cam=catsmeow' },
-  { id: 'ec-chicago',        label: 'Chicago Navy Pier',     state: 'IL', source: 'earthcam', url: 'https://www.earthcam.com/usa/illinois/chicago/navypier/?cam=navypier' },
-  { id: 'ec-niagara',        label: 'Niagara Falls',         state: 'NY', source: 'earthcam', url: 'https://www.earthcam.com/usa/newyork/niagarafalls/?cam=niagarafalls' },
-  { id: 'ec-nashville',      label: 'Nashville Broadway',    state: 'TN', source: 'earthcam', url: 'https://www.earthcam.com/usa/tennessee/nashville/?cam=nashville' },
-  { id: 'ec-santa-monica',   label: 'Santa Monica Pier',     state: 'CA', source: 'earthcam', url: 'https://www.earthcam.com/usa/california/santamonica/?cam=samo' },
-  { id: 'ec-daytona',        label: 'Daytona Beach',         state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/daytonabeach/?cam=daytonabeach' },
+  { id: 'ec-times-square',   label: 'Times Square South 4K', state: 'NY', source: 'earthcam', url: 'https://www.earthcam.com/usa/newyork/timessquare/', lat: 40.7566, lng: -73.9862 },
+  { id: 'ec-vegas-strip',    label: 'Las Vegas Strip',       state: 'NV', source: 'earthcam', url: 'https://www.earthcam.com/usa/nevada/lasvegas/?cam=lasvegas', lat: 36.1162, lng: -115.1745 },
+  { id: 'ec-miami-south',    label: 'Miami South Beach',     state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/miamibeach/?cam=miamibeach', lat: 25.7826, lng: -80.1310 },
+  { id: 'ec-key-west',       label: 'Key West Sunset Pier',  state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/keywest/?cam=sunsetpier', lat: 24.5551, lng: -81.8081 },
+  { id: 'ec-new-orleans',    label: 'Bourbon Street',        state: 'LA', source: 'earthcam', url: 'https://www.earthcam.com/usa/louisiana/neworleans/bourbonstreet/?cam=catsmeow', lat: 29.9584, lng: -90.0644 },
+  { id: 'ec-chicago',        label: 'Chicago Navy Pier',     state: 'IL', source: 'earthcam', url: 'https://www.earthcam.com/usa/illinois/chicago/navypier/?cam=navypier', lat: 41.8917, lng: -87.6086 },
+  { id: 'ec-niagara',        label: 'Niagara Falls',         state: 'NY', source: 'earthcam', url: 'https://www.earthcam.com/usa/newyork/niagarafalls/?cam=niagarafalls', lat: 43.0962, lng: -79.0377 },
+  { id: 'ec-nashville',      label: 'Nashville Broadway',    state: 'TN', source: 'earthcam', url: 'https://www.earthcam.com/usa/tennessee/nashville/?cam=nashville', lat: 36.1612, lng: -86.7775 },
+  { id: 'ec-santa-monica',   label: 'Santa Monica Pier',     state: 'CA', source: 'earthcam', url: 'https://www.earthcam.com/usa/california/santamonica/?cam=samo', lat: 34.0094, lng: -118.4973 },
+  { id: 'ec-daytona',        label: 'Daytona Beach',         state: 'FL', source: 'earthcam', url: 'https://www.earthcam.com/usa/florida/daytonabeach/?cam=daytonabeach', lat: 29.2108, lng: -81.0228 },
 ]
+
+/** Register US webcams into the global camera layer so the map's CAMERAS toggle shows them too. */
+export function registerUSWebcams() {
+  return US_WEBCAMS.map(w => ({
+    id: w.id, name: w.label, city: '', country: 'United States',
+    lat: w.lat, lng: w.lng, url: w.url, source: w.source,
+  }))
+}
 
 const WEBCAM_STATES = ['All', ...Array.from(new Set(US_WEBCAMS.map(w => w.state))).sort()]
 
@@ -1796,9 +1807,82 @@ const SOURCE_META: Record<WebcamSource, { label: string; color: string }> = {
   earthcam: { label: 'EARTHCAM', color: 'var(--amber)' },
 }
 
+/** Small in-app box that shows a webcam feed at its exact geo location. Tries to embed
+ * via iframe; since SkylineWebcams sends X-Frame-Options: SAMEORIGIN, embedding is blocked
+ * server-side and cannot be bypassed client-side — falls back to a link-out state after a
+ * short load timeout with no confirmed content. */
+function WebcamBox({ cam, onClose }: { cam: WebcamEntry; onClose: () => void }) {
+  const [status, setStatus] = useState<'loading' | 'embedded' | 'blocked'>('loading')
+  const meta = SOURCE_META[cam.source]
+
+  useEffect(() => {
+    setStatus('loading')
+    const t = setTimeout(() => setStatus(s => (s === 'loading' ? 'blocked' : s)), 3500)
+    return () => clearTimeout(t)
+  }, [cam.id])
+
+  return createPortal(
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 400,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'rgba(0,0,0,0.35)',
+    }} onClick={onClose}>
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          width: 380, maxWidth: '90vw', background: 'var(--surface)',
+          border: '1px solid var(--border)', borderRadius: 'var(--r-lg)',
+          boxShadow: 'var(--shadow-lg)', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red)', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
+          <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text1)', flex: 1 }}>{cam.label}</span>
+          <span style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '.06em', color: meta.color }}>{meta.label}</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, lineHeight: 1, padding: '2px 4px' }}>✕</button>
+        </div>
+
+        <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 10', background: '#000' }}>
+          {status !== 'blocked' && (
+            <iframe
+              key={cam.id}
+              src={cam.url}
+              title={cam.label}
+              onLoad={() => setStatus('embedded')}
+              style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+              sandbox="allow-scripts allow-same-origin allow-popups"
+            />
+          )}
+          {status === 'loading' && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10.5px', color: 'var(--text3)', letterSpacing: '.08em' }}>
+              CONNECTING…
+            </div>
+          )}
+          {status === 'blocked' && (
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: 16, textAlign: 'center' }}>
+              <span style={{ fontSize: '10.5px', color: 'var(--text2)', letterSpacing: '.04em' }}>Feed blocked from embedding by source</span>
+              <a href={cam.url} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '10.5px', fontWeight: 700, color: meta.color, textDecoration: 'none', border: `1px solid ${meta.color}55`, padding: '6px 12px', borderRadius: 'var(--r-sm)' }}>
+                OPEN LIVE FEED <ExternalLink size={10} />
+              </a>
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: '6px 10px', fontSize: '9.5px', color: 'var(--text3)', fontFamily: 'monospace', display: 'flex', justifyContent: 'space-between' }}>
+          <span>{cam.lat.toFixed(4)}, {cam.lng.toFixed(4)}</span>
+          <span>{cam.state} · UNITED STATES</span>
+        </div>
+      </div>
+    </div>,
+    document.body
+  )
+}
+
 export function USWebcamsPanel() {
   const [state, setState]   = useState('All')
   const [source, setSource] = useState<WebcamSource | 'All'>('All')
+  const [active, setActive] = useState<WebcamEntry | null>(null)
 
   const filtered = US_WEBCAMS.filter(w =>
     (state === 'All' || w.state === state) &&
@@ -1836,15 +1920,15 @@ export function USWebcamsPanel() {
         {filtered.map(w => {
           const meta = SOURCE_META[w.source]
           return (
-            <a key={w.id} href={w.url} target="_blank" rel="noopener noreferrer"
+            <button key={w.id} onClick={() => setActive(w)}
               style={{
                 display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
                 aspectRatio: '4 / 3', padding: 7,
                 border: '1px solid var(--border)', background: 'var(--surface2)',
-                textDecoration: 'none', cursor: 'pointer', transition: 'all .12s', position: 'relative',
+                textAlign: 'left', cursor: 'pointer', transition: 'all .12s', position: 'relative',
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = meta.color + '88'; (e.currentTarget as HTMLAnchorElement).style.background = 'var(--accent-soft)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLAnchorElement).style.background = 'var(--surface2)' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = meta.color + '88'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent-soft)' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLButtonElement).style.background = 'var(--surface2)' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
@@ -1854,16 +1938,17 @@ export function USWebcamsPanel() {
                 <div style={{ fontSize: '11.5px', fontWeight: 600, color: 'var(--text1)', lineHeight: 1.3 }}>{w.label}</div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 3 }}>
                   <span style={{ fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.06em' }}>{w.state}</span>
-                  <ExternalLink size={8} style={{ color: 'var(--text3)', marginLeft: 'auto' }} />
                 </div>
               </div>
-            </a>
+            </button>
           )
         })}
         {filtered.length === 0 && (
           <div style={{ gridColumn: '1 / -1', padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO CAMS FOR FILTER</div>
         )}
       </div>
+
+      {active && <WebcamBox cam={active} onClose={() => setActive(null)} />}
     </div>
   )
 }
@@ -2144,43 +2229,51 @@ export function MarketsPanel() {
 // ── Watchlist card — rule-based trajectory forecast, rendered inside AIAnalystPanel ──
 function WatchlistCard({ entry, onExplain }: { entry: TrajectoryEntry; onExplain: () => void }) {
   const Icon = entry.trend === 'rising' ? TrendingUp : entry.trend === 'falling' ? TrendingDown : Minus
-  const color = entry.trend === 'rising' ? 'var(--red)' : entry.trend === 'falling' ? 'var(--green)' : '#7b83a8'
+  const color = entry.trend === 'rising' ? 'var(--red)' : entry.trend === 'falling' ? 'var(--green)' : 'var(--text3)'
   const bars = Math.max(1, Math.min(5, Math.round(entry.velocity / 20)))
   return (
     <div style={{
-      background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.25)',
-      borderRadius: 'var(--r-md)', padding: '7px 9px',
-      display: 'flex', flexDirection: 'column', gap: 4,
+      background: 'var(--surface2)', border: '1px solid var(--border)',
+      borderRadius: 'var(--r-md)', padding: '10px 12px',
+      display: 'flex', flexDirection: 'column', gap: 6,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <Icon size={12} color={color} style={{ flexShrink: 0 }} />
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#e6e9f5', flex: 1 }}>{entry.country}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <Icon size={14} color={color} style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)', flex: 1 }}>{entry.country}</span>
         <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
           {[1, 2, 3, 4, 5].map(i => (
             <span key={i} style={{
               width: 3, height: i * 2 + 2, borderRadius: 1,
-              background: i <= bars ? color : 'rgba(129,140,248,0.2)',
+              background: i <= bars ? color : 'var(--border-strong)',
             }} />
           ))}
         </div>
-        <span style={{ fontSize: 9, color, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase' }}>
+        <span style={{ fontSize: 10.5, color, fontWeight: 700, letterSpacing: '.03em', textTransform: 'uppercase' }}>
           {entry.trend}
         </span>
       </div>
-      <div style={{ fontSize: 10, color: '#9aa3c7', lineHeight: 1.5 }}>{entry.reason}</div>
+      <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.5 }}>{entry.reason}</div>
       <button
         onClick={onExplain}
         style={{
           alignSelf: 'flex-start', background: 'none', border: 'none', cursor: 'pointer',
-          color: '#818cf8', fontSize: 9.5, letterSpacing: '.02em', padding: 0, fontFamily: 'inherit',
+          color: 'var(--accent)', fontSize: 11.5, padding: 0, fontFamily: 'inherit',
         }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#c7d2fe' }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#818cf8' }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.7' }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
       >
         Explain this trend →
       </button>
     </div>
   )
+}
+
+// ── Action log entry — one row per dashboard command the AI has executed ───
+interface ActionLogEntry {
+  id: string
+  kind: 'fly' | 'country' | 'layer' | 'deepstate'
+  label: string
+  at: number
 }
 
 // ── AI Analyst Panel (OpenRouter) ─────────────────────────────────────────
@@ -2200,6 +2293,9 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   const [sessionId, setSessionId] = useState(() => newSessionId())
   const [showHistory, setShowHistory] = useState(false)
   const [pastSessions, setPastSessions] = useState<ChatSession[]>([])
+  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
+  const [followUps, setFollowUps] = useState<string[]>([])
+  const [reasoning, setReasoning] = useState('')
   const abortRef  = useRef<AbortController | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const hasKey    = !!import.meta.env.VITE_OPENROUTER_KEY
@@ -2237,6 +2333,9 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setResponse(lastAssistant?.content ?? '')
     setShowHistory(false)
     setError('')
+    setActionLog([])
+    setFollowUps([])
+    setReasoning('')
   }
 
   function startNewSession() {
@@ -2245,6 +2344,25 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setError('')
     setSessionId(newSessionId())
     setShowHistory(false)
+    setActionLog([])
+    setFollowUps([])
+    setReasoning('')
+  }
+
+  // Contextual follow-up chips — derived client-side from the response text and
+  // live dashboard state, not another model call. Keeps the "next question" always
+  // one tap away instead of a blank input box.
+  function deriveFollowUps(text: string, cmds: ActionLogEntry[]): string[] {
+    const suggestions: string[] = []
+    const flown = cmds.find(c => c.kind === 'fly' || c.kind === 'country')
+    if (flown) suggestions.push(`What's the historical pattern for ${flown.label}?`)
+    if (/marke|price|oil|energy/i.test(text)) suggestions.push('How would this affect markets over the next 30 days?')
+    if (/escalat|risk|tension/i.test(text)) suggestions.push('What would de-escalation look like here?')
+    if (trajectories.length > 0 && suggestions.length < 2) {
+      suggestions.push(`Compare this to the ${trajectories[0].country} trajectory`)
+    }
+    if (suggestions.length < 2) suggestions.push('Summarize this in 3 bullet points')
+    return suggestions.slice(0, 3)
   }
 
   function removeSession(id: string, e: React.MouseEvent) {
@@ -2258,6 +2376,9 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     if (!prompt.trim() || streaming) return
     setError('')
     setResponse('')
+    setActionLog([])
+    setFollowUps([])
+    setReasoning('')
     setStreaming(true)
     abortRef.current = new AbortController()
 
@@ -2284,6 +2405,7 @@ ${context}`,
 
     let full = ''
     const executedCmds = new Set<string>()
+    const loggedActions: ActionLogEntry[] = []
     try {
       await streamAI(
         messages,
@@ -2298,14 +2420,22 @@ ${context}`,
             const flyMatch = trimmed.match(/^\[FLY:(.+)\]$/)
             if (flyMatch) {
               executedCmds.add(trimmed)
-              onGeoSearch?.(flyMatch[1].trim())
+              const loc = flyMatch[1].trim()
+              onGeoSearch?.(loc)
+              const entry: ActionLogEntry = { id: `${Date.now()}-fly`, kind: 'fly', label: loc, at: Date.now() }
+              loggedActions.push(entry)
+              setActionLog(prev => [...prev, entry])
               continue
             }
 
             const countryMatch = trimmed.match(/^\[COUNTRY:(.+)\]$/)
             if (countryMatch) {
               executedCmds.add(trimmed)
-              onCountryClick?.(countryMatch[1].trim())
+              const name = countryMatch[1].trim()
+              onCountryClick?.(name)
+              const entry: ActionLogEntry = { id: `${Date.now()}-country`, kind: 'country', label: name, at: Date.now() }
+              loggedActions.push(entry)
+              setActionLog(prev => [...prev, entry])
               continue
             }
 
@@ -2316,6 +2446,9 @@ ${context}`,
               if (layerId in panelState && panelState[layerId] !== wantOn) {
                 executedCmds.add(trimmed)
                 onToggleLayer(layerId)
+                const entry: ActionLogEntry = { id: `${Date.now()}-layer-${layerId}`, kind: 'layer', label: `${layerId} ${wantOn ? 'on' : 'off'}`, at: Date.now() }
+                loggedActions.push(entry)
+                setActionLog(prev => [...prev, entry])
               }
               continue
             }
@@ -2323,7 +2456,9 @@ ${context}`,
             const dsMatch = trimmed.match(/^\[DEEPSTATE:(on|off)\]$/)
             if (dsMatch) {
               executedCmds.add(trimmed)
-              // handled via deepstate toggle if needed
+              const entry: ActionLogEntry = { id: `${Date.now()}-deepstate`, kind: 'deepstate', label: `Ukraine frontline ${dsMatch[1]}`, at: Date.now() }
+              loggedActions.push(entry)
+              setActionLog(prev => [...prev, entry])
               continue
             }
           }
@@ -2333,6 +2468,7 @@ ${context}`,
         },
         abortRef.current.signal,
         model,
+        token => setReasoning(prev => (prev + token).slice(-220)),
       )
       const cleanResponse = full.split('\n').filter(l => !l.trim().match(/^\[(FLY|COUNTRY|LAYER|DEEPSTATE):.+\]$/)).join('\n')
       setHistory(prev => [
@@ -2340,6 +2476,7 @@ ${context}`,
         userMsg,
         { role: 'assistant', content: cleanResponse },
       ])
+      setFollowUps(deriveFollowUps(cleanResponse, loggedActions))
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         setError((err as Error).message)
@@ -2366,13 +2503,13 @@ ${context}`,
       const isBullet = /^[\-\•\*]\s/.test(line)
       return (
         <div key={i} style={{
-          marginBottom: isHeader ? 7 : isBullet ? 2 : 1,
-          paddingLeft: isBullet ? 10 : 0,
-          borderLeft: isBullet ? '2px solid rgba(129,140,248,0.35)' : 'none',
-          color: isHeader ? '#c7d2fe' : '#e6e9f5',
+          marginBottom: isHeader ? 9 : isBullet ? 3 : 2,
+          paddingLeft: isBullet ? 12 : 0,
+          borderLeft: isBullet ? '2px solid var(--accent)' : 'none',
+          color: isHeader ? 'var(--accent)' : 'var(--text1)',
           fontWeight: isHeader ? 700 : 400,
-          fontSize: isHeader ? 11.5 : 11,
-          letterSpacing: isHeader ? '.06em' : '.01em',
+          fontSize: isHeader ? 14 : 13.5,
+          letterSpacing: isHeader ? '.03em' : 'normal',
           lineHeight: 1.7,
         }}
           dangerouslySetInnerHTML={{ __html: bold.replace(/^#+\s/, '').replace(/^[\-\•\*]\s/, '') }}
@@ -2412,7 +2549,7 @@ ${context}`,
   }
 
   if (!hasKey) return (
-    <div className="ai-surface" style={{ height: '100%', padding: '14px 16px', fontSize: 11, color: '#9aa3c7', letterSpacing: '.04em', lineHeight: 1.8 }}>
+    <div className="ai-surface" style={{ height: '100%', padding: '20px 22px', fontSize: 13.5, color: 'var(--text2)', lineHeight: 1.8 }}>
       OPENROUTER KEY REQUIRED<br />
       Add VITE_OPENROUTER_KEY to .env
     </div>
@@ -2421,56 +2558,56 @@ ${context}`,
   const confidence = confidenceOf(response)
 
   return (
-    <div className="ai-surface" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+    <div className="ai-surface" style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }}>
 
-      {/* Model selector */}
-      <div className="ai-header" style={{ padding: '7px 10px', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, position: 'relative' }}>
+      {/* Console header */}
+      <div className="ai-header" style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, position: 'relative' }}>
+        <Terminal size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
         <span className="ai-pulse-dot" />
-        <span style={{ fontSize: 9.5, color: '#9aa3c7', letterSpacing: '.08em', flexShrink: 0, fontWeight: 600 }}>MODEL</span>
         <select
           value={model}
           onChange={e => setModel(e.target.value)}
           disabled={streaming}
           style={{
-            flex: 1, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(129,140,248,0.3)', color: '#c7d2fe',
-            fontSize: 10.5, fontFamily: 'inherit', letterSpacing: '.02em', padding: '3px 5px', borderRadius: 'var(--r-sm)',
+            flex: 1, background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text1)',
+            fontSize: 12.5, fontFamily: 'inherit', letterSpacing: '.01em', padding: '5px 7px', borderRadius: 'var(--r-sm)',
             outline: 'none', cursor: 'pointer',
           }}
         >
           {FREE_MODELS.map(m => (
-            <option key={m.id} value={m.id} style={{ color: '#111' }}>{m.label} · {m.ctx} ctx · FREE</option>
+            <option key={m.id} value={m.id}>{m.label} · {m.ctx} ctx · FREE</option>
           ))}
         </select>
         <button
           onClick={startNewSession}
           title="New conversation"
-          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.3)', borderRadius: 'var(--r-sm)', color: '#9aa3c7', cursor: 'pointer', padding: '4px 5px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#c7d2fe'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(129,140,248,0.6)' }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#9aa3c7'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(129,140,248,0.3)' }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r-sm)', color: 'var(--text2)', cursor: 'pointer', padding: '6px 7px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--accent)' }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)'; (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-strong)' }}
         >
-          <Plus size={11} />
+          <Plus size={14} />
         </button>
         <button
           onClick={() => (showHistory ? setShowHistory(false) : openHistory())}
           title="Chat history"
-          style={{ background: showHistory ? 'rgba(129,140,248,0.18)' : 'rgba(255,255,255,0.05)', border: `1px solid ${showHistory ? 'rgba(129,140,248,0.6)' : 'rgba(129,140,248,0.3)'}`, borderRadius: 'var(--r-sm)', color: showHistory ? '#c7d2fe' : '#9aa3c7', cursor: 'pointer', padding: '4px 5px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#c7d2fe' }}
-          onMouseLeave={e => { if (!showHistory) (e.currentTarget as HTMLButtonElement).style.color = '#9aa3c7' }}
+          style={{ background: showHistory ? 'var(--accent-soft)' : 'var(--surface)', border: `1px solid ${showHistory ? 'var(--accent)' : 'var(--border-strong)'}`, borderRadius: 'var(--r-sm)', color: showHistory ? 'var(--accent)' : 'var(--text2)', cursor: 'pointer', padding: '6px 7px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent)' }}
+          onMouseLeave={e => { if (!showHistory) (e.currentTarget as HTMLButtonElement).style.color = 'var(--text2)' }}
         >
-          <History size={11} />
+          <History size={14} />
         </button>
 
         {showHistory && (
           <div className="ai-glow-border" style={{
             position: 'absolute', top: '100%', right: 10, left: 10, zIndex: 40,
-            background: 'linear-gradient(160deg, #12162c 0%, #0b0f1e 100%)', border: '1px solid rgba(129,140,248,0.3)',
-            borderRadius: 'var(--r-md)', maxHeight: 220, overflowY: 'auto', marginTop: 4,
+            background: 'var(--surface)', border: '1px solid var(--border-strong)',
+            borderRadius: 'var(--r-md)', maxHeight: 280, overflowY: 'auto', marginTop: 4,
           }}>
-            <div style={{ padding: '6px 9px', fontSize: 9.5, color: '#9aa3c7', letterSpacing: '.08em', borderBottom: '1px solid rgba(129,140,248,0.2)' }}>
+            <div style={{ padding: '8px 11px', fontSize: 11, color: 'var(--text2)', letterSpacing: '.06em', borderBottom: '1px solid var(--border)' }}>
               PAST CONVERSATIONS ({pastSessions.length})
             </div>
             {pastSessions.length === 0 && (
-              <div style={{ padding: '10px 9px', fontSize: 10.5, color: '#7b83a8', letterSpacing: '.03em' }}>No saved conversations yet</div>
+              <div style={{ padding: '12px 11px', fontSize: 12.5, color: 'var(--text3)' }}>No saved conversations yet</div>
             )}
             {pastSessions.map(s => {
               const firstUser = s.messages.find(m => m.role === 'user')
@@ -2479,29 +2616,29 @@ ${context}`,
                   key={s.id}
                   onClick={() => loadSession(s)}
                   style={{
-                    padding: '7px 9px', borderBottom: '1px solid rgba(129,140,248,0.12)', cursor: 'pointer',
-                    background: s.id === sessionId ? 'rgba(129,140,248,0.12)' : 'transparent',
+                    padding: '9px 11px', borderBottom: '1px solid var(--border)', cursor: 'pointer',
+                    background: s.id === sessionId ? 'var(--accent-soft)' : 'transparent',
                     display: 'flex', alignItems: 'flex-start', gap: 6, transition: 'background .12s',
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'rgba(129,140,248,0.16)' }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = s.id === sessionId ? 'rgba(129,140,248,0.12)' : 'transparent' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--surface2)' }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = s.id === sessionId ? 'var(--accent-soft)' : 'transparent' }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 10.5, color: '#e6e9f5', letterSpacing: '.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: 12.5, color: 'var(--text1)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {firstUser?.content || '(empty)'}
                     </div>
-                    <div style={{ fontSize: 9, color: '#7b83a8', letterSpacing: '.04em', marginTop: 2 }}>
+                    <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
                       {new Date(s.updatedAt).toLocaleString()} · {s.messages.length} MSGS
                     </div>
                   </div>
                   <button
                     onClick={e => removeSession(s.id, e)}
                     title="Delete conversation"
-                    style={{ background: 'none', border: 'none', color: '#7b83a8', cursor: 'pointer', padding: 2, flexShrink: 0 }}
+                    style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', padding: 2, flexShrink: 0 }}
                     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)' }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#7b83a8' }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)' }}
                   >
-                    <Trash2 size={10} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               )
@@ -2512,11 +2649,11 @@ ${context}`,
 
       {/* Watchlist — proactive trajectory forecast, no prompt required */}
       {trajectories.length > 0 && (
-        <div style={{ padding: '9px 10px', borderBottom: '1px solid rgba(129,140,248,0.15)', flexShrink: 0 }}>
-          <div style={{ fontSize: 9.5, color: '#7b83a8', letterSpacing: '.08em', marginBottom: 7, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div style={{ fontSize: 11, color: 'var(--text3)', letterSpacing: '.06em', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
             <span className="ai-pulse-dot" /> WATCHLIST — 72H TRAJECTORY
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {trajectories.map(t => (
               <WatchlistCard key={t.country} entry={t} onExplain={() => {
                 ask(`Explain the ${t.trend} trend for ${t.country}: ${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore}). What's driving this and what should I watch for next?`)
@@ -2528,24 +2665,24 @@ ${context}`,
 
       {/* Quick prompts */}
       {!response && !streaming && history.length === 0 && (
-        <div style={{ padding: '9px 10px', borderBottom: '1px solid rgba(129,140,248,0.15)', flexShrink: 0 }}>
-          <div style={{ fontSize: 9.5, color: '#7b83a8', letterSpacing: '.08em', marginBottom: 7, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+          <div style={{ fontSize: 11, color: 'var(--text3)', letterSpacing: '.06em', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
             <span className="ai-pulse-dot" /> QUICK ANALYSIS
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
             {QUICK_PROMPTS.map(qp => (
               <button
                 key={qp.label}
                 onClick={() => { ask(qp.prompt) }}
                 style={{
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(129,140,248,0.3)',
+                  background: 'var(--surface2)', border: '1px solid var(--border-strong)',
                   borderRadius: 'var(--r-pill)',
-                  color: '#c7d2fe', fontSize: 10.5, padding: '4px 10px',
-                  cursor: 'pointer', fontFamily: 'inherit', letterSpacing: '.02em',
-                  transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 4,
+                  color: 'var(--accent)', fontSize: 12.5, padding: '6px 13px',
+                  cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'all .12s', display: 'flex', alignItems: 'center', gap: 5,
                 }}
-                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'rgba(129,140,248,0.7)'; el.style.background = 'rgba(129,140,248,0.14)' }}
-                onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'rgba(129,140,248,0.3)'; el.style.background = 'rgba(255,255,255,0.04)' }}
+                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.background = 'var(--accent-soft)' }}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border-strong)'; el.style.background = 'var(--surface2)' }}
               >
                 {qp.icon} {qp.label}
               </button>
@@ -2556,13 +2693,13 @@ ${context}`,
 
       {/* Conversation history */}
       {history.length > 0 && (
-        <div style={{ padding: '9px 10px 0', flexShrink: 0 }}>
+        <div style={{ padding: '12px 14px 0', flexShrink: 0 }}>
           {history.filter(m => m.role === 'user').slice(-2).map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 5 }}>
+            <div key={i} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
               <span style={{
-                background: 'linear-gradient(135deg, #4338ca, #4f46e5)', color: '#eef0ff',
-                borderRadius: '12px 12px 3px 12px', padding: '5px 10px', fontSize: 10.5,
-                letterSpacing: '.01em', maxWidth: '85%', lineHeight: 1.5,
+                background: 'var(--accent)', color: '#ffffff',
+                borderRadius: '16px 16px 4px 16px', padding: '8px 14px', fontSize: 13.5,
+                maxWidth: '85%', lineHeight: 1.5,
               }}>
                 {m.content.slice(0, 140)}{m.content.length > 140 ? '…' : ''}
               </span>
@@ -2572,9 +2709,9 @@ ${context}`,
       )}
 
       {/* Response area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '9px 12px', minHeight: 0 }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', minHeight: 0 }}>
         {!response && !streaming && history.length === 0 && (
-          <div style={{ fontSize: 10.5, color: '#7b83a8', letterSpacing: '.02em', lineHeight: 1.9, paddingTop: 4 }}>
+          <div style={{ fontSize: 13, color: 'var(--text3)', lineHeight: 1.9, paddingTop: 4 }}>
             AI ANALYST READY<br />
             {crises.length} active crises · {flights.length.toLocaleString()} flights tracked<br />
             {trajectories.length > 0
@@ -2583,42 +2720,93 @@ ${context}`,
           </div>
         )}
 
-        {streaming && !response && (
-          <div style={{ marginBottom: 8 }}>
+        {streaming && !response && !reasoning && (
+          <div style={{ marginBottom: 10 }}>
             {TRACE_STEPS.slice(0, traceIdx + 1).map((step, i) => (
-              <div key={step} className="ai-trace-item" style={{ opacity: i === traceIdx ? 1 : 0.5 }}>
-                <span className="ai-pulse-dot" style={{ width: 4, height: 4 }} />
+              <div key={step} className="ai-trace-item" style={{ opacity: i === traceIdx ? 1 : 0.5, fontSize: 12.5 }}>
+                <span className="ai-pulse-dot" style={{ width: 5, height: 5 }} />
                 {step}
               </div>
             ))}
           </div>
         )}
 
+        {/* Live reasoning trace — real model "thinking" text, shown until visible content starts */}
+        {streaming && !response && reasoning && (
+          <div style={{ marginBottom: 10, fontSize: 12, color: 'var(--text3)', lineHeight: 1.6, fontStyle: 'italic' }}>
+            {reasoning}
+            <span className="ai-cursor" />
+          </div>
+        )}
+
+        {/* Live action timeline — every dashboard command the AI has executed this turn */}
+        {actionLog.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+            {actionLog.map(a => {
+              const Icon = a.kind === 'fly' ? Navigation : a.kind === 'country' ? Info : a.kind === 'layer' ? Layers : Radio
+              return (
+                <div key={a.id} className="ai-action-row" style={{
+                  display: 'flex', alignItems: 'center', gap: 7, fontSize: 12,
+                  padding: '6px 10px', borderRadius: 'var(--r-sm)',
+                  background: 'var(--accent-soft)', color: 'var(--accent)',
+                  border: '1px solid rgba(37,99,235,0.18)',
+                }}>
+                  <Icon size={12} style={{ flexShrink: 0 }} />
+                  <span style={{ fontWeight: 600 }}>
+                    {a.kind === 'fly' ? 'Flew to' : a.kind === 'country' ? 'Opened' : a.kind === 'layer' ? 'Toggled layer' : 'Toggled overlay'}
+                  </span>
+                  <span style={{ color: 'var(--text1)' }}>{a.label}</span>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {(response || streaming) && (
-          <div style={{
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(129,140,248,0.25)',
-            borderRadius: '12px 12px 12px 3px', padding: '9px 11px',
-          }}>
+          <div style={{ padding: '2px 0' }}>
             {renderText(response)}
             {streaming && <span className="ai-cursor" />}
             {!streaming && response && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 8, paddingTop: 6, borderTop: '1px solid rgba(129,140,248,0.15)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
                 <div style={{ display: 'flex', gap: 2 }}>
                   {[1, 2, 3, 4].map(i => (
                     <span key={i} style={{
                       width: 4, height: i * 2 + 3, borderRadius: 1, alignSelf: 'flex-end',
-                      background: i <= confidence.bars ? '#818cf8' : 'rgba(129,140,248,0.2)',
+                      background: i <= confidence.bars ? 'var(--accent)' : 'var(--border-strong)',
                     }} />
                   ))}
                 </div>
-                <span style={{ fontSize: 9, color: '#9aa3c7', letterSpacing: '.03em' }}>{confidence.label}</span>
+                <span style={{ fontSize: 11, color: 'var(--text3)' }}>{confidence.label}</span>
               </div>
             )}
           </div>
         )}
 
+        {/* Auto-suggested follow-ups — derived from the response, one tap to continue */}
+        {!streaming && followUps.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>
+            {followUps.map(fu => (
+              <button
+                key={fu}
+                onClick={() => ask(fu)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  background: 'var(--surface)', border: '1px solid var(--border-strong)',
+                  borderRadius: 'var(--r-pill)', color: 'var(--text2)', fontSize: 12,
+                  padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit',
+                  transition: 'all .12s',
+                }}
+                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--accent)' }}
+                onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border-strong)'; el.style.color = 'var(--text2)' }}
+              >
+                <Sparkles size={11} /> {fu}
+              </button>
+            ))}
+          </div>
+        )}
+
         {error && (
-          <div style={{ fontSize: 10.5, color: '#fca5a5', letterSpacing: '.02em', marginTop: 6 }}>
+          <div style={{ fontSize: 12.5, color: 'var(--red)', marginTop: 8 }}>
             ⚠ {error}
           </div>
         )}
@@ -2626,51 +2814,51 @@ ${context}`,
       </div>
 
       {/* Context pill */}
-      <div style={{ padding: '4px 10px', borderTop: '1px solid rgba(129,140,248,0.15)', borderBottom: '1px solid rgba(129,140,248,0.15)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-        <div style={{ fontSize: 9, color: '#7b83a8', letterSpacing: '.06em', display: 'flex', gap: 9, alignItems: 'center' }}>
+      <div style={{ padding: '6px 14px', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ fontSize: 11, color: 'var(--text3)', display: 'flex', gap: 11, alignItems: 'center' }}>
           <span style={{ color: 'var(--red)' }}>⬤</span> {crises.length} CRISES
-          <span style={{ color: '#818cf8' }}>⬤</span> {flights.length.toLocaleString()} FLIGHTS
+          <span style={{ color: 'var(--accent)' }}>⬤</span> {flights.length.toLocaleString()} FLIGHTS
           <span className="ai-pulse-dot" /> LIVE
         </div>
         {history.length > 0 && (
           <button
             onClick={startNewSession}
-            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#7b83a8', fontSize: 9, letterSpacing: '.04em', fontFamily: 'inherit' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = '#fca5a5' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = '#7b83a8' }}
+            style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 11, fontFamily: 'inherit' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)' }}
           >↺ CLEAR</button>
         )}
       </div>
 
       {/* Input */}
-      <div style={{ padding: '7px 10px', display: 'flex', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+      <div style={{ padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0 }}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
           placeholder="Ask anything about current events, threats, markets…"
-          rows={2}
+          rows={3}
           style={{
-            flex: 1, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(129,140,248,0.3)',
+            flex: 1, background: 'var(--surface)', border: '1px solid var(--border-strong)',
             borderRadius: 'var(--r-md)',
-            color: '#e6e9f5', fontSize: 10.5, fontFamily: 'inherit', letterSpacing: '.01em',
-            padding: '6px 9px', resize: 'none', outline: 'none', lineHeight: 1.5,
+            color: 'var(--text1)', fontSize: 13.5, fontFamily: 'inherit',
+            padding: '9px 12px', resize: 'none', outline: 'none', lineHeight: 1.5,
             transition: 'border-color .12s',
           }}
-          onFocus={e  => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'rgba(129,140,248,0.7)' }}
-          onBlur={e   => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'rgba(129,140,248,0.3)' }}
+          onFocus={e  => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--accent)' }}
+          onBlur={e   => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--border-strong)' }}
         />
         {streaming ? (
-          <button onClick={stop} style={{ background: 'var(--red-soft)', border: '1px solid rgba(220,38,38,0.4)', borderRadius: 'var(--r-md)', color: '#fca5a5', cursor: 'pointer', padding: '6px 8px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-            <Square size={11} />
+          <button onClick={stop} style={{ background: 'var(--red-soft)', border: '1px solid rgba(220,38,38,0.4)', borderRadius: 'var(--r-md)', color: 'var(--red)', cursor: 'pointer', padding: '9px 11px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+            <Square size={14} />
           </button>
         ) : (
           <button
             onClick={() => { ask(input); setInput('') }}
             disabled={!input.trim()}
-            style={{ background: input.trim() ? 'linear-gradient(135deg, #4338ca, #4f46e5)' : 'rgba(255,255,255,0.05)', border: `1px solid ${input.trim() ? 'rgba(129,140,248,0.7)' : 'rgba(129,140,248,0.25)'}`, borderRadius: 'var(--r-md)', color: input.trim() ? '#eef0ff' : '#5a6088', cursor: input.trim() ? 'pointer' : 'default', padding: '6px 8px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
+            style={{ background: input.trim() ? 'var(--accent)' : 'var(--surface2)', border: `1px solid ${input.trim() ? 'var(--accent)' : 'var(--border-strong)'}`, borderRadius: 'var(--r-md)', color: input.trim() ? '#ffffff' : 'var(--text3)', cursor: input.trim() ? 'pointer' : 'default', padding: '9px 11px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
           >
-            <Send size={11} />
+            <Send size={14} />
           </button>
         )}
       </div>

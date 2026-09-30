@@ -18,7 +18,7 @@ interface Props {
 export default function FloatingPanel({ id, index, crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onClose }: Props) {
   const meta = PANEL_META[id]
   const [pos, setPos] = useState({ x: 60 + index * 24, y: 60 + index * 24 })
-  const [size, setSize] = useState({ w: Math.max(280, meta.width), h: 260 })
+  const [size, setSize] = useState({ w: Math.max(280, meta.width), h: id === 'analyst' ? 620 : 260 })
   const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null)
   const resRef  = useRef<{ startX: number; startY: number; ow: number; oh: number } | null>(null)
 
