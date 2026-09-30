@@ -10,7 +10,7 @@ import {
   OutagesPanel, CrisisWatchPanel, IntelBriefPanel, DrugTrafficPanel,
   SanctionsPanel, MilitaryPanel, NuclearPanel, AirspacePanel,
   USWebcamsPanel, CryptoPanel, ForexPanel, ExchangesPanel,
-  StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, AIAnalystPanel,
+  StockList, HumanitarianPanel, MarketsPanel, GlobalEconomyPanel, ResourcesPanel, MilitaryPersonnelPanel, AIAnalystPanel,
   SECTORS,
 } from '../components/panels/PanelContent'
 
@@ -109,6 +109,11 @@ export const PANELS: PanelDef[] = [
     id: 'resources', title: 'Resources', group: 'markets',
     dotColor: 'amber', desc: 'Critical minerals, reserves & production by country',
     render: (p) => <ResourcesPanel onCountryClick={p.onCountryClick} />,
+  },
+  {
+    id: 'militaryPersonnel', title: 'Force Size', group: 'security',
+    dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
+    render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} />,
   },
 
   // ── AI ──────────────────────────────────────────────────────────────────────

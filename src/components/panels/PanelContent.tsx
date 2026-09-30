@@ -16,6 +16,7 @@ import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MO
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
 import { TRADE_PROFILES } from '../../services/tradeStats'
 import { fetchCountryEcon, formatEconValue, groupIndicators, type CountryEconData } from '../../services/worldbank'
+import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
 import { RESOURCE_PROFILES, getResourceProfile, fetchResourceRents, type ResourceRent } from '../../services/resources'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
@@ -113,6 +114,7 @@ export const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string
   { id: 'outages',       label: 'NETWORK OUTAGES',          color: 'var(--red)', tag: 'NET' },
   { id: 'resources',     label: 'CRITICAL MINERALS',        color: 'var(--amber)', tag: 'RES' },
   { id: 'tradeStats',    label: 'TRADE FLOWS',              color: 'var(--accent)', tag: 'TRD' },
+  { id: 'militaryPersonnel', label: 'FORCE SIZE',           color: 'var(--red)', tag: 'MIL' },
 ]
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
@@ -2214,6 +2216,71 @@ export function ResourcesPanel({ onCountryClick }: { onCountryClick?: (country: 
                 </div>
               )}
             </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── Military Personnel Panel — ranked by armed forces personnel (World Bank) ──
+export function MilitaryPersonnelPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
+  const [ranking, setRanking] = useState<MilitaryPersonnelEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    fetchMilitaryPersonnelRanking()
+      .then(r => { setRanking(r); setLoading(false) })
+      .catch(() => { setError(true); setLoading(false) })
+  }, [])
+
+  const filtered = search.trim()
+    ? ranking.filter(c => c.country.toLowerCase().includes(search.toLowerCase()) || c.iso2.toLowerCase().includes(search.toLowerCase()))
+    : ranking
+  const maxPersonnel = ranking[0]?.personnel ?? 1
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <input
+          value={search} onChange={e => setSearch(e.target.value)}
+          placeholder={`Search ${ranking.length || '…'} countries…`}
+          style={{
+            width: '100%', background: 'var(--border)', border: '1px solid var(--border)', color: 'var(--text1)',
+            padding: '4px 6px', fontSize: 10.5, fontFamily: 'inherit', outline: 'none',
+          }}
+        />
+      </div>
+      <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
+        Ranked by total armed forces personnel · World Bank (IISS Military Balance)
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
+        {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading World Bank ranking…</div>}
+        {error && <div style={{ fontSize: 9.5, color: 'var(--red)', padding: '8px 0' }}>Failed to load World Bank data.</div>}
+        {filtered.map(c => {
+          const barW = (c.personnel / maxPersonnel) * 100
+          return (
+            <button
+              key={c.iso2}
+              onClick={() => onCountryClick?.(c.country)}
+              style={{
+                width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                borderBottom: '1px solid var(--border)', padding: '3.5px 0', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
+              }}
+            >
+              <span style={{ fontSize: 9, color: 'var(--text3)', width: 22, flexShrink: 0, textAlign: 'right' }}>#{c.rank}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--red)', width: 20, flexShrink: 0 }}>{c.iso2}</span>
+              <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.country}</span>
+              <div style={{ width: 40, height: 3, background: 'var(--border)', borderRadius: 1, overflow: 'hidden', flexShrink: 0 }}>
+                <div style={{ width: `${barW}%`, height: '100%', background: 'var(--red)', borderRadius: 1 }} />
+              </div>
+              <span style={{ fontSize: 9, color: 'var(--text2)', fontWeight: 700, width: 46, textAlign: 'right', flexShrink: 0 }}>
+                {formatPersonnel(c.personnel)}
+              </span>
+            </button>
           )
         })}
       </div>
