@@ -114,16 +114,17 @@ export async function searchSymbol(query: string): Promise<{ symbol: string; nam
   }
 }
 
-// Major global exchanges with their flagship indices
+// Major global exchanges. Each is tracked through a country/index ETF as a proxy (Finnhub's free tier has no
+// index quotes), so the names say what the ETF actually holds rather than naming a local index it only resembles.
 export const MARKET_HUBS: { symbol: string; name: string; lat: number; lng: number; exchange: string }[] = [
-  { symbol: 'SPY', name: 'S&P 500 (NYSE)',       lat:  40.7074, lng:  -74.0113, exchange: 'NYSE'    },
-  { symbol: 'QQQ', name: 'NASDAQ 100',            lat:  40.7587, lng:  -73.9787, exchange: 'NASDAQ'  },
-  { symbol: 'EWU', name: 'FTSE 100 (LSE)',        lat:  51.5155, lng:   -0.0922, exchange: 'LSE'     },
-  { symbol: 'EWG', name: 'DAX (Frankfurt)',        lat:  50.1109, lng:    8.6821, exchange: 'XETRA'   },
-  { symbol: 'EWJ', name: 'Nikkei 225 (Tokyo)',    lat:  35.6762, lng:  139.6503, exchange: 'TSE'     },
-  { symbol: 'EWH', name: 'Hang Seng (HK)',        lat:  22.2793, lng:  114.1628, exchange: 'HKEX'    },
-  { symbol: 'FXI', name: 'CSI 300 (Shanghai)',    lat:  31.2304, lng:  121.4737, exchange: 'SSE'     },
-  { symbol: 'EWZ', name: 'Bovespa (São Paulo)',   lat: -23.5505, lng:  -46.6333, exchange: 'B3'      },
-  { symbol: 'EWA', name: 'ASX 200 (Sydney)',      lat: -33.8688, lng:  151.2093, exchange: 'ASX'     },
-  { symbol: 'EWC', name: 'TSX (Toronto)',         lat:  43.6532, lng:  -79.3832, exchange: 'TSX'     },
+  { symbol: 'SPY', name: 'US large caps (S&P 500)',      lat:  40.7074, lng:  -74.0113, exchange: 'NYSE'    },
+  { symbol: 'QQQ', name: 'US tech (Nasdaq 100)',         lat:  40.7587, lng:  -73.9787, exchange: 'NASDAQ'  },
+  { symbol: 'EWU', name: 'UK equities (MSCI UK)',        lat:  51.5155, lng:   -0.0922, exchange: 'LSE'     },
+  { symbol: 'EWG', name: 'German equities (MSCI Germany)', lat:  50.1109, lng:    8.6821, exchange: 'XETRA'   },
+  { symbol: 'EWJ', name: 'Japanese equities (MSCI Japan)', lat:  35.6762, lng:  139.6503, exchange: 'TSE'     },
+  { symbol: 'EWH', name: 'Hong Kong equities (MSCI HK)', lat:  22.2793, lng:  114.1628, exchange: 'HKEX'    },
+  { symbol: 'FXI', name: 'China large caps (FTSE China 50)', lat:  31.2304, lng:  121.4737, exchange: 'SSE'     },
+  { symbol: 'EWZ', name: 'Brazilian equities (MSCI Brazil)', lat: -23.5505, lng:  -46.6333, exchange: 'B3'      },
+  { symbol: 'EWA', name: 'Australian equities (MSCI Australia)', lat: -33.8688, lng:  151.2093, exchange: 'ASX'     },
+  { symbol: 'EWC', name: 'Canadian equities (MSCI Canada)', lat:  43.6532, lng:  -79.3832, exchange: 'TSX'     },
 ]

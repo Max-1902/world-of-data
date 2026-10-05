@@ -28,6 +28,7 @@ export const SOURCE_RULES: SourceRule[] = [
   { id: 'guardian',  label: 'The Guardian',              match: has('/api/guardian') },
   { id: 'nyt',       label: 'New York Times',            match: has('/api/nyt') },
   { id: 'newsapi',   label: 'NewsAPI',                   match: has('newsapi.org') },
+  { id: 'geocode',   label: 'Place lookup (Open-Meteo)', match: has('geocoding-api.open-meteo.com') },
   { id: 'markets',   label: 'Markets (Finnhub)',         match: has('/api/finnhub') },
   { id: 'unhcr',     label: 'Displacement (UNHCR)',      match: has('api.unhcr.org') },
   { id: 'worldbank', label: 'Economy (World Bank)',      match: has('api.worldbank.org') },
