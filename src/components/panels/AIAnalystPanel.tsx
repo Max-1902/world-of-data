@@ -81,7 +81,8 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
   const [followUps, setFollowUps] = useState<string[]>([])
   const abortRef  = useRef<AbortController | null>(null)
-  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const stickRef  = useRef(true) // follow the stream only while the reader is at the bottom
   // Whether OpenRouter is actually configured now lives server-side (api/openrouter/*)
   // and can't be checked from the client; the UI stays enabled and any missing-key
   // failure surfaces through the normal streamAI error path below instead.
@@ -91,9 +92,12 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   // No prompt required; this is what makes the panel proactive rather than ask-only.
   const trajectories = useMemo(() => computeTrajectories(crises, flights), [crises, flights])
 
+  // Follow the streaming text inside the conversation box only. (scrollIntoView on every token
+  // scrolled every ancestor too — the whole right dock jumped down while the AI wrote.)
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [response])
+    const el = scrollRef.current
+    if (el && stickRef.current) el.scrollTop = el.scrollHeight
+  }, [response, actionLog, streaming])
 
   // Persist the running conversation to localStorage after each turn
   useEffect(() => {
@@ -163,6 +167,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setResponse('')
     setActionLog([])
     setFollowUps([])
+    stickRef.current = true
     setStreaming(true)
     abortRef.current = new AbortController()
 
@@ -481,7 +486,12 @@ ${context}`,
       )}
 
       {/* Response area */}
-      <div className="ai-conversation" style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', minHeight: 0 }}>
+      <div
+        ref={scrollRef}
+        className="ai-conversation"
+        onScroll={e => { const el = e.currentTarget; stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48 }}
+        style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', scrollbarGutter: 'stable', padding: '12px 16px', minHeight: 0 }}
+      >
         {!response && !streaming && history.length === 0 && (
           <div className="ai-welcome">
             <div className="ai-welcome-title">What would you like to understand?</div>
@@ -558,7 +568,6 @@ ${context}`,
             {error}
           </div>
         )}
-        <div ref={bottomRef} />
       </div>
 
       {/* Context pill */}
