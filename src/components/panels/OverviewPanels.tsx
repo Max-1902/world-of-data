@@ -1,6 +1,7 @@
 /**
  * Panel implementations. Split out of the former PanelContent.tsx; wired up in src/panels/registry.tsx.
  */
+import { sortByLayerSections } from '../../utils/layerSections'
 import { useState } from 'react'
 import { formatDistanceToNow } from 'date-fns'
 import { CrisisEvent, PanelState, Flight } from '../../types'
@@ -143,7 +144,7 @@ export function LayersPanel({ panelState, onToggleLayer, deepstateMode, onDeepst
           <div style={{ fontSize: '10px', color: 'var(--text3)' }}>battlefield overlay</div>
         </div>
       </button>
-      {LAYERS_CONFIG.map(layer => {
+      {sortByLayerSections(LAYERS_CONFIG, l => l.id).map(layer => {
         const on = panelState[layer.id]
         return (
           <button key={layer.id} onClick={() => onToggleLayer(layer.id)}

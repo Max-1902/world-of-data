@@ -8,6 +8,7 @@ import { MARKET_HUBS } from '../../services/stocks'
 import { addHoverMarker, type HoverMarker } from './hoverMarker'
 import { NEWS_COLORS, esc, marketPinHTML, newsPinHTML } from './geoPopups'
 import type { GeoNewsPin } from '../../utils/geoNews'
+import { LAYER_SECTIONS } from '../../utils/layerSections'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from '../../services/military'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2 } from '../../services/sanctions'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from '../../services/ports'
@@ -89,6 +90,36 @@ interface Props {
   reticleColor?:      string
   panelState?:        import('../../types').PanelState
   onToggleLayer?:     (id: keyof import('../../types').PanelState) => void
+}
+
+const OVERLAY_ITEMS: Record<keyof import('../../types').PanelState, { label: string; icon: string; color: string }> = {
+  outages: { label: 'OUTAGES', icon: '◐', color: '#f59e0b' },
+  resources: { label: 'RESOURCES', icon: '◭', color: '#d97706' },
+  tradeStats: { label: 'TRADE', icon: '⇄', color: '#22d3ee' },
+  flights: { label: 'FLIGHTS', icon: '✈', color: '#00ff88' },
+  crises: { label: 'CRISES', icon: '⚠', color: '#ff6600' },
+  vessels: { label: 'VESSELS', icon: '⎈', color: '#00aaff' },
+  wildfires: { label: 'WILDFIRES', icon: '✱', color: '#ff4400' },
+  news: { label: 'NEWS', icon: '◉', color: '#cccccc' },
+  stocks: { label: 'MARKETS', icon: '$', color: '#00ff88' },
+  military: { label: 'MILITARY', icon: '⚔', color: '#ff2244' },
+  militaryPersonnel: { label: 'FORCE SIZE', icon: '⚔', color: '#dc2626' },
+  nuclear: { label: 'NUCLEAR', icon: '☢', color: '#ffcc00' },
+  sanctions: { label: 'SANCTIONS', icon: '⊗', color: '#ff3344' },
+  cameras: { label: 'CAMERAS', icon: '◎', color: '#aa88ff' },
+  infrastructure: { label: 'INFRA', icon: '↯', color: '#ff8800' },
+  airspace: { label: 'AIRSPACE', icon: '◇', color: '#44aaff' },
+  humanitarian: { label: 'HUMANITARIAN', icon: '✚', color: '#ff6688' },
+  oil: { label: 'OIL', icon: '▲', color: '#ff6600' },
+  gas: { label: 'GAS', icon: '▲', color: '#00aaff' },
+  ports: { label: 'PORTS', icon: '⎈', color: '#00ccff' },
+  pipelines: { label: 'PIPELINES', icon: '═', color: PIPELINE_COLORS.gas },
+  gpsjam: { label: 'GPS JAM', icon: '◌', color: '#ff3344' },
+  chokepoints: { label: 'CHOKEPOINTS', icon: '⊘', color: '#ff4466' },
+  supplychain: { label: 'SUPPLY CHAIN', icon: '◆', color: '#00ccff' },
+  shippingDensity: { label: 'SHIPPING', icon: '≋', color: '#ff4466' },
+  infraIndicators: { label: 'INFRA ACCESS', icon: '↯', color: '#22d3ee' },
+  datacenters: { label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
 }
 
 export default function MapView({
@@ -3530,33 +3561,14 @@ export default function MapView({
               boxShadow:'0 4px 20px rgba(0,0,0,0.7)',
               maxHeight: 360, overflowY: 'auto',
             }}>
-              {([
-                { key: 'flights',        label: 'FLIGHTS',        icon: '✈', color: '#00ff88' },
-                { key: 'crises',         label: 'CRISES',         icon: '⚠', color: '#ff6600' },
-                { key: 'vessels',        label: 'VESSELS',        icon: '⎈', color: '#00aaff' },
-                { key: 'wildfires',      label: 'WILDFIRES',      icon: '✱', color: '#ff4400' },
-                { key: 'news',           label: 'NEWS',           icon: '◉', color: '#cccccc' },
-                { key: 'stocks',         label: 'MARKETS',        icon: '$', color: '#00ff88' },
-                { key: 'military',       label: 'MILITARY',       icon: '⚔', color: '#ff2244' },
-                { key: 'militaryPersonnel', label: 'FORCE SIZE',  icon: '⚔', color: '#dc2626' },
-                { key: 'nuclear',        label: 'NUCLEAR',        icon: '☢', color: '#ffcc00' },
-                { key: 'sanctions',      label: 'SANCTIONS',      icon: '⊗', color: '#ff3344' },
-                { key: 'cameras',        label: 'CAMERAS',        icon: '◎', color: '#aa88ff' },
-                { key: 'infrastructure', label: 'INFRA',          icon: '↯', color: '#ff8800' },
-                { key: 'airspace',       label: 'AIRSPACE',       icon: '◇', color: '#44aaff' },
-                { key: 'humanitarian',   label: 'HUMANITARIAN',   icon: '✚', color: '#ff6688' },
-                { key: 'oil',            label: 'OIL',             icon: '▲', color: '#ff6600' },
-                { key: 'gas',            label: 'GAS',             icon: '▲', color: '#00aaff' },
-                { key: 'ports',          label: 'PORTS',          icon: '⎈', color: '#00ccff' },
-                { key: 'pipelines',      label: 'PIPELINES',      icon: '═', color: PIPELINE_COLORS.gas },
-                { key: 'gpsjam',         label: 'GPS JAM',        icon: '◌', color: '#ff3344' },
-                { key: 'chokepoints',    label: 'CHOKEPOINTS',    icon: '⊘', color: '#ff4466' },
-                { key: 'supplychain',    label: 'SUPPLY CHAIN',   icon: '◆', color: '#00ccff' },
-                { key: 'shippingDensity', label: 'SHIPPING',       icon: '≋', color: '#ff4466' },
-                { key: 'infraIndicators',   label: 'INFRA ACCESS', icon: '↯', color: '#22d3ee' },
-                { key: 'datacenters',       label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
-              ] as { key: keyof import('../../types').PanelState; label: string; icon: string; color: string }[]).map(item => {
-                const on = panelState[item.key]
+              {LAYER_SECTIONS.map(section => (
+                <div key={section.title}>
+                  <div style={{ padding:'5px 8px 3px', fontSize:7, fontWeight:700, letterSpacing:'.16em', color:'#647883', background:'rgba(255,255,255,.03)', borderBottom:'1px solid #1c2b35', position:'sticky', top:0, zIndex:1 }}>
+                    {section.title}
+                  </div>
+                  {section.keys.map(key => {
+                    const item = { key, ...OVERLAY_ITEMS[key] }
+                    const on = panelState[item.key]
                 return (
                   <button
                     key={item.key}
@@ -3583,7 +3595,9 @@ export default function MapView({
                     }} />
                   </button>
                 )
-              })}
+                  })}
+                </div>
+              ))}
             </div>
           )}
         </div>

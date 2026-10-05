@@ -77,20 +77,16 @@ function loadViewMode(): MapViewMode {
 function loadGroup(): PanelGroup {
   const fromLink = readHash().group
   if (fromLink) return fromLink as PanelGroup
+  // Workspaces that were folded into the six themed ones keep working for saved state and old links.
   const oldGroupMap: Record<string, PanelGroup> = {
-    intel: 'overview',
-    mil: 'security',
-    fin: 'markets',
-    ai: 'analysis',
+    intel: 'overview', mil: 'security', fin: 'markets', ai: 'analysis',
+    militaryInstallations: 'security', nuclearFacilities: 'security', forceSize: 'security',
+    infrastructureSites: 'geo', datacenters: 'geo',
+    resourcesByCountry: 'markets', tradePartnersByCountry: 'markets', tradeProductsByCountry: 'markets', economicData: 'markets',
   }
   try {
     const saved = localStorage.getItem('ws-dock-group')
-    const validGroups = [
-      'overview', 'news', 'geo', 'security', 'markets', 'analysis',
-      'militaryInstallations', 'nuclearFacilities', 'infrastructureSites',
-      'resourcesByCountry', 'forceSize', 'tradePartnersByCountry',
-      'tradeProductsByCountry', 'economicData',
-    ]
+    const validGroups: string[] = GROUP_ORDER.map(g => g.id)
     if (saved && validGroups.includes(saved)) return saved as PanelGroup
     return saved ? oldGroupMap[saved] ?? 'overview' : 'overview'
   } catch { return 'overview' }
