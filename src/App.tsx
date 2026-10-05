@@ -325,7 +325,7 @@ export default function App() {
             )}
           </Suspense>
           <AlertToasts onSelectCountry={setSelectedCountry} />
-          {dismissedCard !== cardKey && (
+          {!selectedCountry && dismissedCard !== cardKey && (
             <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={setSelectedCountry} onClose={() => setDismissedCard(cardKey)} />
           )}
           <Suspense fallback={null}>
