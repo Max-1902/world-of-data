@@ -383,12 +383,12 @@ export default function MapView({
         const conf = String(props.confidence || 'nominal')
         const html = `
           <div style="font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;line-height:1.6;min-width:160px">
-            <div style="font-size:12px;font-weight:700;color:#ea580c;letter-spacing:.1em;margin-bottom:4px">🔥 ACTIVE FIRE</div>
+            <div style="font-size:12px;font-weight:700;color:#ea580c;letter-spacing:.1em;margin-bottom:4px">✱ ACTIVE FIRE</div>
             <div><span style="color:#6b7280">FRP:</span> <b style="color:#ea580c">${frp.toFixed(1)} MW</b></div>
             <div><span style="color:#6b7280">Confidence:</span> <span style="color:${conf==='high'?'#dc2626':conf==='low'?'#d97706':'#ea580c'}">${conf.toUpperCase()}</span></div>
             <div><span style="color:#6b7280">Satellite:</span> ${String(props.satellite||'')}</div>
             <div><span style="color:#6b7280">Detected:</span> ${String(props.date||'')} ${String(props.time||'').replace(/(\d{2})(\d{2})/, '$1:$2')} UTC</div>
-            <div><span style="color:#6b7280">Day/Night:</span> ${props.daynight === 'D' ? '☀ Day' : '🌙 Night'}</div>
+            <div><span style="color:#6b7280">Day/Night:</span> ${props.daynight === 'D' ? '☼ Day' : '☾ Night'}</div>
             <div style="margin-top:4px;font-size:10px;color:#9ca3af;font-family:monospace;">${coords[1].toFixed(4)}°, ${coords[0].toFixed(4)}°</div>
           </div>`
         if (popupRef.current) popupRef.current.remove()
@@ -540,7 +540,7 @@ export default function MapView({
         const renderHtml = (rentRows: string) => `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:250px;max-width:320px;max-height:400px;overflow-y:auto;">
           <div style="font-size:13px;font-weight:800;color:#14161a;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">${p ? p.name : nameEn}</div>
           ${p ? `<div style="font-size:10px;font-weight:700;color:#92400e;letter-spacing:0.03em;margin-bottom:3px;">MAJOR PRODUCER — KNOWN COMMODITIES</div>
-          ${p.resources.map(r => `<div style="font-size:11px;color:#374151;margin-bottom:2px;">⛏ <b>${r.mineral}</b>${r.rank ? ` — #${r.rank} world${r.shareOfWorld ? ` (${r.shareOfWorld}% share)` : ''}` : ''}${r.note ? `<div style="font-size:10px;color:#6b7280;margin-left:14px;">${r.note}</div>` : ''}</div>`).join('')}
+          ${p.resources.map(r => `<div style="font-size:11px;color:#374151;margin-bottom:2px;">◆ <b>${r.mineral}</b>${r.rank ? ` — #${r.rank} world${r.shareOfWorld ? ` (${r.shareOfWorld}% share)` : ''}` : ''}${r.note ? `<div style="font-size:10px;color:#6b7280;margin-left:14px;">${r.note}</div>` : ''}</div>`).join('')}
           ${p.strategic ? `<div style="margin:6px 0;font-size:10px;color:#6b7280;line-height:1.5;">${p.strategic}</div>` : ''}` : ''}
           <div style="font-size:10px;font-weight:700;color:#0f172a;letter-spacing:0.03em;margin:${p ? '8px' : '0'} 0 3px;padding-top:${p ? '6px' : '0'};${p ? 'border-top:1px solid #e5e7eb;' : ''}">RESOURCE RENTS (% OF GDP, WORLD BANK)</div>
           ${rentRows}
@@ -796,9 +796,9 @@ export default function MapView({
             <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.typeLabel}</span>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:6px;font-size:10px;">
-            <span style="color:#6b7280;">🏳 <b style="color:#14161a">${p.operator}</b></span>
-            <span style="color:#6b7280;">📍 <b style="color:#2563eb">${p.host}</b></span>
-            ${p.personnel ? `<span style="color:#6b7280;">👥 <b style="color:#2563eb">${Number(p.personnel).toLocaleString()}</b></span>` : ''}
+            <span style="color:#6b7280;">⚑ <b style="color:#14161a">${p.operator}</b></span>
+            <span style="color:#6b7280;">◉ <b style="color:#2563eb">${p.host}</b></span>
+            ${p.personnel ? `<span style="color:#6b7280;">☰ <b style="color:#2563eb">${Number(p.personnel).toLocaleString()}</b></span>` : ''}
           </div>
           <div style="font-size:11px;color:#6b7280;line-height:1.55;margin-bottom:6px;">${p.notes}</div>
           ${p.nuclear ? `<div style="font-size:10px;color:#dc2626;border:1px solid #dc262633;background:rgba(220,38,38,0.08);padding:2px 6px;display:inline-flex;align-items:center;gap:4px;">☢ NUCLEAR-CAPABLE / NUCLEAR WEAPONS STORAGE</div>` : ''}
@@ -852,17 +852,17 @@ export default function MapView({
         const p = e.features[0].properties as Record<string, unknown>
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const color = String(p.color || '#00ccff')
-        const teu = p.annualTEU ? `<span style="color:#6b7280;">📦 <b style="color:#2563eb">${Number(p.annualTEU).toLocaleString()}K TEU/yr</b></span>` : ''
+        const teu = p.annualTEU ? `<span style="color:#6b7280;">▣ <b style="color:#2563eb">${Number(p.annualTEU).toLocaleString()}K TEU/yr</b></span>` : ''
         const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:290px;">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;gap:6px;">
-            <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">⚓ ${p.name}</span>
+            <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">⎈ ${p.name}</span>
             <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.typeLabel}</span>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:6px;font-size:10px;flex-wrap:wrap;">
-            <span style="color:#6b7280;">🏳 <b style="color:#14161a">${p.country}</b></span>
+            <span style="color:#6b7280;">⚑ <b style="color:#14161a">${p.country}</b></span>
             ${teu}
           </div>
-          <div style="font-size:11px;color:#14161a;margin-bottom:4px;">🏭 <b>${p.topIndustry}</b></div>
+          <div style="font-size:11px;color:#14161a;margin-bottom:4px;">▣ <b>${p.topIndustry}</b></div>
           ${p.notes ? `<div style="font-size:10px;color:#6b7280;margin-top:4px;">${p.notes}</div>` : ''}
         </div>`
         if (popupRef.current) popupRef.current.remove()
@@ -1018,9 +1018,9 @@ export default function MapView({
             <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${statusLabel[String(p.status)] ?? p.status}</span>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:6px;font-size:10px;">
-            <span style="color:#6b7280;">🌍 <b style="color:#14161a">${p.country}</b></span>
+            <span style="color:#6b7280;">◍ <b style="color:#14161a">${p.country}</b></span>
             <span style="color:#6b7280;">⚛ <b style="color:#d97706">${p.type}</b></span>
-            <span style="color:#6b7280;">🔢 <b style="color:#2563eb">${p.reactors} reactor${Number(p.reactors) !== 1 ? 's' : ''}</b></span>
+            <span style="color:#6b7280;">№ <b style="color:#2563eb">${p.reactors} reactor${Number(p.reactors) !== 1 ? 's' : ''}</b></span>
           </div>
           ${p.capacity ? `<div style="font-size:10px;color:#6b7280;margin-bottom:5px;">Capacity: <b style="color:#14161a">${Number(p.capacity).toLocaleString()} MWe</b></div>` : ''}
           <div style="font-size:11px;color:#6b7280;line-height:1.55;margin-bottom:4px;">${p.notes}</div>
@@ -1183,7 +1183,7 @@ export default function MapView({
         const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
         const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:280px;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
-            <span style="font-size:12px;font-weight:800;color:#14161a;">🖥 ${p.name}</span>
+            <span style="font-size:12px;font-weight:800;color:#14161a;">▤ ${p.name}</span>
             <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#a855f7;border:1px solid #a855f755;padding:1px 5px;">DATA CENTER</span>
           </div>
           <div style="font-size:11px;color:#6b7280;line-height:1.5;">
@@ -2109,8 +2109,8 @@ export default function MapView({
             <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;flex-shrink:0;">${p.typeLabel}</span>
           </div>
           <div style="display:flex;gap:8px;margin-bottom:5px;font-size:10px;flex-wrap:wrap;">
-            <span style="color:#6b7280;">🏢 <b style="color:#14161a">${p.operator}</b></span>
-            <span style="color:#6b7280;">🏳 <b style="color:#14161a">${p.country}</b></span>
+            <span style="color:#6b7280;">▦ <b style="color:#14161a">${p.operator}</b></span>
+            <span style="color:#6b7280;">⚑ <b style="color:#14161a">${p.country}</b></span>
           </div>
           <div style="font-size:11px;color:#14161a;margin-bottom:4px;">⚙ <b>${p.product}</b></div>
           ${share ? `<div style="font-size:11px;margin-bottom:4px;">${share}</div>` : ''}
@@ -3110,7 +3110,7 @@ export default function MapView({
           'box-shadow:0 0 6px rgba(0,255,136,0.35)',
           'transition:all .15s',
         ].join(';')
-        el.textContent = '📷'
+        el.textContent = '◎'
 
         el.addEventListener('mouseenter', () => {
           el.style.background = 'rgba(0,255,136,0.28)'
@@ -3130,7 +3130,7 @@ export default function MapView({
           // Show camera info popup — opens live feed in new window (iframe blocked by source)
           const html = `<div style="padding:0;font-family:'Inter',-apple-system,sans-serif;width:260px;">
             <div style="padding:8px 10px;">
-              <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:2px;">📷 ${cam.name}</div>
+              <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:2px;">◎ ${cam.name}</div>
               <div style="font-size:10px;color:#6b7280;margin-bottom:6px;">${cam.city}, ${cam.country}</div>
               <div style="font-size:9px;color:#9ca3af;margin-bottom:8px;font-family:monospace;">${cam.lat.toFixed(4)}, ${cam.lng.toFixed(4)}</div>
               <a href="${cam.url}" target="_blank" rel="noopener"
@@ -3313,8 +3313,7 @@ export default function MapView({
       const el = document.createElement('div')
       el.setAttribute('aria-label', esc(pin.items[0].article.title))
       el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;` +
-        `font:700 9px Inter,sans-serif;color:#fff;border:2px solid #fff;box-shadow:0 0 0 1px ${color},0 2px 8px ${color}99;` +
-        (pin.precision === 'country' ? `background:${color}99;border-style:dashed;` : `background:${color};`)
+        `font:700 9px Inter,sans-serif;color:#fff;border:2px solid #fff;background:${color};`
       if (pin.items.length > 1) el.textContent = String(pin.items.length)
       return addHoverMarker(map, el, pin.lng, pin.lat, newsPinHTML(pin))
     })
@@ -3527,28 +3526,28 @@ export default function MapView({
               {([
                 { key: 'flights',        label: 'FLIGHTS',        icon: '✈', color: '#00ff88' },
                 { key: 'crises',         label: 'CRISES',         icon: '⚠', color: '#ff6600' },
-                { key: 'vessels',        label: 'VESSELS',        icon: '⚓', color: '#00aaff' },
-                { key: 'wildfires',      label: 'WILDFIRES',      icon: '🔥', color: '#ff4400' },
+                { key: 'vessels',        label: 'VESSELS',        icon: '⎈', color: '#00aaff' },
+                { key: 'wildfires',      label: 'WILDFIRES',      icon: '✱', color: '#ff4400' },
                 { key: 'news',           label: 'NEWS',           icon: '◉', color: '#cccccc' },
                 { key: 'stocks',         label: 'MARKETS',        icon: '$', color: '#00ff88' },
                 { key: 'military',       label: 'MILITARY',       icon: '⚔', color: '#ff2244' },
                 { key: 'nuclear',        label: 'NUCLEAR',        icon: '☢', color: '#ffcc00' },
-                { key: 'sanctions',      label: 'SANCTIONS',      icon: '⛔', color: '#ff3344' },
+                { key: 'sanctions',      label: 'SANCTIONS',      icon: '⊗', color: '#ff3344' },
                 { key: 'cameras',        label: 'CAMERAS',        icon: '◎', color: '#aa88ff' },
-                { key: 'infrastructure', label: 'INFRA',          icon: '⚡', color: '#ff8800' },
+                { key: 'infrastructure', label: 'INFRA',          icon: '↯', color: '#ff8800' },
                 { key: 'airspace',       label: 'AIRSPACE',       icon: '◇', color: '#44aaff' },
-                { key: 'humanitarian',   label: 'HUMANITARIAN',   icon: '♥', color: '#ff6688' },
+                { key: 'humanitarian',   label: 'HUMANITARIAN',   icon: '✚', color: '#ff6688' },
                 { key: 'oil',            label: 'OIL',             icon: '▲', color: '#ff6600' },
                 { key: 'gas',            label: 'GAS',             icon: '▲', color: '#00aaff' },
-                { key: 'ports',          label: 'PORTS',          icon: '⚓', color: '#00ccff' },
+                { key: 'ports',          label: 'PORTS',          icon: '⎈', color: '#00ccff' },
                 { key: 'pipelines',      label: 'PIPELINES',      icon: '═', color: PIPELINE_COLORS.gas },
                 { key: 'gpsjam',         label: 'GPS JAM',        icon: '◌', color: '#ff3344' },
                 { key: 'chokepoints',    label: 'CHOKEPOINTS',    icon: '⊘', color: '#ff4466' },
                 { key: 'supplychain',    label: 'SUPPLY CHAIN',   icon: '◆', color: '#00ccff' },
                 { key: 'shippingDensity', label: 'SHIPPING',       icon: '≋', color: '#ff4466' },
                 { key: 'militaryPersonnel', label: 'FORCE SIZE',  icon: '⚔', color: '#dc2626' },
-                { key: 'infraIndicators',   label: 'INFRA ACCESS', icon: '⚡', color: '#22d3ee' },
-                { key: 'datacenters',       label: 'DATA CENTERS', icon: '🖥', color: '#a855f7' },
+                { key: 'infraIndicators',   label: 'INFRA ACCESS', icon: '↯', color: '#22d3ee' },
+                { key: 'datacenters',       label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
               ] as { key: keyof import('../../types').PanelState; label: string; icon: string; color: string }[]).map(item => {
                 const on = panelState[item.key]
                 return (
@@ -3676,7 +3675,7 @@ export default function MapView({
             pointerEvents: 'none', zIndex: 0,
           }}>
             <div style={{ fontFamily: 'monospace', fontSize: 8, color: '#1a2e1e', letterSpacing: '.12em', textAlign: 'center', lineHeight: 2 }}>
-              <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.15 }}>🗺</div>
+              <div style={{ fontSize: 28, marginBottom: 8, opacity: 0.15 }}>◍</div>
               <div>DEEPSTATE MAP LOADING…</div>
               <div style={{ fontSize: 7, marginTop: 4, color: '#141e16' }}>
                 If blocked by browser, use ↗ OPEN FULL MAP above

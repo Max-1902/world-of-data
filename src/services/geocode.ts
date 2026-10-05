@@ -4,15 +4,19 @@
 // A candidate is only accepted when the API returns a place whose name equals what we asked for and that is a
 // real settlement, region or country — "Trump" must not resolve to a village of the same name.
 
-export type GeoPrecision = 'city' | 'region' | 'country'
+/** `capital` = the story named only a country, so it is pinned at that country's capital. */
+export type GeoPrecision = 'city' | 'region' | 'capital' | 'country'
 
 export interface GeoPlace {
   name: string
   lat: number
   lng: number
   country: string
+  countryCode?: string
   precision: GeoPrecision
 }
+
+import { CAPITALS } from './capitals'
 
 const ENDPOINT = 'https://geocoding-api.open-meteo.com/v1/search'
 const LS_KEY = 'ws-geocode-v1'
@@ -26,6 +30,7 @@ interface ApiResult {
   longitude?: number
   feature_code?: string
   country?: string
+  country_code?: string
   population?: number
 }
 
@@ -69,21 +74,42 @@ export function pickPlace(query: string, results: ApiResult[]): GeoPlace | null 
     if (!precision) continue
     const seat = r.feature_code === 'PPLC' || r.feature_code === 'PPLA' || r.feature_code === 'PPLA2'
     if (precision === 'city' && !seat && (r.population ?? 0) < MIN_POPULATION) continue
-    return { name: r.name, lat: r.latitude, lng: r.longitude, country: r.country ?? '', precision }
+    return { name: r.name, lat: r.latitude, lng: r.longitude, country: r.country ?? '', countryCode: r.country_code, precision }
   }
   return null
 }
 
-/** `undefined` = the lookup itself failed (don't cache); `null` = answered, no acceptable place. */
-async function lookup(query: string): Promise<GeoPlace | null | undefined> {
+async function search(query: string, countryCode?: string): Promise<ApiResult[] | undefined> {
   try {
-    const res = await fetch(`${ENDPOINT}?name=${encodeURIComponent(query)}&count=10&language=en&format=json`)
+    const cc = countryCode ? `&countryCode=${countryCode}` : ''
+    const res = await fetch(`${ENDPOINT}?name=${encodeURIComponent(query)}&count=10&language=en&format=json${cc}`)
     if (!res.ok) return undefined // transient (rate limit / outage): retry on a later call
     const json = await res.json()
-    return pickPlace(query, Array.isArray(json?.results) ? json.results : [])
+    return Array.isArray(json?.results) ? json.results : []
   } catch {
     return undefined
   }
+}
+
+/** The capital of the country `place` represents, or `place` itself when we have no (undisputed) capital for it. */
+async function toCapital(place: GeoPlace): Promise<GeoPlace | undefined> {
+  const capital = place.countryCode ? CAPITALS[place.countryCode] : undefined
+  if (!capital) return place
+  const results = await search(capital, place.countryCode)
+  if (!results) return undefined
+  const hit = results.find(r => typeof r.latitude === 'number' && typeof r.longitude === 'number' &&
+    r.name && norm(r.name) === norm(capital) && r.feature_code?.startsWith('PPL'))
+  return hit
+    ? { name: hit.name!, lat: hit.latitude!, lng: hit.longitude!, country: place.country, countryCode: place.countryCode, precision: 'capital' }
+    : place
+}
+
+/** `undefined` = the lookup itself failed (don't cache); `null` = answered, no acceptable place. */
+async function lookup(query: string): Promise<GeoPlace | null | undefined> {
+  const results = await search(query)
+  if (!results) return undefined
+  const place = pickPlace(query, results)
+  return place?.precision === 'country' ? toCapital(place) : place
 }
 
 /** Resolves a place name to coordinates, or null when it isn't a known place. Never throws. */

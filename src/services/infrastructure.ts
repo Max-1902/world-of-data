@@ -62,18 +62,18 @@ export const INFRA_LABELS: Record<InfraType, string> = {
 }
 
 export const INFRA_ICONS: Record<InfraType, string> = {
-  dam:         '🏔',
+  dam:         '◢',
   pipeline:    '⬡',
-  lng:         '🔷',
-  refinery:    '🏭',
-  grid:        '⚡',
-  power_coal:  '⚫',
-  power_gas:   '🔥',
-  power_wind:  '💨',
-  power_solar: '☀',
-  hospital:    '🏥',
-  police:      '🛡',
-  telecom:     '📡',
+  lng:         '◇',
+  refinery:    '▣',
+  grid:        '↯',
+  power_coal:  '●',
+  power_gas:   '✱',
+  power_wind:  '≈',
+  power_solar: '☼',
+  hospital:    '✚',
+  police:      '◍',
+  telecom:     '⌁',
 }
 
 // ── Major Dams ──────────────────────────────────────────────────────────────

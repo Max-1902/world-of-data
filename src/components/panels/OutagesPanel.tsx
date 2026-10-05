@@ -147,7 +147,7 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
                 </span>
                 <span style={{ color: 'var(--text3)', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '.06em' }}>{ev.entityType}</span>
                 {ev.duration > 0 && (
-                  <span style={{ color: 'var(--text3)' }}>⏱ {formatDuration(ev.duration)}</span>
+                  <span style={{ color: 'var(--text3)' }}>◷ {formatDuration(ev.duration)}</span>
                 )}
                 {ev.start > 0 && (
                   <span style={{ color: 'var(--text3)' }}>{formatOutageTime(ev.start)}</span>

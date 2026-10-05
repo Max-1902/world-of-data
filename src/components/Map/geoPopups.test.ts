@@ -20,6 +20,7 @@ describe('newsPinHTML', () => {
     expect(newsPinHTML(pin())).toContain('▶ Video')
     expect(newsPinHTML(pin({ url: 'https://bbc.test/news/world-1' }))).not.toContain('▶ Video')
     expect(newsPinHTML(pin({}, 'country'))).toContain('country-level')
+    expect(newsPinHTML(pin({}, 'capital'))).toContain('nearest known location')
   })
 })
 

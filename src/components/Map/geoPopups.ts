@@ -45,7 +45,9 @@ export function newsPinHTML(pin: GeoNewsPin, now = Date.now()): string {
   const video = looksLikeVideo(lead.article.url)
   const where = pin.precision === 'country'
     ? `${esc(pin.place)} <span style="color:#9ca3af">· country-level location</span>`
-    : esc([pin.place, pin.country].filter(Boolean).join(', '))
+    : pin.precision === 'capital'
+      ? `${esc([pin.place, pin.country].filter(Boolean).join(', '))} <span style="color:#9ca3af">· nearest known location (capital)</span>`
+      : esc([pin.place, pin.country].filter(Boolean).join(', '))
   const watch = `https://www.youtube.com/results?search_query=${encodeURIComponent(lead.article.title)}`
 
   const more = rest.slice(0, 4).map(i => {
@@ -64,7 +66,7 @@ export function newsPinHTML(pin: GeoNewsPin, now = Date.now()): string {
       </div>
       <div style="font-size:12.5px;font-weight:600;line-height:1.3;margin:5px 0 3px;">${esc(lead.article.title)}</div>
       ${lead.article.description ? `<div style="font-size:10.5px;color:#4b5563;line-height:1.4;margin-bottom:4px;">${esc(lead.article.description.slice(0, 160))}</div>` : ''}
-      <div style="font-size:10px;color:#6b7280;">📍 ${where}</div>
+      <div style="font-size:10px;color:#6b7280;">◉ ${where}</div>
       <div style="font-size:10px;color:#6b7280;">${esc(lead.article.source)} · ${esc(ageLabel(lead.article.publishedAt, now))}</div>
       <div style="display:flex;gap:10px;margin-top:8px;font-size:11px;font-weight:600;">
         ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" style="color:${color};text-decoration:none;">${video ? '▶ Watch' : 'Read article'} ↗</a>` : ''}

@@ -24,6 +24,34 @@ describe('pickPlace', () => {
   })
 })
 
+describe('country-only stories', () => {
+  beforeEach(() => { installLocalStorage() })
+  const country = { name: 'Ukraine', latitude: 49, longitude: 32, feature_code: 'PCLI', country: 'Ukraine', country_code: 'UA', population: 44e6 }
+  const kyiv = { name: 'Kyiv', latitude: 50.45, longitude: 30.52, feature_code: 'PPLC', country: 'Ukraine', country_code: 'UA' }
+
+  it('pins at the capital, searching only within that country', async () => {
+    const f = mockFetch(url => jsonResponse({ results: url.includes('countryCode=UA') ? [kyiv] : [country] }))
+    const { geocodePlace } = await load()
+    expect(await geocodePlace('Ukraine')).toMatchObject({ name: 'Kyiv', precision: 'capital', lat: 50.45, country: 'Ukraine' })
+    expect(f.mock.calls[1][0]).toContain('name=Kyiv&')
+  })
+  it('keeps the country-level point when the capital cannot be found or is not tabulated', async () => {
+    mockFetch(url => jsonResponse({ results: url.includes('countryCode=') ? [] : [country] }))
+    const a = await load()
+    expect((await a.geocodePlace('Ukraine'))?.precision).toBe('country')
+    mockFetch(() => jsonResponse({ results: [{ ...country, name: 'Israel', country_code: 'IL' }] }))
+    const b = await load()
+    expect((await b.geocodePlace('Israel'))?.precision).toBe('country')
+  })
+  it('does not cache a half-finished lookup when the capital request fails', async () => {
+    const f = mockFetch(url => url.includes('countryCode=') ? jsonResponse({}, { status: 500 }) : jsonResponse({ results: [country] }))
+    const { geocodePlace } = await load()
+    expect(await geocodePlace('Ukraine')).toBeNull()
+    await geocodePlace('Ukraine')
+    expect(f).toHaveBeenCalledTimes(4)
+  })
+})
+
 describe('geocodePlace', () => {
   beforeEach(() => { installLocalStorage() })
   afterEach(() => vi.useRealTimers())
