@@ -11,8 +11,9 @@ export const CANVAS_FILTERS: Partial<Record<MapViewMode, string>> = {
   infrared:    'brightness(1.15) contrast(1.5) saturate(0) invert(1)',
   snow:        'brightness(1.5) contrast(1.15) saturate(0.25) sepia(0.08)',
   thermal:     'brightness(0.9) contrast(1.7) saturate(0)',
-  // Crisp, high-clarity satellite-imagery look — punchier than the neutral globe default
-  satellite:   'brightness(1.05) contrast(1.25) saturate(1.3)',
+  // Near-neutral on purpose: real imagery is already bright (desert, cloud, ice), and the earlier
+  // contrast 1.25 / saturate 1.3 / brightness 1.05 blew those areas out to flat yellow-white.
+  satellite:   'contrast(1.05) saturate(1.05)',
   // Flattened, cartographic look — desaturated and brightened to read like a vector road map
   standard:    'brightness(1.2) contrast(0.92) saturate(0.35)',
 }
