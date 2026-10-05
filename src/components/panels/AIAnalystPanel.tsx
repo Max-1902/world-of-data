@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, N
 import { CrisisEvent, PanelState, Flight } from '../../types'
 import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, type DSMessage } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
+import { findCountryInText } from '../../services/worldbank'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
 
@@ -156,6 +157,18 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setStreaming(true)
     abortRef.current = new AbortController()
 
+    // A country named in the user's message always goes to the map and the country drawer —
+    // done here, before the model runs, so it never depends on a small model emitting commands.
+    const mentioned = findCountryInText(prompt)
+    const opened: ActionLogEntry[] = []
+    if (mentioned) {
+      onGeoSearch?.(mentioned)
+      onCountryClick?.(mentioned)
+      const at = Date.now()
+      opened.push({ id: `${at}-fly`, kind: 'fly', label: mentioned, at }, { id: `${at}-country`, kind: 'country', label: mentioned, at })
+      setActionLog(opened)
+    }
+
     const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()))
     const sysMsg: DSMessage = {
       role: 'system',
@@ -168,7 +181,7 @@ IMPORTANT: You can execute dashboard commands by including them in your response
 [LAYER:id:on] or [LAYER:id:off] — Toggle a map layer. Layer IDs: flights, crises, wildfires, military, nuclear, sanctions, cameras, infrastructure, airspace, humanitarian, vessels, oil, gas, ports, pipelines, gpsjam
 [DEEPSTATE:on] or [DEEPSTATE:off] — Toggle Ukraine frontline overlay
 
-When a user asks about a specific country or region, ALWAYS include the FLY and COUNTRY commands to show it on the map. When relevant, enable related layers. For example if asked about Iran, fly there, open the country drawer, and enable relevant layers like military, crises, airspace.
+When a user asks about a specific country or region, ALWAYS include the FLY and COUNTRY commands to show it on the map. (If the user's message names a country, the dashboard has already flown there and opened its overview — repeating those commands is harmless.) When relevant, enable related layers. For example if asked about Iran, fly there, open the country drawer, and enable relevant layers like military, crises, airspace.
 
 Execute commands BEFORE your analysis text — put them at the very start of your response.
 
@@ -179,7 +192,7 @@ ${context}`,
 
     let full = ''
     const executedCmds = new Set<string>()
-    const loggedActions: ActionLogEntry[] = []
+    const loggedActions: ActionLogEntry[] = [...opened]
     try {
       await streamAI(
         messages,
@@ -484,7 +497,7 @@ ${context}`,
                 }}>
                   <Icon size={12} style={{ flexShrink: 0 }} />
                   <span style={{ fontWeight: 600 }}>
-                    {a.kind === 'fly' ? 'Map moved to' : a.kind === 'country' ? 'Opened country brief' : a.kind === 'layer' ? 'Map layer updated' : 'Frontline view updated'}
+                    {a.kind === 'fly' ? 'Map moved to' : a.kind === 'country' ? 'Opened country overview' : a.kind === 'layer' ? 'Map layer updated' : 'Frontline view updated'}
                   </span>
                   <span style={{ color: 'var(--text1)' }}>{a.label}</span>
                 </div>

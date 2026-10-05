@@ -124,6 +124,40 @@ export function resolveISO2(countryName: string): string | null {
   return null
 }
 
+// Aliases too ambiguous in free text ("tell us", "us and them") to treat as a country mention.
+const AMBIGUOUS_ALIASES = new Set(['us', 'niger', 'georgia', 'jordan', 'chad', 'turkey', 'congo'])
+
+/**
+ * Find the first country named in free text (a chat message, say) — earliest mention
+ * wins (longest name on a tie, so "South Sudan" beats "Sudan"), whole words only. Returns a display name `resolveISO2` accepts, or null.
+ * Names that double as common words/first names (Georgia, Jordan, Chad…) only
+ * count when capitalised in the text; "us" never counts.
+ */
+export function findCountryInText(text: string): string | null {
+  const lc = text.toLowerCase()
+  let best: { alias: string; index: number } | null = null
+  for (const alias of Object.keys(NAME_TO_ISO2)) {
+    if (alias === 'us') continue
+    const re = new RegExp(`(?<![\\p{L}])${alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}])`, 'u')
+    const m = re.exec(lc)
+    if (!m) continue
+    if (AMBIGUOUS_ALIASES.has(alias)) {
+      const original = text.substr(m.index, alias.length)
+      if (original[0] !== original[0].toUpperCase() || original[0] === original[0].toLowerCase()) continue
+    }
+    if (!best || m.index < best.index || (m.index === best.index && alias.length > best.alias.length)) {
+      best = { alias, index: m.index }
+    }
+  }
+  if (!best) return null
+  if (best.alias.length <= 3) {
+    // uk / uae / usa -> proper English name
+    const iso = NAME_TO_ISO2[best.alias]
+    try { return new Intl.DisplayNames(['en'], { type: 'region' }).of(iso) ?? null } catch { return null }
+  }
+  return best.alias.replace(/\b([a-z])/g, c => c.toUpperCase()).replace(/\b(And|Of|The)\b/g, w => w.toLowerCase())
+}
+
 // ── Fetch multiple indicators in one batch ───────────────────────────────────
 // World Bank API allows semicolon-separated indicator IDs
 const econInFlight = new Map<string, Promise<CountryEconData | null>>()
