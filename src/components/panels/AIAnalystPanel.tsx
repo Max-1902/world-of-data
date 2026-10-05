@@ -159,7 +159,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()))
     const sysMsg: DSMessage = {
       role: 'system',
-      content: `You are the analyst in World Map, a global intelligence dashboard. You have access to current crisis and flight data, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
+      content: `You are the analyst in Meridian, a live world monitoring dashboard. You have access to current crisis and flight data, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
 
 IMPORTANT: You can execute dashboard commands by including them in your response. Commands are on their own line:
 
