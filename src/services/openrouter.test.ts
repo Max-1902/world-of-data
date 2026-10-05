@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { streamAI, buildDashboardContext, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS } from './openrouter'
-import { mockFetch, streamResponse, textResponse } from '../test/helpers'
+import { streamAI, buildDashboardContext, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, groupModels, formatModelPrice } from './openrouter'
+import { mockFetch, streamResponse, textResponse, jsonResponse } from '../test/helpers'
 import type { CrisisEvent, Flight } from '../types'
 import type { TrajectoryEntry } from '../utils/trajectory'
 
@@ -189,5 +189,55 @@ describe('buildDashboardContext', () => {
   it('does not claim access to source code or secrets', () => {
     const ctx = buildDashboardContext([], []).toLowerCase()
     expect(ctx).not.toMatch(/source code|api key|password/)
+  })
+})
+
+describe('model catalogue', () => {
+  const entry = (id: string, over: Record<string, unknown> = {}) => ({
+    id, name: id.toUpperCase(), created: 1, context_length: 200000,
+    architecture: { output_modalities: ['text'] }, pricing: { prompt: '0.000003', completion: '0.000015' }, ...over,
+  })
+
+  it('lists every text model (paid and free), newest first, dropping batch, image-output and variable-price entries', async () => {
+    vi.resetModules()
+    const mod = await import('./openrouter')
+    mockFetch(url => {
+      expect(url).toBe('/api/openrouter/models')
+      return jsonResponse({ data: [
+        entry('anthropic/claude-a', { created: 1 }),
+        entry('anthropic/claude-a:batch', { created: 9 }),
+        entry('openai/gpt-b', { created: 5 }),
+        entry('x/free-c:free', { created: 3, pricing: { prompt: '0', completion: '0' } }),
+        entry('x/image-d', { architecture: { output_modalities: ['text', 'image'] } }),
+        entry('openrouter/auto', { pricing: { prompt: '-1', completion: '-1' } }),
+        { nope: true },
+      ] })
+    })
+    const list = await mod.fetchAllModels()
+    expect(list.map(m => m.id)).toEqual(['openai/gpt-b', 'x/free-c:free', 'anthropic/claude-a'])
+    expect(list[2]).toMatchObject({ priceIn: 3, priceOut: 15, free: false, ctx: '200k' })
+    expect(list[1].free).toBe(true)
+  })
+
+  it('rejects on HTTP errors and malformed payloads', async () => {
+    vi.resetModules()
+    const mod = await import('./openrouter')
+    mockFetch(() => jsonResponse({}, { status: 500 }))
+    await expect(mod.fetchAllModels()).rejects.toThrow('OpenRouter models 500')
+    mockFetch(() => jsonResponse({ data: 'x' }))
+    await expect(mod.fetchAllModels()).rejects.toThrow('Unexpected')
+  })
+
+  it('groups Claude first, then OpenAI, then other providers A–Z, with free models last', () => {
+    const m = (id: string, free = false) => ({ id, label: id, ctx: '8k', priceIn: free ? 0 : 1, priceOut: free ? 0 : 2, free, created: 1 })
+    const groups = groupModels([m('mistralai/m'), m('google/g'), m('openai/o'), m('anthropic/c'), m('qwen/q:free', true)])
+    expect(groups.map(g => g.label)).toEqual(['Claude (Anthropic)', 'ChatGPT / OpenAI', 'Google', 'Mistral', 'Free models'])
+  })
+
+  it('formats prices', () => {
+    const base = { id: 'a/b', label: 'b', ctx: '1k', created: 1 }
+    expect(formatModelPrice({ ...base, priceIn: 0, priceOut: 0, free: true })).toBe('free')
+    expect(formatModelPrice({ ...base, priceIn: 3, priceOut: 15, free: false })).toBe('$3/$15 per 1M')
+    expect(formatModelPrice({ ...base, priceIn: 0.25, priceOut: 1.25, free: false })).toBe('$0.25/$1.25 per 1M')
   })
 })

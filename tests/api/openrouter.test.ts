@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import handler, { config } from '../../api/openrouter/chat/completions'
+import modelsHandler, { config as modelsConfig } from '../../api/openrouter/models'
 
 function upstreamStub(body: BodyInit | null = 'data: [DONE]\n\n', init: ResponseInit = {}) {
   const fn = vi.fn(async () => new Response(body, { status: 200, headers: { 'Content-Type': 'text/event-stream' }, ...init }))
@@ -80,5 +81,19 @@ describe('openrouter edge proxy', () => {
     let headerText = ''
     res.headers.forEach((v, k) => { headerText += `${k}:${v};` })
     expect(headerText).not.toContain('sk-super-secret')
+  })
+})
+
+describe('openrouter models proxy', () => {
+  it('is an edge function that fetches the public catalogue without any key', async () => {
+    expect(modelsConfig).toEqual({ runtime: 'edge' })
+    vi.stubEnv('OPENROUTER_KEY', 'sk-server')
+    const fn = vi.fn(async () => new Response('{"data":[]}', { status: 200, headers: { 'Content-Type': 'application/json' } }))
+    vi.stubGlobal('fetch', fn)
+    const res = await modelsHandler()
+    expect(await res.text()).toBe('{"data":[]}')
+    const calls = fn.mock.calls as unknown as [string, RequestInit | undefined][]
+    expect(calls[0][0]).toBe('https://openrouter.ai/api/v1/models')
+    expect(JSON.stringify(calls[0][1] ?? {})).not.toContain('sk-server')
   })
 })
