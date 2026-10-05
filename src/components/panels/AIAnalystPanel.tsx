@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight } from '../../types'
-import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
+import { buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
 import { findCountryInText } from '../../services/worldbank'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
@@ -80,6 +80,8 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   const [pastSessions, setPastSessions] = useState<ChatSession[]>([])
   const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
   const [followUps, setFollowUps] = useState<string[]>([])
+  const [notice, setNotice]     = useState('')
+  const modelName = (id: string) => FREE_MODELS.find(m => m.id === id)?.label ?? allModels?.find(m => m.id === id)?.label ?? id
   const abortRef  = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const stickRef  = useRef(true) // follow the stream only while the reader is at the bottom
@@ -168,6 +170,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     setActionLog([])
     setFollowUps([])
     stickRef.current = true
+    setNotice('')
     setStreaming(true)
     abortRef.current = new AbortController()
 
@@ -208,7 +211,7 @@ ${context}`,
     const executedCmds = new Set<string>()
     const loggedActions: ActionLogEntry[] = [...opened]
     try {
-      await streamAI(
+      await streamAIWithFallback(
         messages,
         token => {
           full += token
@@ -269,6 +272,8 @@ ${context}`,
         },
         abortRef.current.signal,
         model,
+        undefined,
+        (from, to) => setNotice(`${modelName(from)} is rate-limited — switched to ${modelName(to)}.`),
       )
       const cleanResponse = full.split('\n').filter(l => !l.trim().match(/^\[(FLY|COUNTRY|LAYER|DEEPSTATE):.+\]$/)).join('\n')
       if (!cleanResponse.trim()) {
@@ -563,6 +568,9 @@ ${context}`,
           </div>
         )}
 
+        {notice && !error && (
+          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>{notice}</div>
+        )}
         {error && (
           <div className="ai-error" style={{ fontSize: 12.5, color: 'var(--red)', marginTop: 8 }}>
             {error}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { streamAI, buildDashboardContext, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, groupModels, formatModelPrice } from './openrouter'
+import { streamAI, buildDashboardContext, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, streamAIWithFallback, groupModels, formatModelPrice } from './openrouter'
 import { mockFetch, streamResponse, textResponse, jsonResponse } from '../test/helpers'
 import type { CrisisEvent, Flight } from '../types'
 import type { TrajectoryEntry } from '../utils/trajectory'
@@ -263,5 +263,56 @@ describe('describeAIError', () => {
   it('streamAI throws OpenRouterError with the status on HTTP failure', async () => {
     mockFetch(() => jsonResponse({ error: { message: 'x' } }, { status: 402 }))
     await expect(streamAI([{ role: 'user', content: 'hi' }], () => {})).rejects.toMatchObject({ name: 'OpenRouterError', status: 402 })
+  })
+})
+
+describe('streamAIWithFallback', () => {
+  const msgs = [{ role: 'user' as const, content: 'hi' }]
+  const limited = () => jsonResponse({ error: { message: 'rate limited' } }, { status: 429 })
+
+  it('retries a rate-limited free model once, then moves to the next free model', async () => {
+    const seen: string[] = []
+    mockFetch((_url, init) => {
+      const model = JSON.parse(String(init?.body)).model
+      seen.push(model)
+      return model === FREE_MODELS[0].id || model === FREE_MODELS[1].id ? limited() : streamResponse([tok('answer'), 'data: [DONE]\n\n'])
+    })
+    const tokens: string[] = []
+    const fallbacks: string[][] = []
+    const used = await streamAIWithFallback(msgs, t => tokens.push(t), undefined, FREE_MODELS[0].id, undefined, (a, b) => fallbacks.push([a, b]), 0)
+    expect(used).toBe(FREE_MODELS[2].id)
+    expect(tokens).toEqual(['answer'])
+    expect(seen).toEqual([FREE_MODELS[0].id, FREE_MODELS[0].id, FREE_MODELS[1].id, FREE_MODELS[2].id])
+    expect(fallbacks[0]).toEqual([FREE_MODELS[0].id, FREE_MODELS[1].id])
+  })
+
+  it('never swaps a paid model for another — one retry, then the error surfaces', async () => {
+    const seen: string[] = []
+    mockFetch((_url, init) => { seen.push(JSON.parse(String(init?.body)).model); return limited() })
+    await expect(streamAIWithFallback(msgs, () => {}, undefined, 'anthropic/claude-x', undefined, undefined, 0)).rejects.toMatchObject({ status: 429 })
+    expect(seen).toEqual(['anthropic/claude-x', 'anthropic/claude-x'])
+  })
+
+  it('does not fall over on non-rate-limit errors', async () => {
+    const fetchMock = mockFetch(() => jsonResponse({ error: { message: 'no credits' } }, { status: 402 }))
+    await expect(streamAIWithFallback(msgs, () => {}, undefined, FREE_MODELS[0].id, undefined, undefined, 0)).rejects.toMatchObject({ status: 402 })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('treats a 429 delivered inside the stream as a rate limit', async () => {
+    let n = 0
+    mockFetch(() => n++ === 0
+      ? streamResponse([sse({ error: { code: 429, message: 'Provider returned error' } })])
+      : streamResponse([tok('ok'), 'data: [DONE]\n\n']))
+    const tokens: string[] = []
+    await streamAIWithFallback(msgs, t => tokens.push(t), undefined, FREE_MODELS[0].id, undefined, undefined, 0)
+    expect(tokens).toEqual(['ok'])
+  })
+
+  it('does not restart once text has started streaming', async () => {
+    mockFetch(() => streamResponse([tok('partial'), sse({ error: { code: 429, message: 'x' } })]))
+    const tokens: string[] = []
+    await expect(streamAIWithFallback(msgs, t => tokens.push(t), undefined, FREE_MODELS[0].id, undefined, undefined, 0)).rejects.toMatchObject({ status: 429 })
+    expect(tokens).toEqual(['partial'])
   })
 })
