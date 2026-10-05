@@ -1,6 +1,6 @@
 {
-  "name": "World Map — Global Situational Awareness",
-  "short_name": "World Map",
+  "name": "Meridian — Live World Monitor",
+  "short_name": "Meridian",
   "description": "Live global situational-awareness dashboard",
   "start_url": "/",
   "scope": "/",

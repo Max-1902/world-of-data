@@ -81,10 +81,10 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
           </div>
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.02em', color: 'var(--text1)', lineHeight: 1.1, fontFamily: 'Inter, -apple-system, sans-serif' }}>
-              WORLD MAP
+              MERIDIAN
             </div>
             <div style={{ fontSize: 8.5, letterSpacing: '.06em', color: 'var(--text3)', lineHeight: 1.3, fontFamily: 'Inter, -apple-system, sans-serif' }}>
-              GLOBAL INTELLIGENCE
+              LIVE WORLD MONITOR
             </div>
           </div>
         </div>
