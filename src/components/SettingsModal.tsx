@@ -164,7 +164,7 @@ interface Props {
 
 const s = {
   label: { fontSize: 11, fontWeight: 500, color: 'var(--text2)' },
-  value: { fontSize: 11, color: 'var(--text1)', fontFamily: 'IBM Plex Mono, monospace' },
+  value: { fontSize: 11, color: 'var(--text1)', fontFamily: 'Inter, -apple-system, sans-serif' },
   row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 0', borderBottom: '1px solid var(--border)' },
   sectionTitle: { fontSize: 11, fontWeight: 700, letterSpacing: '.04em', color: 'var(--text1)', textTransform: 'uppercase' as const, marginBottom: 10, marginTop: 20 },
 }
@@ -433,7 +433,7 @@ function DisplayTab({ reticleColor, onReticleColor }: { reticleColor?: string; o
       </div>
       <div style={s.row}>
         <span style={s.label}>Data font</span>
-        <span style={s.value}>IBM Plex Mono</span>
+        <span style={s.value}>Inter (tabular figures)</span>
       </div>
 
       <div style={s.sectionTitle}>Colors</div>

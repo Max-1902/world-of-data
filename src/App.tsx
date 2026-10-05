@@ -228,7 +228,7 @@ export default function App() {
     return (
       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontFamily: 'Inter, -apple-system, sans-serif', fontSize: 12, flexDirection: 'column', gap: 12, padding: 24 }}>
         <div style={{ color: 'var(--text1)', fontSize: 14, fontWeight: 600 }}>Mapbox token required</div>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-sm)', padding: 14, fontSize: 11, maxWidth: 400, width: '100%', fontFamily: 'IBM Plex Mono, monospace' }}>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-md)', boxShadow: 'var(--shadow-sm)', padding: 14, fontSize: 11, maxWidth: 400, width: '100%', fontFamily: 'Inter, -apple-system, sans-serif' }}>
           <div style={{ color: 'var(--text2)', marginBottom: 6 }}># Add to .env:</div>
           <div style={{ color: 'var(--text1)' }}>VITE_MAPBOX_TOKEN=pk.ey...</div>
         </div>

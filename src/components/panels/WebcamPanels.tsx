@@ -76,7 +76,7 @@ function WebcamBox({ cam, onClose }: { cam: WebcamEntry; onClose: () => void }) 
           )}
         </div>
 
-        <div style={{ padding: '6px 10px', fontSize: '9.5px', color: 'var(--text3)', fontFamily: 'monospace', display: 'flex', justifyContent: 'space-between' }}>
+        <div style={{ padding: '6px 10px', fontSize: '9.5px', color: 'var(--text3)', fontFamily: 'Inter, -apple-system, sans-serif', display: 'flex', justifyContent: 'space-between' }}>
           <span>{cam.lat.toFixed(4)}, {cam.lng.toFixed(4)}</span>
           <span>{cam.state} · UNITED STATES</span>
         </div>
