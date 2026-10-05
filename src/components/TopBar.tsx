@@ -3,6 +3,8 @@ import { Search, X, RefreshCw, Globe2 } from 'lucide-react'
 import type { MapViewMode, CrisisEvent } from '../types'
 import OSINTSearch from './OSINTSearch'
 import SourceHealth from './SourceHealth'
+import type { KeyEventSummary } from '../utils/keyEvents'
+import type { IncidentSummary } from '../utils/incidents'
 
 const VIEW_MODES: { id: MapViewMode; label: string }[] = [
   { id: 'earth',       label: 'EARTH' },
@@ -31,7 +33,10 @@ function computeThreatLevel(crises: CrisisEvent[]): { level: number; label: stri
 interface Props {
   viewMode: MapViewMode
   onViewMode: (m: MapViewMode) => void
-  flightCount: number
+  /** High-importance political / economic / humanitarian / other events detected in recent headlines. */
+  keyEvents: KeyEventSummary
+  /** Live incidents from the free disaster, quake, outage and conflict feeds. */
+  incidents: IncidentSummary
   crises: CrisisEvent[]
   /** Events from a live feed, excluding the hand-entered baseline list. */
   liveCrisisCount: number
@@ -42,7 +47,7 @@ interface Props {
   reloading?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, flightCount, crises, liveCrisisCount, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
+export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, crises, liveCrisisCount, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
   const [expanded, setExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const threat = computeThreatLevel(crises)
@@ -93,12 +98,14 @@ export default function TopBar({ viewMode, onViewMode, flightCount, crises, live
 
       {/* center: stats */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, justifyContent: 'center' }}>
-        <HudStat label="TRACKED" value={flightCount} />
+        <span title={`High-importance events in the last 48 h of headlines — political ${keyEvents.byCategory.political}, economic ${keyEvents.byCategory.economic}, humanitarian ${keyEvents.byCategory.humanitarian}, other ${keyEvents.byCategory.other}`}>
+          <HudStat label="TRACKED" value={keyEvents.total} />
+        </span>
 
         <div className="hud-sep" />
 
-        <span title={hasLiveCrises ? 'Events from live conflict feeds' : 'No live conflict feed is connected — the map shows only the long-running-conflict baseline'}>
-          <HudStat label="INCIDENTS" value={liveCrisisCount} />
+        <span title={`Live incidents — conflict ${incidents.conflict}, disaster alerts ${incidents.disasters}, M5.5+ earthquakes ${incidents.earthquakes}, critical internet outages ${incidents.outages}`}>
+          <HudStat label="INCIDENTS" value={incidents.total} />
         </span>
 
         <div className="hud-sep" />
