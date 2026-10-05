@@ -99,51 +99,51 @@ function StockList({ symbols }: { symbols: string[] }) {
 
 // ── World Exchanges Panel ──────────────────────────────────────────────────────
 const WORLD_EXCHANGES: { country: string; flag: string; exchange: string; ticker: string; url: string }[] = [
-  { country: 'United States', flag: '🇺🇸', exchange: 'NYSE / NASDAQ',    ticker: 'SPY',      url: 'https://finance.yahoo.com/quote/SPY' },
-  { country: 'United Kingdom',flag: '🇬🇧', exchange: 'London (LSE)',      ticker: 'EWU',      url: 'https://finance.yahoo.com/quote/EWU' },
-  { country: 'Germany',       flag: '🇩🇪', exchange: 'Frankfurt (DAX)',   ticker: 'EWG',      url: 'https://finance.yahoo.com/quote/EWG' },
-  { country: 'France',        flag: '🇫🇷', exchange: 'Euronext Paris',    ticker: 'EWQ',      url: 'https://finance.yahoo.com/quote/EWQ' },
-  { country: 'Japan',         flag: '🇯🇵', exchange: 'Tokyo (TSE)',        ticker: 'EWJ',      url: 'https://finance.yahoo.com/quote/EWJ' },
-  { country: 'China',         flag: '🇨🇳', exchange: 'Shanghai / Shenzhen',ticker:'FXI',      url: 'https://finance.yahoo.com/quote/FXI' },
-  { country: 'Hong Kong',     flag: '🇭🇰', exchange: 'HKEX',              ticker: 'EWH',      url: 'https://finance.yahoo.com/quote/EWH' },
-  { country: 'India',         flag: '🇮🇳', exchange: 'BSE / NSE',         ticker: 'INDA',     url: 'https://finance.yahoo.com/quote/INDA' },
-  { country: 'Brazil',        flag: '🇧🇷', exchange: 'B3 (Bovespa)',       ticker: 'EWZ',      url: 'https://finance.yahoo.com/quote/EWZ' },
-  { country: 'Canada',        flag: '🇨🇦', exchange: 'TSX',               ticker: 'EWC',      url: 'https://finance.yahoo.com/quote/EWC' },
-  { country: 'Australia',     flag: '🇦🇺', exchange: 'ASX',               ticker: 'EWA',      url: 'https://finance.yahoo.com/quote/EWA' },
-  { country: 'South Korea',   flag: '🇰🇷', exchange: 'KRX (KOSPI)',        ticker: 'EWY',      url: 'https://finance.yahoo.com/quote/EWY' },
-  { country: 'Taiwan',        flag: '🇹🇼', exchange: 'TWSE',              ticker: 'EWT',      url: 'https://finance.yahoo.com/quote/EWT' },
-  { country: 'Switzerland',   flag: '🇨🇭', exchange: 'SIX',               ticker: 'EWL',      url: 'https://finance.yahoo.com/quote/EWL' },
-  { country: 'Netherlands',   flag: '🇳🇱', exchange: 'Euronext Amsterdam', ticker: 'EWN',      url: 'https://finance.yahoo.com/quote/EWN' },
-  { country: 'Sweden',        flag: '🇸🇪', exchange: 'Nasdaq Stockholm',   ticker: 'EWD',      url: 'https://finance.yahoo.com/quote/EWD' },
-  { country: 'Spain',         flag: '🇪🇸', exchange: 'BME (IBEX 35)',      ticker: 'EWP',      url: 'https://finance.yahoo.com/quote/EWP' },
-  { country: 'Italy',         flag: '🇮🇹', exchange: 'Borsa Italiana',     ticker: 'EWI',      url: 'https://finance.yahoo.com/quote/EWI' },
-  { country: 'Mexico',        flag: '🇲🇽', exchange: 'BMV (IPC)',          ticker: 'EWW',      url: 'https://finance.yahoo.com/quote/EWW' },
-  { country: 'Russia',        flag: '🇷🇺', exchange: 'MOEX',              ticker: 'ERUS',     url: 'https://finance.yahoo.com/quote/ERUS' },
-  { country: 'Saudi Arabia',  flag: '🇸🇦', exchange: 'Tadawul (TASI)',     ticker: 'KSA',      url: 'https://finance.yahoo.com/quote/KSA' },
-  { country: 'UAE',           flag: '🇦🇪', exchange: 'DFM / ADX',         ticker: 'UAE',      url: 'https://finance.yahoo.com/quote/UAE' },
-  { country: 'South Africa',  flag: '🇿🇦', exchange: 'JSE',               ticker: 'EZA',      url: 'https://finance.yahoo.com/quote/EZA' },
-  { country: 'Singapore',     flag: '🇸🇬', exchange: 'SGX',               ticker: 'EWS',      url: 'https://finance.yahoo.com/quote/EWS' },
-  { country: 'Indonesia',     flag: '🇮🇩', exchange: 'IDX (JCI)',          ticker: 'EIDO',     url: 'https://finance.yahoo.com/quote/EIDO' },
-  { country: 'Malaysia',      flag: '🇲🇾', exchange: 'Bursa Malaysia',     ticker: 'EWM',      url: 'https://finance.yahoo.com/quote/EWM' },
-  { country: 'Thailand',      flag: '🇹🇭', exchange: 'SET',               ticker: 'THD',      url: 'https://finance.yahoo.com/quote/THD' },
-  { country: 'Turkey',        flag: '🇹🇷', exchange: 'Borsa Istanbul (BIST)',ticker:'TUR',     url: 'https://finance.yahoo.com/quote/TUR' },
-  { country: 'Poland',        flag: '🇵🇱', exchange: 'GPW (WIG)',          ticker: 'EPOL',     url: 'https://finance.yahoo.com/quote/EPOL' },
-  { country: 'Israel',        flag: '🇮🇱', exchange: 'TASE',              ticker: 'EIS',      url: 'https://finance.yahoo.com/quote/EIS' },
-  { country: 'Greece',        flag: '🇬🇷', exchange: 'Athens (ATHEX)',      ticker: 'GREK',     url: 'https://finance.yahoo.com/quote/GREK' },
-  { country: 'Argentina',     flag: '🇦🇷', exchange: 'BCBA (MERVAL)',      ticker: 'ARGT',     url: 'https://finance.yahoo.com/quote/ARGT' },
-  { country: 'Chile',         flag: '🇨🇱', exchange: 'Bolsa de Santiago',  ticker: 'ECH',      url: 'https://finance.yahoo.com/quote/ECH' },
-  { country: 'Colombia',      flag: '🇨🇴', exchange: 'BVC',               ticker: 'GXG',      url: 'https://finance.yahoo.com/quote/GXG' },
-  { country: 'Peru',          flag: '🇵🇪', exchange: 'BVL',               ticker: 'EPU',      url: 'https://finance.yahoo.com/quote/EPU' },
-  { country: 'Nigeria',       flag: '🇳🇬', exchange: 'NGX',               ticker: 'NGE',      url: 'https://finance.yahoo.com/quote/NGE' },
-  { country: 'Egypt',         flag: '🇪🇬', exchange: 'EGX',               ticker: 'EGPT',     url: 'https://finance.yahoo.com/quote/EGPT' },
-  { country: 'Pakistan',      flag: '🇵🇰', exchange: 'PSX (KSE-100)',      ticker: 'PAK',      url: 'https://finance.yahoo.com/quote/PAK' },
-  { country: 'Vietnam',       flag: '🇻🇳', exchange: 'HOSE / HNX',         ticker: 'VNM',      url: 'https://finance.yahoo.com/quote/VNM' },
-  { country: 'Qatar',         flag: '🇶🇦', exchange: 'QSE',               ticker: 'QAT',      url: 'https://finance.yahoo.com/quote/QAT' },
-  { country: 'Kuwait',        flag: '🇰🇼', exchange: 'Boursa Kuwait',      ticker: 'KWEB',     url: 'https://www.boursakuwait.com.kw/en' },
-  { country: 'Philippines',   flag: '🇵🇭', exchange: 'PSE (PSEi)',         ticker: 'EPHE',     url: 'https://finance.yahoo.com/quote/EPHE' },
-  { country: 'Czech Republic',flag: '🇨🇿', exchange: 'Prague (PX)',         ticker: 'CQQQ',     url: 'https://www.pse.cz/en' },
-  { country: 'Hungary',       flag: '🇭🇺', exchange: 'Budapest (BUX)',      ticker: 'MSFE',     url: 'https://finance.yahoo.com/quote/MSFE' },
-  { country: 'Romania',       flag: '🇷🇴', exchange: 'BVB',               ticker: 'MSFT',     url: 'https://www.bvb.ro' },
+  { country: 'United States', flag: 'US', exchange: 'NYSE / NASDAQ',    ticker: 'SPY',      url: 'https://finance.yahoo.com/quote/SPY' },
+  { country: 'United Kingdom',flag: 'GB', exchange: 'London (LSE)',      ticker: 'EWU',      url: 'https://finance.yahoo.com/quote/EWU' },
+  { country: 'Germany',       flag: 'DE', exchange: 'Frankfurt (DAX)',   ticker: 'EWG',      url: 'https://finance.yahoo.com/quote/EWG' },
+  { country: 'France',        flag: 'FR', exchange: 'Euronext Paris',    ticker: 'EWQ',      url: 'https://finance.yahoo.com/quote/EWQ' },
+  { country: 'Japan',         flag: 'JP', exchange: 'Tokyo (TSE)',        ticker: 'EWJ',      url: 'https://finance.yahoo.com/quote/EWJ' },
+  { country: 'China',         flag: 'CN', exchange: 'Shanghai / Shenzhen',ticker:'FXI',      url: 'https://finance.yahoo.com/quote/FXI' },
+  { country: 'Hong Kong',     flag: 'HK', exchange: 'HKEX',              ticker: 'EWH',      url: 'https://finance.yahoo.com/quote/EWH' },
+  { country: 'India',         flag: 'IN', exchange: 'BSE / NSE',         ticker: 'INDA',     url: 'https://finance.yahoo.com/quote/INDA' },
+  { country: 'Brazil',        flag: 'BR', exchange: 'B3 (Bovespa)',       ticker: 'EWZ',      url: 'https://finance.yahoo.com/quote/EWZ' },
+  { country: 'Canada',        flag: 'CA', exchange: 'TSX',               ticker: 'EWC',      url: 'https://finance.yahoo.com/quote/EWC' },
+  { country: 'Australia',     flag: 'AU', exchange: 'ASX',               ticker: 'EWA',      url: 'https://finance.yahoo.com/quote/EWA' },
+  { country: 'South Korea',   flag: 'KR', exchange: 'KRX (KOSPI)',        ticker: 'EWY',      url: 'https://finance.yahoo.com/quote/EWY' },
+  { country: 'Taiwan',        flag: 'TW', exchange: 'TWSE',              ticker: 'EWT',      url: 'https://finance.yahoo.com/quote/EWT' },
+  { country: 'Switzerland',   flag: 'CH', exchange: 'SIX',               ticker: 'EWL',      url: 'https://finance.yahoo.com/quote/EWL' },
+  { country: 'Netherlands',   flag: 'NL', exchange: 'Euronext Amsterdam', ticker: 'EWN',      url: 'https://finance.yahoo.com/quote/EWN' },
+  { country: 'Sweden',        flag: 'SE', exchange: 'Nasdaq Stockholm',   ticker: 'EWD',      url: 'https://finance.yahoo.com/quote/EWD' },
+  { country: 'Spain',         flag: 'ES', exchange: 'BME (IBEX 35)',      ticker: 'EWP',      url: 'https://finance.yahoo.com/quote/EWP' },
+  { country: 'Italy',         flag: 'IT', exchange: 'Borsa Italiana',     ticker: 'EWI',      url: 'https://finance.yahoo.com/quote/EWI' },
+  { country: 'Mexico',        flag: 'MX', exchange: 'BMV (IPC)',          ticker: 'EWW',      url: 'https://finance.yahoo.com/quote/EWW' },
+  { country: 'Russia',        flag: 'RU', exchange: 'MOEX',              ticker: 'ERUS',     url: 'https://finance.yahoo.com/quote/ERUS' },
+  { country: 'Saudi Arabia',  flag: 'SA', exchange: 'Tadawul (TASI)',     ticker: 'KSA',      url: 'https://finance.yahoo.com/quote/KSA' },
+  { country: 'UAE',           flag: 'AE', exchange: 'DFM / ADX',         ticker: 'UAE',      url: 'https://finance.yahoo.com/quote/UAE' },
+  { country: 'South Africa',  flag: 'ZA', exchange: 'JSE',               ticker: 'EZA',      url: 'https://finance.yahoo.com/quote/EZA' },
+  { country: 'Singapore',     flag: 'SG', exchange: 'SGX',               ticker: 'EWS',      url: 'https://finance.yahoo.com/quote/EWS' },
+  { country: 'Indonesia',     flag: 'ID', exchange: 'IDX (JCI)',          ticker: 'EIDO',     url: 'https://finance.yahoo.com/quote/EIDO' },
+  { country: 'Malaysia',      flag: 'MY', exchange: 'Bursa Malaysia',     ticker: 'EWM',      url: 'https://finance.yahoo.com/quote/EWM' },
+  { country: 'Thailand',      flag: 'TH', exchange: 'SET',               ticker: 'THD',      url: 'https://finance.yahoo.com/quote/THD' },
+  { country: 'Turkey',        flag: 'TR', exchange: 'Borsa Istanbul (BIST)',ticker:'TUR',     url: 'https://finance.yahoo.com/quote/TUR' },
+  { country: 'Poland',        flag: 'PL', exchange: 'GPW (WIG)',          ticker: 'EPOL',     url: 'https://finance.yahoo.com/quote/EPOL' },
+  { country: 'Israel',        flag: 'IL', exchange: 'TASE',              ticker: 'EIS',      url: 'https://finance.yahoo.com/quote/EIS' },
+  { country: 'Greece',        flag: 'GR', exchange: 'Athens (ATHEX)',      ticker: 'GREK',     url: 'https://finance.yahoo.com/quote/GREK' },
+  { country: 'Argentina',     flag: 'AR', exchange: 'BCBA (MERVAL)',      ticker: 'ARGT',     url: 'https://finance.yahoo.com/quote/ARGT' },
+  { country: 'Chile',         flag: 'CL', exchange: 'Bolsa de Santiago',  ticker: 'ECH',      url: 'https://finance.yahoo.com/quote/ECH' },
+  { country: 'Colombia',      flag: 'CO', exchange: 'BVC',               ticker: 'GXG',      url: 'https://finance.yahoo.com/quote/GXG' },
+  { country: 'Peru',          flag: 'PE', exchange: 'BVL',               ticker: 'EPU',      url: 'https://finance.yahoo.com/quote/EPU' },
+  { country: 'Nigeria',       flag: 'NG', exchange: 'NGX',               ticker: 'NGE',      url: 'https://finance.yahoo.com/quote/NGE' },
+  { country: 'Egypt',         flag: 'EG', exchange: 'EGX',               ticker: 'EGPT',     url: 'https://finance.yahoo.com/quote/EGPT' },
+  { country: 'Pakistan',      flag: 'PK', exchange: 'PSX (KSE-100)',      ticker: 'PAK',      url: 'https://finance.yahoo.com/quote/PAK' },
+  { country: 'Vietnam',       flag: 'VN', exchange: 'HOSE / HNX',         ticker: 'VNM',      url: 'https://finance.yahoo.com/quote/VNM' },
+  { country: 'Qatar',         flag: 'QA', exchange: 'QSE',               ticker: 'QAT',      url: 'https://finance.yahoo.com/quote/QAT' },
+  { country: 'Kuwait',        flag: 'KW', exchange: 'Boursa Kuwait',      ticker: 'KWEB',     url: 'https://www.boursakuwait.com.kw/en' },
+  { country: 'Philippines',   flag: 'PH', exchange: 'PSE (PSEi)',         ticker: 'EPHE',     url: 'https://finance.yahoo.com/quote/EPHE' },
+  { country: 'Czech Republic',flag: 'CZ', exchange: 'Prague (PX)',         ticker: 'CQQQ',     url: 'https://www.pse.cz/en' },
+  { country: 'Hungary',       flag: 'HU', exchange: 'Budapest (BUX)',      ticker: 'MSFE',     url: 'https://finance.yahoo.com/quote/MSFE' },
+  { country: 'Romania',       flag: 'RO', exchange: 'BVB',               ticker: 'MSFT',     url: 'https://www.bvb.ro' },
 ]
 
 function ExchangesPanel() {
@@ -180,7 +180,7 @@ function ExchangesPanel() {
               onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
               onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
             >
-              <span style={{ fontSize: 13.5, flexShrink: 0 }}>{ex.flag}</span>
+              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '.06em', color: 'var(--text3)', width: 20, flexShrink: 0 }}>{ex.flag}</span>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: '11.5px', color: 'var(--text1)', fontWeight: 600, letterSpacing: '.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.country}</div>
                 <div style={{ fontSize: '10px', color: 'var(--text3)', letterSpacing: '.04em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ex.exchange}</div>
@@ -292,18 +292,18 @@ function CryptoPanel() {
 
 // ── Forex Panel (Open Exchange Rates — no key required) ─────────────────────
 const FOREX_PAIRS = [
-  { pair: 'EUR/USD', base: 'EUR', quote: 'USD', flag: '🇪🇺' },
-  { pair: 'GBP/USD', base: 'GBP', quote: 'USD', flag: '🇬🇧' },
-  { pair: 'USD/JPY', base: 'USD', quote: 'JPY', flag: '🇯🇵' },
-  { pair: 'USD/CNY', base: 'USD', quote: 'CNY', flag: '🇨🇳' },
-  { pair: 'USD/CHF', base: 'USD', quote: 'CHF', flag: '🇨🇭' },
-  { pair: 'AUD/USD', base: 'AUD', quote: 'USD', flag: '🇦🇺' },
-  { pair: 'USD/CAD', base: 'USD', quote: 'CAD', flag: '🇨🇦' },
-  { pair: 'USD/INR', base: 'USD', quote: 'INR', flag: '🇮🇳' },
-  { pair: 'USD/RUB', base: 'USD', quote: 'RUB', flag: '🇷🇺' },
-  { pair: 'USD/BRL', base: 'USD', quote: 'BRL', flag: '🇧🇷' },
-  { pair: 'USD/KRW', base: 'USD', quote: 'KRW', flag: '🇰🇷' },
-  { pair: 'USD/MXN', base: 'USD', quote: 'MXN', flag: '🇲🇽' },
+  { pair: 'EUR/USD', base: 'EUR', quote: 'USD', flag: 'EU' },
+  { pair: 'GBP/USD', base: 'GBP', quote: 'USD', flag: 'GB' },
+  { pair: 'USD/JPY', base: 'USD', quote: 'JPY', flag: 'JP' },
+  { pair: 'USD/CNY', base: 'USD', quote: 'CNY', flag: 'CN' },
+  { pair: 'USD/CHF', base: 'USD', quote: 'CHF', flag: 'CH' },
+  { pair: 'AUD/USD', base: 'AUD', quote: 'USD', flag: 'AU' },
+  { pair: 'USD/CAD', base: 'USD', quote: 'CAD', flag: 'CA' },
+  { pair: 'USD/INR', base: 'USD', quote: 'INR', flag: 'IN' },
+  { pair: 'USD/RUB', base: 'USD', quote: 'RUB', flag: 'RU' },
+  { pair: 'USD/BRL', base: 'USD', quote: 'BRL', flag: 'BR' },
+  { pair: 'USD/KRW', base: 'USD', quote: 'KRW', flag: 'KR' },
+  { pair: 'USD/MXN', base: 'USD', quote: 'MXN', flag: 'MX' },
 ]
 
 function ForexPanel() {
@@ -337,7 +337,7 @@ function ForexPanel() {
 
   return (
     <div style={{ flex: 1, overflowY: 'auto' }}>
-      {FOREX_PAIRS.map(({ pair, base, quote, flag }) => {
+      {FOREX_PAIRS.map(({ pair, base, quote }) => {
         // Convert: rates are all relative to USD base
         let rate = 0
         if (base === 'USD') rate = rates[quote] ?? 0
@@ -351,7 +351,7 @@ function ForexPanel() {
             onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = ''; (e.currentTarget as HTMLDivElement).style.borderLeftColor = 'transparent' }}
           >
             <div>
-              <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text1)' }}>{flag} {pair}</div>
+              <div style={{ fontSize: '12.5px', fontWeight: 700, color: 'var(--text1)' }}>{pair}</div>
               <div style={{ fontSize: '10px', color: 'var(--text3)' }}>forex · spot</div>
             </div>
             <div style={{ textAlign: 'right' }}>

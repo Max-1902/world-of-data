@@ -259,7 +259,7 @@ export function NuclearPanel() {
     <>
       <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>
         <button className={`news-tab ${tab==='power'?'active':''}`} onClick={() => setTab('power')} style={tab==='power'?{color:'var(--amber)',borderColor:'var(--amber)44'}:{}}>☢ POWER PLANTS</button>
-        <button className={`news-tab ${tab==='weapons'?'active':''}`} onClick={() => setTab('weapons')} style={tab==='weapons'?{color:'var(--red)',borderColor:'var(--red)44'}:{}}>💣 WEAPONS SITES</button>
+        <button className={`news-tab ${tab==='weapons'?'active':''}`} onClick={() => setTab('weapons')} style={tab==='weapons'?{color:'var(--red)',borderColor:'var(--red)44'}:{}}>✸ WEAPONS SITES</button>
       </div>
       <div style={{ padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder={tab==='power'?'Search plant, country…':'Search facility, operator…'}
@@ -322,7 +322,7 @@ export function AirspacePanel({ flights }: { flights: { latitude: number | null;
         <span style={{ fontSize: '9.5px', color: 'var(--red)', fontWeight: 700, letterSpacing: '.1em' }}>
           {closedCount > 0 ? `⚠ ${closedCount} FIR${closedCount>1?'s':''} CLOSED` : ''}
         </span>
-        {restrictedCount > 0 && <span style={{ fontSize: '9.5px', color: 'var(--amber)', fontWeight: 700, letterSpacing: '.1em' }}>⚡ {restrictedCount} RESTRICTED</span>}
+        {restrictedCount > 0 && <span style={{ fontSize: '9.5px', color: 'var(--amber)', fontWeight: 700, letterSpacing: '.1em' }}>↯ {restrictedCount} RESTRICTED</span>}
         <span style={{ marginLeft: 'auto', fontSize: '9.5px', color: 'var(--text3)' }}>{new Date().toLocaleTimeString()}</span>
       </div>
       <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>

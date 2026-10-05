@@ -19,12 +19,12 @@ export interface GeoNewsPin {
   items: GeoNewsItem[]
 }
 
-const PRECISION_RANK: Record<GeoPrecision, number> = { city: 3, region: 2, country: 1 }
+const PRECISION_RANK: Record<GeoPrecision, number> = { city: 3, region: 2, capital: 1, country: 1 }
 export type Geocoder = (name: string) => Promise<GeoPlace | null>
 
 /**
  * Finds where a story happened. The headline decides: among its candidates the most specific resolvable place wins
- * (city over region over country); a "in/near X" candidate beats a bare name at equal precision. The description is
+ * (city over region over a country's capital); a "in/near X" candidate beats a bare name at equal precision. The description is
  * consulted only when the headline names no place at all, since it mentions incidental locations.
  */
 export async function locateArticle(article: NewsArticle, geocode: Geocoder): Promise<GeoPlace | null> {
