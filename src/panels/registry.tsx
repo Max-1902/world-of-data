@@ -44,7 +44,7 @@ const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').
 /* ── Registry ──────────────────────────────────────────────────────────────── */
 
 const PANELS: PanelDef[] = [
-  // ── INTEL ───────────────────────────────────────────────────────────────────
+  // ── OVERVIEW ────────────────────────────────────────────────────────────────
   {
     id: 'crisiswatch', title: 'Crisis Monitor', group: 'overview',
     dotColor: 'orange', desc: 'ICG conflict tracking — 70+ states',
@@ -70,13 +70,25 @@ const PANELS: PanelDef[] = [
     dotColor: 'orange', desc: 'Composite global threat index',
     render: (p) => <ThreatPanel crises={p.crises} flights={p.flights} />,
   },
+
+  // ── NEWS & MEDIA ────────────────────────────────────────────────────────────
   {
     id: 'news', title: 'Signals', group: 'news',
     dotColor: 'grn', desc: 'Aggregated open-source reporting',
     render: () => <NewsPanel />,
   },
+  {
+    id: 'webcams', title: 'US Webcams', group: 'news',
+    dotColor: 'grn', desc: 'SkylineWebcams & EarthCam — live US grid',
+    render: () => <USWebcamsPanel />,
+  },
+  {
+    id: 'livefeed', title: 'Live Feed', group: 'news',
+    dotColor: 'red', desc: 'Live news broadcasts — CNN, FOX, NBC, CBS, Euronews, DW, Sky News, France 24',
+    render: () => <LiveFeedPanel />,
+  },
 
-  // ── INFRASTRUCTURE ──────────────────────────────────────────────────────────
+  // ── INFRASTRUCTURE & HUMANITARIAN ───────────────────────────────────────────
   {
     id: 'outages', title: 'Connectivity', group: 'geo',
     dotColor: 'yellow', desc: 'Internet disruption monitoring',
@@ -93,6 +105,21 @@ const PANELS: PanelDef[] = [
     render: (p) => <HumanitarianPanel crises={p.crises} flights={p.flights} onGeoSearch={p.onGeoSearch} />,
   },
   {
+    id: 'infraIndicators', title: 'Infra Access', group: 'geo',
+    dotColor: 'blue', desc: 'Electricity, internet, water/sanitation access by country (World Bank)',
+    render: (p) => <InfraIndicatorsPanel onCountryClick={p.onCountryClick} />,
+  },
+  {
+    id: 'infrastructureByCountry', title: 'Infrastructure Sites', group: 'geo',
+    dotColor: 'amber', desc: 'Dams, pipelines, LNG, power plants by country — click to fly to',
+    render: (p) => <InfrastructureByCountryPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
+    id: 'datacenters', title: 'Data Centers', group: 'geo',
+    dotColor: 'blue', desc: 'Data center facilities worldwide (OpenStreetMap) — click to fly to',
+    render: (p) => <DataCentersPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
     id: 'layers', title: 'Overlays', group: 'geo',
     dotColor: 'blue', desc: 'Map layer configuration',
     render: (p) => <LayersPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} deepstateMode={p.deepstateMode} onDeepstateToggle={p.onDeepstateToggle} />,
@@ -100,20 +127,29 @@ const PANELS: PanelDef[] = [
 
   // ── SECURITY & DEFENSE ──────────────────────────────────────────────────────
   {
+    id: 'sanctions', title: 'Sanctions', group: 'security',
+    dotColor: 'red', desc: 'OFAC EU UN UK sanctions registry',
+    render: () => <SanctionsPanel />,
+  },
+  {
     id: 'drugs', title: 'Narcotics', group: 'security',
     dotColor: 'red', desc: 'Trafficking routes & seizure data',
     render: () => <DrugTrafficPanel />,
   },
   {
-    id: 'sanctions', title: 'Sanctions', group: 'security',
-    dotColor: 'red', desc: 'OFAC EU UN UK sanctions registry',
-    render: () => <SanctionsPanel />,
-  },
-
-  {
     id: 'military', title: 'Installations', group: 'security',
     dotColor: 'blue', desc: 'Military bases & force posture',
     render: (p) => <MilitaryPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
+    id: 'militaryInstallationsByCountry', title: 'Bases by Country', group: 'security',
+    dotColor: 'blue', desc: 'Military bases by country — click to fly to',
+    render: (p) => <MilitaryInstallationsByCountryPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
+    id: 'militaryPersonnel', title: 'Force Size', group: 'security',
+    dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
+    render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} />,
   },
   {
     id: 'nuclear', title: 'Nuclear', group: 'security',
@@ -121,22 +157,17 @@ const PANELS: PanelDef[] = [
     render: () => <NuclearPanel />,
   },
   {
+    id: 'nuclearFacilitiesByCountry', title: 'Nuclear Sites by Country', group: 'security',
+    dotColor: 'yellow', desc: 'Reactors & weapons sites by country — click to fly to',
+    render: (p) => <NuclearFacilitiesByCountryPanel onGeoSearch={p.onGeoSearch} />,
+  },
+  {
     id: 'airspace', title: 'Airspace', group: 'security',
     dotColor: 'red', desc: 'FIR status & NOTAM alerts',
     render: (p) => <AirspacePanel flights={p.flights} />,
   },
-  {
-    id: 'webcams', title: 'US Webcams', group: 'news',
-    dotColor: 'grn', desc: 'SkylineWebcams & EarthCam — live US grid',
-    render: () => <USWebcamsPanel />,
-  },
-  {
-    id: 'livefeed', title: 'Live Feed', group: 'news',
-    dotColor: 'red', desc: 'Live news broadcasts — CNN, FOX, NBC, CBS, Euronews, DW, Sky News, France 24',
-    render: () => <LiveFeedPanel />,
-  },
 
-  // ── ECONOMY ─────────────────────────────────────────────────────────────────
+  // ── ECONOMY (markets, trade, resources) ─────────────────────────────────────
   {
     id: 'economy', title: 'Economy', group: 'markets',
     dotColor: 'blue', desc: 'Global trade profiles & World Bank data',
@@ -148,19 +179,24 @@ const PANELS: PanelDef[] = [
     render: () => <MarketsPanel />,
   },
   {
+    id: 'tradePartnersByCountry', title: 'Trade Partners', group: 'markets',
+    dotColor: 'grn', desc: 'Top export/import partner countries — click to fly to',
+    render: (p) => <TradePartnersByCountryPanel onGeoSearch={p.onCountryClick} onCountryClick={p.onCountryClick} />,
+  },
+  {
+    id: 'tradeProductsByCountry', title: 'Trade Products', group: 'markets',
+    dotColor: 'blue', desc: 'Top exported/imported product categories by country',
+    render: (p) => <TradeProductsByCountryPanel onCountryClick={p.onCountryClick} />,
+  },
+  {
     id: 'resources', title: 'Resources', group: 'markets',
     dotColor: 'amber', desc: 'Critical minerals, reserves & production by country',
     render: (p) => <ResourcesPanel onCountryClick={p.onCountryClick} />,
   },
   {
-    id: 'militaryPersonnel', title: 'Force Size', group: 'security',
-    dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
-    render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} />,
-  },
-  {
-    id: 'infraIndicators', title: 'Infra Access', group: 'security',
-    dotColor: 'blue', desc: 'Electricity, internet, water/sanitation access by country (World Bank)',
-    render: (p) => <InfraIndicatorsPanel onCountryClick={p.onCountryClick} />,
+    id: 'resourcesByCountry', title: 'Resources by Country', group: 'markets',
+    dotColor: 'amber', desc: 'Critical minerals & commodities by country',
+    render: (p) => <ResourcesByCountryPanel onGeoSearch={p.onCountryClick} onCountryClick={p.onCountryClick} />,
   },
   {
     id: 'owid', title: 'Global Trends', group: 'markets',
@@ -168,7 +204,7 @@ const PANELS: PanelDef[] = [
     render: (p) => <OwidPanel onCountryClick={p.onCountryClick} />,
   },
 
-  // ── AI ──────────────────────────────────────────────────────────────────────
+  // ── ANALYSIS ────────────────────────────────────────────────────────────────
   {
     id: 'analyst', title: 'Analyst chat', group: 'analysis',
     dotColor: 'blue', desc: 'AI-assisted situational assessment',
@@ -178,53 +214,6 @@ const PANELS: PanelDef[] = [
     id: 'brief', title: 'Briefing', group: 'analysis',
     dotColor: 'red', desc: 'Correlated intel for active query',
     render: (p) => <IntelBriefPanel query={p.searchQuery ?? ''} crises={p.crises} flights={p.flights} />,
-  },
-
-  // ── DEDICATED PER-CATEGORY WORKSPACES (country → items → fly to) ─────────────
-  {
-    id: 'militaryInstallationsByCountry', title: 'Installations', group: 'militaryInstallations',
-    dotColor: 'blue', desc: 'Military bases by country — click to fly to',
-    render: (p) => <MilitaryInstallationsByCountryPanel onGeoSearch={p.onGeoSearch} />,
-  },
-  {
-    id: 'nuclearFacilitiesByCountry', title: 'Nuclear Facilities', group: 'nuclearFacilities',
-    dotColor: 'yellow', desc: 'Reactors & weapons sites by country — click to fly to',
-    render: (p) => <NuclearFacilitiesByCountryPanel onGeoSearch={p.onGeoSearch} />,
-  },
-  {
-    id: 'infrastructureByCountry', title: 'Infrastructure', group: 'infrastructureSites',
-    dotColor: 'amber', desc: 'Dams, pipelines, LNG, power plants by country — click to fly to',
-    render: (p) => <InfrastructureByCountryPanel onGeoSearch={p.onGeoSearch} />,
-  },
-  {
-    id: 'resourcesByCountry', title: 'Resources', group: 'resourcesByCountry',
-    dotColor: 'amber', desc: 'Critical minerals & commodities by country',
-    render: (p) => <ResourcesByCountryPanel onGeoSearch={p.onCountryClick} onCountryClick={p.onCountryClick} />,
-  },
-  {
-    id: 'forceSizeByCountry', title: 'Force Size', group: 'forceSize',
-    dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
-    render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} />,
-  },
-  {
-    id: 'tradePartnersByCountry', title: 'Trade Partners', group: 'tradePartnersByCountry',
-    dotColor: 'grn', desc: 'Top export/import partner countries — click to fly to',
-    render: (p) => <TradePartnersByCountryPanel onGeoSearch={p.onCountryClick} onCountryClick={p.onCountryClick} />,
-  },
-  {
-    id: 'tradeProductsByCountry', title: 'Trade Products', group: 'tradeProductsByCountry',
-    dotColor: 'blue', desc: 'Top exported/imported product categories by country',
-    render: (p) => <TradeProductsByCountryPanel onCountryClick={p.onCountryClick} />,
-  },
-  {
-    id: 'economicDataByCountry', title: 'Economic Data', group: 'economicData',
-    dotColor: 'blue', desc: 'World Bank indicators by country',
-    render: (p) => <GlobalEconomyPanel onCountryClick={p.onCountryClick} />,
-  },
-  {
-    id: 'datacenters', title: 'Data Centers', group: 'datacenters',
-    dotColor: 'blue', desc: 'Data center facilities worldwide (OpenStreetMap) — click to fly to',
-    render: (p) => <DataCentersPanel onGeoSearch={p.onGeoSearch} />,
   },
 ]
 
@@ -242,17 +231,8 @@ export function panelsForGroup(group: PanelGroup): PanelDef[] {
 export const GROUP_ORDER: { id: PanelGroup; label: string }[] = [
   { id: 'overview', label: 'OVERVIEW' },
   { id: 'news',     label: 'NEWS & MEDIA' },
-  { id: 'geo',      label: 'INFRASTRUCTURE' },
   { id: 'security', label: 'SECURITY & DEFENSE' },
   { id: 'markets',  label: 'ECONOMY' },
+  { id: 'geo',      label: 'INFRASTRUCTURE' },
   { id: 'analysis', label: 'ANALYSIS' },
-  { id: 'militaryInstallations',   label: 'INSTALLATIONS' },
-  { id: 'nuclearFacilities',       label: 'NUCLEAR FACILITIES' },
-  { id: 'infrastructureSites',     label: 'INFRA SITES' },
-  { id: 'resourcesByCountry',      label: 'RESOURCES' },
-  { id: 'forceSize',               label: 'FORCE SIZE' },
-  { id: 'tradePartnersByCountry',  label: 'TRADE PARTNERS' },
-  { id: 'tradeProductsByCountry',  label: 'TRADE PRODUCTS' },
-  { id: 'economicData',            label: 'ECON DATA' },
-  { id: 'datacenters',             label: 'DATA CENTERS' },
 ]

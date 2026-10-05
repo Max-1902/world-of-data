@@ -1,3 +1,4 @@
+import { sortByLayerSections } from '../utils/layerSections'
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import type { MapViewMode, PanelState } from '../types'
@@ -296,7 +297,7 @@ function LayersTab({ panelState, onToggleLayer }: { panelState: PanelState; onTo
       <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 12, marginBottom: 8 }}>
         Toggle map data layers on or off.
       </div>
-      {LAYER_IDS.map(l => (
+      {sortByLayerSections(LAYER_IDS, l => l.id).map(l => (
         <div key={l.id} style={{ ...s.row, gap: 14 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)' }}>{l.label}</div>

@@ -16,11 +16,7 @@ export interface PanelProps {
   onCountryClick?: (country: string) => void
 }
 
-export type PanelGroup =
-  | 'overview' | 'news' | 'geo' | 'security' | 'markets' | 'analysis'
-  | 'militaryInstallations' | 'nuclearFacilities' | 'infrastructureSites'
-  | 'resourcesByCountry' | 'forceSize' | 'tradePartnersByCountry'
-  | 'tradeProductsByCountry' | 'economicData' | 'datacenters'
+export type PanelGroup = 'overview' | 'news' | 'geo' | 'security' | 'markets' | 'analysis'
 
 export interface PanelDef {
   id: string
