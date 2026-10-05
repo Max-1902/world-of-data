@@ -36,6 +36,9 @@ const CountryDrawer = lazy(() => import('./components/CountryDrawer'))
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
+/** Layers that belong to the INFRA overlay — toggling INFRA switches all of them together. */
+const INFRA_GROUP: (keyof PanelState)[] = ['nuclear', 'pipelines', 'datacenters', 'ports']
+
 const DEFAULT_PANEL_STATE: PanelState = {
   flights: true, crises: true, news: false, stocks: true, wildfires: true,
   military: false, nuclear: false, sanctions: false, cameras: false,
@@ -184,7 +187,16 @@ export default function App() {
   }, [])
 
   const toggleLayer = useCallback((layer: keyof PanelState) => {
-    setPanelState((prev) => ({ ...prev, [layer]: !prev[layer] }))
+    setPanelState((prev) => {
+      const on = !prev[layer]
+      // INFRA is a master switch: it turns on every layer that belongs to infrastructure
+      // (nuclear, pipelines, data centers, ports) so all of its dots appear at once.
+      if (layer === 'infrastructure') {
+        const group = Object.fromEntries(INFRA_GROUP.map(k => [k, on])) as Partial<PanelState>
+        return { ...prev, ...group, infrastructure: on }
+      }
+      return { ...prev, [layer]: on }
+    })
   }, [])
 
   useKeyboardShortcuts({

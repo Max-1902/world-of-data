@@ -216,62 +216,78 @@ describe('power plants (WRI GPPD)', () => {
   const csv = (...rows: string[]) => [HEADER, ...rows].join('\n')
   const loadMod = () => load(() => import('./infrastructure'))
 
-  it('picks the top N per fuel type by capacity, mapping to infra point types', async () => {
+  it('returns every plant of every fuel, mapped to infra types, but leaves out nuclear (own layer)', async () => {
     mockFetch(() => textResponse(csv(
       'DEU,Germany,Small Coal,100,50,8,Coal',
       'DEU,Germany,Big Coal,900,51,9,Coal',
       'FRA,France,Wind Farm,50,48,2,Wind',
-      'FRA,France,Nuke,5000,47,1,Nuclear',   // not a mapped fuel — excluded
+      'FRA,France,Hydro Dam,700,45,5,Hydro',
+      'FRA,France,Nuke,5000,47,1,Nuclear',
     )))
-    const { fetchTopPowerPlants } = await loadMod()
-    const pts = await fetchTopPowerPlants(1)
-    expect(pts.map(p => [p.type, p.name, p.capacity])).toEqual([['power_coal', 'Big Coal', '900 MW'], ['power_wind', 'Wind Farm', '50 MW']])
+    const { fetchAllPowerPlants } = await loadMod()
+    const pts = await fetchAllPowerPlants()
+    expect(pts.map(p => [p.type, p.name, p.capacity, p.capacityMw])).toEqual([
+      ['power_coal', 'Small Coal', '100 MW', 100],
+      ['power_coal', 'Big Coal', '900 MW', 900],
+      ['power_wind', 'Wind Farm', '50 MW', 50],
+      ['power_hydro', 'Hydro Dam', '700 MW', 700],
+    ])
     expect(pts.every(p => p.notes?.includes('WRI'))).toBe(true)
+  })
+
+  it('drops hydro plants that sit on top of a curated dam so they are not drawn twice', async () => {
+    const { MAJOR_DAMS, fetchAllPowerPlants } = await loadMod()
+    const dam = MAJOR_DAMS[0]
+    mockFetch(() => textResponse(csv(
+      `CHN,China,Powerhouse,22500,${dam.lat + 0.01},${dam.lng + 0.01},Hydro`,
+      'CHN,China,Elsewhere,100,10,10,Hydro',
+    )))
+    expect((await fetchAllPowerPlants()).map(p => p.name)).toEqual(['Elsewhere'])
   })
 
   it('parses quoted CSV fields containing commas and escaped quotes', async () => {
     mockFetch(() => textResponse(csv('DEU,Germany,"Plant, with ""quotes""",300,50,8,Solar')))
-    const [p] = await (await loadMod()).fetchTopPowerPlants()
+    const [p] = await (await loadMod()).fetchAllPowerPlants()
     expect(p.name).toBe('Plant, with "quotes"')
     expect(p.type).toBe('power_solar')
   })
 
   it('skips rows with non-numeric coordinates or capacity and blank lines', async () => {
     mockFetch(() => textResponse(csv('DEU,Germany,NoLat,100,,8,Coal', 'DEU,Germany,NoCap,,50,8,Coal', '', 'DEU,Germany,Good,100,50,8,Coal') + '\n'))
-    const pts = await (await loadMod()).fetchTopPowerPlants()
+    const pts = await (await loadMod()).fetchAllPowerPlants()
     expect(pts.map(p => p.name)).toEqual(['Good'])
   })
 
-  it('fetchPowerPlantsForCountry matches names loosely, ranks by capacity, caps at 30, and labels unmapped fuels as grid', async () => {
+  it('fetchPowerPlantsForCountry matches names loosely, ranks by capacity, caps at 30, and labels unknown fuels as grid', async () => {
     const rows = Array.from({ length: 40 }, (_, i) => `DEU,Germany,P${i},${i + 1},50,8,Coal`)
-    mockFetch(() => textResponse(csv(...rows, 'FRA,France,Nuke,5000,47,1,Nuclear')))
+    mockFetch(() => textResponse(csv(...rows, 'FRA,France,Mystery,5000,47,1,Fusion')))
     const { fetchPowerPlantsForCountry } = await loadMod()
     const de = await fetchPowerPlantsForCountry('germany')
     expect(de).toHaveLength(30)
     expect(de[0].name).toBe('P39')
     const fr = await fetchPowerPlantsForCountry('France')
-    expect(fr[0]).toMatchObject({ name: 'Nuke', type: 'grid' })
+    expect(fr[0]).toMatchObject({ name: 'Mystery', type: 'grid' })
   })
 
   it('throws on HTTP errors', async () => {
-    const { fetchTopPowerPlants } = await loadMod()
+    const { fetchAllPowerPlants } = await loadMod()
     mockFetch(() => textResponse('', { status: 500 }))
-    await expect(fetchTopPowerPlants()).rejects.toThrow('GPPD HTTP 500')
+    await expect(fetchAllPowerPlants()).rejects.toThrow('GPPD HTTP 500')
   })
 
   it('recovers on a later call after a failed download', async () => {
-    const { fetchTopPowerPlants } = await loadMod()
+    const { fetchAllPowerPlants } = await loadMod()
     mockFetch(() => textResponse('', { status: 500 }))
-    await expect(fetchTopPowerPlants()).rejects.toThrow('GPPD HTTP 500')
+    await expect(fetchAllPowerPlants()).rejects.toThrow('GPPD HTTP 500')
     mockFetch(() => textResponse(csv('DEU,Germany,A,1,1,1,Coal')))
-    expect(await fetchTopPowerPlants()).toHaveLength(1)
+    expect(await fetchAllPowerPlants()).toHaveLength(1)
   })
 
   it('downloads the dataset only once across calls', async () => {
     const fetchMock = mockFetch(() => textResponse(csv('DEU,Germany,A,1,1,1,Coal')))
-    const { fetchTopPowerPlants, fetchPowerPlantsForCountry } = await loadMod()
-    await Promise.all([fetchTopPowerPlants(), fetchPowerPlantsForCountry('Germany')])
-    await fetchTopPowerPlants()
+    const { fetchAllPowerPlants, fetchPowerPlantsForCountry } = await loadMod()
+    await Promise.all([fetchAllPowerPlants(), fetchPowerPlantsForCountry('Germany')])
+    await fetchAllPowerPlants()
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 })
