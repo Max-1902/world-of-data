@@ -338,6 +338,15 @@ describe('news source lists', () => {
       expect(c.sources.length, c.code).toBeGreaterThan(0)
       // Feeds are fetched server-side through the rss2json proxy, so plain-http origins (e.g. Xinhua) work.
       for (const s of c.sources) expect(['http:', 'https:'], `${c.code} ${s.name}`).toContain(new URL(s.url).protocol)
+      for (const s of c.sources) if (s.lang) expect(s.lang, `${c.code} ${s.name}`).toMatch(/^[a-z]{2}$/)
+      expectUnique(`${c.code} source urls`, c.sources.map(s => s.url))
     }
+  })
+
+  it('covers the countries requested for local-press news (Poland first among them)', () => {
+    const codes = COUNTRY_NEWS_SOURCES.map(c => c.code)
+    for (const code of ['PL', 'IT', 'ES', 'NL', 'SE', 'TR', 'MX', 'KR', 'NG']) expect(codes).toContain(code)
+    const pl = COUNTRY_NEWS_SOURCES.find(c => c.code === 'PL')!
+    expect(pl.sources.some(s => s.lang === 'pl')).toBe(true)
   })
 })

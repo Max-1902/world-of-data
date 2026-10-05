@@ -37,6 +37,8 @@ export interface NewsArticle {
   latitude?: number
   longitude?: number
   category?: string
+  /** Language of title/description when the feed isn't English (ISO 639-1); undefined = English or unknown. */
+  lang?: string
 }
 
 export interface Stock {
