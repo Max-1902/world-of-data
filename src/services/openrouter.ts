@@ -104,6 +104,35 @@ export function groupModels(models: ModelOption[]): { label: string; models: Mod
   return groups
 }
 
+/** HTTP failure from the OpenRouter proxy; `body` is the raw response text. */
+export class OpenRouterError extends Error {
+  constructor(public status: number, public body: string) {
+    super(`OpenRouter ${status}: ${body.slice(0, 200)}`)
+    this.name = 'OpenRouterError'
+  }
+}
+
+/** A user-facing explanation of why a chat request failed. */
+export function describeAIError(err: unknown): string {
+  if (err instanceof OpenRouterError) {
+    switch (err.status) {
+      case 402: return 'Your OpenRouter account has no credits for this model. Add credits at openrouter.ai/settings/credits, or pick a free model.'
+      case 401: case 403: return 'OpenRouter rejected the API key. Check OPENROUTER_KEY in .env and restart the dev server.'
+      case 404: return 'OpenRouter no longer offers this model. Pick another one.'
+      case 429: return 'This model is rate-limited right now. Retry in a moment or pick another model.'
+      case 500: if (/not configured/i.test(err.body)) return 'OPENROUTER_KEY is not set. Add it to .env and restart the dev server.'
+    }
+    try {
+      const m = JSON.parse(err.body)?.error?.message
+      if (typeof m === 'string' && m) return `OpenRouter error ${err.status}: ${m.slice(0, 160)}`
+    } catch { /* body wasn't JSON */ }
+    return `OpenRouter error ${err.status}.`
+  }
+  // Errors raised from inside the stream carry the provider's own message.
+  if (err instanceof Error && err.message && err.name !== 'TypeError') return `The model returned an error: ${err.message.slice(0, 160)}`
+  return 'The analysis request could not be completed. Check your connection and try again.'
+}
+
 // ── Streaming call ─────────────────────────────────────────────────────────
 // Some free models are "reasoning" variants that stream their internal
 // chain-of-thought via delta.reasoning before any delta.content appears —
@@ -135,7 +164,7 @@ export async function streamAI(
 
   if (!res.ok) {
     const msg = await res.text().catch(() => '')
-    throw new Error(`OpenRouter ${res.status}: ${msg.slice(0, 200)}`)
+    throw new OpenRouterError(res.status, msg)
   }
   if (!res.body) throw new Error('No response body')
 
