@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight } from '../../types'
-import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
+import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
 import { findCountryInText } from '../../services/worldbank'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
@@ -278,7 +278,7 @@ ${context}`,
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setError('The analysis request could not be completed. Try again or choose a different model.')
+        setError(describeAIError(err))
       }
     } finally {
       setStreaming(false)

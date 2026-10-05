@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { streamAI, buildDashboardContext, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, groupModels, formatModelPrice } from './openrouter'
+import { streamAI, buildDashboardContext, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, groupModels, formatModelPrice } from './openrouter'
 import { mockFetch, streamResponse, textResponse, jsonResponse } from '../test/helpers'
 import type { CrisisEvent, Flight } from '../types'
 import type { TrajectoryEntry } from '../utils/trajectory'
@@ -239,5 +239,29 @@ describe('model catalogue', () => {
     expect(formatModelPrice({ ...base, priceIn: 0, priceOut: 0, free: true })).toBe('free')
     expect(formatModelPrice({ ...base, priceIn: 3, priceOut: 15, free: false })).toBe('$3/$15 per 1M')
     expect(formatModelPrice({ ...base, priceIn: 0.25, priceOut: 1.25, free: false })).toBe('$0.25/$1.25 per 1M')
+  })
+})
+
+describe('describeAIError', () => {
+  it.each([
+    [402, '{"error":{"message":"Insufficient credits"}}', /no credits.*free model/],
+    [401, 'nope', /rejected the API key/],
+    [429, '{}', /rate-limited/],
+    [404, '', /no longer offers/],
+    [500, 'OPENROUTER_KEY not configured', /OPENROUTER_KEY is not set/],
+    [400, '{"error":{"message":"bad param"}}', /OpenRouter error 400: bad param/],
+    [502, '<html>', /OpenRouter error 502\./],
+  ])('HTTP %s', (status, body, expected) => {
+    expect(describeAIError(new OpenRouterError(status, body))).toMatch(expected)
+  })
+
+  it('passes through in-stream provider errors and explains network failures generically', () => {
+    expect(describeAIError(new Error('Provider returned error'))).toContain('Provider returned error')
+    expect(describeAIError(new TypeError('Failed to fetch'))).toMatch(/connection/)
+  })
+
+  it('streamAI throws OpenRouterError with the status on HTTP failure', async () => {
+    mockFetch(() => jsonResponse({ error: { message: 'x' } }, { status: 402 }))
+    await expect(streamAI([{ role: 'user', content: 'hi' }], () => {})).rejects.toMatchObject({ name: 'OpenRouterError', status: 402 })
   })
 })
