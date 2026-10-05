@@ -126,6 +126,13 @@ let gdeltCooldownUntil = 0
 
 class GdeltRateLimited extends Error {}
 
+/** Drops every cached news response so the next fetch hits the network (used by the manual Reload). */
+export function clearNewsCaches() {
+  rssCache.clear()
+  gdeltCache.clear()
+  gdeltCooldownUntil = 0
+}
+
 export function searchGDELTNews(query: string): Promise<NewsArticle[]> {
   const cached = gdeltCache.get(query)
   if (cached && Date.now() - cached.at < GDELT_CACHE_TTL_MS) return Promise.resolve(cached.data)
@@ -148,6 +155,13 @@ export function searchGDELTNews(query: string): Promise<NewsArticle[]> {
   gdeltInFlight.set(query, run)
   void run.finally(() => gdeltInFlight.delete(query))
   return run
+}
+
+// GDELT stamps articles "20260104T120000Z", which `new Date()` can't parse — an invalid date makes every
+// newest-first sort comparison NaN and scrambles the feed, so normalise to ISO at the source.
+function gdeltDateToISO(seendate: string): string {
+  const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/.exec(seendate ?? '')
+  return m ? `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:${m[6]}Z` : seendate
 }
 
 async function fetchGDELTNews(query: string): Promise<NewsArticle[]> {
@@ -174,7 +188,7 @@ async function fetchGDELTNews(query: string): Promise<NewsArticle[]> {
         description: '',
         url: a.url,
         source: a.domain,
-        publishedAt: a.seendate,
+        publishedAt: gdeltDateToISO(a.seendate),
         imageUrl: a.socialimage,
       } satisfies NewsArticle)
   )
@@ -519,6 +533,14 @@ export async function searchAllSources(query: string): Promise<NewsArticle[]> {
     .slice(0, 100)
 }
 
+// Headlines are a keyword search, and the keyword sources (NYT especially) mix in items days old. Keep what
+// was published in the last 48 h; only if that leaves too little fall back to the newest of what we have.
+const HEADLINES_MAX_AGE_MS = 48 * 60 * 60 * 1000
+const HEADLINES_MIN_FRESH = 10
+
 export async function fetchTopHeadlines(): Promise<NewsArticle[]> {
-  return searchAllSources('world war conflict politics economy')
+  const all = await searchAllSources('world war conflict politics economy')
+  const cutoff = Date.now() - HEADLINES_MAX_AGE_MS
+  const fresh = all.filter(a => new Date(a.publishedAt).getTime() >= cutoff)
+  return fresh.length >= HEADLINES_MIN_FRESH ? fresh : all
 }

@@ -16,8 +16,14 @@ export function useFlights(enabled: boolean) {
     setError(null)
     try {
       const data = await fetchFlights()
-      setFlights(data)
-      setLastUpdated(new Date())
+      // fetchFlights returns [] on any failure (rate limit, timeout) — keep the last good snapshot rather
+      // than blanking the map and the TRACKED count to 0 over one bad poll.
+      if (data.length > 0) {
+        setFlights(data)
+        setLastUpdated(new Date())
+      } else {
+        setError('No flight data returned')
+      }
     } catch (e) {
       setError(String(e))
     } finally {

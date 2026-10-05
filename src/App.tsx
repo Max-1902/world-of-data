@@ -22,6 +22,7 @@ import CommandPalette from './components/CommandPalette'
 import NewsTicker   from './components/NewsTicker'
 import OutlookCard from './components/OutlookCard'
 import { triggerGlobalReload } from './utils/reloadBus'
+import { clearNewsCaches } from './services/news'
 import { GROUP_ORDER } from './panels/registry'
 import { decodeHash, encodeHash, enabledLayers, layersToPanelState, type DecodedState } from './utils/urlState'
 
@@ -127,18 +128,16 @@ export default function App() {
   useWatchEvaluator(crises, flights, articles)
 
   const [reloading, setReloading] = useState(false)
-  const handleReloadAll = useCallback(() => {
+  const handleReloadAll = useCallback(async () => {
     setReloading(true)
-    refreshFlights()
-    refreshCrises()
-    refreshNews()
-    refreshStocks()
-    refreshEarthquakes()
-    refreshFires()
-    refreshVessels()
-    refreshOutages()
+    // Cached news responses live for 5–10 min; a manual reload must bypass them or it re-serves old headlines.
+    clearNewsCaches()
     triggerGlobalReload()
-    window.setTimeout(() => setReloading(false), 900)
+    await Promise.allSettled([
+      refreshFlights, refreshCrises, refreshNews, refreshStocks,
+      refreshEarthquakes, refreshFires, refreshVessels, refreshOutages,
+    ].map(refresh => Promise.resolve(refresh())))
+    setReloading(false)
   }, [refreshFlights, refreshCrises, refreshNews, refreshStocks, refreshEarthquakes, refreshFires, refreshVessels, refreshOutages])
 
   // Persist preferences
