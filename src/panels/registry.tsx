@@ -105,8 +105,8 @@ const PANELS: PanelDef[] = [
     render: (p) => <HumanitarianPanel crises={p.crises} flights={p.flights} onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'infraIndicators', title: 'Infra Access', group: 'geo',
-    dotColor: 'blue', desc: 'Electricity, internet, water/sanitation access by country (World Bank)',
+    id: 'infraIndicators', title: 'Power Output', group: 'geo',
+    dotColor: 'blue', desc: 'Countries ranked by electricity generated, with source mix (Ember via Our World in Data)',
     render: (p) => <InfraIndicatorsPanel onCountryClick={p.onCountryClick} />,
   },
   {
