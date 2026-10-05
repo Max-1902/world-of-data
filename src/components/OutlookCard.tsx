@@ -3,6 +3,7 @@ import { computeTrajectories } from '../utils/trajectory'
 import { formatDistanceToNow } from 'date-fns'
 import { useHistory, PREVIOUS_VISIT } from '../hooks/useHistory'
 import { changesSince, scoreByCountry } from '../services/history'
+import CountryBrief from './CountryBrief'
 import type { CrisisEvent, Flight, NewsArticle } from '../types'
 
 /** Don't report "since last visit" for a reload a few minutes after the previous one. */
@@ -26,19 +27,21 @@ export default function OutlookCard({ crises, flights, articles, selectedCountry
   const featured = selectedCountry ? entries : (rising.length ? rising : entries).slice(0, 2)
 
   return (
-    <section className="outlook-card" aria-label="Regional activity outlook">
+    <section className={`outlook-card${selectedCountry ? ' outlook-card-country' : ''}`} aria-label={selectedCountry ? `${selectedCountry} brief` : 'Regional activity outlook'}>
       <div className="outlook-head">
         <div className="outlook-title">
           <span className="outlook-icon"><Radar size={13} /></span>
           <div>
             <div className="outlook-eyebrow">{selectedCountry ? selectedCountry.toUpperCase() : 'REGIONAL OUTLOOK'}</div>
-            <div className="outlook-subtitle">Activity trend · 72 hours</div>
+            <div className="outlook-subtitle">{selectedCountry ? 'Country brief · news and facts' : 'Activity trend · 72 hours'}</div>
           </div>
         </div>
-        <span className="outlook-live"><i /> RULE BASED</span>
+        <span className="outlook-live"><i /> {selectedCountry ? 'LIVE' : 'RULE BASED'}</span>
       </div>
 
-      {featured.length > 0 ? (
+      {selectedCountry ? (
+        <CountryBrief country={selectedCountry} crises={crises} articles={articles} trend={entries[0]} />
+      ) : featured.length > 0 ? (
         <div className="outlook-list">
           {featured.map(entry => {
             const rising = entry.trend === 'rising'
@@ -73,7 +76,7 @@ export default function OutlookCard({ crises, flights, articles, selectedCountry
         <div className="outlook-empty">No recent regional activity trend is available.</div>
       )}
 
-      {since && since.movers.length > 0 && (
+      {!selectedCountry && since && since.movers.length > 0 && (
         <div className="outlook-since">
           <div className="outlook-since-head">SINCE YOUR LAST VISIT · {formatDistanceToNow(since.baselineT, { addSuffix: true }).toUpperCase()}</div>
           {since.movers.map(m => (
