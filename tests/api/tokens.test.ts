@@ -72,7 +72,7 @@ describe('token grant types', () => {
     const fetchMock = mockUpstream({})
     await acledToken(mockReq({ method: 'POST' }), mockRes().res)
     const sent = new URLSearchParams(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body))
-    expect(Object.fromEntries(sent)).toEqual({ username: 'e', password: 'p', grant_type: 'password', client_id: 'acled' })
+    expect(Object.fromEntries(sent)).toEqual({ username: 'e', password: 'p', grant_type: 'password', client_id: 'acled', scope: 'authenticated' })
   })
 
   it('opensky uses the client_credentials grant', async () => {

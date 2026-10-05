@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mockFetch, jsonResponse, quietConsole } from '../test/helpers'
+import { mockFetch, jsonResponse, quietConsole, installLocalStorage } from '../test/helpers'
 
 // crises.ts caches the ACLED token at module level — reload it for each test.
 async function load() {
@@ -88,7 +88,7 @@ describe('fetchACLEDEvents', () => {
       await fetchACLEDEvents()
       await fetchACLEDEvents()
       expect(fetchMock).toHaveBeenCalledTimes(1)
-      vi.advanceTimersByTime(31 * 60 * 1000)
+      vi.advanceTimersByTime(2 * 60 * 60 * 1000 + 1000)
       await fetchACLEDEvents()
       expect(fetchMock).toHaveBeenCalledTimes(2)
     } finally { vi.useRealTimers() }
@@ -100,5 +100,38 @@ describe('fetchACLEDEvents', () => {
     await fetchACLEDEvents()
     await fetchACLEDEvents()
     expect(fetchMock.mock.calls.filter(c => c[0] === TOKEN_URL)).toHaveLength(1)
+  })
+})
+
+describe('ACLED login persistence across reloads', () => {
+  beforeEach(() => { quietConsole(); installLocalStorage() })
+
+  it('reuses a stored token after a page reload instead of logging in again', async () => {
+    const fetchMock = mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [] }))
+    await (await load()).fetchACLEDEvents()
+    await (await load()).fetchACLEDEvents() // fresh module = reload
+    expect(fetchMock.mock.calls.filter(c => c[0] === TOKEN_URL)).toHaveLength(1)
+  })
+
+  it('stays off the login endpoint after a reload when the account was recently locked', async () => {
+    const fetchMock = mockFetch(() => jsonResponse({ error: 'flood_user_blocked' }, { status: 403 }))
+    await (await load()).fetchACLEDEvents()
+    await (await load()).fetchACLEDEvents() // fresh module = reload
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('backs off for 2 hours after a lockout (403) but only 30 minutes after other failures', async () => {
+    vi.useFakeTimers()
+    try {
+      const fetchMock = mockFetch(() => jsonResponse({ error: 'flood_user_blocked' }, { status: 403 }))
+      const { fetchACLEDEvents } = await load()
+      await fetchACLEDEvents()
+      vi.advanceTimersByTime(31 * 60 * 1000)
+      await fetchACLEDEvents()
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      vi.advanceTimersByTime(90 * 60 * 1000)
+      await fetchACLEDEvents()
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    } finally { vi.useRealTimers() }
   })
 })

@@ -15,6 +15,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     password: password,
     grant_type: 'password',
     client_id: 'acled',
+    scope: 'authenticated', // required by ACLED's current OAuth docs
   })
 
   const upstream = await fetch('https://acleddata.com/oauth/token', {
