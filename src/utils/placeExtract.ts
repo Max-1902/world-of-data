@@ -50,6 +50,32 @@ function expand(words: string[]): string[] {
     .filter(n => n.length >= 3 && !STOP.has(n.toLowerCase()))
 }
 
+// Where a story was *published* is not where it *happened*. Outlet names embed city names ("Washington Post",
+// "Kyiv Independent", "Moscow Times") and wire stories open with the reporter's dateline ("LONDON (Reuters) -"),
+// so both are blanked out before candidates are proposed. A name that is followed by another capitalised word is
+// kept ("New York Times Square" is not the newspaper).
+const OUTLETS = [
+  'Washington Post', 'New York Times', 'Wall Street Journal', 'Los Angeles Times', 'Boston Globe', 'Chicago Tribune',
+  'Miami Herald', 'Dallas Morning News', 'Toronto Star', 'Globe and Mail', 'San Francisco Chronicle', 'Moscow Times',
+  'Kyiv Post', 'Kyiv Independent', 'Times of Israel', 'Jerusalem Post', 'Al Jazeera', 'Daily Mail', 'Daily Telegraph',
+  'Hindustan Times', 'Times of India', 'Indian Express', 'Japan Times', 'Straits Times', 'Korea Times', 'Korea Herald',
+  'Taipei Times', 'Malay Mail', 'Bangkok Post', 'Dhaka Tribune', 'Daily Star', 'Daily Sabah', 'Hurriyet Daily News',
+  'Arab News', 'Gulf News', 'Khaleej Times', 'Tehran Times', 'Egypt Independent', 'Daily News Egypt', 'Buenos Aires Times',
+  'Mexico News Daily', 'Notes from Poland', 'Brussels Times', 'Hungary Today', 'Sydney Morning Herald', 'Financial Times',
+  'South China Morning Post', 'Hong Kong Free Press', 'Jakarta Post', 'Manila Times', 'Philippine Star', 'Radio Free Europe',
+  'Voice of America', 'Anadolu Agency', 'Premium Times', 'Daily Nation', 'Express Tribune', 'Dawn News',
+].map(n => n.replace(/ /g, '\\s+')).join('|')
+const OUTLET_RE = new RegExp(`\\b(?:The\\s+)?(?:${OUTLETS})\\b(?!\\s+[A-Z])`, 'g')
+const WIRES = 'Reuters|AP|AFP|UPI|Bloomberg|dpa|ANSA|EFE|PAP|TASS|Xinhua|Anadolu|CNN'
+// "LONDON (Reuters) -" / "WASHINGTON, D.C. (AP)" (capitals, dash optional) or "Kyiv (Reuters) -" (title case, dash required).
+const DATELINE_RE = new RegExp(`^\\s*(?:[A-Z][A-Z.' -]{1,40}(?:,\\s*[A-Z][A-Za-z.' -]{1,30})?\\s*\\((?:${WIRES})\\)\\s*[-–—:]?|[A-Z][a-z]+(?:\\s[A-Z][a-z]+)?\\s*\\((?:${WIRES})\\)\\s*[-–—:])\\s*`)
+const WIRE_TAG_RE = new RegExp(`\\((?:${WIRES})\\)`, 'g')
+
+/** Removes publisher names and wire datelines, leaving only text that can describe where something happened. */
+export function stripPublisher(text: string): string {
+  return text.replace(DATELINE_RE, '').replace(WIRE_TAG_RE, ' ').replace(OUTLET_RE, ' ')
+}
+
 /** Ordered, de-duplicated place-name candidates for a piece of text (most reliable first), at most `max`. */
 export function extractPlaceCandidates(text: string, max = 6): PlaceCandidate[] {
   const out: PlaceCandidate[] = []
@@ -62,7 +88,8 @@ export function extractPlaceCandidates(text: string, max = 6): PlaceCandidate[] 
       out.push({ name, kind })
     }
   }
-  for (const m of text.matchAll(AFTER_PREP_RE)) add(expand(clean(m[1])), 'prep')
-  for (const m of text.matchAll(RUN_RE)) add(expand(clean(m[0])), 'plain')
+  const body = stripPublisher(text)
+  for (const m of body.matchAll(AFTER_PREP_RE)) add(expand(clean(m[1])), 'prep')
+  for (const m of body.matchAll(RUN_RE)) add(expand(clean(m[0])), 'plain')
   return out.slice(0, max)
 }

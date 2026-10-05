@@ -2,12 +2,13 @@
  * Panel implementations. Split out of the former PanelContent.tsx; wired up in src/panels/registry.tsx.
  */
 import { useState, useCallback, useEffect } from 'react'
-import { ExternalLink, RefreshCw } from 'lucide-react'
+import { ExternalLink, Languages, RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { CrisisEvent, NewsArticle, Flight } from '../../types'
 import { fetchRSSFeed, searchGDELTNews, searchGuardian, searchNYT, searchNewsAPI, fetchAllCrisisWatch, CRISISWATCH_FEEDS, type CrisisWatchEntry, COUNTRY_NEWS_SOURCES, fetchCountryNews } from '../../services/news'
 import { fetchOutageEvents, type OutageEvent } from '../../services/outages'
 import { onGlobalReload } from '../../utils/reloadBus'
+import { useAutoTranslate, useTranslatedArticle } from '../../hooks/useTranslation'
 import { SEV_COLORS } from './OverviewPanels'
 import { outageScoreColor } from './OutagesPanel'
 
@@ -26,6 +27,11 @@ function safeTimeAgo(d: string) {
 
 export function ArticleRow({ a }: { a: NewsArticle }) {
   const [open, setOpen] = useState(false)
+  const [showOriginal, setShowOriginal] = useState(false)
+  const t = useTranslatedArticle(a, open)
+  const translated = !!t.from && !showOriginal
+  const title = translated ? t.title : a.title
+  const description = translated ? t.description : a.description
   return (
     <div
       className="intel-row"
@@ -37,10 +43,18 @@ export function ArticleRow({ a }: { a: NewsArticle }) {
         <div style={{ flex: 1, minWidth: 0, padding: '5px 8px' }}>
           <div style={{ fontSize: '12.5px', color: 'var(--text1)', lineHeight: 1.45, marginBottom: 3,
             ...(open ? {} : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>
-            {a.title}
+            {title}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
             <span style={{ fontSize: '10px', color: 'var(--text2)', fontWeight: 600, letterSpacing: '.05em' }}>{a.source}</span>
+            {t.from && (
+              <button
+                title={showOriginal ? 'Showing the original — click to translate' : 'Machine-translated to English — click to show the original'}
+                onClick={e => { e.stopPropagation(); setShowOriginal(v => !v) }}
+                style={{ fontSize: '9.5px', color: 'var(--accent)', letterSpacing: '.06em', textTransform: 'uppercase', border: '1px solid var(--accent)', background: 'var(--accent-soft)', padding: '0 3px', cursor: 'pointer' }}>
+                {showOriginal ? `${t.from} · ORIGINAL` : `${t.from} → EN`}
+              </button>
+            )}
             {a.category && <span style={{ fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.06em', textTransform: 'uppercase', border: '1px solid var(--border)', padding: '0 3px' }}>{a.category}</span>}
             <span style={{ fontSize: '10px', color: 'var(--text3)', marginLeft: 'auto' }}>{safeTimeAgo(a.publishedAt)}</span>
           </div>
@@ -52,8 +66,8 @@ export function ArticleRow({ a }: { a: NewsArticle }) {
           {a.imageUrl && (
             <img src={a.imageUrl} alt="" style={{ width: '100%', maxHeight: 90, objectFit: 'cover', marginBottom: 6, opacity: 0.85 }} onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }} />
           )}
-          {a.description && (
-            <div style={{ fontSize: '11.5px', color: 'var(--text2)', lineHeight: 1.55, marginBottom: 6 }}>{a.description}</div>
+          {description && (
+            <div style={{ fontSize: '11.5px', color: 'var(--text2)', lineHeight: 1.55, marginBottom: 6 }}>{description}</div>
           )}
           <a href={a.url} target="_blank" rel="noopener noreferrer"
             style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '10.5px', color: 'var(--accent)', letterSpacing: '.08em', textDecoration: 'none', textTransform: 'uppercase', padding: '3px 7px', border: '1px solid var(--accent)', background: 'var(--accent-soft)' }}>
@@ -69,6 +83,8 @@ export function NewsPanel() {
   const [country, setCountry]     = useState('US')
   const [articles, setArticles]   = useState<NewsArticle[]>([])
   const [loading, setLoading]     = useState(false)
+  const [autoTranslate, setAutoTranslate] = useAutoTranslate()
+  const sourceCount = COUNTRY_NEWS_SOURCES.find(c => c.code === country)?.sources.length ?? 0
 
   const loadCountry = useCallback(async (code: string) => {
     setLoading(true); setArticles([])
@@ -94,9 +110,16 @@ export function NewsPanel() {
             <option key={c.code} value={c.code}>{c.label}</option>
           ))}
         </select>
-        <span style={{ fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.08em' }}>TOP 5 SOURCES</span>
+        <span style={{ fontSize: '9.5px', color: 'var(--text3)', letterSpacing: '.08em' }}>{sourceCount} SOURCES</span>
+        <button onClick={() => setAutoTranslate(!autoTranslate)}
+          title={autoTranslate ? 'Auto-translate is on — foreign-language articles are shown in English' : 'Auto-translate is off — articles are shown as published'}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 'auto', cursor: 'pointer', fontSize: '9.5px', letterSpacing: '.08em',
+            color: autoTranslate ? 'var(--accent)' : 'var(--text3)', background: autoTranslate ? 'var(--accent-soft)' : 'none',
+            border: `1px solid ${autoTranslate ? 'var(--accent)' : 'var(--border)'}`, padding: '1px 5px' }}>
+          <Languages size={9} /> {autoTranslate ? 'EN' : 'ORIGINAL'}
+        </button>
         <button onClick={() => loadCountry(country)} disabled={loading}
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: loading ? 0.3 : 1, marginLeft: 'auto' }}>
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: loading ? 0.3 : 1 }}>
           <RefreshCw size={9} className={loading ? 'animate-spin' : ''} />
         </button>
       </div>

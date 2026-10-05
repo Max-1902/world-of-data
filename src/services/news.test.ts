@@ -120,6 +120,19 @@ describe('country news', () => {
     expect([...dates].sort((a, b) => b - a)).toEqual(dates)
     expect(articles.some(a => a.title === 'Old 2')).toBe(false) // the failed feed contributed nothing
   })
+
+  it('tags articles from non-English feeds with their language (so they can be translated) and leaves English ones alone', async () => {
+    mockFetch(() => rssBody([rssItem(1, { title: 'Tytuł' })]))
+    const { fetchCountryNews, COUNTRY_NEWS_SOURCES } = await load()
+    const pl = COUNTRY_NEWS_SOURCES.find(c => c.code === 'PL')!
+    const articles = await settle(fetchCountryNews('PL'))
+    const hinted = new Set(pl.sources.filter(s => s.lang).map(s => s.name))
+    expect(hinted.size).toBeGreaterThan(0)
+    for (const a of articles) {
+      if (hinted.has(a.source)) expect(a.lang, a.source).toBe('pl')
+      else expect(a.lang, a.source).toBeUndefined()
+    }
+  })
 })
 
 describe('CrisisWatch', () => {
