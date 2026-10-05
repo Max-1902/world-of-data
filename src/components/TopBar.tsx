@@ -128,7 +128,7 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
         <div className="hud-sep" />
 
         {/* UTC clock */}
-        <div style={{ fontSize: 10, color: 'var(--text2)', letterSpacing: '.02em', fontVariantNumeric: 'tabular-nums', fontFamily: 'IBM Plex Mono, monospace' }}>
+        <div style={{ fontSize: 10, color: 'var(--text2)', letterSpacing: '.02em', fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
           <span style={{ color: 'var(--text3)', marginRight: 5 }}>UTC</span>
           {utc}
         </div>
@@ -219,7 +219,7 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
 function HudStat({ label, value }: { label: string; value: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFamily: 'IBM Plex Mono, monospace' }}>
+      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
         {value.toLocaleString()}
       </span>
       <span style={{ fontSize: 8, fontWeight: 500, letterSpacing: '.08em', color: 'var(--text3)', fontFamily: 'Inter, -apple-system, sans-serif' }}>

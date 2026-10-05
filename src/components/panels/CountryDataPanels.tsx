@@ -85,7 +85,7 @@ export function GlobalEconomyPanel({ onCountryClick }: { onCountryClick?: (count
   const maxBal = Math.max(...TRADE_PROFILES.map(t => Math.abs(t.tradeBalance ?? 0)), 1)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -234,7 +234,7 @@ export function ResourcesPanel({ onCountryClick }: { onCountryClick?: (country: 
   }, [selected, allEntries])
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -359,7 +359,7 @@ function CountryItemBrowser({ items, itemNoun, onGeoSearch }: {
     : countries
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -465,7 +465,7 @@ export function ResourcesByCountryPanel({ onGeoSearch, onCountryClick }: { onGeo
     : sorted
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -530,7 +530,7 @@ export function TradePartnersByCountryPanel({ onGeoSearch, onCountryClick }: { o
     : sorted
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -609,7 +609,7 @@ export function TradeProductsByCountryPanel({ onCountryClick }: { onCountryClick
     : sorted
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -684,7 +684,7 @@ export function MilitaryPersonnelPanel({ onCountryClick }: { onCountryClick?: (c
   const maxPersonnel = ranking[0]?.personnel ?? 1
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -748,7 +748,7 @@ export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (cou
     : ranking
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         <input
           value={search} onChange={e => setSearch(e.target.value)}
@@ -821,7 +821,7 @@ export function OwidPanel({ onCountryClick }: { onCountryClick?: (country: strin
   const maxValue = filtered.length ? Math.max(...filtered.map(v => v.value)) : 1
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'IBM Plex Mono, monospace' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
       <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
         {OWID_TOPICS.map(t => (
           <button

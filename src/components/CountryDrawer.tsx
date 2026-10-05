@@ -610,7 +610,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
               <Row key={eq.id} onClick={() => onFlyTo?.(`${eq.latitude},${eq.longitude}`)}>
                 <span style={{
                   fontSize: 10, fontWeight: 800, fontVariantNumeric: 'tabular-nums', minWidth: 22, textAlign: 'right',
-                  fontFamily: 'IBM Plex Mono, monospace',
+                  fontFamily: 'Inter, -apple-system, sans-serif',
                   color: eq.magnitude >= 6 ? 'var(--red)' : eq.magnitude >= 4.5 ? 'var(--amber)' : 'var(--amber)',
                 }}>{eq.magnitude.toFixed(1)}</span>
                 <span style={{ color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{eq.place}</span>
@@ -928,7 +928,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
                     return (
                       <div key={ind.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '1px 0', fontSize: 11 }}>
                         <span style={{ color: 'var(--text2)' }}>{ind.label}</span>
-                        <span style={{ color: valColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFamily: 'IBM Plex Mono, monospace' }}>
+                        <span style={{ color: valColor, fontWeight: 700, fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
                           {formatted}
                           <span style={{ fontSize: 9, color: 'var(--text3)', marginLeft: 3, fontFamily: 'Inter, sans-serif' }}>{ind.year}</span>
                         </span>
