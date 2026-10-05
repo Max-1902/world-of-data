@@ -166,12 +166,12 @@ html, body, #root {
   min-height: 58px;
   padding: 8px 13px 10px;
   border-bottom: 1px solid var(--border);
-  background: rgba(8,14,19,.97);
-  backdrop-filter: blur(12px);
+  background: #080e13;
 }
-.dock-workspace-eyebrow { color: var(--text3); font-size: 7px; font-weight: 700; letter-spacing: .13em; }
+.dock-workspace-heading + .dock-panel { margin-top: 9px; }
+.dock-workspace-eyebrow { color: var(--text3); font-size: 9px; font-weight: 700; letter-spacing: .13em; }
 .dock-workspace-title { margin-top: 3px; color: var(--text1); font-size: 13px; font-weight: 650; letter-spacing: .01em; }
-.dock-workspace-heading > span { color: var(--text3); font-size: 9px; }
+.dock-workspace-heading > span { color: var(--text3); font-size: 11px; }
 .dock-grip {
   width: 5px;
   height: 14px;

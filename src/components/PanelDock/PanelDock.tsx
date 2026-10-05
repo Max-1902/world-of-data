@@ -101,7 +101,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
       }} />
 
       {/* panels — scrollable, each with proper min-height */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingTop: 8 }}>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <div className="dock-workspace-heading">
           <div>
             <div className="dock-workspace-eyebrow">WORKSPACE</div>
