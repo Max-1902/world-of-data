@@ -196,7 +196,7 @@ describe('article search', () => {
   it('searchGDELTNews maps articles and returns [] on failure', async () => {
     mockFetch(() => jsonResponse({ articles: [{ url: 'https://u', title: 'T', seendate: '20250101T000000Z', domain: 'd.com', socialimage: 'https://i', language: 'English' }] }))
     const [a] = await (await load()).searchGDELTNews('x')
-    expect(a).toMatchObject({ title: 'T', url: 'https://u', source: 'd.com', publishedAt: '20250101T000000Z', imageUrl: 'https://i' })
+    expect(a).toMatchObject({ title: 'T', url: 'https://u', source: 'd.com', publishedAt: '2025-01-01T00:00:00Z', imageUrl: 'https://i' })
     mockFetch(() => jsonResponse({}, { status: 500 }))
     expect(await (await load()).searchGDELTNews('x')).toEqual([])
   })
@@ -318,5 +318,46 @@ describe('searchGDELTNews rate limiting (GDELT allows one request per 5 s)', () 
     await vi.advanceTimersByTimeAsync(10 * 60 * 1000 + 1)
     fail = true
     expect(await settle(searchGDELTNews('iran'))).toHaveLength(1)
+  })
+})
+
+describe('manual reload and headline freshness', () => {
+  beforeEach(() => { vi.useFakeTimers(); vi.setSystemTime(new Date('2026-10-04T12:00:00Z')); quietConsole() })
+  afterEach(() => vi.useRealTimers())
+
+  it('clearNewsCaches makes the next RSS request hit the network instead of the 5-minute cache', async () => {
+    const fetchMock = mockFetch(() => rssBody([rssItem(1)]))
+    const { fetchRSSFeed, clearNewsCaches } = await load()
+    await settle(fetchRSSFeed('https://feed/a', 'Wire'))
+    clearNewsCaches()
+    await settle(fetchRSSFeed('https://feed/a', 'Wire'))
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('fetchTopHeadlines keeps only the last 48 h when enough fresh articles exist', async () => {
+    const fresh = Array.from({ length: 10 }, (_, i) => ({ _id: `f${i}`, headline: { main: `Fresh story ${i}` }, web_url: `u${i}`, pub_date: '2026-10-04T10:00:00Z' }))
+    const stale = { _id: 's', headline: { main: 'Stale story' }, web_url: 'us', pub_date: '2026-09-29T10:00:00Z' }
+    mockFetch(url => url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [...fresh, stale] } }) : url.startsWith('/api/guardian') ? jsonResponse({ response: { results: [] } }) : url.startsWith('/api/gdelt') ? jsonResponse({ articles: [] }) : rssBody([]))
+    const { fetchTopHeadlines } = await load()
+    const result = await settle(fetchTopHeadlines())
+    expect(result).toHaveLength(10)
+    expect(result.some(a => a.title === 'Stale story')).toBe(false)
+  })
+
+  it('fetchTopHeadlines falls back to the newest available when almost nothing is fresh', async () => {
+    mockFetch(url => url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [{ _id: 's', headline: { main: 'Stale story' }, web_url: 'us', pub_date: '2026-09-29T10:00:00Z' }] } }) : url.startsWith('/api/guardian') ? jsonResponse({ response: { results: [] } }) : url.startsWith('/api/gdelt') ? jsonResponse({ articles: [] }) : rssBody([]))
+    const { fetchTopHeadlines } = await load()
+    const result = await settle(fetchTopHeadlines())
+    expect(result.map(a => a.title)).toEqual(['Stale story'])
+  })
+
+  it('normalises GDELT seendate stamps so they sort against ISO dates from other sources', async () => {
+    mockFetch(url => url.startsWith('/api/gdelt')
+      ? jsonResponse({ articles: [{ url: 'g', title: 'Gdelt newest story', seendate: '20261004T110000Z', domain: 'd.com', language: 'English' }] })
+      : url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [{ _id: 'n', headline: { main: 'Older nyt story' }, web_url: 'n', pub_date: '2026-10-03T00:00:00Z' }] } })
+      : url.startsWith('/api/guardian') ? jsonResponse({ response: { results: [] } }) : rssBody([]))
+    const { searchAllSources } = await load()
+    const result = await settle(searchAllSources('x'))
+    expect(result.map(a => a.title)).toEqual(['Gdelt newest story', 'Older nyt story'])
   })
 })
