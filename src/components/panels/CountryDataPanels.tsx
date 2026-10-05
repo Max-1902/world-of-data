@@ -6,7 +6,7 @@ import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, 
 import { TRADE_PROFILES } from '../../services/tradeStats'
 import { fetchCountryEcon, formatEconValue, groupIndicators, type CountryEconData } from '../../services/worldbank'
 import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
-import { fetchInfraIndicatorRanking, formatInfraValue, type CountryInfraEntry } from '../../services/infraIndicators'
+import { fetchPowerGenerationRanking, formatTwh, POWER_SOURCES, type PowerGenerationEntry, type PowerSource } from '../../services/powerGeneration'
 import { RESOURCE_PROFILES, fetchResourceRents, type ResourceRent } from '../../services/resources'
 import { ALL_INFRA_POINTS, INFRA_COLORS } from '../../services/infrastructure'
 import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
@@ -730,22 +730,31 @@ export function MilitaryPersonnelPanel({ onCountryClick }: { onCountryClick?: (c
   )
 }
 
-// ── Infrastructure Access Panel — ranked by access index (World Bank) ──
+// ── Power Output Panel — countries ranked by electricity generated (Ember via Our World in Data) ──
+const POWER_COLORS: Record<PowerSource, string> = {
+  coal: 'var(--text3)', gas: 'var(--amber)', oil: 'var(--red)',
+  nuclear: 'var(--series-5)', hydro: 'var(--blue)', wind: 'var(--series-3)',
+  solar: 'var(--series-4)', bioenergy: 'var(--green)', other: 'var(--series-1)',
+}
+
 export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
-  const [ranking, setRanking] = useState<CountryInfraEntry[]>([])
+  const [ranking, setRanking] = useState<PowerGenerationEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [search, setSearch] = useState('')
+  const [open, setOpen] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchInfraIndicatorRanking()
+    fetchPowerGenerationRanking()
       .then(r => { setRanking(r); setLoading(false) })
       .catch(() => { setError(true); setLoading(false) })
   }, [])
 
-  const filtered = search.trim()
-    ? ranking.filter(c => c.country.toLowerCase().includes(search.toLowerCase()) || c.iso2.toLowerCase().includes(search.toLowerCase()))
+  const q = search.trim().toLowerCase()
+  const filtered = q
+    ? ranking.filter(c => c.country.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))
     : ranking
+  const max = ranking[0]?.totalTwh || 1
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}>
@@ -760,32 +769,59 @@ export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (cou
         />
       </div>
       <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
-        Access index = average of electricity, internet, water & sanitation access · World Bank (WDI)
+        Ranked by electricity generated per year · low-carbon share · Ember via Our World in Data
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
-        {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading World Bank data…</div>}
-        {error && <div style={{ fontSize: 9.5, color: 'var(--red)', padding: '8px 0' }}>Failed to load World Bank data.</div>}
-        {filtered.map(c => (
-          <button
-            key={c.iso2}
-            onClick={() => onCountryClick?.(c.country)}
-            style={{
-              width: '100%', textAlign: 'left', background: 'none', border: 'none',
-              borderBottom: '1px solid var(--border)', padding: '3.5px 0', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
-            }}
-          >
-            <span style={{ fontSize: 9, color: 'var(--text3)', width: 22, flexShrink: 0, textAlign: 'right' }}>#{c.rank}</span>
-            <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--blue)', width: 20, flexShrink: 0 }}>{c.iso2}</span>
-            <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.country}</span>
-            <div style={{ width: 40, height: 3, background: 'var(--border)', borderRadius: 1, overflow: 'hidden', flexShrink: 0 }}>
-              <div style={{ width: `${c.accessIndex ?? 0}%`, height: '100%', background: 'var(--blue)', borderRadius: 1 }} />
+        {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading electricity data…</div>}
+        {error && <div style={{ fontSize: 9.5, color: 'var(--red)', padding: '8px 0' }}>Failed to load electricity data.</div>}
+        {filtered.map(c => {
+          const expanded = open === c.code
+          return (
+            <div key={c.code} style={{ borderBottom: '1px solid var(--border)' }}>
+              <button
+                onClick={() => setOpen(expanded ? null : c.code)}
+                title="Show generation by source"
+                style={{
+                  width: '100%', textAlign: 'left', background: 'none', border: 'none', padding: '3.5px 0',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
+                }}
+              >
+                <span style={{ fontSize: 9, color: 'var(--text3)', width: 22, flexShrink: 0, textAlign: 'right' }}>#{c.rank}</span>
+                <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.country}</span>
+                <div style={{ width: 52, height: 4, background: 'var(--border)', borderRadius: 1, overflow: 'hidden', flexShrink: 0, display: 'flex' }}>
+                  {POWER_SOURCES.map(src => c.bySource[src.id] > 0 && (
+                    <div key={src.id} style={{ width: `${(c.bySource[src.id] / max) * 100}%`, minWidth: 0, background: POWER_COLORS[src.id] }} />
+                  ))}
+                </div>
+                <span style={{ fontSize: 9.5, color: 'var(--text1)', fontWeight: 700, width: 62, textAlign: 'right', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                  {formatTwh(c.totalTwh)}
+                </span>
+                <span title="Share of generation from non-fossil sources" style={{ fontSize: 9, color: c.lowCarbonPct >= 50 ? 'var(--green)' : 'var(--text2)', width: 30, textAlign: 'right', flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
+                  {Math.round(c.lowCarbonPct)}%
+                </span>
+              </button>
+              {expanded && (
+                <div style={{ padding: '2px 0 6px 28px' }}>
+                  {POWER_SOURCES.filter(src => c.bySource[src.id] > 0).sort((a, b) => c.bySource[b.id] - c.bySource[a.id]).map(src => (
+                    <div key={src.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9.5, padding: '1px 0' }}>
+                      <span style={{ width: 7, height: 7, borderRadius: 2, background: POWER_COLORS[src.id], flexShrink: 0 }} />
+                      <span style={{ color: 'var(--text2)', flex: 1 }}>{src.label}</span>
+                      <span style={{ color: 'var(--text1)', fontVariantNumeric: 'tabular-nums' }}>{formatTwh(c.bySource[src.id])}</span>
+                      <span style={{ color: 'var(--text3)', width: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{Math.round((c.bySource[src.id] / c.totalTwh) * 100)}%</span>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3, fontSize: 9, color: 'var(--text3)' }}>
+                    <span>Data year {c.year}</span>
+                    <button
+                      onClick={() => onCountryClick?.(c.country)}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 9, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}
+                    >Open country →</button>
+                  </div>
+                </div>
+              )}
             </div>
-            <span style={{ fontSize: 9, color: 'var(--text2)', fontWeight: 700, width: 46, textAlign: 'right', flexShrink: 0 }}>
-              {c.accessIndex === null ? 'n/a' : `${c.accessIndex.toFixed(1)}%`}
-            </span>
-          </button>
-        ))}
+          )
+        })}
       </div>
     </div>
   )
