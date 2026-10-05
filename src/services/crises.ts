@@ -5,16 +5,42 @@ import type { CrisisEvent } from '../types'
 const ACLED_TOKEN_URL = '/api/acled-token'
 const ACLED_API = '/api/acled/read'
 
-// Token cache — valid for 24 h; reuse to avoid hammering the auth endpoint
+// ACLED locks an account after repeated failed logins (HTTP 403 "flood_user_blocked"), and every failed
+// attempt while locked can extend the lock. So the token (valid 24 h) and the "stay off the auth endpoint"
+// cooldown are both persisted in localStorage — otherwise every page reload or dev-server restart would
+// log in again, or retry straight after a failure.
+const TOKEN_KEY = 'ws-acled-token'
+const RETRY_KEY = 'ws-acled-retry-at'
+const TOKEN_RETRY_COOLDOWN_MS = 30 * 60 * 1000
+const LOCKED_RETRY_COOLDOWN_MS = 2 * 60 * 60 * 1000
+
 let _token: string | null = null
 let _tokenExpiry = 0
-
-// After a failed token request, stay off the auth endpoint for a while. ACLED locks an account after
-// repeated failed logins (HTTP 403 "flood_user_blocked"), so retrying on every poll keeps it locked.
-const TOKEN_RETRY_COOLDOWN_MS = 30 * 60 * 1000
 let _tokenRetryAt = 0
 
+function readStored(): void {
+  try {
+    const raw = localStorage.getItem(TOKEN_KEY)
+    if (raw && !_token) {
+      const { token, expiry } = JSON.parse(raw) as { token?: string; expiry?: number }
+      if (typeof token === 'string' && typeof expiry === 'number') { _token = token; _tokenExpiry = expiry }
+    }
+    const retry = Number(localStorage.getItem(RETRY_KEY))
+    if (Number.isFinite(retry) && retry > _tokenRetryAt) _tokenRetryAt = retry
+  } catch { /* storage unavailable — in-memory state still works */ }
+}
+
+function storeToken(): void {
+  try { localStorage.setItem(TOKEN_KEY, JSON.stringify({ token: _token, expiry: _tokenExpiry })) } catch { /* ignore */ }
+}
+
+function backOff(ms: number): void {
+  _tokenRetryAt = Date.now() + ms
+  try { localStorage.setItem(RETRY_KEY, String(_tokenRetryAt)) } catch { /* ignore */ }
+}
+
 async function getACLEDToken(): Promise<string | null> {
+  readStored()
   if (_token && Date.now() < _tokenExpiry) return _token
   if (Date.now() < _tokenRetryAt) return null
 
@@ -23,7 +49,7 @@ async function getACLEDToken(): Promise<string | null> {
 
     if (!res.ok) {
       console.warn('[ACLED OAuth] token request failed:', res.status)
-      _tokenRetryAt = Date.now() + TOKEN_RETRY_COOLDOWN_MS
+      backOff(res.status === 403 ? LOCKED_RETRY_COOLDOWN_MS : TOKEN_RETRY_COOLDOWN_MS)
       return null
     }
 
@@ -31,11 +57,12 @@ async function getACLEDToken(): Promise<string | null> {
     _token = data.access_token ?? null
     // expires_in is in seconds; subtract 60 s buffer
     _tokenExpiry = Date.now() + ((data.expires_in ?? 86400) - 60) * 1000
-    if (!_token) _tokenRetryAt = Date.now() + TOKEN_RETRY_COOLDOWN_MS
+    if (!_token) backOff(TOKEN_RETRY_COOLDOWN_MS)
+    else storeToken()
     return _token
   } catch (err) {
     console.warn('[ACLED OAuth] error:', err)
-    _tokenRetryAt = Date.now() + TOKEN_RETRY_COOLDOWN_MS
+    backOff(TOKEN_RETRY_COOLDOWN_MS)
     return null
   }
 }
