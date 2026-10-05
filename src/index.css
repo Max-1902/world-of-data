@@ -446,6 +446,9 @@ html, body, #root {
   color: var(--text1);
 }
 .mapboxgl-popup-tip { display: none !important; }
+.geo-hover-popup .mapboxgl-popup-content { overflow: hidden; }
+.geo-hover-popup .mapboxgl-popup-close-button { background: color-mix(in srgb, var(--surface) 85%, transparent) !important; border-radius: var(--r-pill) !important; width: 20px; height: 20px; line-height: 18px; }
+.geo-hover-popup a:hover { text-decoration: underline !important; }
 .mapboxgl-popup-close-button { color: var(--text2) !important; font-size: 14px !important; top: 4px !important; right: 6px !important; }
 .mapboxgl-popup-close-button:hover { color: var(--text1) !important; background: none !important; }
 

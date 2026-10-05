@@ -4,6 +4,7 @@ import type { PanelGroup } from './panels/types'
 import { useFlights }     from './hooks/useFlights'
 import { useCrises }      from './hooks/useCrises'
 import { useNews }        from './hooks/useNews'
+import { useGeoNews }     from './hooks/useGeoNews'
 import { useStocks }      from './hooks/useStocks'
 import { useEarthquakes } from './hooks/useEarthquakes'
 import { useWildfires }   from './hooks/useWildfires'
@@ -131,7 +132,7 @@ export default function App() {
     [liveCrisisCount, disasterAlerts, earthquakes, outages],
   )
 
-  void stocks
+  const newsPins = useGeoNews(keyEvents.events, panelState.news)
 
   useHistoryRecorder(crises, flights, panelState.flights)
   useWatchEvaluator(crises, flights, articles)
@@ -251,7 +252,8 @@ export default function App() {
             viewMode={viewMode}
             flights={flights}
             crises={crises}
-            newsArticles={articles}
+            newsPins={newsPins}
+            stocks={stocks}
             earthquakes={earthquakes}
             showFlights={panelState.flights}
             showCrises={panelState.crises}

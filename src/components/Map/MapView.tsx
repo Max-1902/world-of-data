@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
-import { Flight, CrisisEvent, NewsArticle, MapViewMode } from '../../types'
+import { Flight, CrisisEvent, Stock, MapViewMode } from '../../types'
 import { FirePoint } from '../../services/wildfires'
 import { Earthquake } from '../../services/earthquakes'
 import { MARKET_HUBS } from '../../services/stocks'
+import { addHoverMarker, type HoverMarker } from './hoverMarker'
+import { NEWS_COLORS, esc, marketPinHTML, newsPinHTML } from './geoPopups'
+import type { GeoNewsPin } from '../../utils/geoNews'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from '../../services/military'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2 } from '../../services/sanctions'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from '../../services/ports'
@@ -43,7 +46,8 @@ interface Props {
   viewMode:      MapViewMode
   flights:       Flight[]
   crises:        CrisisEvent[]
-  newsArticles:  NewsArticle[]
+  newsPins:      GeoNewsPin[]
+  stocks:        Stock[]
   earthquakes:   Earthquake[]
   showFlights:   boolean
   showCrises:    boolean
@@ -88,7 +92,7 @@ interface Props {
 }
 
 export default function MapView({
-  viewMode, flights, crises, newsArticles, earthquakes,
+  viewMode, flights, crises, newsPins, stocks, earthquakes,
   showFlights, showCrises, showNews, showStocks,
   deepstateMode,
   onFlightClick, onCrisisClick,
@@ -3290,27 +3294,52 @@ export default function MapView({
         <span style="color:#6b7280;font-size:10px;">${new Date(eq.time).toLocaleString()} · Depth: ${eq.depth}km</span></div>`
       addMarker(el, eq.longitude, eq.latitude, popup)
     })
-
-    if (showNews) {
-      newsArticles.filter((a) => a.latitude && a.longitude).forEach((a) => {
-        const el = document.createElement('div')
-        el.style.cssText = 'width:7px;height:7px;background:#aa44ff;transform:rotate(45deg);box-shadow:0 0 4px #aa44ff66;cursor:pointer;'
-        addMarker(el, a.longitude!, a.latitude!, `<div style="padding:8px;font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;max-width:220px;">${a.title}</div>`)
-      })
-    }
-
-    if (showStocks) {
-      MARKET_HUBS.forEach((hub) => {
-        const el = document.createElement('div')
-        el.style.cssText = 'padding:1px 5px;background:rgba(0,136,255,0.15);border:1px solid #0088ff55;color:#00ff88;font-family:monospace;font-size:8px;font-weight:700;white-space:nowrap;cursor:default;'
-        el.textContent = hub.exchange
-        const m = new mapboxgl.Marker({ element: el }).setLngLat([hub.lng, hub.lat]).addTo(mapRef.current!)
-        markersRef.current.push(m)
-      })
-    }
-  }, [crises, earthquakes, newsArticles, showCrises, showNews, showStocks, onCrisisClick])
+  }, [crises, earthquakes, showCrises, onCrisisClick])
 
   useEffect(() => { buildCrisisMarkers() }, [buildCrisisMarkers])
+
+  // ── News pins: the most important stories, placed where they happened ──────
+  // Independent of the Crises layer — they used to be built inside the crisis-marker pass, which bailed out
+  // whenever Crises was off, so neither news nor markets ever showed.
+  const newsMarkersRef = useRef<HoverMarker[]>([])
+  useEffect(() => {
+    newsMarkersRef.current.forEach(m => m.remove())
+    newsMarkersRef.current = []
+    const map = mapRef.current
+    if (!map || !mapReady || !showNews) return
+    newsMarkersRef.current = newsPins.map((pin) => {
+      const color = NEWS_COLORS[pin.items[0].category]
+      const size = pin.items.length > 1 ? 20 : 14
+      const el = document.createElement('div')
+      el.setAttribute('aria-label', esc(pin.items[0].article.title))
+      el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;` +
+        `font:700 9px Inter,sans-serif;color:#fff;border:2px solid #fff;box-shadow:0 0 0 1px ${color},0 2px 8px ${color}99;` +
+        (pin.precision === 'country' ? `background:${color}99;border-style:dashed;` : `background:${color};`)
+      if (pin.items.length > 1) el.textContent = String(pin.items.length)
+      return addHoverMarker(map, el, pin.lng, pin.lat, newsPinHTML(pin))
+    })
+    return () => { newsMarkersRef.current.forEach(m => m.remove()); newsMarkersRef.current = [] }
+  }, [newsPins, showNews, mapReady])
+
+  // ── Market hubs: exchange chips with the live day change ──────────────────
+  const marketMarkersRef = useRef<HoverMarker[]>([])
+  useEffect(() => {
+    marketMarkersRef.current.forEach(m => m.remove())
+    marketMarkersRef.current = []
+    const map = mapRef.current
+    if (!map || !mapReady || !showStocks) return
+    const bySymbol = new Map(stocks.map(s => [s.symbol, s]))
+    marketMarkersRef.current = MARKET_HUBS.map((hub) => {
+      const q = bySymbol.get(hub.symbol)
+      const color = !q ? '#6b7280' : q.change >= 0 ? '#16a34a' : '#dc2626'
+      const el = document.createElement('div')
+      el.style.cssText = `padding:2px 7px;background:#fff;border:1.5px solid ${color};border-radius:999px;color:${color};` +
+        `font:700 10px Inter,sans-serif;white-space:nowrap;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.25);`
+      el.textContent = q ? `${hub.exchange} ${q.change >= 0 ? '▲' : '▼'}${Math.abs(q.changePercent).toFixed(1)}%` : hub.exchange
+      return addHoverMarker(map, el, hub.lng, hub.lat, marketPinHTML(hub, q), '260px')
+    })
+    return () => { marketMarkersRef.current.forEach(m => m.remove()); marketMarkersRef.current = [] }
+  }, [stocks, showStocks, mapReady])
 
   if (!TOKEN) {
     return (
