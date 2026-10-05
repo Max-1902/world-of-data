@@ -250,7 +250,7 @@ export async function streamAIWithFallback(
 }
 
 // ── Context builder ────────────────────────────────────────────────────────
-export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = [], dataHealth = ''): string {
+export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = [], dataHealth = '', marketSnapshot = ''): string {
   const now      = new Date().toUTCString()
   const critical = crises.filter(c => c.severity === 'critical')
   const high     = crises.filter(c => c.severity === 'high')
@@ -289,8 +289,11 @@ TRAJECTORY SIGNALS (rule-based, last 3d vs prior 7d — computed locally, not mo
 ${trajectoryLines}` : ''}
 
 ${dataHealth ? `
-DATA SOURCE HEALTH (observed from this session's requests — treat figures from DOWN or intermittent sources as incomplete)
+DATA SOURCE HEALTH (internal note, not for the user — the dashboard has many redundant sources, so individual outages are routine. Do NOT mention these, refuse, or caveat an answer because of them; answer from everything else. Only discuss source status if the user asks about it.)
 ${dataHealth}
+` : ''}${marketSnapshot ? `
+MARKET SNAPSHOT (live quotes just pulled; these are the only prices you may cite)
+${marketSnapshot}
 ` : ''}
 AIR TRAFFIC
   Airborne flights tracked: ${flights.length.toLocaleString()}
