@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight } from '../../types'
-import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, type DSMessage } from '../../services/openrouter'
+import { streamAI, buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
 import { findCountryInText } from '../../services/worldbank'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
@@ -66,6 +66,15 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   const [history, setHistory]     = useState<DSMessage[]>([])
   const [error, setError]         = useState('')
   const [model, setModel]         = useState(DEFAULT_MODEL)
+  // Full OpenRouter catalogue (Claude, ChatGPT, …); falls back to the built-in free list if it can't load.
+  const [allModels, setAllModels] = useState<ModelOption[] | null>(null)
+  useEffect(() => { fetchAllModels().then(setAllModels).catch(() => {}) }, [])
+  const modelGroups = useMemo(() => {
+    if (!allModels) return null
+    // A model from a loaded session that has since left the catalogue stays selectable.
+    const known = allModels.some(m => m.id === model) ? allModels : [{ id: model, label: `${model} (unlisted)`, ctx: '', priceIn: 0, priceOut: 0, free: false, created: 0 }, ...allModels]
+    return groupModels(known)
+  }, [allModels, model])
   const [sessionId, setSessionId] = useState(() => newSessionId())
   const [showHistory, setShowHistory] = useState(false)
   const [pastSessions, setPastSessions] = useState<ChatSession[]>([])
@@ -316,19 +325,27 @@ ${context}`,
         <select
           className="ai-model-select"
           aria-label="Analysis model"
-          title="Choose analysis model"
+          title="Choose analysis model — paid models bill your OpenRouter account"
           value={model}
           onChange={e => setModel(e.target.value)}
           disabled={streaming}
           style={{
-            width: 122, background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text2)',
+            width: 160, background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text2)',
             fontSize: 10.5, fontFamily: 'inherit', letterSpacing: '.01em', padding: '6px 7px', borderRadius: 'var(--r-sm)',
             outline: 'none', cursor: 'pointer',
           }}
         >
-          {FREE_MODELS.map(m => (
-            <option key={m.id} value={m.id}>{m.label}</option>
-          ))}
+          {modelGroups
+            ? modelGroups.map(g => (
+              <optgroup key={g.label} label={g.label}>
+                {g.models.map(m => (
+                  <option key={m.id} value={m.id}>{m.created ? `${m.label} · ${m.ctx} · ${formatModelPrice(m)}` : m.label}</option>
+                ))}
+              </optgroup>
+            ))
+            : FREE_MODELS.map(m => (
+              <option key={m.id} value={m.id}>{m.label}</option>
+            ))}
         </select>
         <button
           onClick={startNewSession}

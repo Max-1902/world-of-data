@@ -23,6 +23,87 @@ export const FREE_MODELS: { id: string; label: string; ctx: string }[] = [
 ]
 export const DEFAULT_MODEL = FREE_MODELS[0].id
 
+// ── Full catalogue (free + paid) ───────────────────────────────────────────
+// Everything OpenRouter lists, fetched live via /api/openrouter/models. Paid models
+// bill the OpenRouter account whose key is in OPENROUTER_KEY — the default stays free.
+export interface ModelOption {
+  id:      string
+  label:   string
+  ctx:     string
+  /** USD per 1M tokens (prompt / completion); 0 for free models */
+  priceIn:  number
+  priceOut: number
+  free:    boolean
+  created: number
+}
+
+const fmtCtx = (n: number) => n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : `${Math.round(n / 1000)}k`
+
+let modelsCache: ModelOption[] | null = null
+
+/** Every text-output chat model OpenRouter offers, newest first. Rejects on network/HTTP errors. */
+export async function fetchAllModels(): Promise<ModelOption[]> {
+  if (modelsCache) return modelsCache
+  const res = await fetch(`${BASE}/models`, { signal: AbortSignal.timeout(15000) })
+  if (!res.ok) throw new Error(`OpenRouter models ${res.status}`)
+  const json = await res.json()
+  const data: unknown = json?.data
+  if (!Array.isArray(data)) throw new Error('Unexpected OpenRouter models response')
+  const out: ModelOption[] = []
+  for (const m of data as Record<string, any>[]) {
+    const id = m?.id
+    if (typeof id !== 'string' || id.endsWith(':batch')) continue // batch variants can't stream
+    const outputs: unknown = m.architecture?.output_modalities
+    if (Array.isArray(outputs) && !(outputs.length === 1 && outputs[0] === 'text')) continue
+    const priceIn  = Number(m.pricing?.prompt) * 1e6
+    const priceOut = Number(m.pricing?.completion) * 1e6
+    // Negative prices are OpenRouter's marker for auto-routing models with variable pricing.
+    if (!(priceIn >= 0) || !(priceOut >= 0)) continue
+    out.push({
+      id,
+      label: typeof m.name === 'string' && m.name ? m.name : id,
+      ctx: fmtCtx(Number(m.context_length) || 0),
+      priceIn, priceOut,
+      free: priceIn === 0 && priceOut === 0,
+      created: Number(m.created) || 0,
+    })
+  }
+  modelsCache = out.sort((a, b) => b.created - a.created)
+  return modelsCache
+}
+
+const PROVIDER_ORDER = ['anthropic', 'openai']
+const PROVIDER_NAMES: Record<string, string> = {
+  anthropic: 'Claude (Anthropic)', openai: 'ChatGPT / OpenAI', google: 'Google', 'meta-llama': 'Meta Llama',
+  mistralai: 'Mistral', deepseek: 'DeepSeek', 'x-ai': 'xAI Grok', qwen: 'Qwen', nvidia: 'NVIDIA', 'z-ai': 'Z.ai',
+  moonshotai: 'Moonshot', minimax: 'MiniMax',
+}
+
+export function formatModelPrice(m: ModelOption): string {
+  if (m.free) return 'free'
+  const f = (n: number) => n >= 10 ? n.toFixed(0) : n >= 1 ? n.toFixed(2).replace(/\.?0+$/, '') : n.toFixed(2)
+  return `$${f(m.priceIn)}/$${f(m.priceOut)} per 1M`
+}
+
+/** Group models by provider — Claude and OpenAI first, then the rest A–Z, with free models last. */
+export function groupModels(models: ModelOption[]): { label: string; models: ModelOption[] }[] {
+  const byProvider = new Map<string, ModelOption[]>()
+  const free: ModelOption[] = []
+  for (const m of models) {
+    if (m.free) { free.push(m); continue }
+    const provider = m.id.split('/')[0].replace(/^~/, '') // ~anthropic/... are "latest" aliases of the same provider
+    byProvider.set(provider, [...(byProvider.get(provider) ?? []), m])
+  }
+  const providers = [...byProvider.keys()].sort((a, b) => {
+    const ia = PROVIDER_ORDER.indexOf(a), ib = PROVIDER_ORDER.indexOf(b)
+    if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib)
+    return a.localeCompare(b)
+  })
+  const groups = providers.map(p => ({ label: PROVIDER_NAMES[p] ?? p, models: byProvider.get(p)! }))
+  if (free.length) groups.push({ label: 'Free models', models: free })
+  return groups
+}
+
 // ── Streaming call ─────────────────────────────────────────────────────────
 // Some free models are "reasoning" variants that stream their internal
 // chain-of-thought via delta.reasoning before any delta.content appears —
