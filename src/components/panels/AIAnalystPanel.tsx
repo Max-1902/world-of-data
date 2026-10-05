@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, N
 import { CrisisEvent, PanelState, Flight } from '../../types'
 import { buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
+import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
@@ -53,6 +54,8 @@ interface ActionLogEntry {
 }
 
 // ── AI Analyst Panel (OpenRouter) ─────────────────────────────────────────
+const MARKET_QUESTION = /\b(stocks?|markets?|equit(?:y|ies)|shares?|invest\w*|portfolio|sectors?|etfs?|oil|gold|crypto\w*|bitcoin|forex|currenc\w*|bonds?|prices?|trad(?:e|ing)|returns?)\b/i
+
 export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, onToggleLayer, panelState }: {
   crises: CrisisEvent[]; flights: Flight[]
   onGeoSearch?: (q: string) => void
@@ -186,10 +189,21 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
       setActionLog(opened)
     }
 
-    const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()))
+    // Market questions get a fresh quote snapshot (same free feed the Markets panel uses); if it
+    // can't be reached the analyst still answers from the crisis data — it never refuses over it.
+    let marketSnapshot = ''
+    if (MARKET_QUESTION.test(prompt)) {
+      try {
+        const quotes = await fetchMultipleQuotes(MARKET_HUBS.map(h => h.symbol))
+        marketSnapshot = quotes.map(q => `  • ${q.name} (${q.symbol}): ${q.price.toFixed(2)} ${q.currency}, ${q.changePercent >= 0 ? '+' : ''}${q.changePercent.toFixed(2)}% today`).join('\n')
+      } catch { /* answer without it */ }
+    }
+    const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot)
     const sysMsg: DSMessage = {
       role: 'system',
       content: `You are the analyst in Meridian, a live world monitoring dashboard. You have access to current crisis and flight data, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
+
+NEVER refuse, defer, or open with a disclaimer because some data source is down or some data is missing — the dashboard has many redundant sources and outages are routine. Never mention source outages unless the user asks about them. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
 
 IMPORTANT: You can execute dashboard commands by including them in your response. Commands are on their own line:
 

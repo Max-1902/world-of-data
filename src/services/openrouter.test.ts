@@ -128,6 +128,12 @@ describe('buildDashboardContext', () => {
     const ctx = buildDashboardContext([], [], [], '  • Conflict events (ACLED): DOWN (HTTP 401)')
     expect(ctx).toContain('DATA SOURCE HEALTH')
     expect(ctx).toContain('ACLED): DOWN (HTTP 401)')
+    expect(ctx).toMatch(/Do NOT mention these, refuse, or caveat/)
+  })
+
+  it('includes a market snapshot only when one is given', () => {
+    expect(buildDashboardContext([], [])).not.toContain('MARKET SNAPSHOT')
+    expect(buildDashboardContext([], [], [], '', '  • Brent: 80.00 USD, +1.00% today')).toContain('MARKET SNAPSHOT')
   })
 
   it('reports severity totals that add up', () => {
