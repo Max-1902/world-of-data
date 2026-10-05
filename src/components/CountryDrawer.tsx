@@ -417,15 +417,15 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
           <Section title="INFRASTRUCTURE ACCESS" color="var(--blue)">
             <div style={{ display: 'flex', gap: 6, marginBottom: 5 }}>
               <div style={{ flex: 1, padding: '3px 6px', background: soft('var(--blue)', 8), borderRadius: 'var(--r-sm)' }}>
-                <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '.1em' }}>ELECTRICITY ACCESS</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>{infraIndicators.electricityAccessPct.toFixed(1)}%</div>
+                <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '.1em' }}>ACCESS INDEX</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>{infraIndicators.accessIndex === null ? 'n/a' : `${infraIndicators.accessIndex.toFixed(1)}%`}</div>
               </div>
               <div style={{ flex: 1, padding: '3px 6px', background: soft('var(--blue)', 8), borderRadius: 'var(--r-sm)' }}>
                 <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '.1em' }}>WORLD RANK</div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>#{infraIndicators.rank} / {infraIndicatorsTotal}</div>
               </div>
             </div>
-            {infraIndicators.indicators.filter(i => i.id !== 'EG.ELC.ACCS.ZS').map(i => (
+            {infraIndicators.indicators.map(i => (
               <Row key={i.id}>
                 <span style={{ color: 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.label}</span>
                 <span style={{ fontSize: 10, color: 'var(--text1)', fontWeight: 700, flexShrink: 0 }}>{formatInfraValue(i.id, i.value)}</span>

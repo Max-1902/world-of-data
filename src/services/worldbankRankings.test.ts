@@ -51,7 +51,7 @@ describe('formatPersonnel', () => {
 })
 
 describe('fetchInfraIndicatorRanking', () => {
-  it('ranks by electricity access and attaches the other indicators per country', async () => {
+  it('ranks by access index and attaches the other indicators per country', async () => {
     mockFetch(url => {
       if (url.includes('EG.ELC.ACCS.ZS')) return jsonResponse([{}, [row('DE', 'DEU', 'Germany', 100), row('TD', 'TCD', 'Chad', 11.4), row('FR', 'FRA', 'France', 99.9)]])
       if (url.includes('IT.CEL.SETS.P2')) return jsonResponse([{}, [row('DE', 'DEU', 'Germany', 120.5)]])
@@ -62,6 +62,29 @@ describe('fetchInfraIndicatorRanking', () => {
     expect(list[0].electricityAccessPct).toBe(100)
     expect(list[0].indicators.find(i => i.id === 'IT.CEL.SETS.P2')).toMatchObject({ value: 120.5, year: '2022' })
     expect(list[2].indicators.map(i => i.id)).toEqual(['EG.ELC.ACCS.ZS'])
+  })
+
+  it('breaks the 100% electricity tie using internet, water and sanitation access', async () => {
+    mockFetch(url => {
+      if (url.includes('EG.ELC.ACCS.ZS')) return jsonResponse([{}, [row('AL', 'ALB', 'Albania', 100), row('DE', 'DEU', 'Germany', 100), row('NO', 'NOR', 'Norway', 100)]])
+      if (url.includes('IT.NET.USER.ZS')) return jsonResponse([{}, [row('AL', 'ALB', 'Albania', 83), row('DE', 'DEU', 'Germany', 93), row('NO', 'NOR', 'Norway', 99)]])
+      if (url.includes('SH.H2O.BASW.ZS')) return jsonResponse([{}, [row('AL', 'ALB', 'Albania', 94), row('DE', 'DEU', 'Germany', 100), row('NO', 'NOR', 'Norway', 100)]])
+      if (url.includes('SH.STA.BASS.ZS')) return jsonResponse([{}, [row('AL', 'ALB', 'Albania', 97), row('DE', 'DEU', 'Germany', 99), row('NO', 'NOR', 'Norway', 100)]])
+      return jsonResponse([{}, []])
+    })
+    const list = await (await loadInfra()).fetchInfraIndicatorRanking()
+    expect(list.map(e => e.iso2)).toEqual(['NO', 'DE', 'AL'])
+    expect(list[0].accessIndex).toBeCloseTo(99.75)
+  })
+
+  it('gives no index below 3 inputs and ranks those countries after indexed ones', async () => {
+    mockFetch(url => url.includes('EG.ELC.ACCS.ZS')
+      ? jsonResponse([{}, [row('AA', 'AAA', 'Aland', 100), row('DE', 'DEU', 'Germany', 90)]])
+      : url.includes('IT.NET.USER.ZS') ? jsonResponse([{}, [row('DE', 'DEU', 'Germany', 90)]])
+      : url.includes('SH.H2O.BASW.ZS') ? jsonResponse([{}, [row('DE', 'DEU', 'Germany', 90)]])
+      : jsonResponse([{}, []]))
+    const list = await (await loadInfra()).fetchInfraIndicatorRanking()
+    expect(list.map(e => [e.iso2, e.accessIndex])).toEqual([['DE', 90], ['AA', null]])
   })
 
   it('tolerates individual indicator failures', async () => {
