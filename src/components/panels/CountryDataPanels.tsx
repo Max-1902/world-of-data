@@ -730,7 +730,7 @@ export function MilitaryPersonnelPanel({ onCountryClick }: { onCountryClick?: (c
   )
 }
 
-// ── Infrastructure Access Panel — ranked by electricity access (World Bank) ──
+// ── Infrastructure Access Panel — ranked by access index (World Bank) ──
 export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
   const [ranking, setRanking] = useState<CountryInfraEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -760,7 +760,7 @@ export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (cou
         />
       </div>
       <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
-        Ranked by access to electricity · World Bank (World Development Indicators)
+        Access index = average of electricity, internet, water & sanitation access · World Bank (WDI)
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
         {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading World Bank data…</div>}
@@ -779,10 +779,10 @@ export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (cou
             <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--blue)', width: 20, flexShrink: 0 }}>{c.iso2}</span>
             <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.country}</span>
             <div style={{ width: 40, height: 3, background: 'var(--border)', borderRadius: 1, overflow: 'hidden', flexShrink: 0 }}>
-              <div style={{ width: `${c.electricityAccessPct}%`, height: '100%', background: 'var(--blue)', borderRadius: 1 }} />
+              <div style={{ width: `${c.accessIndex ?? 0}%`, height: '100%', background: 'var(--blue)', borderRadius: 1 }} />
             </div>
             <span style={{ fontSize: 9, color: 'var(--text2)', fontWeight: 700, width: 46, textAlign: 'right', flexShrink: 0 }}>
-              {formatInfraValue('EG.ELC.ACCS.ZS', c.electricityAccessPct)}
+              {c.accessIndex === null ? 'n/a' : `${c.accessIndex.toFixed(1)}%`}
             </span>
           </button>
         ))}

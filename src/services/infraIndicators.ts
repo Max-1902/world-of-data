@@ -3,9 +3,13 @@
  * no key required), World Development Indicators. Same source family already
  * used in worldbank.ts and militaryPersonnel.ts.
  *
- * Ranking/map layer is keyed on electricity access (EG.ELC.ACCS.ZS) since
- * it's the indicator with the broadest country coverage; the rest are shown
- * as a per-country breakdown in the country drawer / dock panel.
+ * Countries are ranked by an access index: the mean of the four "% of
+ * population" indicators (electricity, internet, drinking water, sanitation).
+ * Electricity alone can't rank — ~100 countries sit at exactly 100 %, so the
+ * order among them would just be the API's alphabetical order. Electricity
+ * (EG.ELC.ACCS.ZS) still defines which countries are listed, being the
+ * broadest-coverage indicator. All indicators are shown per country in the
+ * country drawer / dock panel.
  *
  * https://data.worldbank.org/topic/infrastructure
  */
@@ -24,6 +28,17 @@ const INDICATORS = {
 
 export type InfraIndicatorId = keyof typeof INDICATORS
 const RANK_INDICATOR: InfraIndicatorId = 'EG.ELC.ACCS.ZS'
+/** The % of population indicators averaged into the access index. */
+const INDEX_INDICATORS: InfraIndicatorId[] = ['EG.ELC.ACCS.ZS', 'IT.NET.USER.ZS', 'SH.H2O.BASW.ZS', 'SH.STA.BASS.ZS']
+/** A country needs at least this many of them to get an index (and a real rank). */
+const MIN_INDEX_INPUTS = 3
+
+/** Mean of the available % indicators (each clamped to 0–100), or null when too few are reported. */
+export function computeAccessIndex(indicators: { id: InfraIndicatorId; value: number }[]): number | null {
+  const vals = indicators.filter(i => INDEX_INDICATORS.includes(i.id)).map(i => Math.min(100, Math.max(0, i.value)))
+  if (vals.length < MIN_INDEX_INPUTS) return null
+  return vals.reduce((a, b) => a + b, 0) / vals.length
+}
 
 export interface InfraIndicatorValue {
   id: InfraIndicatorId
@@ -37,6 +52,8 @@ export interface CountryInfraEntry {
   iso3: string
   country: string
   electricityAccessPct: number
+  /** Mean of electricity, internet, water and sanitation access (0–100); null if fewer than 3 are reported. */
+  accessIndex: number | null
   year: string
   rank: number
   indicators: InfraIndicatorValue[]
@@ -72,7 +89,7 @@ async function fetchIndicatorAllCountries(id: InfraIndicatorId): Promise<Map<str
   return out
 }
 
-/** Fetch infrastructure indicators for every country, ranked by electricity access (broadest coverage). */
+/** Fetch infrastructure indicators for every country, ranked by access index. */
 export async function fetchInfraIndicatorRanking(): Promise<CountryInfraEntry[]> {
   if (cache && Date.now() - cachedAt < CACHE_TTL) return cache
   if (cachePromise) return cachePromise
@@ -96,12 +113,16 @@ export async function fetchInfraIndicatorRanking(): Promise<CountryInfraEntry[]>
           iso3: rankEntry.iso3,
           country: rankEntry.country,
           electricityAccessPct: rankEntry.value,
+          accessIndex: computeAccessIndex(indicators),
           year: rankEntry.year,
           rank: 0,
           indicators,
         }
       })
-      .sort((a, b) => b.electricityAccessPct - a.electricityAccessPct)
+      // Countries without enough data go last; ties fall back to electricity, then name.
+      .sort((a, b) => (b.accessIndex ?? -1) - (a.accessIndex ?? -1)
+        || b.electricityAccessPct - a.electricityAccessPct
+        || a.country.localeCompare(b.country))
       .map((e, i) => ({ ...e, rank: i + 1 }))
 
     cache = entries

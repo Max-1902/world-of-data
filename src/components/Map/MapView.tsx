@@ -735,9 +735,9 @@ export default function MapView({
         const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:300px;">
           <div style="font-size:13px;font-weight:800;color:#14161a;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">${entry?.country || nameEn}</div>
           ${entry
-            ? `<div style="font-size:11px;color:#374151;margin-bottom:3px;">Electricity access rank: <b style="color:#22d3ee;">#${entry.rank}</b> of ${infraIndicatorsRef.current.length} (world)</div>
-               <div style="font-size:11px;color:#374151;margin-bottom:4px;">Access to electricity: <b>${entry.electricityAccessPct.toFixed(1)}%</b> (${entry.year})</div>
-               ${entry.indicators.filter(i => i.id !== 'EG.ELC.ACCS.ZS').map(i => `<div style="font-size:10px;color:#6b7280;">${i.label}: <b style="color:#374151;">${i.value.toLocaleString()}</b> (${i.year})</div>`).join('')}
+            ? `<div style="font-size:11px;color:#374151;margin-bottom:3px;">Access index rank: <b style="color:#22d3ee;">#${entry.rank}</b> of ${infraIndicatorsRef.current.length} (world)</div>
+               <div style="font-size:11px;color:#374151;margin-bottom:4px;">Access index: <b>${entry.accessIndex === null ? 'n/a' : entry.accessIndex.toFixed(1) + '%'}</b> <span style="color:#9ca3af;">(avg of electricity, internet, water, sanitation)</span></div>
+               ${entry.indicators.map(i => `<div style="font-size:10px;color:#6b7280;">${i.label}: <b style="color:#374151;">${i.value.toLocaleString()}</b> (${i.year})</div>`).join('')}
                <div style="font-size:9px;color:#9ca3af;margin-top:4px;">Source: World Bank (World Development Indicators)</div>`
             : `<div style="font-size:11px;color:#9ca3af;">No World Bank infrastructure data for this country.</div>`}
         </div>`
