@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, lazy, Suspense } from 'react'
+import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from 'react'
 import type { MapViewMode, PanelState, Flight, CrisisEvent } from './types'
 import type { PanelGroup } from './panels/types'
 import { useFlights }     from './hooks/useFlights'
@@ -23,6 +23,9 @@ import NewsTicker   from './components/NewsTicker'
 import OutlookCard from './components/OutlookCard'
 import { triggerGlobalReload } from './utils/reloadBus'
 import { clearNewsCaches } from './services/news'
+import { summarizeKeyEvents } from './utils/keyEvents'
+import { summarizeIncidents } from './utils/incidents'
+import { useDisasterAlerts } from './hooks/useDisasterAlerts'
 import { GROUP_ORDER } from './panels/registry'
 import { decodeHash, encodeHash, enabledLayers, layersToPanelState, type DecodedState } from './utils/urlState'
 
@@ -121,6 +124,12 @@ export default function App() {
   const { fires, refresh: refreshFires }             = useWildfires(panelState.wildfires)
   const { vessels, refresh: refreshVessels }         = useVessels(panelState.vessels)
   const { outages, refresh: refreshOutages }         = useOutages(panelState.outages)
+  const { alerts: disasterAlerts, refresh: refreshDisasterAlerts } = useDisasterAlerts()
+  const keyEvents = useMemo(() => summarizeKeyEvents(articles), [articles])
+  const incidents = useMemo(
+    () => summarizeIncidents({ liveConflictCount: liveCrisisCount, alerts: disasterAlerts, earthquakes, outages }),
+    [liveCrisisCount, disasterAlerts, earthquakes, outages],
+  )
 
   void stocks
 
@@ -135,10 +144,10 @@ export default function App() {
     triggerGlobalReload()
     await Promise.allSettled([
       refreshFlights, refreshCrises, refreshNews, refreshStocks,
-      refreshEarthquakes, refreshFires, refreshVessels, refreshOutages,
+      refreshEarthquakes, refreshFires, refreshVessels, refreshOutages, refreshDisasterAlerts,
     ].map(refresh => Promise.resolve(refresh())))
     setReloading(false)
-  }, [refreshFlights, refreshCrises, refreshNews, refreshStocks, refreshEarthquakes, refreshFires, refreshVessels, refreshOutages])
+  }, [refreshFlights, refreshCrises, refreshNews, refreshStocks, refreshEarthquakes, refreshFires, refreshVessels, refreshOutages, refreshDisasterAlerts])
 
   // Persist preferences
   useEffect(() => { try { localStorage.setItem('ws-panel-state', JSON.stringify(panelState)) } catch {} }, [panelState])
@@ -218,9 +227,10 @@ export default function App() {
       <TopBar
         viewMode={viewMode}
         onViewMode={setViewMode}
-        flightCount={flights.length}
-        crises={crises}
+        keyEvents={keyEvents}
+        incidents={incidents}
         liveCrisisCount={liveCrisisCount}
+        crises={crises}
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
         onSettingsOpen={() => setSettingsOpen(true)}
