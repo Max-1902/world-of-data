@@ -15,6 +15,7 @@ import { fetchCountryEcon, formatEconValue, groupIndicators, resolveISO2, type C
 import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../services/militaryPersonnel'
 import { fetchInfraIndicatorRanking, formatInfraValue, type CountryInfraEntry } from '../services/infraIndicators'
 import { getTradeProfile } from '../services/tradeStats'
+import CloseButton from './CloseButton'
 import { fetchCivilFacilities, CIVIL_FACILITY_COLORS, CIVIL_FACILITY_LABELS, type CivilFacility } from '../services/civilFacilities'
 
 interface Props {
@@ -286,10 +287,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
           }}>SANCTIONED</span>
         )}
         <WatchButton country={country} />
-        <button onClick={onClose} style={{
-          background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer',
-          fontSize: 16, lineHeight: 1, padding: '2px 4px', borderRadius: 'var(--r-sm)',
-        }}>&times;</button>
+        <CloseButton onClick={onClose} label={`Close ${country} details`} />
       </div>
 
       {/* Scrollable content */}

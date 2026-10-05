@@ -1,3 +1,4 @@
+import CloseButton from './CloseButton'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MapViewMode, PanelState } from '../types'
 import type { PanelGroup } from '../panels/types'
@@ -81,8 +82,9 @@ export default function CommandPalette({ open, onClose, panelState, onSelectGrou
         role="dialog"
         aria-label="Command palette"
         onMouseDown={e => e.stopPropagation()}
-        style={{ width: 'min(560px, calc(100vw - 32px))', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}
+        style={{ position: 'relative', width: 'min(560px, calc(100vw - 32px))', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}
       >
+        <CloseButton corner onClick={onClose} label="Close command palette" style={{ top: 12 }} />
         <input
           ref={inputRef}
           value={query}
@@ -90,7 +92,7 @@ export default function CommandPalette({ open, onClose, panelState, onSelectGrou
           onKeyDown={onKeyDown}
           placeholder="Jump to a panel, toggle a layer, change map style, or fly to a place…"
           aria-label="Search commands"
-          style={{ width: '100%', boxSizing: 'border-box', padding: '14px 16px', fontSize: 13, border: 'none', borderBottom: '1px solid var(--border)', outline: 'none', background: 'transparent', color: 'var(--text1)' }}
+          style={{ width: '100%', boxSizing: 'border-box', padding: '14px 44px 14px 16px', fontSize: 13, border: 'none', borderBottom: '1px solid var(--border)', outline: 'none', background: 'transparent', color: 'var(--text1)' }}
         />
         <div role="listbox" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
           {results.length === 0 && (

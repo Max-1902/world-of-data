@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef } from 'react'
 import { fetchTopHeadlines } from '../services/news'
 import type { NewsArticle } from '../types'
+import CloseButton from './CloseButton'
 
 const REFRESH_MS = 3 * 60 * 1000 // refresh headlines every 3 min
 
-export default function NewsTicker() {
+export default function NewsTicker({ onClose }: { onClose: () => void }) {
   const [headlines, setHeadlines] = useState<NewsArticle[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -94,6 +95,8 @@ export default function NewsTicker() {
           ))}
         </div>
       </div>
+
+      <CloseButton onClick={onClose} label="Hide news ticker" size={12} style={{ margin: '0 8px', flexShrink: 0 }} />
     </div>
   )
 }

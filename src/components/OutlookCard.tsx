@@ -4,6 +4,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { useHistory, PREVIOUS_VISIT } from '../hooks/useHistory'
 import { changesSince, scoreByCountry } from '../services/history'
 import CountryBrief from './CountryBrief'
+import CloseButton from './CloseButton'
 import type { CrisisEvent, Flight, NewsArticle } from '../types'
 
 /** Don't report "since last visit" for a reload a few minutes after the previous one. */
@@ -15,9 +16,10 @@ interface Props {
   articles: NewsArticle[]
   selectedCountry?: string | null
   onSelectCountry: (country: string) => void
+  onClose: () => void
 }
 
-export default function OutlookCard({ crises, flights, articles, selectedCountry, onSelectCountry }: Props) {
+export default function OutlookCard({ crises, flights, articles, selectedCountry, onSelectCountry, onClose }: Props) {
   const entries = computeTrajectories(crises, flights, 6, articles, selectedCountry)
   const rising = entries.filter(entry => entry.trend === 'rising')
   const snaps = useHistory()
@@ -37,6 +39,7 @@ export default function OutlookCard({ crises, flights, articles, selectedCountry
           </div>
         </div>
         <span className="outlook-live"><i /> {selectedCountry ? 'LIVE' : 'RULE BASED'}</span>
+        <CloseButton onClick={onClose} label={selectedCountry ? `Close ${selectedCountry} brief` : 'Close regional outlook'} />
       </div>
 
       {selectedCountry ? (
