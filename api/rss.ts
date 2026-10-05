@@ -8,7 +8,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 export const ALLOWED_FEED_HOSTS = new Set([
   'feeds.bbci.co.uk', 'www.bbc.com', 'feeds.feedburner.com', 'feeds.folha.uol.com.br', 'feeds.npr.org',
   'feeds.skynews.com', 'g1.globo.com', 'oglobo.globo.com', 'globalnews.ca', 'indianexpress.com',
-  'meduza.io', 'nationalpost.com', 'newsfeed.zeit.de', 'rss.dw.com', 'rss.nytimes.com',
+  'meduza.io', 'nationalpost.com', 'news.google.com', 'newsfeed.zeit.de', 'rss.dw.com', 'rss.nytimes.com',
   'timesofindia.indiatimes.com', 'www.abc.net.au', 'www.aljazeera.com', 'www.asahi.com', 'www.cbc.ca',
   'www.cgtn.com', 'www.citizen.co.za', 'www.crisisgroup.org', 'www.dailymaverick.co.za', 'www.france24.com',
   'www.ft.com', 'www.globaltimes.cn', 'www.hindustantimes.com', 'www.japantimes.co.jp', 'www.jpost.com',

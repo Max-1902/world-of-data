@@ -68,7 +68,7 @@ const NAME_TO_ISO2: Record<string, string> = {
   'bulgaria':'BG','burkina faso':'BF','burundi':'BI','cambodia':'KH','cameroon':'CM',
   'canada':'CA','chad':'TD','chile':'CL','china':'CN','colombia':'CO',
   'congo':'CD','dr congo':'CD','democratic republic of the congo':'CD','costa rica':'CR',
-  'croatia':'HR','cuba':'CU','cyprus':'CR','czech republic':'CZ','czechia':'CZ',
+  'croatia':'HR','cuba':'CU','cyprus':'CY','czech republic':'CZ','czechia':'CZ',
   'denmark':'DK','djibouti':'DJ','dominican republic':'DO','ecuador':'EC','egypt':'EG',
   'el salvador':'SV','eritrea':'ER','estonia':'EE','ethiopia':'ET','fiji':'FJ',
   'finland':'FI','france':'FR','gabon':'GA','georgia':'GE','germany':'DE',
@@ -94,6 +94,18 @@ const NAME_TO_ISO2: Record<string, string> = {
   'united arab emirates':'AE','uae':'AE','united kingdom':'GB','uk':'GB',
   'united states':'US','us':'US','usa':'US','uruguay':'UY','uzbekistan':'UZ',
   'venezuela':'VE','vietnam':'VN','yemen':'YE','zambia':'ZM','zimbabwe':'ZW',
+  // ISO 3166-1 alpha-2 names the map's country picker can return that the list above lacked
+  'andorra':'AD','antigua and barbuda':'AG','bahamas':'BS','the bahamas':'BS','barbados':'BB','belize':'BZ','bhutan':'BT',
+  'burma':'MM','cape verde':'CV','cabo verde':'CV','central african republic':'CF','comoros':'KM',
+  'republic of the congo':'CG','republic of congo':'CG',"cote d'ivoire":'CI',"côte d'ivoire":'CI','dominica':'DM',
+  'equatorial guinea':'GQ','eswatini':'SZ','swaziland':'SZ','gambia':'GM','the gambia':'GM','greenland':'GL','grenada':'GD',
+  'guinea-bissau':'GW','guyana':'GY','hong kong':'HK','kiribati':'KI','lesotho':'LS','liberia':'LR','liechtenstein':'LI',
+  'macao':'MO','macau':'MO','malawi':'MW','maldives':'MV','marshall islands':'MH','mauritius':'MU','micronesia':'FM',
+  'monaco':'MC','nauru':'NR','palau':'PW','puerto rico':'PR','saint kitts and nevis':'KN','saint lucia':'LC',
+  'saint vincent and the grenadines':'VC','samoa':'WS','san marino':'SM','sao tome and principe':'ST','são tomé and príncipe':'ST',
+  'seychelles':'SC','solomon islands':'SB','suriname':'SR','timor-leste':'TL','east timor':'TL','tonga':'TO',
+  'trinidad and tobago':'TT','tuvalu':'TV','türkiye':'TR','turkiye':'TR','vanuatu':'VU','western sahara':'EH',
+  'slovak republic':'SK','russian federation':'RU','republic of serbia':'RS','the netherlands':'NL',
   'falklands':'FK','gibraltar':'GI','bermuda':'BM','ascension is.':'SH',
   's.china sea':'CN','n.korea':'KP',
 }
@@ -114,13 +126,26 @@ export function resolveISO2(countryName: string): string | null {
 
 // ── Fetch multiple indicators in one batch ───────────────────────────────────
 // World Bank API allows semicolon-separated indicator IDs
-export async function fetchCountryEcon(countryName: string): Promise<CountryEconData | null> {
+const econInFlight = new Map<string, Promise<CountryEconData | null>>()
+
+export function fetchCountryEcon(countryName: string): Promise<CountryEconData | null> {
   const iso2 = resolveISO2(countryName)
-  if (!iso2) return null
+  if (!iso2) return Promise.resolve(null)
 
   // Check cache
   const cached = cache.get(iso2)
-  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return cached
+  if (cached && Date.now() - cached.fetchedAt < CACHE_TTL) return Promise.resolve(cached)
+
+  // The country drawer and the country brief both ask on the same click — share one set of requests.
+  const pending = econInFlight.get(iso2)
+  if (pending) return pending
+  const run = loadCountryEcon(countryName, iso2)
+  econInFlight.set(iso2, run)
+  void run.then(() => econInFlight.delete(iso2), () => econInFlight.delete(iso2))
+  return run
+}
+
+async function loadCountryEcon(countryName: string, iso2: string): Promise<CountryEconData | null> {
 
   const indicatorIds = Object.keys(INDICATORS) as IndicatorId[]
   const indicators: EconIndicator[] = []
@@ -182,6 +207,43 @@ export async function fetchCountryEcon(countryName: string): Promise<CountryEcon
 
   cache.set(iso2, result)
   return result
+}
+
+// ── Country profile (capital, region, income group) ─────────────────────────
+export interface CountryProfile {
+  iso2: string
+  capital: string
+  region: string
+  incomeLevel: string
+}
+
+const profileCache = new Map<string, { at: number; data: CountryProfile | null }>()
+
+/** Capital / region / income group from the World Bank country endpoint (free, no key). null when unavailable. */
+export async function fetchCountryProfile(countryName: string): Promise<CountryProfile | null> {
+  const iso2 = resolveISO2(countryName)
+  if (!iso2) return null
+  const hit = profileCache.get(iso2)
+  if (hit && Date.now() - hit.at < CACHE_TTL) return hit.data
+
+  let data: CountryProfile | null = null
+  try {
+    const res = await fetch(`${WB_BASE}/country/${iso2}?format=json`, { signal: AbortSignal.timeout(8000) })
+    if (res.ok) {
+      const json = await res.json()
+      const c = Array.isArray(json) && Array.isArray(json[1]) ? json[1][0] : null
+      if (c) {
+        data = {
+          iso2,
+          capital: typeof c.capitalCity === 'string' ? c.capitalCity.trim() : '',
+          region: c.region?.value ?? '',
+          incomeLevel: c.incomeLevel?.value ?? '',
+        }
+      }
+    }
+  } catch { /* leave null; retried next time */ }
+  if (data) profileCache.set(iso2, { at: Date.now(), data })
+  return data
 }
 
 // ── Format helpers ───────────────────────────────────────────────────────────

@@ -11,6 +11,13 @@ describe('resolveISO2', () => {
     expect(resolveISO2(name)).toBe(iso)
   })
 
+  it.each([
+    ['Cyprus', 'CY'], ['Costa Rica', 'CR'], ['Niger', 'NE'], ['Nigeria', 'NG'], ['Republic of the Congo', 'CG'],
+    ['Democratic Republic of the Congo', 'CD'], ['The Bahamas', 'BS'], ['Liberia', 'LR'], ['Mauritius', 'MU'], ['Türkiye', 'TR'],
+  ])('resolves %j -> %s (regression: Cyprus used to resolve to Costa Rica)', (name, iso) => {
+    expect(resolveISO2(name)).toBe(iso)
+  })
+
   it('passes through an already-ISO2 code', () => {
     expect(resolveISO2('ZZ')).toBe('ZZ')
   })
@@ -111,6 +118,44 @@ describe('fetchCountryEcon', () => {
     await fetchCountryEcon('Germany')
     const calls = fetchMock.mock.calls.length
     await fetchCountryEcon('Germany')
+    expect(fetchMock.mock.calls.length).toBe(calls)
+  })
+})
+
+describe('fetchCountryProfile', () => {
+  const wb = (c: unknown) => jsonResponse([{ page: 1 }, c ? [c] : []])
+
+  it('returns capital, region and income group, and caches per country', async () => {
+    vi.resetModules()
+    const fetchMock = mockFetch(() => wb({ capitalCity: 'Lima', region: { value: 'Latin America & Caribbean' }, incomeLevel: { value: 'Upper middle income' } }))
+    const { fetchCountryProfile } = await import('./worldbank')
+    expect(await fetchCountryProfile('Peru')).toEqual({ iso2: 'PE', capital: 'Lima', region: 'Latin America & Caribbean', incomeLevel: 'Upper middle income' })
+    await fetchCountryProfile('Peru')
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns null for unknown names, empty payloads, HTTP errors and network failure', async () => {
+    vi.resetModules()
+    const { fetchCountryProfile } = await import('./worldbank')
+    mockFetch(() => wb(null))
+    expect(await fetchCountryProfile('Atlantis')).toBeNull()
+    expect(await fetchCountryProfile('Peru')).toBeNull()
+    mockFetch(() => new Response('x', { status: 500 }))
+    expect(await fetchCountryProfile('Peru')).toBeNull()
+    mockFetch(() => { throw new Error('offline') })
+    expect(await fetchCountryProfile('Peru')).toBeNull()
+  })
+})
+
+describe('fetchCountryEcon', () => {
+  it('shares one set of requests between concurrent callers', async () => {
+    vi.resetModules()
+    const fetchMock = mockFetch(() => jsonResponse([{ page: 1 }, [{ value: 5, date: '2023', countryiso3code: 'PER', country: { value: 'Peru' } }]]))
+    const { fetchCountryEcon } = await import('./worldbank')
+    const [a, b] = await Promise.all([fetchCountryEcon('Peru'), fetchCountryEcon('Peru')])
+    expect(a).toBe(b)
+    const calls = fetchMock.mock.calls.length
+    await fetchCountryEcon('Peru') // cached afterwards
     expect(fetchMock.mock.calls.length).toBe(calls)
   })
 })

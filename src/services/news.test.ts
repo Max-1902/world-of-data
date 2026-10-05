@@ -361,3 +361,39 @@ describe('manual reload and headline freshness', () => {
     expect(result.map(a => a.title)).toEqual(['Gdelt newest story', 'Older nyt story'])
   })
 })
+
+describe('country headlines', () => {
+  beforeEach(() => { vi.useFakeTimers(); quietConsole() })
+  afterEach(() => vi.useRealTimers())
+
+  it('splits the outlet back out of a Google News title', async () => {
+    const { splitGoogleNewsTitle } = await load()
+    expect(splitGoogleNewsTitle('Floods hit the north - Reuters')).toEqual({ title: 'Floods hit the north', source: 'Reuters' })
+    expect(splitGoogleNewsTitle('Talks collapse - again, say officials - The Daily Star')).toEqual({ title: 'Talks collapse - again, say officials', source: 'The Daily Star' })
+    expect(splitGoogleNewsTitle('No outlet suffix at all')).toEqual({ title: 'No outlet suffix at all', source: 'Google News' })
+  })
+
+  it('quotes the name, narrows ambiguous ones, and bounds the age', async () => {
+    const { countryNewsQuery } = await load()
+    expect(countryNewsQuery('Peru')).toBe('"Peru" when:14d')
+    expect(countryNewsQuery('Chad')).toContain('Chadian')
+    expect(countryNewsQuery('Georgia')).toContain('Tbilisi')
+  })
+
+  it('fetches through the RSS proxy and returns clean articles', async () => {
+    const fetchMock = mockFetch(() => rssBody([rssItem(1, { title: 'Quake hits Peru - BBC News' }), rssItem(2, { link: '' })]))
+    const { fetchCountryHeadlines } = await load()
+    const out = await settle(fetchCountryHeadlines('Peru'))
+    const url = decodeURIComponent(decodeURIComponent(String(fetchMock.mock.calls[0][0])))
+    expect(url).toContain('/api/rss?url=https://news.google.com/rss/search?q="Peru" when:14d')
+    expect(out).toHaveLength(1)
+    expect(out[0]).toMatchObject({ title: 'Quake hits Peru', source: 'BBC News', description: '' })
+  })
+
+  it('returns [] on HTTP failure or a blank name without throwing', async () => {
+    mockFetch(() => new Response('nope', { status: 502 }))
+    const { fetchCountryHeadlines } = await load()
+    expect(await settle(fetchCountryHeadlines('Peru'))).toEqual([])
+    expect(await fetchCountryHeadlines('  ')).toEqual([])
+  })
+})

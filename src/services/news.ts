@@ -435,6 +435,46 @@ export async function fetchCountryNews(code: string): Promise<NewsArticle[]> {
   )
 }
 
+// ── Country headlines (Google News RSS search — free, no key, any country) ──────
+// Names that are also people / US states / generic words, so a bare quoted name would drag in unrelated
+// stories. Each is paired with a term only the country has (its capital or its demonym).
+const AMBIGUOUS_COUNTRY_QUERIES: Record<string, string> = {
+  georgia: 'Tbilisi OR "Georgian government" OR "Georgian President"',
+  chad: "N'Djamena OR Chadian OR \"Chad's government\"",
+  jordan: 'Jordan Amman OR Jordanian OR "King Abdullah"',
+  niger: 'Niger Niamey OR Nigerien',
+  guinea: 'Guinea Conakry OR Guinean',
+  turkey: 'Turkey Ankara OR Turkish OR Erdogan',
+  mali: 'Mali Bamako OR Malian',
+  lebanon: 'Lebanon Beirut OR Lebanese',
+}
+
+export function countryNewsQuery(country: string): string {
+  const name = country.trim()
+  const special = AMBIGUOUS_COUNTRY_QUERIES[name.toLowerCase()]
+  return `${special ?? `"${name}"`} when:14d`
+}
+
+/** "Headline - Outlet" is how Google News packs the outlet into the title; split it back apart. */
+export function splitGoogleNewsTitle(raw: string): { title: string; source: string } {
+  const i = raw.lastIndexOf(' - ')
+  if (i > 10 && raw.length - i < 60) return { title: raw.slice(0, i).trim(), source: raw.slice(i + 3).trim() }
+  return { title: raw.trim(), source: 'Google News' }
+}
+
+/** Newest-first recent headlines mentioning one country, from any outlet Google News indexes. [] on failure. */
+export async function fetchCountryHeadlines(country: string): Promise<NewsArticle[]> {
+  if (!country.trim()) return []
+  const feed = `https://news.google.com/rss/search?q=${encodeURIComponent(countryNewsQuery(country))}&hl=en-US&gl=US&ceid=US:en`
+  const items = await fetchRSSFeed(feed, 'Google News')
+  return items
+    .filter(a => a.title && a.url)
+    .map((a, i) => {
+      const { title, source } = splitGoogleNewsTitle(a.title)
+      return { ...a, id: `gnews-${country}-${i}`, title, source, description: '' }
+    })
+}
+
 // ── CrisisWatch (International Crisis Group) ──────────────────────────────────
 // Monthly conflict monitoring across 70+ countries — no API key required
 export const CRISISWATCH_FEEDS = [
