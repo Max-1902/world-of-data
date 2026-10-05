@@ -1,6 +1,7 @@
 /**
  * Panel implementations. Split out of the former PanelContent.tsx; wired up in src/panels/registry.tsx.
  */
+import CloseButton from '../CloseButton'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ExternalLink } from 'lucide-react'
@@ -45,7 +46,7 @@ function WebcamBox({ cam, onClose }: { cam: WebcamEntry; onClose: () => void }) 
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--red)', display: 'inline-block', animation: 'pulse 1.5s infinite' }} />
           <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text1)', flex: 1 }}>{cam.label}</span>
           <span style={{ fontSize: '8.5px', fontWeight: 700, letterSpacing: '.06em', color: meta.color }}>{meta.label}</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', fontSize: 13, lineHeight: 1, padding: '2px 4px' }}>✕</button>
+          <CloseButton onClick={onClose} label={`Close ${cam.label} feed`} />
         </div>
 
         <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 10', background: '#000' }}>

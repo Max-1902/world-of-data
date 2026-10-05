@@ -102,6 +102,11 @@ export default function App() {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(() => readHash().country ?? null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  // Session-only: a closed ticker / outlook card returns on reload. The outlook card is dismissed per subject
+  // (the regional outlook, or one country's brief), so picking another country shows it again.
+  const [tickerHidden, setTickerHidden] = useState(false)
+  const [dismissedCard, setDismissedCard] = useState<string | null>(null)
+  const cardKey = selectedCountry ?? '\u0000outlook'
   const [reticleColor, setReticleColor] = useState(() => {
     try { return localStorage.getItem('ws-reticle-color') || '#16a34a' } catch { return '#16a34a' }
   })
@@ -247,7 +252,7 @@ export default function App() {
         reloading={reloading}
       />
 
-      <NewsTicker />
+      {!tickerHidden && <NewsTicker onClose={() => setTickerHidden(true)} />}
 
       {/* ── Main area: sidebar + map + command panel ──────────── */}
       <div className="dashboard-main" style={{ display: 'flex', flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
@@ -268,6 +273,7 @@ export default function App() {
             showNews={panelState.news}
             showStocks={panelState.stocks}
             deepstateMode={deepstateMode}
+            onCloseDeepstate={() => setDeepstateMode(false)}
             onFlightClick={handleFlightSelect}
             onCrisisClick={handleCrisisSelect}
             fires={fires}
@@ -319,7 +325,9 @@ export default function App() {
             )}
           </Suspense>
           <AlertToasts onSelectCountry={setSelectedCountry} />
-          <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={setSelectedCountry} />
+          {dismissedCard !== cardKey && (
+            <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={setSelectedCountry} onClose={() => setDismissedCard(cardKey)} />
+          )}
           <Suspense fallback={null}>
           <SettingsModal
             open={settingsOpen}

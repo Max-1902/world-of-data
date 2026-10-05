@@ -1,3 +1,4 @@
+import CloseButton from '../CloseButton'
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -55,6 +56,8 @@ interface Props {
   showNews:      boolean
   showStocks:    boolean
   deepstateMode: boolean
+  /** Closes the DeepState split panel (shown in its header). */
+  onCloseDeepstate?: () => void
   onFlightClick: (f: Flight) => void
   onCrisisClick: (c: CrisisEvent) => void
   fires:         FirePoint[]
@@ -126,6 +129,7 @@ export default function MapView({
   viewMode, flights, crises, newsPins, stocks, earthquakes,
   showFlights, showCrises, showNews, showStocks,
   deepstateMode,
+  onCloseDeepstate,
   onFlightClick, onCrisisClick,
   fires, showWildfires,
   showMilitary, showNuclear, showSanctions,
@@ -3678,6 +3682,9 @@ export default function MapView({
             >
               ↗ OPEN FULL MAP
             </a>
+            {onCloseDeepstate && (
+              <CloseButton onClick={onCloseDeepstate} label="Close DeepState panel" style={{ color: '#9fb0b8' }} />
+            )}
           </div>
 
           {/* Embedded DeepState map — may be blocked by CSP on some browsers */}

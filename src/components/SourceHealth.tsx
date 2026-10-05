@@ -1,3 +1,4 @@
+import CloseButton from './CloseButton'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import { formatDistanceToNow } from 'date-fns'
@@ -53,6 +54,7 @@ export default function SourceHealth() {
       </button>
       {open && createPortal(
         <div ref={popRef} className="source-health-pop" role="dialog" aria-label="Data source health" style={{ top: pos.top, right: pos.right }}>
+          <CloseButton corner onClick={() => setOpen(false)} label="Close data source health" style={{ top: 4, right: 6 }} />
           <div className="source-health-head">DATA SOURCES · THIS SESSION</div>
           {sources.length === 0 && <div className="source-health-empty">No requests observed yet.</div>}
           {sources.map(s => (
