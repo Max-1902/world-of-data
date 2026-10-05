@@ -15,7 +15,7 @@ import { PIPELINE_COLORS, PIPELINE_LABELS, PIPELINE_ATTRIBUTION, PIPELINE_DETAIL
 import { countFlightTypes, FLIGHT_TYPE_COLORS, type FlightType } from '../../utils/flightType'
 import { EARTHCAM_CAMERAS, type LiveCamera } from '../../services/earthcam'
 import { registerUSWebcams } from '../../services/usWebcams'
-import { ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchTopPowerPlants, type InfraPoint } from '../../services/infrastructure'
+import { ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchAllPowerPlants, type InfraPoint } from '../../services/infrastructure'
 import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
 import { FIR_REGIONS, analyzeAirspace } from '../../services/notam'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../services/aisstream'
@@ -1092,13 +1092,19 @@ export default function MapView({
       map.addLayer({
         id: 'infra-circles', type: 'circle', source: 'infrastructure',
         paint: {
-          'circle-radius':       ['interpolate', ['linear'], ['zoom'], 2, 3, 6, 5, 10, 8],
+          // Dot size follows plant capacity (curated dams/LNG/refineries have no MW → mid size)
+          'circle-radius': ['interpolate', ['linear'], ['zoom'],
+            2,  ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, 1.5, 1000, 3.5],
+            6,  ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, 2.5, 1000, 6],
+            10, ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, 4,   1000, 10],
+          ],
           'circle-color':        ['get', 'color'],
-          'circle-opacity':      0.9,
-          'circle-stroke-width': 1.2,
-          'circle-stroke-color': 'rgba(0,0,0,0.5)',
+          'circle-opacity':      0.85,
+          'circle-stroke-width': 0.6,
+          'circle-stroke-color': 'rgba(0,0,0,0.45)',
         },
-        layout: { visibility: 'none' },
+        // Larger plants draw on top of small ones
+        layout: { visibility: 'none', 'circle-sort-key': ['coalesce', ['get', 'mw'], 800] },
       })
       map.addLayer({
         id: 'infra-labels', type: 'symbol', source: 'infrastructure', minzoom: 6,
@@ -2682,7 +2688,7 @@ export default function MapView({
   useEffect(() => {
     if (!showInfrastructure) return
     let cancelled = false
-    fetchTopPowerPlants().then(pts => { if (!cancelled) setPowerPlants(pts) }).catch(() => {})
+    fetchAllPowerPlants().then(pts => { if (!cancelled) setPowerPlants(pts) }).catch(() => {})
     return () => { cancelled = true }
   }, [showInfrastructure])
 
@@ -2710,6 +2716,7 @@ export default function MapView({
         icon:      INFRA_ICONS[p.type],
         country:   p.country,
         capacity:  p.capacity  ?? null,
+        mw:        p.capacityMw ?? null,
         river:     p.river     ?? null,
         notes:     p.notes     ?? null,
         status:    p.status,

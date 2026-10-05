@@ -14,7 +14,8 @@
 
 export type InfraType =
   | 'dam' | 'pipeline' | 'lng' | 'refinery' | 'grid'
-  | 'power_coal' | 'power_gas' | 'power_wind' | 'power_solar'
+  | 'power_coal' | 'power_gas' | 'power_oil' | 'power_wind' | 'power_solar'
+  | 'power_hydro' | 'power_nuclear' | 'power_biomass' | 'power_geothermal' | 'power_other'
   | 'hospital' | 'police' | 'telecom'
 
 export interface InfraPoint {
@@ -25,6 +26,7 @@ export interface InfraPoint {
   lat:      number
   lng:      number
   capacity?: string  // MW for dam/power, MTpa for LNG, bbl/day for refinery
+  capacityMw?: number // numeric MW for power plants — used to size/sort map dots
   river?:   string   // for dams
   notes?:   string
   status:   'operational' | 'under_construction' | 'decommissioned'
@@ -39,8 +41,14 @@ export const INFRA_COLORS: Record<InfraType, string> = {
   grid:        '#00ff88',
   power_coal:  '#6b7280',
   power_gas:   '#f97316',
+  power_oil:   '#92400e',
   power_wind:  '#22d3ee',
   power_solar: '#facc15',
+  power_hydro: '#2563eb',
+  power_nuclear: '#d946ef',
+  power_biomass: '#16a34a',
+  power_geothermal: '#e11d48',
+  power_other: '#94a3b8',
   hospital:    '#ef4444',
   police:      '#3b82f6',
   telecom:     '#a855f7',
@@ -54,8 +62,14 @@ export const INFRA_LABELS: Record<InfraType, string> = {
   grid:        'GRID HUB',
   power_coal:  'COAL PLANT',
   power_gas:   'GAS PLANT',
+  power_oil:   'OIL PLANT',
   power_wind:  'WIND FARM',
   power_solar: 'SOLAR PLANT',
+  power_hydro: 'HYDRO PLANT',
+  power_nuclear: 'NUCLEAR PLANT',
+  power_biomass: 'BIOMASS PLANT',
+  power_geothermal: 'GEOTHERMAL',
+  power_other: 'OTHER PLANT',
   hospital:    'HOSPITAL',
   police:      'POLICE HQ',
   telecom:     'TELECOM HUB',
@@ -69,8 +83,14 @@ export const INFRA_ICONS: Record<InfraType, string> = {
   grid:        '↯',
   power_coal:  '●',
   power_gas:   '✱',
+  power_oil:   '▼',
   power_wind:  '≈',
   power_solar: '☼',
+  power_hydro: '◢',
+  power_nuclear: '☢',
+  power_biomass: '❦',
+  power_geothermal: '♨',
+  power_other: '◆',
   hospital:    '✚',
   police:      '◍',
   telecom:     '⌁',
@@ -183,11 +203,23 @@ export interface PowerPlantRow {
   fuel:       string  // primary_fuel, e.g. "Coal", "Gas", "Wind", "Solar", "Hydro", "Nuclear"
 }
 
+// Every GPPD primary_fuel value (lower-cased). Anything not listed falls back to 'grid'.
 const FUEL_TO_INFRA_TYPE: Record<string, InfraType | undefined> = {
-  coal:  'power_coal',
-  gas:   'power_gas',
-  wind:  'power_wind',
-  solar: 'power_solar',
+  coal:           'power_coal',
+  petcoke:        'power_coal',
+  gas:            'power_gas',
+  oil:            'power_oil',
+  wind:           'power_wind',
+  solar:          'power_solar',
+  hydro:          'power_hydro',
+  nuclear:        'power_nuclear',
+  biomass:        'power_biomass',
+  waste:          'power_biomass',
+  geothermal:     'power_geothermal',
+  cogeneration:   'power_other',
+  storage:        'power_other',
+  other:          'power_other',
+  'wave and tidal': 'power_other',
 }
 
 let gppdRows: PowerPlantRow[] | null = null
@@ -259,36 +291,32 @@ async function fetchGppd(): Promise<PowerPlantRow[]> {
 }
 
 /**
- * Fetch the top-N power plants (by capacity) for coal/gas/wind/solar worldwide,
- * for the global map layer. Keeps the map layer to a manageable point count
- * instead of rendering all ~35,000 real plants at once.
+ * Fetch every power plant in the WRI database (all fuels, ~35,000 real plants)
+ * for the global map layer.
+ *
+ * Nuclear plants are left out because the NUCLEAR layer (services/military.ts)
+ * already plots them with richer data. Hydro plants within ~0.1° of a curated
+ * dam are left out so a dam and its powerhouse aren't drawn as two dots.
  */
-export async function fetchTopPowerPlants(perFuelLimit = 60): Promise<InfraPoint[]> {
+export async function fetchAllPowerPlants(): Promise<InfraPoint[]> {
   const rows = await fetchGppd()
-  const byFuel = new Map<string, PowerPlantRow[]>()
+  const out: InfraPoint[] = []
   for (const r of rows) {
     const type = FUEL_TO_INFRA_TYPE[r.fuel.toLowerCase()]
-    if (!type) continue
-    const list = byFuel.get(type) ?? []
-    list.push(r)
-    byFuel.set(type, list)
-  }
-  const out: InfraPoint[] = []
-  for (const [type, list] of byFuel) {
-    list.sort((a, b) => b.capacityMw - a.capacityMw)
-    for (const r of list.slice(0, perFuelLimit)) {
-      out.push({
-        id:       `gppd-${type}-${r.name}-${r.lat}-${r.lng}`,
-        name:     r.name,
-        type:     type as InfraType,
-        country:  r.countryLong,
-        lat:      r.lat,
-        lng:      r.lng,
-        capacity: `${Math.round(r.capacityMw).toLocaleString()} MW`,
-        status:   'operational',
-        notes:    'Source: WRI Global Power Plant Database',
-      })
-    }
+    if (!type || type === 'power_nuclear') continue
+    if (type === 'power_hydro' && MAJOR_DAMS.some(d => Math.abs(d.lat - r.lat) < 0.1 && Math.abs(d.lng - r.lng) < 0.1)) continue
+    out.push({
+      id:         `gppd-${type}-${r.name}-${r.lat}-${r.lng}`,
+      name:       r.name,
+      type,
+      country:    r.countryLong,
+      lat:        r.lat,
+      lng:        r.lng,
+      capacity:   `${Math.round(r.capacityMw).toLocaleString()} MW`,
+      capacityMw: r.capacityMw,
+      status:     'operational',
+      notes:      `${r.fuel} — Source: WRI Global Power Plant Database`,
+    })
   }
   return out
 }
