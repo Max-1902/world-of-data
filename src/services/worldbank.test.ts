@@ -159,3 +159,26 @@ describe('fetchCountryEcon', () => {
     expect(fetchMock.mock.calls.length).toBe(calls)
   })
 })
+
+describe('findCountryInText', () => {
+  it.each([
+    ['What is happening in Iran right now?', 'Iran'],
+    ['tell me about south sudan', 'South Sudan'],
+    ['Compare Israel and Iran', 'Israel'],
+    ['Is Bosnia and Herzegovina stable?', 'Bosnia and Herzegovina'],
+    ['uk energy exposure', 'United Kingdom'],
+    ['Nigeria outlook', 'Nigeria'],
+    ['Turkey earthquake risk', 'Turkey'],
+  ])('%s -> %s', async (text, expected) => {
+    const { findCountryInText } = await import('./worldbank')
+    expect(findCountryInText(text)).toBe(expected)
+  })
+
+  it.each([
+    'tell us about the market', 'summarize this in 3 bullets', 'what did jordan say about the chad meme',
+    'roast turkey recipe', 'Hello',
+  ])('ignores %s', async text => {
+    const { findCountryInText } = await import('./worldbank')
+    expect(findCountryInText(text)).toBeNull()
+  })
+})
