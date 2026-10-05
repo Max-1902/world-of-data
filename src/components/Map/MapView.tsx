@@ -3538,6 +3538,7 @@ export default function MapView({
                 { key: 'news',           label: 'NEWS',           icon: '◉', color: '#cccccc' },
                 { key: 'stocks',         label: 'MARKETS',        icon: '$', color: '#00ff88' },
                 { key: 'military',       label: 'MILITARY',       icon: '⚔', color: '#ff2244' },
+                { key: 'militaryPersonnel', label: 'FORCE SIZE',  icon: '⚔', color: '#dc2626' },
                 { key: 'nuclear',        label: 'NUCLEAR',        icon: '☢', color: '#ffcc00' },
                 { key: 'sanctions',      label: 'SANCTIONS',      icon: '⊗', color: '#ff3344' },
                 { key: 'cameras',        label: 'CAMERAS',        icon: '◎', color: '#aa88ff' },
@@ -3552,7 +3553,6 @@ export default function MapView({
                 { key: 'chokepoints',    label: 'CHOKEPOINTS',    icon: '⊘', color: '#ff4466' },
                 { key: 'supplychain',    label: 'SUPPLY CHAIN',   icon: '◆', color: '#00ccff' },
                 { key: 'shippingDensity', label: 'SHIPPING',       icon: '≋', color: '#ff4466' },
-                { key: 'militaryPersonnel', label: 'FORCE SIZE',  icon: '⚔', color: '#dc2626' },
                 { key: 'infraIndicators',   label: 'INFRA ACCESS', icon: '↯', color: '#22d3ee' },
                 { key: 'datacenters',       label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
               ] as { key: keyof import('../../types').PanelState; label: string; icon: string; color: string }[]).map(item => {
