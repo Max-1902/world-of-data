@@ -187,7 +187,11 @@ export async function streamAI(
       if (data === '[DONE]') return
       try {
         const json  = JSON.parse(data)
-        if (json.error) throw new Error(json.error.message || 'Upstream provider error')
+        if (json.error) {
+          // Provider errors can arrive mid-stream with their own HTTP-style code (429 rate limit, …).
+          if (typeof json.error.code === 'number') throw new OpenRouterError(json.error.code, JSON.stringify({ error: json.error }))
+          throw new Error(json.error.message || 'Upstream provider error')
+        }
         const delta = json.choices?.[0]?.delta ?? {}
         const token = delta.content ?? ''
         if (token) { gotContent = true; onToken(token) }
@@ -199,6 +203,50 @@ export async function streamAI(
       }
     }
   }
+}
+
+const sleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
+  const t = setTimeout(resolve, ms)
+  signal?.addEventListener('abort', () => { clearTimeout(t); reject(new DOMException('Aborted', 'AbortError')) }, { once: true })
+})
+
+/**
+ * streamAI with rate-limit resilience. A rate-limited (429) free model is retried once, then the
+ * other free models are tried in turn. Paid models are never swapped — switching one to another
+ * would change what gets billed — they just get the one retry. Falls over only before any text
+ * has streamed, so an answer is never spliced from two models. Returns the model that answered.
+ */
+export async function streamAIWithFallback(
+  messages: DSMessage[],
+  onToken:  (token: string) => void,
+  signal:   AbortSignal | undefined,
+  model:    string,
+  onReasoning?: (token: string) => void,
+  onFallback?: (from: string, to: string) => void,
+  retryDelayMs = 1500,
+): Promise<string> {
+  let started = false
+  const track = (cb?: (t: string) => void) => (t: string) => { started = true; cb?.(t) }
+  const isFree = (id: string) => id.endsWith(':free')
+  const candidates = [model, ...(isFree(model) ? FREE_MODELS.map(m => m.id).filter(id => id !== model) : [])]
+
+  let lastErr: unknown
+  for (let i = 0; i < candidates.length; i++) {
+    const id = candidates[i]
+    for (let attempt = 0; attempt < (i === 0 ? 2 : 1); attempt++) {
+      try {
+        if (attempt > 0) await sleep(retryDelayMs, signal)
+        await streamAI(messages, track(onToken), signal, id, track(onReasoning))
+        return id
+      } catch (err) {
+        lastErr = err
+        const rateLimited = err instanceof OpenRouterError && err.status === 429
+        if (!rateLimited || started) throw err
+      }
+    }
+    if (i + 1 < candidates.length) onFallback?.(id, candidates[i + 1])
+  }
+  throw lastErr
 }
 
 // ── Context builder ────────────────────────────────────────────────────────
