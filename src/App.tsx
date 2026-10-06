@@ -8,6 +8,7 @@ import { useGeoNews }     from './hooks/useGeoNews'
 import { useStocks }      from './hooks/useStocks'
 import { useEarthquakes } from './hooks/useEarthquakes'
 import { useWildfires }   from './hooks/useWildfires'
+import { useGPSJam }      from './hooks/useGPSJam'
 import { useVessels }    from './hooks/useVessels'
 import { useOutages }    from './hooks/useOutages'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -127,6 +128,7 @@ export default function App() {
   const { stocks, refresh: refreshStocks }           = useStocks(panelState.stocks)
   const { earthquakes, refresh: refreshEarthquakes } = useEarthquakes(panelState.crises)
   const { fires, refresh: refreshFires }             = useWildfires(panelState.wildfires)
+  const { data: gpsJam }                             = useGPSJam(panelState.gpsjam)
   const { vessels, refresh: refreshVessels }         = useVessels(panelState.vessels)
   const { outages, refresh: refreshOutages }         = useOutages(panelState.outages)
   const { alerts: disasterAlerts, refresh: refreshDisasterAlerts } = useDisasterAlerts()
@@ -291,6 +293,7 @@ export default function App() {
             showOil={panelState.oil}
             showGas={panelState.gas}
             showGPSJam={panelState.gpsjam}
+            gpsJam={gpsJam}
             showPorts={panelState.ports}
             showPipelines={panelState.pipelines}
             showChokepoints={panelState.chokepoints}
