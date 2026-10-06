@@ -12,7 +12,6 @@ import { MAJOR_DAMS, LNG_TERMINALS, MAJOR_REFINERIES, ALL_INFRA_POINTS, INFRA_CO
 import { CHOKEPOINTS } from './chokepoints'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from './ports'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from './supplychain'
-import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from './gpsjam'
 import { EARTHCAM_CAMERAS } from './earthcam'
 import { US_WEBCAMS, registerUSWebcams } from './usWebcams'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS } from './sanctions'
@@ -153,20 +152,6 @@ describe('ports & supply chain', () => {
         expect(f.globalShare, f.id).toBeGreaterThan(0)
         expect(f.globalShare, f.id).toBeLessThanOrEqual(100)
       }
-    }
-  })
-})
-
-describe('GPS interference zones', () => {
-  it('have valid coordinates, unique ids, positive radius, a known severity/type, and an attributed source', () => {
-    expectPoints('GPS_JAM_ZONES', GPS_JAM_ZONES, 'lat', 'lng', 'name', 'id')
-    for (const z of GPS_JAM_ZONES) {
-      expect(z.radius, z.id).toBeGreaterThan(0)
-      expect(z.radius, z.id).toBeLessThanOrEqual(2000)
-      expect(SEVERITY_COLORS[z.severity], z.id).toMatch(HEX)
-      expect(TYPE_LABELS[z.type], z.id).toBeTruthy()
-      expect(z.source.trim(), `${z.id} has no source attribution`).not.toBe('')
-      expect(typeof z.active).toBe('boolean')
     }
   })
 })

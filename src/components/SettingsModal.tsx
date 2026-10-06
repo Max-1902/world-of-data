@@ -61,8 +61,7 @@ const DATA_SOURCES: { category: string; items: { label: string; source: string; 
   {
     category: 'GPS INTERFERENCE',
     items: [
-      { label: 'Jamming zones', source: 'Eurocontrol / OPSGROUP / NATO', notes: '35+ zones, heatmap + radius circles.' },
-      { label: 'Spoofing zones', source: 'C4ADS / US MARAD', notes: 'Areas with GPS position falsification.' },
+      { label: 'Interference cells', source: 'GPSJAM.org (airplanes.live, ADS-B Exchange)', notes: 'Daily ADS-B aggregate, shown for the latest published UTC day. Share of aircraft reporting degraded GPS accuracy per ~22 km hex.' },
     ],
   },
   {
@@ -106,7 +105,7 @@ export const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] 
   { id: 'chokepoints', label: 'CHOKEPOINTS', desc: 'Strategic maritime chokepoints' },
   { id: 'supplychain', label: 'SUPPLY CHAIN', desc: 'Semiconductor fabs, rare earth, lithium, cobalt' },
   { id: 'shippingDensity', label: 'SHIPPING', desc: 'Global shipping-lane density, 2004–05 (NOAA/NCEAS/ICOADS via Resource Watch)' },
-  { id: 'gpsjam', label: 'GPS JAM', desc: 'Interference zones' },
+  { id: 'gpsjam', label: 'GPS JAM', desc: 'Interference (daily, ADS-B)' },
   { id: 'outages', label: 'OUTAGES', desc: 'Internet/power outages (IODA)' },
   { id: 'resources', label: 'RESOURCES', desc: 'Critical mineral producers' },
   { id: 'infraIndicators', label: 'INFRA ACCESS', desc: 'Electricity, internet, water/sanitation access by country (World Bank)' },

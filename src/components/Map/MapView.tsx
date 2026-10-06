@@ -22,7 +22,7 @@ import { fetchDataCenters, type DataCenterPoint } from '../../services/datacente
 import { FIR_REGIONS, analyzeAirspace } from '../../services/notam'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../services/aisstream'
 import { OIL_GAS_DATA, getMaxValue, formatValue, getRegionTotals, METRIC_COLORS, METRIC_LABELS, type OilGasMetric } from '../../services/oilgas'
-import { GPS_JAM_ZONES, SEVERITY_COLORS, TYPE_LABELS } from '../../services/gpsjam'
+import { SEVERITY_COLORS, SEVERITY_LABELS, GPSJAM_ATTRIBUTION, type GPSJamData } from '../../services/gpsjam'
 import { CHOKEPOINTS, CHOKEPOINT_COLORS, SHIPPING_LANE_LABEL_IDS } from '../../services/chokepoints'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../services/supplychain'
 import { getCountryCentroid, type OutageEvent } from '../../services/outages'
@@ -75,6 +75,7 @@ interface Props {
   showOil:            boolean
   showGas:            boolean
   showGPSJam:         boolean
+  gpsJam:             GPSJamData | null
   showPorts:          boolean
   showPipelines:      boolean
   showChokepoints:    boolean
@@ -134,7 +135,7 @@ export default function MapView({
   fires, showWildfires,
   showMilitary, showNuclear, showSanctions,
   showCameras, showInfrastructure, showDatacenters, showAirspace, showHumanitarian,
-  vessels, showVessels, showOil, showGas, showGPSJam, showPorts, showPipelines,
+  vessels, showVessels, showOil, showGas, showGPSJam, gpsJam, showPorts, showPipelines,
   showChokepoints, showSupplyChain, showShippingDensity,
   outages, showOutages, showResources, showTradeStats, showMilitaryPersonnel,
   showInfraIndicators,
@@ -1813,7 +1814,7 @@ export default function MapView({
         source: 'gpsjam-areas',
         paint: {
           'fill-color': ['get', 'color'],
-          'fill-opacity': ['match', ['get', 'severity'], 'high', 0.15, 'medium', 0.10, 0.06],
+          'fill-opacity': ['match', ['get', 'severity'], 'high', 0.35, 0.2],
         },
         layout: { visibility: 'none' },
       })
@@ -1824,9 +1825,8 @@ export default function MapView({
         source: 'gpsjam-areas',
         paint: {
           'line-color': ['get', 'color'],
-          'line-width': ['match', ['get', 'severity'], 'high', 1.5, 'medium', 1, 0.7],
-          'line-opacity': 0.5,
-          'line-dasharray': [3, 2],
+          'line-width': ['match', ['get', 'severity'], 'high', 1, 0.7],
+          'line-opacity': 0.6,
         },
         layout: { visibility: 'none' },
       })
@@ -1837,7 +1837,7 @@ export default function MapView({
         source: 'gpsjam',
         maxzoom: 8,
         paint: {
-          'heatmap-weight': ['match', ['get', 'severity'], 'high', 1, 'medium', 0.6, 0.3],
+          'heatmap-weight': ['match', ['get', 'severity'], 'high', 1, 0.5],
           'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 2, 0.8, 8, 2],
           'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 2, 20, 4, 40, 6, 60, 8, 80],
           'heatmap-color': [
@@ -1860,7 +1860,7 @@ export default function MapView({
         source: 'gpsjam',
         minzoom: 3,
         paint: {
-          'circle-radius': ['match', ['get', 'severity'], 'high', 5, 'medium', 4, 3],
+          'circle-radius': ['match', ['get', 'severity'], 'high', 4, 3],
           'circle-color': ['get', 'color'],
           'circle-opacity': 0.7,
           'circle-stroke-width': 1,
@@ -1874,13 +1874,12 @@ export default function MapView({
         id: 'gpsjam-labels',
         type: 'symbol',
         source: 'gpsjam',
-        minzoom: 5,
+        minzoom: 6,
         layout: {
-          'text-field': ['get', 'name'],
+          'text-field': ['get', 'pctLabel'],
           'text-size': 9,
           'text-font': ['DIN Pro Bold', 'Arial Unicode MS Bold'],
-          'text-offset': [0, 1.8],
-          'text-anchor': 'top',
+          'text-anchor': 'center',
           'text-allow-overlap': false,
           'text-optional': true,
           visibility: 'none',
@@ -1891,61 +1890,35 @@ export default function MapView({
           'text-halo-width': 1.2,
         },
       })
-      // Click popup
-      map.on('click', 'gpsjam-circles', (e) => {
-        if (!e.features?.[0]) return
-        const p = e.features[0].properties as Record<string, unknown>
-        const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
-        const sevColor = String(p.color || '#ff2244')
-        const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:220px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
-            <div style="width:8px;height:8px;border-radius:50%;background:${sevColor};box-shadow:0 0 8px ${sevColor}88;"></div>
-            <span style="font-size:12px;font-weight:700;color:${sevColor};letter-spacing:.06em;">${p.name}</span>
-          </div>
-          <div style="font-size:10px;color:#9ca3af;letter-spacing:.12em;margin-bottom:6px;">${String(p.region).toUpperCase()} · ${p.typeLabel}</div>
-          <div style="display:grid;grid-template-columns:70px 1fr;gap:3px 8px;font-size:11px;">
-            <span style="color:#9ca3af;">Severity</span><span style="color:${sevColor};font-weight:700;">${String(p.severity).toUpperCase()}</span>
-            <span style="color:#9ca3af;">Type</span><span style="color:#14161a;">${p.typeLabel}</span>
-            <span style="color:#9ca3af;">Radius</span><span style="color:#14161a;">${p.radius} km</span>
-            <span style="color:#9ca3af;">Status</span><span style="color:${p.active === 'true' || p.active === true ? '#16a34a' : '#9ca3af'};">${p.active === 'true' || p.active === true ? 'ACTIVE' : 'INACTIVE'}</span>
-          </div>
-          <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">${p.notes}</div>
-          <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ${p.source}</div>
-        </div>`
-        if (popupRef.current) popupRef.current.remove()
-        popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
-          .setLngLat(coords).setHTML(html).addTo(map)
-        ;(map as any).__markFeatureClick?.()
-      })
-      map.on('mouseenter', 'gpsjam-circles', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'gpsjam-circles', () => { map.getCanvas().style.cursor = '' })
-      map.on('mouseenter', 'gpsjam-fill', () => { map.getCanvas().style.cursor = 'pointer' })
-      map.on('mouseleave', 'gpsjam-fill', () => { map.getCanvas().style.cursor = '' })
-      // Click on area polygon shows same popup
-      map.on('click', 'gpsjam-fill', (e) => {
-        if (!e.features?.[0]) return
-        const p = e.features[0].properties as Record<string, unknown>
-        const sevColor = String(p.color || '#ff2244')
-        const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:220px;">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
-            <div style="width:8px;height:8px;border-radius:50%;background:${sevColor};box-shadow:0 0 8px ${sevColor}88;"></div>
-            <span style="font-size:12px;font-weight:700;color:${sevColor};letter-spacing:.06em;">${p.name}</span>
-          </div>
-          <div style="font-size:10px;color:#9ca3af;letter-spacing:.12em;margin-bottom:6px;">${String(p.region).toUpperCase()} · ${p.typeLabel}</div>
-          <div style="display:grid;grid-template-columns:70px 1fr;gap:3px 8px;font-size:11px;">
-            <span style="color:#9ca3af;">Severity</span><span style="color:${sevColor};font-weight:700;">${String(p.severity).toUpperCase()}</span>
-            <span style="color:#9ca3af;">Type</span><span style="color:#14161a;">${p.typeLabel}</span>
-            <span style="color:#9ca3af;">Radius</span><span style="color:#14161a;">${p.radius} km</span>
-            <span style="color:#9ca3af;">Status</span><span style="color:${p.active === 'true' || p.active === true ? '#16a34a' : '#9ca3af'};">${p.active === 'true' || p.active === true ? 'ACTIVE' : 'INACTIVE'}</span>
-          </div>
-          <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">${p.notes}</div>
-          <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ${p.source}</div>
-        </div>`
-        if (popupRef.current) popupRef.current.remove()
-        popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
-          .setLngLat(e.lngLat).setHTML(html).addTo(map)
-        ;(map as any).__markFeatureClick?.()
-      })
+      // Click popup — same card whether the dot or the hex is clicked
+      for (const layerId of ['gpsjam-circles', 'gpsjam-fill']) {
+        map.on('click', layerId, (e) => {
+          if (!e.features?.[0]) return
+          const p = e.features[0].properties as Record<string, unknown>
+          const sevColor = String(p.color || '#ff2244')
+          const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:220px;">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;">
+              <div style="width:8px;height:8px;border-radius:50%;background:${sevColor};box-shadow:0 0 8px ${sevColor}88;"></div>
+              <span style="font-size:12px;font-weight:700;color:${sevColor};letter-spacing:.06em;">GPS INTERFERENCE</span>
+            </div>
+            <div style="font-size:10px;color:#9ca3af;letter-spacing:.12em;margin-bottom:6px;">${String(p.date)} (UTC DAY)</div>
+            <div style="display:grid;grid-template-columns:90px 1fr;gap:3px 8px;font-size:11px;">
+              <span style="color:#9ca3af;">Level</span><span style="color:${sevColor};font-weight:700;">${String(p.severityLabel)}</span>
+              <span style="color:#9ca3af;">Degraded</span><span style="color:#14161a;">${String(p.pctLabel)} of aircraft</span>
+              <span style="color:#9ca3af;">Aircraft seen</span><span style="color:#14161a;">${Number(p.bad)} degraded · ${Number(p.good)} good</span>
+            </div>
+            <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">Share of aircraft crossing this ~22 km cell that reported low navigation accuracy. Suggests jamming or spoofing but can't prove the cause.</div>
+            <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ${GPSJAM_ATTRIBUTION}</div>
+          </div>`
+          if (popupRef.current) popupRef.current.remove()
+          popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
+            .setLngLat(layerId === 'gpsjam-circles' ? (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number] : e.lngLat)
+            .setHTML(html).addTo(map)
+          ;(map as any).__markFeatureClick?.()
+        })
+        map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer' })
+        map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = '' })
+      }
 
       // ── Oil & Gas 3D extruded bars (separate layers, side by side) ────
       for (const kind of ['oil', 'gas'] as const) {
@@ -3049,7 +3022,7 @@ export default function MapView({
     }
   }, [showOil, showGas, mapReady])
 
-  // ── GPS Jamming zones update ──────────────────────────────────────────────
+  // ── GPS interference cells update ──────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layersReadyRef.current) return
@@ -3068,45 +3041,29 @@ export default function MapView({
       return
     }
 
-    // Helper: generate a GeoJSON polygon circle from center + radius in km
-    function makeCircle(lng: number, lat: number, radiusKm: number, steps = 64): GeoJSON.Polygon {
-      const coords: [number, number][] = []
-      const earthRadiusKm = 6371
-      for (let i = 0; i <= steps; i++) {
-        const angle = (i / steps) * 2 * Math.PI
-        const dLat = (radiusKm / earthRadiusKm) * (180 / Math.PI) * Math.cos(angle)
-        const dLng = (radiusKm / earthRadiusKm) * (180 / Math.PI) * Math.sin(angle) / Math.cos(lat * Math.PI / 180)
-        coords.push([lng + dLng, lat + dLat])
-      }
-      return { type: 'Polygon', coordinates: [coords] }
-    }
+    const cells = gpsJam?.cells ?? []
+    const props = (c: GPSJamData['cells'][number]) => ({
+      id: c.id, severity: c.severity, severityLabel: SEVERITY_LABELS[c.severity], color: SEVERITY_COLORS[c.severity],
+      pctLabel: `${Math.round(c.percentBad)}%`, good: c.good, bad: c.bad, date: gpsJam!.date,
+    })
 
     // Point features (for labels, heatmap, center dots)
-    const pointFeatures: GeoJSON.Feature[] = GPS_JAM_ZONES.map(z => ({
+    const pointFeatures: GeoJSON.Feature[] = cells.map(c => ({
       type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [z.lng, z.lat] },
-      properties: {
-        id: z.id, name: z.name, severity: z.severity, type: z.type,
-        typeLabel: TYPE_LABELS[z.type], color: SEVERITY_COLORS[z.severity],
-        radius: z.radius, source: z.source, region: z.region, notes: z.notes, active: z.active,
-      },
+      geometry: { type: 'Point' as const, coordinates: [c.lng, c.lat] },
+      properties: props(c),
     }))
 
-    // Polygon features (actual coverage areas)
-    const areaFeatures: GeoJSON.Feature[] = GPS_JAM_ZONES.map(z => ({
+    // Polygon features (the H3 hexagons themselves)
+    const areaFeatures: GeoJSON.Feature[] = cells.map(c => ({
       type: 'Feature' as const,
-      geometry: makeCircle(z.lng, z.lat, z.radius),
-      properties: {
-        id: z.id, name: z.name, severity: z.severity,
-        color: SEVERITY_COLORS[z.severity], radius: z.radius,
-        typeLabel: TYPE_LABELS[z.type], source: z.source,
-        region: z.region, notes: z.notes, active: z.active,
-      },
+      geometry: { type: 'Polygon' as const, coordinates: [c.ring] },
+      properties: props(c),
     }))
 
     src.setData({ type: 'FeatureCollection', features: pointFeatures })
     areaSrc.setData({ type: 'FeatureCollection', features: areaFeatures })
-  }, [showGPSJam, mapReady])
+  }, [showGPSJam, gpsJam, mapReady])
 
   // ── Resize Mapbox when deepstate split activates / deactivates ───────────
   useEffect(() => {
