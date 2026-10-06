@@ -82,14 +82,12 @@ function connectAISStreamWS(): (() => void) | null {
   function connect() {
     if (closed) return
     msgCount = 0
-    console.log('[AIS] Attempting AISStream WebSocket…')
     try { ws = new WebSocket(AISSTREAM_URL) } catch (e) {
       console.error('[AIS] WebSocket constructor failed:', e)
       return
     }
 
     ws.onopen = () => {
-      console.log('[AIS] AISStream connected — subscribing')
       ws!.send(JSON.stringify({
         APIkey: AISSTREAM_KEY,
         BoundingBoxes: [[[-180, -90], [180, 90]]],
@@ -110,8 +108,6 @@ function connectAISStreamWS(): (() => void) | null {
           return
         }
         msgCount++
-        if (msgCount === 1) console.log('[AIS] First AISStream message received — stream active')
-        if (msgCount % 1000 === 0) console.log(`[AIS] AISStream: ${msgCount} messages, ${vesselStore.size} vessels tracked`)
 
         const type = msg.MessageType
         if (type === 'PositionReport') {
@@ -160,7 +156,6 @@ function connectAISStreamWS(): (() => void) | null {
     ws.onclose = (e) => {
       console.warn(`[AIS] WebSocket closed: code=${e.code} reason="${e.reason}"`)
       if (!closed) {
-        console.log('[AIS] Reconnecting in 10s…')
         reconnectTimer = window.setTimeout(connect, 10000)
       }
     }
