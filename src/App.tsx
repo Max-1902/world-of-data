@@ -108,6 +108,11 @@ export default function App() {
   const [tickerHidden, setTickerHidden] = useState(false)
   const [dismissedCard, setDismissedCard] = useState<string | null>(null)
   const cardKey = selectedCountry ?? '\u0000outlook'
+  // Any explicit pick (map click, search, toast) re-opens the outlook box, even for a country whose brief was closed earlier.
+  const selectCountry = useCallback((country: string | null) => {
+    if (country) setDismissedCard(null)
+    setSelectedCountry(country)
+  }, [])
   const [reticleColor, setReticleColor] = useState(() => {
     try { return localStorage.getItem('ws-reticle-color') || '#16a34a' } catch { return '#16a34a' }
   })
@@ -222,7 +227,7 @@ export default function App() {
     deepstateMode,
     onDeepstateToggle: () => setDeepstateMode(v => !v),
     onGeoSearch: handleGeoSearch,
-    onCountryClick: setSelectedCountry,
+    onCountryClick: selectCountry,
     searchQuery,
   }
 
@@ -307,7 +312,7 @@ export default function App() {
             showInfraIndicators={panelState.infraIndicators}
             flyToQuery={searchQuery}
             geoFlyTo={geoFlyTo}
-            onCountryClick={setSelectedCountry}
+            onCountryClick={selectCountry}
             selectedCountry={selectedCountry}
             reticleColor={reticleColor}
             panelState={panelState}
@@ -327,9 +332,9 @@ export default function App() {
               />
             )}
           </Suspense>
-          <AlertToasts onSelectCountry={setSelectedCountry} />
-          {!selectedCountry && dismissedCard !== cardKey && (
-            <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={setSelectedCountry} onClose={() => setDismissedCard(cardKey)} />
+          <AlertToasts onSelectCountry={selectCountry} />
+          {dismissedCard !== cardKey && (
+            <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />
           )}
           <Suspense fallback={null}>
           <SettingsModal
@@ -365,7 +370,7 @@ export default function App() {
             deepstateMode={deepstateMode}
             onDeepstateToggle={() => setDeepstateMode(v => !v)}
             onGeoSearch={handleGeoSearch}
-            onCountryClick={setSelectedCountry}
+            onCountryClick={selectCountry}
             onClose={handlePopIn}
             onAdd={handlePopOut}
           />
