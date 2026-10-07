@@ -29,10 +29,12 @@ export interface ConflictHistoryState {
   fetchedAt: number | null
   mapMode: HexMode
   error: string | null
+  /** Known cause when the source returned nothing (e.g. rejected ACLED login) */
+  reason: string | null
 }
 
 const INITIAL: ConflictHistoryState = {
-  status: 'idle', events: [], endDay: null, hexes: [], truncated: false, fetchedAt: null, mapMode: 'intensity', error: null,
+  status: 'idle', events: [], endDay: null, hexes: [], truncated: false, fetchedAt: null, mapMode: 'intensity', error: null, reason: null,
 }
 
 export function createConflictHistory(
@@ -45,13 +47,13 @@ export function createConflictHistory(
   const set = (patch: Partial<ConflictHistoryState>) => { state = { ...state, ...patch }; listeners.forEach(l => l()) }
 
   async function run(): Promise<void> {
-    set({ status: 'loading', error: null })
+    set({ status: 'loading', error: null, reason: null })
     try {
-      const { events: raw, truncated } = await fetcher(HISTORY_DAYS)
+      const { events: raw, truncated, reason } = await fetcher(HISTORY_DAYS)
       const events = datedEvents(raw)
       const endDay = latestDay(events)
       if (events.length === 0 || endDay === null) {
-        set({ status: 'empty', events: [], endDay: null, hexes: [], truncated: false, fetchedAt: now() })
+        set({ status: 'empty', events: [], endDay: null, hexes: [], truncated: false, fetchedAt: now(), reason: reason ?? null })
         return
       }
       const cells: HexCell[] = await binToHex(events, { endDay })

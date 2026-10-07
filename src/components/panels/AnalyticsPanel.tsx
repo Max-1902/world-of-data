@@ -64,7 +64,7 @@ export function AnalyticsPanel({ panelState, onToggleLayer, onCountryClick }: {
             ? 'Loading the last 75 days of ACLED events…'
             : status === 'error'
               ? `The conflict history could not be loaded${h.error ? ` (${h.error})` : ''}. Try again in a moment.`
-              : 'No ACLED events came back, so there is nothing to analyse. This panel needs the ACLED connection (credentials in .env). Check the source-health indicator in the top bar. Nothing here is estimated or filled in.'}
+              : `No ACLED events came back, so there is nothing to analyse. ${h.reason ?? 'ACLED answered but returned no events for this window, or the connection is not set up (credentials in .env); check the source-health indicator in the top bar.'} Nothing here is estimated or filled in.`}
         </div>
         {!loading && <button className="cy-btn" onClick={() => void h.reload()} style={{ alignSelf: 'flex-start' }}><RefreshCw size={11} /> Retry</button>}
       </div>
