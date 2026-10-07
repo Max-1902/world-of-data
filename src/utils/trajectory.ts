@@ -46,9 +46,8 @@ function reasonFor(country: string, recentCount: number, priorCount: number, del
 
 const RECENT_NEWS_WINDOW_MS = 48 * 60 * 60 * 1000  // last 48h
 
-function findNewsHit(country: string, articles: NewsArticle[]): NewsArticle | undefined {
+function findNewsHit(country: string, articles: NewsArticle[], now: number): NewsArticle | undefined {
   const lc = country.toLowerCase()
-  const now = Date.now()
   return articles.find(a => {
     const t = Date.parse(a.publishedAt)
     if (!Number.isNaN(t) && now - t > RECENT_NEWS_WINDOW_MS) return false
@@ -61,9 +60,11 @@ function findNewsHit(country: string, articles: NewsArticle[]): NewsArticle | un
  * Rule-based trajectory scoring: compares each country's crisis activity in the
  * last 3 days against the 4–10 day-prior window (using each event's own date),
  * ranking the fastest-rising regions. Pure function, no network calls.
+ *
+ * `now` is the "as of" instant; it defaults to the present and exists so the same rule can be replayed
+ * on past days (see utils/analytics.ts backtest) without any look-ahead.
  */
-export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], limit = 6, articles: NewsArticle[] = [], focusCountry?: string | null): TrajectoryEntry[] {
-  const now = Date.now()
+export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], limit = 6, articles: NewsArticle[] = [], focusCountry?: string | null, now: number = Date.now()): TrajectoryEntry[] {
   const byCountry: Record<string, { recent: CrisisEvent[]; prior: CrisisEvent[] }> = {}
 
   // Baseline entries (src/hooks/useCrises.ts) are synthetic "always ongoing" markers
@@ -98,7 +99,7 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
     const flightBoost = nearbyFlights > 15
 
     // Cross-check: is this country mentioned in recent (48h) news coverage?
-    const newsHit = findNewsHit(country, articles)
+    const newsHit = findNewsHit(country, articles, now)
 
     const adjustedDelta = delta + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)
 
@@ -127,7 +128,7 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
     // No dated crisis activity for this country in the tracked window — still
     // surface an explicit "quiet" entry rather than falling through to the
     // generic empty state, since the user asked about this specific country.
-    const newsHit = findNewsHit(focusCountry, articles)
+    const newsHit = findNewsHit(focusCountry, articles, now)
     return [{
       country: focusCountry,
       recentScore: 0, priorScore: 0,

@@ -6,7 +6,7 @@ import type { PanelState } from '../types'
  */
 export const LAYER_SECTIONS = [
   { title: 'LIVE TRACKING',        keys: ['flights', 'vessels', 'cameras'] },
-  { title: 'EVENTS & HAZARDS',     keys: ['crises', 'news', 'wildfires', 'humanitarian', 'gpsjam', 'outages'] },
+  { title: 'EVENTS & HAZARDS',     keys: ['crises', 'analyticsHex', 'news', 'wildfires', 'humanitarian', 'gpsjam', 'outages'] },
   { title: 'SECURITY & DEFENSE',   keys: ['military', 'militaryPersonnel', 'nuclear', 'sanctions', 'airspace'] },
   { title: 'ECONOMY',              keys: ['stocks', 'tradeStats', 'resources', 'oil', 'gas', 'supplychain'] },
   { title: 'INFRASTRUCTURE',       keys: ['infrastructure', 'infraIndicators', 'datacenters', 'pipelines', 'ports', 'chokepoints', 'shippingDensity'] },

@@ -18,6 +18,7 @@ src/
       PanelDock.tsx               # right-hand panel stack — resizable, drag-to-reorder
       ObserveTray.tsx             # bottom tray for panels popped out of the dock (up to 6)
       FloatingPanel.tsx           # legacy single floating panel (pre-registry)
+    charts/                       # SVG chart primitives (DailyChart, HeatmapChart, MoversChart, RateChart, ChartFrame)
     panels/                       # panel implementations, grouped by theme (NewsPanels, SecurityPanels,
                                   #   MarketPanels, CountryDataPanels, AIAnalystPanel, HumanitarianPanel, ...)
     PanelHost.tsx                 # per-panel ErrorBoundary + Suspense (panels are lazy-loaded)
@@ -30,6 +31,9 @@ src/
   services/                      # one API client per data source — fetch/parse only, no React
   utils/
     trajectory.ts                 # rule-based trend scoring (crisis escalation/de-escalation)
+    analytics.ts                  # daily series, country×day matrix, rate movers, walk-forward backtest, Wilson CI
+    hexbin.ts                     # ACLED events → H3 cells (lazy h3-js) + draw scaling for the map layer
+    vizPalette.ts                 # sequential / diverging ramps shared by charts and the map layer
     flightType.ts                  # ICAO24 hex-range + callsign heuristics (military/civil/cargo)
     reloadBus.ts                   # global "reload all data" event bus
   types/index.ts                  # shared domain types (Flight, CrisisEvent, PanelState, ...)
@@ -80,6 +84,14 @@ The older hand-typed waypoint lists (`GAS_PIPELINES`, `PIPELINE_ROUTES`) were re
 The AI Analyst panel doesn't just answer prompts — `computeTrajectories()` is a pure function (no network calls) that buckets each country's crisis events into a "last 3 days" vs "4–10 days prior" window using each event's real `date` field, scores both by severity, and ranks countries by the delta. This produces a "rising / falling / flat" trend per region, shown automatically on panel load with no prompt required. The same computed numbers are appended to the LLM's system prompt (`buildDashboardContext` in `services/openrouter.ts`) so the model's own analysis is grounded in a real, local computation rather than a static snapshot.
 
 **Load-bearing detail:** this function explicitly filters out `BASELINE` crisis entries (`source === 'Baseline'` / `id` starting with `baseline-`) before scoring. Baseline entries are stamped with today's date on every load, so including them would make every long-running conflict misread as "rising, no prior activity" on every single render — a bug caught during implementation, not a hypothetical.
+
+## Conflict Analytics (`AnalyticsPanel`, `services/conflictHistory.ts`)
+
+A second, longer ACLED read alongside the 14-day one in `useCrises`: `fetchACLEDHistory` pages through a 75-day window (5,000 rows/page, 10-page ceiling, `notes` column omitted) and reports `truncated` if the ceiling or a later page failure cut it short. `conflictHistory` is a small observable store (same shape as `services/history.ts`, read via `useSyncExternalStore`) so the panel and the map layer share one fetch; it is memory-only with a 30-minute TTL because the window is far too large for localStorage.
+
+Everything downstream is pure and tested: `utils/analytics.ts` (series, matrix, rate movers, backtest), `utils/hexbin.ts` (H3 aggregation; `h3-js` is imported lazily like in `services/gpsjam.ts`). The `analyticsHex` layer follows the GPS-jam pattern in `MapView` (source + `fill-extrusion` layer, visibility gated by a `PanelState` boolean, legend overlay) but reads the store itself through `useConflictHistory`, so `App` doesn't re-render when the history changes.
+
+`computeTrajectories` gained an optional `now` argument so the backtest can replay the live rule on past days with no look-ahead; its default behaviour is unchanged. The backtest replays the event-count component only (flight and news adjustments have no history to replay).
 
 ## State ownership
 

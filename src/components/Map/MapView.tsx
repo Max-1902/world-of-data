@@ -23,6 +23,8 @@ import { FIR_REGIONS, analyzeAirspace } from '../../services/notam'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../services/aisstream'
 import { OIL_GAS_DATA, getMaxValue, formatValue, getRegionTotals, METRIC_COLORS, METRIC_LABELS, type OilGasMetric } from '../../services/oilgas'
 import { SEVERITY_COLORS, SEVERITY_LABELS, GPSJAM_ATTRIBUTION, type GPSJamData } from '../../services/gpsjam'
+import { useConflictHistory } from '../../hooks/useConflictHistory'
+import { sequentialColor, divergingColor, SEQUENTIAL, FALLING, NEUTRAL, RISING } from '../../utils/vizPalette'
 import { CHOKEPOINTS, CHOKEPOINT_COLORS, SHIPPING_LANE_LABEL_IDS } from '../../services/chokepoints'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../services/supplychain'
 import { getCountryCentroid, type OutageEvent } from '../../services/outages'
@@ -87,6 +89,7 @@ interface Props {
   showTradeStats:     boolean
   showMilitaryPersonnel: boolean
   showInfraIndicators: boolean
+  showAnalyticsHex: boolean
   flyToQuery?:        string
   geoFlyTo?:          string
   onCountryClick?:    (country: string) => void
@@ -123,6 +126,7 @@ const OVERLAY_ITEMS: Record<keyof import('../../types').PanelState, { label: str
   supplychain: { label: 'SUPPLY CHAIN', icon: '◆', color: '#00ccff' },
   shippingDensity: { label: 'SHIPPING', icon: '≋', color: '#ff4466' },
   infraIndicators: { label: 'INFRA ACCESS', icon: '↯', color: '#22d3ee' },
+  analyticsHex: { label: 'CONFLICT HEX', icon: '⬢', color: '#3987e5' },
   datacenters: { label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
 }
 
@@ -138,7 +142,7 @@ export default function MapView({
   vessels, showVessels, showOil, showGas, showGPSJam, gpsJam, showPorts, showPipelines,
   showChokepoints, showSupplyChain, showShippingDensity,
   outages, showOutages, showResources, showTradeStats, showMilitaryPersonnel,
-  showInfraIndicators,
+  showInfraIndicators, showAnalyticsHex,
   flyToQuery, geoFlyTo, onCountryClick, selectedCountry,
   reticleColor = '#00ff88',
   panelState, onToggleLayer,
@@ -1920,6 +1924,48 @@ export default function MapView({
         map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = '' })
       }
 
+      // ── Conflict hex (Analytics panel): ACLED events binned into H3 cells, extruded by activity ─────
+      map.addSource('analytics-hex', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      })
+      map.addLayer({
+        id: 'analytics-hex-extrusion',
+        type: 'fill-extrusion',
+        source: 'analytics-hex',
+        paint: {
+          'fill-extrusion-color': ['get', 'color'],
+          'fill-extrusion-height': ['get', 'height'],
+          'fill-extrusion-base': 0,
+          'fill-extrusion-opacity': 0.88,
+        },
+        layout: { visibility: 'none' },
+      })
+      map.on('click', 'analytics-hex-extrusion', (e) => {
+        if (!e.features?.[0]) return
+        const p = e.features[0].properties as Record<string, unknown>
+        const esc = (s: unknown) => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string))
+        const change = Number(p.change)
+        const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:220px;">
+          <div style="font-size:12px;font-weight:700;color:#14161a;margin-bottom:2px;">${esc(p.country)}</div>
+          <div style="font-size:10px;color:#9ca3af;letter-spacing:.1em;margin-bottom:6px;">CONFLICT ACTIVITY · ~60 KM CELL</div>
+          <div style="display:grid;grid-template-columns:110px 1fr;gap:3px 8px;font-size:11px;">
+            <span style="color:#9ca3af;">Last 7 days</span><span style="color:#14161a;font-weight:700;">score ${Number(p.recent)}</span>
+            <span style="color:#9ca3af;">Prior 7 days</span><span style="color:#14161a;">score ${Number(p.prior)}</span>
+            <span style="color:#9ca3af;">Change</span><span style="color:${change > 0 ? '#c0392b' : change < 0 ? '#256abf' : '#14161a'};font-weight:700;">${change > 0 ? '▲ +' : change < 0 ? '▼ −' : ''}${Math.abs(change)}</span>
+            <span style="color:#9ca3af;">Events (14 days)</span><span style="color:#14161a;">${Number(p.events)}</span>
+            <span style="color:#9ca3af;">Reported deaths</span><span style="color:#14161a;">${Number(p.fatalities)}</span>
+          </div>
+          <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">Score weights events by severity (critical 10 · high 6 · medium 3 · low 1). ACLED reports with a lag, so the newest days read low.</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ACLED</div>
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' }).setLngLat(e.lngLat).setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'analytics-hex-extrusion', () => { map.getCanvas().style.cursor = 'pointer' })
+      map.on('mouseleave', 'analytics-hex-extrusion', () => { map.getCanvas().style.cursor = '' })
+
       // ── Oil & Gas 3D extruded bars (separate layers, side by side) ────
       for (const kind of ['oil', 'gas'] as const) {
         map.addSource(`${kind}-bars`, {
@@ -3065,6 +3111,35 @@ export default function MapView({
     areaSrc.setData({ type: 'FeatureCollection', features: areaFeatures })
   }, [showGPSJam, gpsJam, mapReady])
 
+  // ── Conflict hex (Analytics) update ────────────────────────────────────────────
+  const conflictHex = useConflictHistory(showAnalyticsHex)
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const src = map.getSource('analytics-hex') as mapboxgl.GeoJSONSource | undefined
+    if (!src) return
+    if (map.getLayer('analytics-hex-extrusion')) map.setLayoutProperty('analytics-hex-extrusion', 'visibility', showAnalyticsHex ? 'visible' : 'none')
+    if (!showAnalyticsHex) {
+      src.setData({ type: 'FeatureCollection', features: [] })
+      return
+    }
+    const change = conflictHex.mapMode === 'change'
+    const features: GeoJSON.Feature[] = []
+    for (const c of conflictHex.hexes) {
+      if (change ? c.change === 0 : c.recent === 0) continue   // intensity shows the latest week only; change shows any movement
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: [c.ring] },
+        properties: {
+          color: change ? divergingColor(c.divergence) : sequentialColor(c.intensity),
+          height: change ? Math.abs(c.divergence) * c.heightScale + 1500 : c.intensity * c.heightScale + 1500,
+          country: c.country, recent: c.recent, prior: c.prior, change: c.change, events: c.events, fatalities: c.fatalities,
+        },
+      })
+    }
+    src.setData({ type: 'FeatureCollection', features })
+  }, [showAnalyticsHex, conflictHex.hexes, conflictHex.mapMode, mapReady])
+
   // ── Resize Mapbox when deepstate split activates / deactivates ───────────
   useEffect(() => {
     const map = mapRef.current
@@ -3362,6 +3437,31 @@ export default function MapView({
           transition: 'flex-basis .25s ease',
         }}
       >
+
+      {/* ── Conflict hex legend (Analytics layer) ─────────────────────── */}
+      {showAnalyticsHex && !deepstateMode && (
+        <div style={{ position:'absolute', right:10, bottom:58, zIndex:30, width:210, padding:'8px 10px', background:'rgba(9,16,22,0.94)', border:'1px solid #263843', borderRadius:6, backdropFilter:'blur(10px)', boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
+          <div style={{ fontSize:10.5, fontWeight:650, color:'#e5ecef' }}>
+            {conflictHex.mapMode === 'change' ? 'Change vs prior 7 days' : 'Conflict activity, latest 7 days'}
+          </div>
+          <div style={{ marginTop:6, height:6, borderRadius:3, background: conflictHex.mapMode === 'change'
+            ? `linear-gradient(90deg, ${FALLING}, ${NEUTRAL}, ${RISING})`
+            : `linear-gradient(90deg, ${SEQUENTIAL.join(',')})` }} />
+          <div style={{ display:'flex', justifyContent:'space-between', marginTop:3, fontSize:9, color:'#98aab4' }}>
+            {conflictHex.mapMode === 'change' ? <><span>Falling</span><span>No change</span><span>Rising</span></> : <><span>Low</span><span>High</span></>}
+          </div>
+          <div style={{ marginTop:5, fontSize:9, color:'#647883', lineHeight:1.45 }}>
+            {conflictHex.status === 'loading' || conflictHex.status === 'idle' ? 'Loading 75 days of ACLED events…'
+              : conflictHex.status === 'empty' ? 'No ACLED events available — nothing to draw.'
+              : conflictHex.status === 'error' ? 'Could not load the conflict history.'
+              : `${conflictHex.hexes.length.toLocaleString()} cells from ${conflictHex.events.length.toLocaleString()} events. Height = activity. Click a cell for detail.`}
+          </div>
+          <button onClick={() => { const m = mapRef.current; if (m) m.easeTo({ pitch: m.getPitch() > 10 ? 0 : 55, duration: 800 }) }}
+            style={{ marginTop:6, padding:'3px 8px', fontSize:9.5, color:'#e5ecef', background:'rgba(255,255,255,0.06)', border:'1px solid #263843', borderRadius:4, cursor:'pointer' }}>
+            Tilt map to see heights
+          </button>
+        </div>
+      )}
 
       {/* ── Flight filter flyout (only when flights enabled) ──────────── */}
       {showFlights && !deepstateMode && (

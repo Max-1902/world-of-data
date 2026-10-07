@@ -84,4 +84,5 @@ export interface PanelState {
   militaryPersonnel: boolean
   datacenters:    boolean
   infraIndicators: boolean
+  analyticsHex:   boolean
 }

@@ -138,6 +138,79 @@ export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
   }
 }
 
+// ── Long-window history for the Analytics panel ─────────────────────────────────
+// Same source, token and severity mapping as above, but paginated and without the free-text `notes`
+// column (by far the heaviest field) — the analytics only need when, where, what kind and how deadly.
+const HISTORY_FIELDS = 'event_id_cnty|event_date|event_type|country|latitude|longitude|fatalities'
+const HISTORY_PAGE_SIZE = 5000
+/** Hard ceiling on requests per load, so a broad window can never turn into a flood against ACLED. */
+const HISTORY_MAX_PAGES = 10
+
+export interface ACLEDHistory {
+  events: CrisisEvent[]
+  /** True when the page ceiling was hit or a later page failed — the window is then incomplete. */
+  truncated: boolean
+}
+
+export async function fetchACLEDHistory(days = 75): Promise<ACLEDHistory> {
+  const token = await getACLEDToken()
+  if (!token) return { events: [], truncated: false }
+
+  const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0]
+  const today = new Date().toISOString().split('T')[0]
+  const events: CrisisEvent[] = []
+  let truncated = false
+
+  for (let page = 1; page <= HISTORY_MAX_PAGES; page++) {
+    let rows: Record<string, string>[]
+    try {
+      const params = new URLSearchParams({
+        _format: 'json',
+        event_date: `${since}|${today}`,
+        event_date_where: 'BETWEEN',
+        limit: String(HISTORY_PAGE_SIZE),
+        page: String(page),
+        fields: HISTORY_FIELDS,
+      })
+      const res = await fetch(`${ACLED_API}?${params}`, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      })
+      if (!res.ok) throw new Error(`ACLED ${res.status}`)
+      const json = await res.json()
+      if (json.status !== 200) throw new Error(String(json.error ?? 'ACLED error'))
+      rows = Array.isArray(json.data) ? json.data : []
+    } catch (err) {
+      console.warn('[ACLED history] fetch error:', err)
+      truncated = events.length > 0
+      break
+    }
+
+    for (const e of rows) {
+      const latitude = parseFloat(e.latitude)
+      const longitude = parseFloat(e.longitude)
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !e.country || !e.event_date) continue
+      const type = TYPE_MAP[e.event_type] ?? 'conflict'
+      events.push({
+        id: e.event_id_cnty,
+        title: `${e.event_type} in ${e.country}`,
+        type,
+        severity: SEVERITY_MAP[type] ?? 'medium',
+        latitude, longitude,
+        country: e.country,
+        date: e.event_date,
+        description: '',
+        source: 'ACLED',
+        fatalities: parseInt(e.fatalities) || 0,
+      })
+    }
+
+    if (rows.length < HISTORY_PAGE_SIZE) break
+    if (page === HISTORY_MAX_PAGES) truncated = true
+  }
+
+  return { events, truncated }
+}
+
 // No GDELT here on purpose. The GEO 2.0 API this used to call (/api/v2/geo/geo) now 404s for every
 // query, and the replacement — GDELT's raw 15-minute event exports — was measured against live data
 // (Sep 2026): even restricted to armed-violence CAMEO codes, city-level geocodes and armed actors,
