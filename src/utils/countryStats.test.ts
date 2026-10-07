@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  makeScale, niceTicks, pearson, ranks, spearman, fisherCI, ols, joinRows, analyzePair, describePair, describeFit,
+  summarizeForAI, makeScale, niceTicks, pearson, ranks, spearman, fisherCI, ols, joinRows, analyzePair, describePair, describeFit,
   percentile, histogram, correlationMatrix, countryColors, MIN_PAIR_N,
 } from './countryStats'
 import { INDICATOR_BY_ID, type CountryValue } from '../services/countryIndicators'
@@ -214,5 +214,26 @@ describe('countryColors', () => {
   it('returns nothing for empty input', () => {
     expect(countryColors('value', [], makeScale('linear'), null).colors).toEqual({})
     expect(countryColors('trend', [], makeScale('linear'), null).colors).toEqual({})
+  })
+})
+
+describe('summarizeForAI', () => {
+  const x = INDICATOR_BY_ID.get('NY.GDP.PCAP.CD')!, y = INDICATOR_BY_ID.get('MS.MIL.XPND.GD.ZS')!
+  const xs = makeScale(x.scale), ys = makeScale(y.scale)
+  const gdp = Array.from({ length: 20 }, (_, i) => 1000 * 1.4 ** i)
+  const mil = gdp.map((_, i) => 2 + (i === 5 ? 20 : 0) + (i === 12 ? -1.5 : 0))
+  const a = analyzePair(rows(gdp), rows(mil), xs, ys)!
+
+  it('names both indicators, the sample size and the extreme countries with actual vs expected', () => {
+    const text = summarizeForAI(a, x, y, xs, ys)
+    expect(text).toContain('Military spending (% of GDP) (Y) against GDP per capita (US$) (X), 20 countries')
+    expect(text).toMatch(/Spearman ρ/)
+    expect(text).toMatch(/Furthest ABOVE the trend: Country C5 \(22\.0% actual vs/)
+    expect(text).toMatch(/Furthest BELOW the trend: .*Country C12/)
+    expect(text).toMatch(/\+\d+\.\d sd/)
+  })
+  it('lists each source once when both indicators share one, and says "none" with no outliers on a side', () => {
+    expect(summarizeForAI(a, x, y, xs, ys)).toContain('(World Bank)')
+    expect(summarizeForAI({ ...a, over: [], under: [] }, x, y, xs, ys)).toContain('Furthest ABOVE the trend: none.')
   })
 })

@@ -279,3 +279,17 @@ export function countryColors(mode: MapMode, yRows: CountryValue[], ys: Scale, a
   for (const r of usable) colors[r.iso3] = sequentialColor(0.2 + 0.8 * Math.min(1, Math.max(0, (ys.fwd(r.value) - lo) / span)))
   return { mode, colors, lo: ys.inv(lo), hi: ys.inv(hi) }
 }
+
+/**
+ * Compact, plain-text summary of a pair analysis for the AI analyst's context. Everything in it is computed locally, so the
+ * model can cite it instead of recalling figures from memory.
+ */
+export function summarizeForAI(a: PairAnalysis, x: IndicatorMeta, y: IndicatorMeta, xs: Scale, ys: Scale, topK = 5): string {
+  const fmtP = (p: Residual) => `${p.name} (${y.format(p.y)} actual vs ${y.format(p.expected)} expected, ${p.z >= 0 ? '+' : '−'}${Math.abs(p.z).toFixed(1)} sd)`
+  return [
+    `Comparison: ${y.label} (Y) against ${x.label} (X), ${a.n} countries, each country's latest value since 2010 (${x.source}${x.source !== y.source ? ` and ${y.source}` : ''}).`,
+    `${describePair(a, x, y)} ${describeFit(a.fit, xs, ys, x, y)}`,
+    `Furthest ABOVE the trend: ${a.over.slice(0, topK).map(fmtP).join('; ') || 'none'}.`,
+    `Furthest BELOW the trend: ${a.under.slice(0, topK).map(fmtP).join('; ') || 'none'}.`,
+  ].join('\n  ')
+}

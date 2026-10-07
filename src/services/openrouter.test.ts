@@ -117,6 +117,16 @@ describe('model catalogue and prompts', () => {
   })
 })
 
+describe('buildDashboardContext country analytics', () => {
+  it('adds the analytics block only when a summary is given', () => {
+    expect(buildDashboardContext([], [])).not.toContain('COUNTRY ANALYTICS')
+    const ctx = buildDashboardContext([], [], [], '', '', 'Comparison: A against B, 12 countries.')
+    expect(ctx).toContain('COUNTRY ANALYTICS')
+    expect(ctx).toContain('Comparison: A against B, 12 countries.')
+    expect(ctx).toContain('not model-generated')
+  })
+})
+
 describe('buildDashboardContext', () => {
   const crisis = (o: Partial<CrisisEvent>): CrisisEvent => ({
     id: Math.random().toString(36), title: 'Event', type: 'war', severity: 'low', latitude: 0, longitude: 0,
