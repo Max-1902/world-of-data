@@ -52,9 +52,6 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
   const inputRef = useRef<HTMLInputElement>(null)
   const threat = computeThreatLevel(crises)
   const hasLiveCrises = liveCrisisCount > 0
-  const now = new Date()
-  const utc = now.toUTCString().replace(/ GMT$/, '').split(' ').slice(1, 5).join(' ')
-
   useEffect(() => {
     if (expanded) inputRef.current?.focus()
   }, [expanded])
@@ -97,7 +94,7 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
       <div className="hud-sep" />
 
       {/* center: stats */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, justifyContent: 'center' }}>
+      <div className="tb-center">
         <span title={`High-importance events in the last 48 h of headlines — political ${keyEvents.byCategory.political}, economic ${keyEvents.byCategory.economic}, humanitarian ${keyEvents.byCategory.humanitarian}, other ${keyEvents.byCategory.other}`}>
           <HudStat label="TRACKED" value={keyEvents.total} />
         </span>
@@ -113,31 +110,27 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
         {/* threat level — only meaningful when computed from live events, not the fixed baseline list */}
         {hasLiveCrises ? (
           <div className="defcon-badge" style={{ color: threat.color, borderColor: threat.color, background: threat.soft }}>
-            <span style={{ fontSize: 8, color: 'var(--text3)' }}>DEFCON</span>
+            <span className="defcon-label" style={{ color: 'var(--text3)' }}>DEFCON</span>
             <span>{threat.level}</span>
-            <span style={{ fontSize: 9 }}>{threat.label}</span>
+            <span>{threat.label}</span>
           </div>
         ) : (
           <div className="defcon-badge" title="Threat level needs a live conflict feed (ACLED). Only the fixed baseline list is loaded."
             style={{ color: 'var(--text3)', borderColor: 'var(--border)', background: 'transparent' }}>
-            <span style={{ fontSize: 8 }}>DEFCON</span>
-            <span style={{ fontSize: 9 }}>NO LIVE FEED</span>
+            <span className="defcon-label">DEFCON</span>
+            <span>NO LIVE FEED</span>
           </div>
         )}
 
-        <div className="hud-sep" />
+        <div className="hud-sep tb-clock-sep" />
 
-        {/* UTC clock */}
-        <div style={{ fontSize: 10, color: 'var(--text2)', letterSpacing: '.02em', fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
-          <span style={{ color: 'var(--text3)', marginRight: 5 }}>UTC</span>
-          {utc}
-        </div>
+        <UtcClock />
       </div>
 
       <div className="hud-sep" />
 
       {/* right: view modes + search */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+      <div className="tb-right">
         <div style={{ display: 'flex', alignItems: 'center', gap: 1, background: 'var(--surface2)', borderRadius: 'var(--r-md)', padding: 2 }}>
           {VIEW_MODES.map(({ id, label }) => (
             <button
@@ -198,8 +191,8 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
           className="cy-btn"
           style={{ color: reloading ? 'var(--accent)' : 'var(--text2)' }}
         >
-          <RefreshCw size={11} className={reloading ? 'animate-spin' : ''} />
-          Reload
+          <RefreshCw size={12} className={reloading ? 'animate-spin' : ''} />
+          <span className="tb-btn-label">Reload</span>
         </button>
 
         <SourceHealth />
@@ -216,13 +209,30 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
   )
 }
 
+/** Ticking UTC clock — own component so the per-second render doesn't touch the rest of the bar. */
+function UtcClock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  const [day, mon, year, time] = now.toUTCString().replace(/ GMT$/, '').split(' ').slice(1, 5)
+  return (
+    <div className="tb-clock">
+      <span className="tb-clock-tz">UTC</span>
+      <span className="tb-clock-date">{day} {mon} {year}</span>
+      <span className="tb-clock-time">{time}</span>
+    </div>
+  )
+}
+
 function HudStat({ label, value }: { label: string; value: number }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
+      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
         {value.toLocaleString()}
       </span>
-      <span style={{ fontSize: 8, fontWeight: 500, letterSpacing: '.08em', color: 'var(--text3)', fontFamily: 'Inter, -apple-system, sans-serif' }}>
+      <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '.08em', color: 'var(--text3)', fontFamily: 'Inter, -apple-system, sans-serif' }}>
         {label}
       </span>
     </div>

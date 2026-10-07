@@ -232,6 +232,25 @@ html, body, #root {
 }
 
 .topbar > div:first-child { gap: 12px !important; }
+.tb-center { overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 18px; flex: 1 1 0; min-width: 0; white-space: nowrap; }
+.tb-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.tb-clock { display: flex; align-items: baseline; gap: 6px; font: 500 12px 'Inter', -apple-system, sans-serif; color: var(--text2); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+.tb-clock-tz { color: var(--text3); font-size: 10px; font-weight: 600; letter-spacing: .08em; }
+.tb-clock-time { color: var(--text1); font-weight: 600; }
+
+/* Shed the least important top-bar content as width shrinks, so nothing wraps or is clipped. */
+@media (max-width: 1800px) { .tb-clock-date { display: none; } }
+@media (max-width: 1620px) { .tb-clock, .tb-clock-sep { display: none; } }
+@media (max-width: 1480px) { .tb-btn-label { display: none; } .topbar .tb-right .cy-btn:has(.tb-btn-label) { padding: 5px 7px; } }
+@media (max-width: 1400px) { .tb-center { gap: 12px; } }
+@media (max-width: 1400px) and (min-width: 1301px), (max-width: 1230px) { .defcon-label { display: none; } }
+@media (max-width: 1300px) { .tb-center > span, .tb-center > .hud-sep { display: none; } }
+@media (max-width: 1100px) {
+  .topbar > .tb-center, .topbar > .hud-sep { display: none; }
+  .tb-right { min-width: 0; flex-shrink: 1; }
+  .tb-right > div:first-child { min-width: 0; flex-shrink: 1; overflow-x: auto; scrollbar-width: none; }
+  .tb-right > div:first-child::-webkit-scrollbar { display: none; }
+}
 .topbar .live-badge { font-size: 8px; letter-spacing: .11em; }
 
 /* ── Button ───────────────────────────────────── */
@@ -615,7 +634,7 @@ input::placeholder { color: #647883; opacity: 1; }
 }
 
 @media (max-width: 820px) {
-  .topbar > div:nth-of-type(2), .topbar > div:nth-of-type(3), .topbar > .hud-sep { display: none; }
+  .topbar > .tb-center, .topbar > .hud-sep { display: none; }
   .sidebar.expanded { width: 48px; }
   .sidebar-heading { display: none; }
   .sidebar-item { justify-content: center; padding: 10px 0; margin: 0 6px; }
@@ -654,11 +673,13 @@ input::placeholder { color: #647883; opacity: 1; }
 
 /* ── Defcon badge ───────────────────────────────── */
 .defcon-badge {
-  display: flex; align-items: center; gap: 5px;
-  padding: 3px 10px;
-  font-size: 10px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 12px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
   border: 1px solid currentColor;
   border-radius: var(--r-pill);
 }
