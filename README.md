@@ -17,35 +17,31 @@ Meridian renders a live Mapbox GL globe with ten selectable view modes (satellit
 - **Markets** — indices, commodities, energy, tech, healthcare, and defense-sector tickers (Finnhub)
 - **Trade & supply chain** — chokepoints, shipping density, pipelines, ports, and World Bank country economic indicators
 - **News & OSINT** — aggregated reporting from Guardian, NYT, and NewsAPI, plus a keyword/coordinate search
-- **Conflict Analytics** — 75 days of ACLED events turned into charts (daily trend, country × day heatmap, biggest movers), a walk-forward backtest of the "rising" flag, and a 3D hexagon layer that draws the same results on the globe (see [Analytics](#analytics-from-tens-of-thousands-of-events-to-one-picture))
+- **Data Analytics** — the earthquake and wildfire feeds the app already loads, analysed in the browser: hourly trends, a Gutenberg–Richter magnitude law fit, region × day heatmaps, depth and fire-power distributions, and a 3D hexagon layer that draws ~100k fire detections on the globe (see [Analytics](#analytics-from-100000-detections-to-one-picture))
 - **AI Analyst** — an LLM-backed panel (via OpenRouter) that answers situational questions and can drive the map (fly-to, layer toggles) from natural language
 
 All panels live in a single extensible **panel registry** (`src/panels/registry.tsx`) grouped into INTEL / GEO / MIL / FIN / AI — adding a new data source is one entry, and the dock, pop-out tray, and settings pick it up automatically.
 
-## Analytics: from tens of thousands of events to one picture
+## Analytics: from 100,000 detections to one picture
 
-The **Conflict Analytics** panel (Analysis workspace) takes a 75-day ACLED window (paged, capped at 10 requests per load, slim field list) and answers four questions. Every chart has a Chart / Table switch, hover and keyboard readouts, and click-through to the map.
+The **Data Analytics** panel (Analysis workspace) works on the two high-volume feeds the app already uses — **USGS earthquakes** (M4.5+, last 7 days) and **NASA FIRMS VIIRS fire detections** (last 24 h). Both are free and keyless, and nothing new is fetched: it goes through the existing `services/earthquakes.ts` and `services/wildfires.ts`. Every chart has a Chart / Table switch and hover and keyboard readouts.
 
-| View | What it shows | Method |
+| Chart | What it shows | Method |
 |---|---|---|
-| Global activity by day | Severity-weighted score per day with a 7-day mean | `dailySeries`, zero-filled so quiet days are real zeros |
-| Where activity is concentrated | Top-12 countries × 45 days heatmap | square-root colour scale so one extreme day doesn't wash out the rest; click a row to fly there |
-| Biggest movers | Diverging bars: last 3 days vs the prior 7, per-day rates | `rateMovers` |
-| Does the "rising" flag predict anything? | Hit rate of the Watchlist rule vs. any active country, with 95% Wilson intervals, plus hit rate by velocity score | walk-forward backtest (`backtestTrajectory`) |
+| Earthquakes per hour | 168 hourly counts with a trailing 24 h mean | `bucketCounts`, `trailingMean`; the average is null until a full window exists |
+| Magnitude–frequency | Cumulative counts on a log axis with the fitted slope | Gutenberg–Richter: maximum-likelihood **b-value** (Aki–Utsu, bin-corrected) with the Shi & Bolt standard error; unit-tested against a sample drawn with b = 1 |
+| Where quakes cluster | Top-10 regions × 7 days heatmap; click a row to fly there | region = USGS place text after the last comma, verbatim; square-root colour scale |
+| How deep they are | Counts by depth class | shallow / intermediate / deep classes |
+| Detections by UTC hour | 24 bars; peaks follow the satellite's overpass times | parsed from FIRMS `acq_time` |
+| How intense the fires are | Log-spaced fire-radiative-power histogram | detections with no power reading are excluded and the chart says so |
 
-**On the map**, *Show on map* bins the same events into H3 hexagons (res 3, ~60 km) and extrudes them by activity, coloured either by latest-7-day intensity (sequential blue) or by change vs the prior 7 days (blue ↔ red diverging around a neutral midpoint). Click a hexagon for its numbers; *Tilt map* shows the heights.
+**On the map**, *Show on map* bins either feed into H3 hexagons and extrudes them: wildfires at res 4 (~22 km) by summed fire radiative power, earthquakes at res 3 (~60 km) by count. A square-root scale keeps one huge cell from flattening the rest. Click a hexagon for its numbers, *Tilt map* shows the heights, and the legend switches between the two feeds.
 
-**How the backtest stays honest**
-- It replays the live rule (`computeTrajectories`, which now accepts an `as of` time) on every past day using only events dated on or before that day. A test appends future events and asserts earlier days don't change (no look-ahead).
-- A "hit" means the next 7 days average a higher daily score than the trailing 10 days. The baseline is the same test over *every* active country, so the result is a lift over chance, not a bare accuracy figure.
-- It reports whatever it finds. The plain-language verdict is generated from the numbers (`describeBacktest`) and only claims a lift when |z| > 1.96; otherwise it says the flag isn't shown to add value. Velocity bins with fewer than 20 samples are drawn as "too few", not as rates.
-- Limits, stated in the panel: only event counts are replayed (no historical flight or news data exists), daily samples overlap so intervals are optimistic, and ACLED publishes with a lag so the newest days are undercounted (the window is anchored on the newest event day, not on today).
+**Scale.** On the run I checked (7 Oct 2026) the fire feed held 117,305 detections, which collapsed into 9,975 hexagons. Timing on *synthetic* uniformly random global points (Node, dev laptop — a worst case, since real fires cluster): 120,000 points bin into ~95,000 cells in about 0.55 s, and the summary statistics take ~30 ms, so it all runs client-side with no backend.
 
-**Scale.** Timing on *synthetic* uniformly random global points (Node, dev laptop, not ACLED data): 50,000 events bin into 8,221 H3 cells in ~70 ms, and the full backtest over 50,000 events runs in ~125 ms, so the analysis runs in the browser with no backend. Real ACLED volume per window depends on your account's access.
+**No data, no chart.** If a feed returns nothing or fails, its section says so and offers a retry; nothing is estimated or filled in. Chart colours are validated for colour-vision deficiency against the app's dark surface (`--series-1/2` in `index.css`, ramp in `src/utils/vizPalette.ts`).
 
-Chart colours are validated with a colour-vision-deficiency check against the app's dark surface (`--series-1/2` and the ramps in `src/utils/vizPalette.ts`); direction is never carried by colour alone (arrows and signs on movers, a table view on every chart).
-
-**A bug the analytics exposed, now fixed.** The trajectory rule used to compare a 3-day *sum* with a 7-day *sum*, so a perfectly steady country read as "falling" (about −57%) in the Outlook card, Watchlist and AI Analyst context. `computeTrajectories` now compares the last 72h with the pace the prior week implies (its score × 3/7), keeping `delta` in "points per 72h" so the flat band and boosts are unchanged. The backtest replays this corrected rule.
+**A bug the analytics work exposed, now fixed.** The trajectory rule used to compare a 3-day *sum* with a 7-day *sum*, so a perfectly steady country read as "falling" (about −57%) in the Outlook card, Watchlist and AI Analyst context. `computeTrajectories` now compares the last 72h with the pace the prior week implies (its score × 3/7), keeping `delta` in "points per 72h" so the flat band and boosts are unchanged.
 
 ## Why this exists
 

@@ -4,12 +4,8 @@
  * (--series-1..5, validated against the #0d161d surface); the ramps below are for continuous magnitude.
  *
  * Sequential: one hue (blue), dark → light as magnitude rises (on a dark surface "more" is brighter).
- * Diverging:  blue (falling) ↔ neutral ↔ red (rising); the midpoint is a neutral gray, never a hue.
  */
 export const SEQUENTIAL = ['#0d366b', '#184f95', '#256abf', '#3987e5', '#6da7ec', '#9ec5f4'] as const
-export const FALLING = '#3987e5'
-export const RISING = '#e66767'
-export const NEUTRAL = '#2a3d49'
 
 type RGB = [number, number, number]
 const rgb = (hex: string): RGB => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)) as RGB
@@ -25,6 +21,3 @@ export function rampColor(stops: readonly string[], t: number): string {
 }
 
 export const sequentialColor = (t: number) => rampColor(SEQUENTIAL, t)
-/** v in −1..1: negative → blue, positive → red, 0 → neutral. */
-export const divergingColor = (v: number) =>
-  v >= 0 ? rampColor([NEUTRAL, RISING], v) : rampColor([NEUTRAL, FALLING], -v)

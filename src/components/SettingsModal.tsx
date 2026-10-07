@@ -106,7 +106,7 @@ export const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] 
   { id: 'supplychain', label: 'SUPPLY CHAIN', desc: 'Semiconductor fabs, rare earth, lithium, cobalt' },
   { id: 'shippingDensity', label: 'SHIPPING', desc: 'Global shipping-lane density, 2004–05 (NOAA/NCEAS/ICOADS via Resource Watch)' },
   { id: 'gpsjam', label: 'GPS JAM', desc: 'Interference (daily, ADS-B)' },
-  { id: 'analyticsHex', label: 'CONFLICT HEX', desc: '75 days of ACLED events binned into 3D hexagons (Analytics panel)' },
+  { id: 'analyticsHex', label: 'DATA HEX', desc: 'Wildfire detections or earthquakes binned into 3D hexagons (Analytics panel)' },
   { id: 'outages', label: 'OUTAGES', desc: 'Internet/power outages (IODA)' },
   { id: 'resources', label: 'RESOURCES', desc: 'Critical mineral producers' },
   { id: 'infraIndicators', label: 'INFRA ACCESS', desc: 'Electricity, internet, water/sanitation access by country (World Bank)' },
