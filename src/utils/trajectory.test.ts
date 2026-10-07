@@ -22,6 +22,21 @@ function daysAgo(n: number): string {
   return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString()
 }
 
+describe('computeTrajectories as-of time', () => {
+  it('scores relative to the supplied time and ignores events after it', () => {
+    const asOf = Date.UTC(2025, 0, 20, 23, 59, 59)
+    const day = (d: number) => new Date(Date.UTC(2025, 0, d)).toISOString().slice(0, 10)
+    const crises = [
+      crisis({ country: 'Past', severity: 'critical', date: day(19) }),
+      crisis({ country: 'Past', severity: 'critical', date: day(20) }),
+      crisis({ country: 'Future', severity: 'critical', date: day(25) }),   // after asOf: must not count
+    ]
+    const entries = computeTrajectories(crises, [], 6, [], null, asOf)
+    expect(entries.map(e => e.country)).toEqual(['Past'])
+    expect(entries[0]).toMatchObject({ trend: 'rising', recentCount: 2, priorCount: 0 })
+  })
+})
+
 describe('computeTrajectories', () => {
   it('marks a country rising when recent activity outweighs prior activity', () => {
     const crises = [

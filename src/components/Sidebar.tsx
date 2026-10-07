@@ -18,7 +18,7 @@ const GROUP_HINTS: Record<PanelGroup, string> = {
   geo: 'Connectivity, disasters, humanitarian, energy and data-center sites',
   security: 'Sanctions, bases, force size, nuclear sites, airspace, trafficking',
   markets: 'Markets, trade partners & products, resources, economic indicators',
-  analysis: 'Briefings and regional outlook',
+  analysis: 'Conflict analytics, briefings and regional outlook',
 }
 
 interface Props {

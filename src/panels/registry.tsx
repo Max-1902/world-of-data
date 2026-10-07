@@ -39,6 +39,7 @@ const DataCentersPanel = lazy(() => import('../components/panels/CountryDataPane
 const AIAnalystPanel = lazy(() => import('../components/panels/AIAnalystPanel').then(m => ({ default: m.AIAnalystPanel })))
 const HumanitarianPanel = lazy(() => import('../components/panels/HumanitarianPanel').then(m => ({ default: m.HumanitarianPanel })))
 const DisasterAlertsPanel = lazy(() => import('../components/panels/DisasterAlertsPanel').then(m => ({ default: m.DisasterAlertsPanel })))
+const AnalyticsPanel = lazy(() => import('../components/panels/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })))
 const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
@@ -205,6 +206,11 @@ const PANELS: PanelDef[] = [
   },
 
   // ── ANALYSIS ────────────────────────────────────────────────────────────────
+  {
+    id: 'analytics', title: 'Conflict Analytics', group: 'analysis',
+    dotColor: 'blue', desc: '75 days of ACLED data: trends, heatmap, movers, and a backtest of the rising flag — plotted on the map',
+    render: (p) => <AnalyticsPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} onCountryClick={p.onCountryClick} />,
+  },
   {
     id: 'analyst', title: 'Analyst chat', group: 'analysis',
     dotColor: 'blue', desc: 'AI-assisted situational assessment',

@@ -135,3 +135,73 @@ describe('ACLED login persistence across reloads', () => {
     } finally { vi.useRealTimers() }
   })
 })
+
+describe('fetchACLEDHistory', () => {
+  beforeEach(() => quietConsole())
+
+  const row = (i: number, o: Record<string, string> = {}) => ({
+    event_id_cnty: `E${i}`, event_date: '2025-01-02', event_type: 'Battles', country: 'Ukraine',
+    latitude: '48.1', longitude: '37.7', fatalities: '1', ...o,
+  })
+
+  it('pages until a short page, asks for the slim field list, and maps rows', async () => {
+    const pages: string[] = []
+    mockFetch(url => {
+      if (url === TOKEN_URL) return okToken()
+      const q = new URL(url, 'http://x').searchParams
+      pages.push(q.get('page')!)
+      expect(q.get('fields')).not.toContain('notes')
+      return jsonResponse({ status: 200, data: q.get('page') === '1' ? Array.from({ length: 5000 }, (_, i) => row(i)) : [row(9001)] })
+    })
+    const { fetchACLEDHistory } = await load()
+    const { events, truncated } = await fetchACLEDHistory(75)
+    expect(pages).toEqual(['1', '2'])
+    expect(events).toHaveLength(5001)
+    expect(truncated).toBe(false)
+    expect(events[0]).toMatchObject({ id: 'E0', title: 'Battles in Ukraine', severity: 'critical', country: 'Ukraine', description: '', fatalities: 1 })
+  })
+
+  it('skips rows with bad coordinates or no country', async () => {
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [
+      row(1), row(2, { latitude: 'x' }), row(3, { country: '' }), row(4, { event_date: '' }),
+    ] }))
+    const { fetchACLEDHistory } = await load()
+    expect((await fetchACLEDHistory()).events.map(e => e.id)).toEqual(['E1'])
+  })
+
+  it('stops at the page ceiling and marks the result truncated', async () => {
+    let calls = 0
+    mockFetch(url => {
+      if (url === TOKEN_URL) return okToken()
+      calls++
+      return jsonResponse({ status: 200, data: Array.from({ length: 5000 }, (_, i) => row(i)) })
+    })
+    const { fetchACLEDHistory } = await load()
+    const r = await fetchACLEDHistory()
+    expect(calls).toBe(10)
+    expect(r.truncated).toBe(true)
+  })
+
+  it('keeps earlier pages and flags truncation when a later page fails', async () => {
+    mockFetch(url => {
+      if (url === TOKEN_URL) return okToken()
+      return new URL(url, 'http://x').searchParams.get('page') === '1'
+        ? jsonResponse({ status: 200, data: Array.from({ length: 5000 }, (_, i) => row(i)) })
+        : new Response('nope', { status: 500 })
+    })
+    const { fetchACLEDHistory } = await load()
+    const r = await fetchACLEDHistory()
+    expect(r.events).toHaveLength(5000)
+    expect(r.truncated).toBe(true)
+  })
+
+  it('returns an empty, untruncated result without a token or on first-page failure', async () => {
+    mockFetch(url => url === TOKEN_URL ? new Response('x', { status: 401 }) : jsonResponse({}))
+    const a = await (await load()).fetchACLEDHistory()
+    expect(a).toEqual({ events: [], truncated: false })
+
+    mockFetch(url => url === TOKEN_URL ? okToken() : new Response('x', { status: 500 }))
+    const b = await (await load()).fetchACLEDHistory()
+    expect(b).toEqual({ events: [], truncated: false })
+  })
+})

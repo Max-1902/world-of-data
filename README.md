@@ -17,9 +17,35 @@ Meridian renders a live Mapbox GL globe with ten selectable view modes (satellit
 - **Markets** — indices, commodities, energy, tech, healthcare, and defense-sector tickers (Finnhub)
 - **Trade & supply chain** — chokepoints, shipping density, pipelines, ports, and World Bank country economic indicators
 - **News & OSINT** — aggregated reporting from Guardian, NYT, and NewsAPI, plus a keyword/coordinate search
+- **Conflict Analytics** — 75 days of ACLED events turned into charts (daily trend, country × day heatmap, biggest movers), a walk-forward backtest of the "rising" flag, and a 3D hexagon layer that draws the same results on the globe (see [Analytics](#analytics-from-tens-of-thousands-of-events-to-one-picture))
 - **AI Analyst** — an LLM-backed panel (via OpenRouter) that answers situational questions and can drive the map (fly-to, layer toggles) from natural language
 
 All panels live in a single extensible **panel registry** (`src/panels/registry.tsx`) grouped into INTEL / GEO / MIL / FIN / AI — adding a new data source is one entry, and the dock, pop-out tray, and settings pick it up automatically.
+
+## Analytics: from tens of thousands of events to one picture
+
+The **Conflict Analytics** panel (Analysis workspace) takes a 75-day ACLED window (paged, capped at 10 requests per load, slim field list) and answers four questions. Every chart has a Chart / Table switch, hover and keyboard readouts, and click-through to the map.
+
+| View | What it shows | Method |
+|---|---|---|
+| Global activity by day | Severity-weighted score per day with a 7-day mean | `dailySeries`, zero-filled so quiet days are real zeros |
+| Where activity is concentrated | Top-12 countries × 45 days heatmap | square-root colour scale so one extreme day doesn't wash out the rest; click a row to fly there |
+| Biggest movers | Diverging bars: last 3 days vs the prior 7, per-day rates | `rateMovers` |
+| Does the "rising" flag predict anything? | Hit rate of the Watchlist rule vs. any active country, with 95% Wilson intervals, plus hit rate by velocity score | walk-forward backtest (`backtestTrajectory`) |
+
+**On the map**, *Show on map* bins the same events into H3 hexagons (res 3, ~60 km) and extrudes them by activity, coloured either by latest-7-day intensity (sequential blue) or by change vs the prior 7 days (blue ↔ red diverging around a neutral midpoint). Click a hexagon for its numbers; *Tilt map* shows the heights.
+
+**How the backtest stays honest**
+- It replays the live rule (`computeTrajectories`, which now accepts an `as of` time) on every past day using only events dated on or before that day. A test appends future events and asserts earlier days don't change (no look-ahead).
+- A "hit" means the next 7 days average a higher daily score than the trailing 10 days. The baseline is the same test over *every* active country, so the result is a lift over chance, not a bare accuracy figure.
+- It reports whatever it finds. The plain-language verdict is generated from the numbers (`describeBacktest`) and only claims a lift when |z| > 1.96; otherwise it says the flag isn't shown to add value. Velocity bins with fewer than 20 samples are drawn as "too few", not as rates.
+- Limits, stated in the panel: only event counts are replayed (no historical flight or news data exists), daily samples overlap so intervals are optimistic, and ACLED publishes with a lag so the newest days are undercounted (the window is anchored on the newest event day, not on today).
+
+**Scale.** Timing on *synthetic* uniformly random global points (Node, dev laptop, not ACLED data): 50,000 events bin into 8,221 H3 cells in ~70 ms, and the full backtest over 50,000 events runs in ~125 ms, so the analysis runs in the browser with no backend. Real ACLED volume per window depends on your account's access.
+
+Chart colours are validated with a colour-vision-deficiency check against the app's dark surface (`--series-1/2` and the ramps in `src/utils/vizPalette.ts`); direction is never carried by colour alone (arrows and signs on movers, a table view on every chart).
+
+**Design note found while building this.** The live trajectory rule compares a 3-day *sum* with a 7-day *sum*, so a perfectly steady country reads as "falling". The Analytics movers chart therefore compares per-day rates; the Watchlist rule itself is unchanged and is what the backtest evaluates.
 
 ## Why this exists
 
