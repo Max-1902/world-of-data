@@ -198,10 +198,36 @@ describe('fetchACLEDHistory', () => {
   it('returns an empty, untruncated result without a token or on first-page failure', async () => {
     mockFetch(url => url === TOKEN_URL ? new Response('x', { status: 401 }) : jsonResponse({}))
     const a = await (await load()).fetchACLEDHistory()
-    expect(a).toEqual({ events: [], truncated: false })
+    expect(a).toMatchObject({ events: [], truncated: false })
 
     mockFetch(url => url === TOKEN_URL ? okToken() : new Response('x', { status: 500 }))
     const b = await (await load()).fetchACLEDHistory()
-    expect(b).toEqual({ events: [], truncated: false })
+    expect(b).toMatchObject({ events: [], truncated: false })
+  })
+
+  it.each([
+    ['rejected credentials (400)', () => jsonResponse({ error: 'invalid_grant' }, { status: 400 }), /rejected the login/],
+    ['rejected credentials (401)', () => new Response('x', { status: 401 }), /rejected the login/],
+    ['a locked account (403)', () => new Response('x', { status: 403 }), /temporarily locked/],
+    ['a server error (500)', () => new Response('x', { status: 500 }), /could not be reached/],
+    ['missing server credentials', () => jsonResponse({ access_token: null }), /not set in \.env/],
+  ])('reports why there is no data on %s', async (_label, tokenResponse, message) => {
+    mockFetch(url => url === TOKEN_URL ? tokenResponse() : jsonResponse({}))
+    const r = await (await load()).fetchACLEDHistory()
+    expect(r.events).toEqual([])
+    expect(r.reason).toMatch(message)
+  })
+
+  it('reports an unreachable login service and clears the reason after a successful login', async () => {
+    mockFetch(() => { throw new Error('offline') })
+    const first = await load()
+    expect((await first.fetchACLEDHistory()).reason).toMatch(/could not be reached/)
+
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [row(1)] }))
+    const ok = await load()
+    const r = await ok.fetchACLEDHistory()
+    expect(r.events).toHaveLength(1)
+    expect(r.reason).toBeUndefined()
+    expect(ok.acledAuthMessage()).toBeNull()
   })
 })

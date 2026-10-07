@@ -25,6 +25,17 @@ describe('conflictHistory store', () => {
     expect(store.getState().status).toBe('empty')
   })
 
+  it('keeps the known cause when the source returns nothing, and clears it on the next load', async () => {
+    let n = 0
+    const store = createConflictHistory(async () => n++ === 0
+      ? { events: [], truncated: false, reason: 'ACLED rejected the login' }
+      : { events: [ev('a', '2025-03-01')], truncated: false })
+    await store.load()
+    expect(store.getState()).toMatchObject({ status: 'empty', reason: 'ACLED rejected the login' })
+    await store.load(true)
+    expect(store.getState()).toMatchObject({ status: 'ready', reason: null })
+  })
+
   it('drops baseline markers and undated rows before analysis', async () => {
     const store = createConflictHistory(async () => ({
       events: [ev('baseline-x', '2025-03-05', { source: 'Baseline' }), ev('c', 'garbage'), ev('d', '2025-03-02')], truncated: false,

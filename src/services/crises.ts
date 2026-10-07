@@ -14,9 +14,40 @@ const RETRY_KEY = 'ws-acled-retry-at'
 const TOKEN_RETRY_COOLDOWN_MS = 30 * 60 * 1000
 const LOCKED_RETRY_COOLDOWN_MS = 2 * 60 * 60 * 1000
 
+const REASON_KEY = 'ws-acled-issue'
+
+/** Why the last login failed — surfaced by panels so "no data" can say what is actually wrong. */
+export type ACLEDAuthIssue = 'unconfigured' | 'rejected' | 'locked' | 'unavailable'
+
+const ISSUE_MESSAGES: Record<ACLEDAuthIssue, string> = {
+  unconfigured: 'ACLED_EMAIL and ACLED_PASSWORD are not set in .env.',
+  rejected: 'ACLED rejected the login in .env (invalid credentials). Check ACLED_EMAIL and ACLED_PASSWORD, then restart the dev server. The app waits 30 minutes between login attempts so the account is not locked.',
+  locked: 'ACLED has temporarily locked this account after failed logins. The app will try again automatically in about 2 hours.',
+  unavailable: 'ACLED\'s login service could not be reached. The app will retry automatically.',
+}
+
 let _token: string | null = null
 let _tokenExpiry = 0
 let _tokenRetryAt = 0
+let _issue: ACLEDAuthIssue | null = null
+
+function setIssue(issue: ACLEDAuthIssue | null): void {
+  _issue = issue
+  try {
+    if (issue) localStorage.setItem(REASON_KEY, issue); else localStorage.removeItem(REASON_KEY)
+  } catch { /* ignore */ }
+}
+
+/** Human-readable reason the ACLED login is failing, or null when there is no known auth problem. */
+export function acledAuthMessage(): string | null {
+  if (!_issue) {
+    try {
+      const stored = localStorage.getItem(REASON_KEY) as ACLEDAuthIssue | null
+      if (stored && stored in ISSUE_MESSAGES) _issue = stored
+    } catch { /* ignore */ }
+  }
+  return _issue ? ISSUE_MESSAGES[_issue] : null
+}
 
 function readStored(): void {
   try {
@@ -49,6 +80,7 @@ async function getACLEDToken(): Promise<string | null> {
 
     if (!res.ok) {
       console.warn('[ACLED OAuth] token request failed:', res.status)
+      setIssue(res.status === 403 ? 'locked' : res.status === 400 || res.status === 401 ? 'rejected' : 'unavailable')
       backOff(res.status === 403 ? LOCKED_RETRY_COOLDOWN_MS : TOKEN_RETRY_COOLDOWN_MS)
       return null
     }
@@ -57,11 +89,12 @@ async function getACLEDToken(): Promise<string | null> {
     _token = data.access_token ?? null
     // expires_in is in seconds; subtract 60 s buffer
     _tokenExpiry = Date.now() + ((data.expires_in ?? 86400) - 60) * 1000
-    if (!_token) backOff(TOKEN_RETRY_COOLDOWN_MS)
-    else storeToken()
+    if (!_token) { setIssue('unconfigured'); backOff(TOKEN_RETRY_COOLDOWN_MS) }
+    else { setIssue(null); storeToken() }
     return _token
   } catch (err) {
     console.warn('[ACLED OAuth] error:', err)
+    setIssue('unavailable')
     backOff(TOKEN_RETRY_COOLDOWN_MS)
     return null
   }
@@ -148,13 +181,15 @@ const HISTORY_MAX_PAGES = 10
 
 export interface ACLEDHistory {
   events: CrisisEvent[]
+  /** Why nothing was returned, when the cause is a known login problem. */
+  reason?: string | null
   /** True when the page ceiling was hit or a later page failed — the window is then incomplete. */
   truncated: boolean
 }
 
 export async function fetchACLEDHistory(days = 75): Promise<ACLEDHistory> {
   const token = await getACLEDToken()
-  if (!token) return { events: [], truncated: false }
+  if (!token) return { events: [], truncated: false, reason: acledAuthMessage() }
 
   const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0]
   const today = new Date().toISOString().split('T')[0]

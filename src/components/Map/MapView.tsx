@@ -3452,7 +3452,7 @@ export default function MapView({
           </div>
           <div style={{ marginTop:5, fontSize:9, color:'#647883', lineHeight:1.45 }}>
             {conflictHex.status === 'loading' || conflictHex.status === 'idle' ? 'Loading 75 days of ACLED events…'
-              : conflictHex.status === 'empty' ? 'No ACLED events available — nothing to draw.'
+              : conflictHex.status === 'empty' ? (conflictHex.reason ?? 'No ACLED events available — nothing to draw.')
               : conflictHex.status === 'error' ? 'Could not load the conflict history.'
               : `${conflictHex.hexes.length.toLocaleString()} cells from ${conflictHex.events.length.toLocaleString()} events. Height = activity. Click a cell for detail.`}
           </div>
