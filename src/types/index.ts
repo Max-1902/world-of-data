@@ -85,6 +85,7 @@ export interface PanelState {
   datacenters:    boolean
   infraIndicators: boolean
   analyticsHex:   boolean
+  countryAnalytics: boolean
 }
 
 /** A city/town picked on the map: the regional outlook then reports on the area around it, not the whole country. */

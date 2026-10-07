@@ -1,5 +1,5 @@
 import CloseButton from '../CloseButton'
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import { Flight, CrisisEvent, Stock, MapViewMode } from '../../types'
@@ -27,7 +27,9 @@ import { SEVERITY_COLORS, SEVERITY_LABELS, GPSJAM_ATTRIBUTION, type GPSJamData }
 import { useAnalyticsData } from '../../hooks/useAnalyticsData'
 import { analyticsData } from '../../services/analyticsData'
 import { HEIGHT_SCALE } from '../../utils/hexbin'
-import { sequentialColor, SEQUENTIAL } from '../../utils/vizPalette'
+import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
+import { countryColors, type Residual } from '../../utils/countryStats'
+import { sequentialColor, SEQUENTIAL, BELOW, NEUTRAL, ABOVE } from '../../utils/vizPalette'
 import { CHOKEPOINTS, CHOKEPOINT_COLORS, SHIPPING_LANE_LABEL_IDS } from '../../services/chokepoints'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../services/supplychain'
 import { getCountryCentroid, type OutageEvent } from '../../services/outages'
@@ -93,6 +95,7 @@ interface Props {
   showMilitaryPersonnel: boolean
   showInfraIndicators: boolean
   showAnalyticsHex: boolean
+  showCountryAnalytics: boolean
   flyToQuery?:        string
   geoFlyTo?:          string
   onCountryClick?:    (country: string) => void
@@ -132,7 +135,8 @@ const OVERLAY_ITEMS: Record<keyof import('../../types').PanelState, { label: str
   supplychain: { label: 'SUPPLY CHAIN', icon: '◆', color: '#00ccff' },
   shippingDensity: { label: 'SHIPPING', icon: '≋', color: '#ff4466' },
   infraIndicators: { label: 'INFRA ACCESS', icon: '↯', color: '#22d3ee' },
-  analyticsHex: { label: 'DATA HEX', icon: '⬢', color: '#3987e5' },
+  analyticsHex: { label: 'HAZARD HEX', icon: '⬢', color: '#3987e5' },
+  countryAnalytics: { label: 'COUNTRY DATA', icon: '▦', color: '#3987e5' },
   datacenters: { label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
 }
 
@@ -148,7 +152,7 @@ export default function MapView({
   vessels, showVessels, showOil, showGas, showGPSJam, gpsJam, showPorts, showPipelines,
   showChokepoints, showSupplyChain, showShippingDensity,
   outages, showOutages, showResources, showTradeStats, showMilitaryPersonnel,
-  showInfraIndicators, showAnalyticsHex,
+  showInfraIndicators, showAnalyticsHex, showCountryAnalytics,
   flyToQuery, geoFlyTo, onCountryClick, onPlaceClick, selectedCountry, selectedPlace,
   reticleColor = '#00ff88',
   panelState, onToggleLayer,
@@ -167,6 +171,12 @@ export default function MapView({
   const placeMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const militaryPersonnelRef = useRef<MilitaryPersonnelEntry[]>([])
   const infraIndicatorsRef = useRef<CountryInfraEntry[]>([])
+  const countryAnalyticsRef = useRef<{
+    yRows: Map<string, { name: string; value: number; year: string }>
+    points: Map<string, Residual>
+    xShort: string; yShort: string
+    xFormat: (v: number) => string; yFormat: (v: number) => string
+  } | null>(null)
 
   // Filter state
   const [filterQuery, setFilterQuery] = useState('')
@@ -1933,7 +1943,49 @@ export default function MapView({
         map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = '' })
       }
 
-      // ── Conflict hex (Analytics panel): ACLED events binned into H3 cells, extruded by activity ─────
+      // ── Country analytics (Country Analytics panel): countries shaded by the compared indicators ─────
+      map.addSource('country-analytics-countries', { type: 'vector', url: 'mapbox://mapbox.country-boundaries-v1' })
+      map.addLayer({
+        id: 'country-analytics-fill', type: 'fill',
+        source: 'country-analytics-countries', 'source-layer': 'country_boundaries',
+        paint: { 'fill-color': 'rgba(0,0,0,0)', 'fill-opacity': 0.78 },
+        layout: { visibility: 'none' },
+      } as Parameters<typeof map.addLayer>[0])
+      map.addLayer({
+        id: 'country-analytics-outline', type: 'line',
+        source: 'country-analytics-countries', 'source-layer': 'country_boundaries',
+        paint: { 'line-color': '#e5ecef', 'line-width': 0.6, 'line-opacity': 0.35 },
+        layout: { visibility: 'none' },
+      } as Parameters<typeof map.addLayer>[0])
+      map.on('click', 'country-analytics-fill', (e) => {
+        const feat = e.features?.[0]
+        const iso2 = feat?.properties?.iso_3166_1 as string | undefined
+        const info = countryAnalyticsRef.current
+        if (!iso2 || !info) return
+        const esc = (v: unknown) => String(v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string))
+        const yRow = info.yRows.get(iso2)
+        const pt = info.points.get(iso2)
+        const name = yRow?.name ?? pt?.name ?? (feat?.properties?.name_en as string | undefined) ?? iso2
+        const row = (k: string, v: string) => `<span style="color:#9ca3af;">${esc(k)}</span><span style="color:#14161a;">${v}</span>`
+        const body = [
+          yRow ? row(info.yShort, `<b>${esc(info.yFormat(yRow.value))}</b> (${esc(yRow.year)})`) : '',
+          pt ? row(info.xShort, `${esc(info.xFormat(pt.x))} (${esc(pt.xYear)})`) : '',
+          pt ? row('Trend expects', esc(info.yFormat(pt.expected))) : '',
+          pt ? row('Vs trend', `<b style="color:${pt.z >= 0 ? '#c0392b' : '#256abf'};">${pt.z >= 0 ? '+' : '−'}${Math.abs(pt.z).toFixed(1)} σ</b>`) : '',
+        ].join('')
+        const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:230px;">
+          <div style="font-size:13px;font-weight:800;color:#14161a;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">${esc(name)}</div>
+          ${body ? `<div style="display:grid;grid-template-columns:100px 1fr;gap:3px 8px;font-size:11px;">${body}</div>` : `<div style="font-size:11px;color:#9ca3af;">No data for this country in the selected indicators.</div>`}
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: WORLD BANK OPEN DATA · LATEST YEAR SINCE 2010</div>
+        </div>`
+        if (popupRef.current) popupRef.current.remove()
+        popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' }).setLngLat(e.lngLat).setHTML(html).addTo(map)
+        ;(map as any).__markFeatureClick?.()
+      })
+      map.on('mouseenter', 'country-analytics-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
+      map.on('mouseleave', 'country-analytics-fill', () => { map.getCanvas().style.cursor = '' })
+
+      // ── Hazard hex (Hazard Analytics panel): wildfire / earthquake points binned into H3 cells, extruded by activity ─────
       map.addSource('analytics-hex', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
@@ -3142,6 +3194,31 @@ export default function MapView({
     areaSrc.setData({ type: 'FeatureCollection', features: areaFeatures })
   }, [showGPSJam, gpsJam, mapReady])
 
+  // ── Country analytics update (countries shaded by the compared indicators) ────
+  const countryData = useCountryAnalytics(showCountryAnalytics)
+  const countryShading = useMemo(
+    () => countryColors(countryData.state.mapMode, countryData.ySlice.rows, countryData.ys, countryData.analysis),
+    [countryData.state.mapMode, countryData.ySlice.rows, countryData.ys, countryData.analysis],
+  )
+  countryAnalyticsRef.current = {
+    yRows: new Map(countryData.ySlice.rows.map(r => [r.iso2, r])),
+    points: new Map((countryData.analysis?.points ?? []).map(p => [p.iso2, p])),
+    xShort: countryData.xMeta.short, yShort: countryData.yMeta.short,
+    xFormat: countryData.xMeta.format, yFormat: countryData.yMeta.format,
+  }
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !layersReadyRef.current) return
+    const vis = showCountryAnalytics ? 'visible' : 'none'
+    for (const id of ['country-analytics-fill', 'country-analytics-outline']) if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis)
+    if (!showCountryAnalytics || !map.getLayer('country-analytics-fill')) return
+    const entries = Object.entries(countryShading.colors)
+    // a `match` expression needs at least one label/output pair, so an empty result is a plain transparent fill
+    map.setPaintProperty('country-analytics-fill', 'fill-color', entries.length
+      ? ['match', ['get', 'iso_3166_1'], ...entries.flat(), 'rgba(0,0,0,0)']
+      : 'rgba(0,0,0,0)')
+  }, [showCountryAnalytics, countryShading, mapReady])
+
   // ── Analytics hexagons (wildfires / earthquakes) update ───────────────────────
   const analytics = useAnalyticsData({})
   useEffect(() => {
@@ -3470,6 +3547,36 @@ export default function MapView({
           transition: 'flex-basis .25s ease',
         }}
       >
+
+      {/* ── Country analytics legend ─────────────────────────────────── */}
+      {showCountryAnalytics && !deepstateMode && (
+        <div style={{ position:'absolute', right:10, bottom: showAnalyticsHex ? 232 : 58, zIndex:30, width:230, padding:'8px 10px', background:'rgba(9,16,22,0.94)', border:'1px solid #263843', borderRadius:6, backdropFilter:'blur(10px)', boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
+          <div style={{ fontSize:10.5, fontWeight:650, color:'#e5ecef', lineHeight:1.35 }}>
+            {countryData.state.mapMode === 'trend' ? `${countryData.yMeta.short} vs what ${countryData.xMeta.short} predicts` : countryData.yMeta.label}
+          </div>
+          <div style={{ marginTop:6, height:6, borderRadius:3, background: countryData.state.mapMode === 'trend'
+            ? `linear-gradient(90deg, ${BELOW}, ${NEUTRAL}, ${ABOVE})` : `linear-gradient(90deg, ${SEQUENTIAL.join(',')})` }} />
+          <div style={{ display:'flex', justifyContent:'space-between', marginTop:3, fontSize:9, color:'#98aab4' }}>
+            {countryData.state.mapMode === 'trend'
+              ? <><span>Below trend</span><span>On trend</span><span>Above</span></>
+              : <><span>{countryShading.lo === null ? 'Low' : countryData.yMeta.format(countryShading.lo)}</span><span>{countryShading.hi === null ? 'High' : countryData.yMeta.format(countryShading.hi)}</span></>}
+          </div>
+          <div style={{ marginTop:5, fontSize:9, color:'#647883', lineHeight:1.45 }}>
+            {countryData.xSlice.status === 'loading' || countryData.ySlice.status === 'loading' || countryData.ySlice.status === 'idle' ? 'Loading World Bank data…'
+              : countryData.ySlice.status === 'error' ? `Could not load this indicator${countryData.ySlice.error ? ` (${countryData.ySlice.error})` : ''}.`
+              : Object.keys(countryShading.colors).length === 0 ? 'No countries to shade for this selection.'
+              : `${Object.keys(countryShading.colors).length} countries shaded${countryData.state.mapMode === 'value' ? ' (colour clipped to the 2nd–98th percentile)' : ''}. Click a country.`}
+          </div>
+          <div style={{ marginTop:6, display:'flex', gap:4 }}>
+            {(['value', 'trend'] as const).map(m => (
+              <button key={m} onClick={() => countryData.setMapMode(m)}
+                style={{ padding:'3px 8px', fontSize:9.5, color: countryData.state.mapMode === m ? '#d5a85f' : '#e5ecef', background: countryData.state.mapMode === m ? 'rgba(213,168,95,0.12)' : 'rgba(255,255,255,0.06)', border:'1px solid #263843', borderRadius:4, cursor:'pointer' }}>
+                {m === 'value' ? 'Value' : 'Vs trend'}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Analytics hexagon legend ─────────────────────────────────── */}
       {showAnalyticsHex && !deepstateMode && (

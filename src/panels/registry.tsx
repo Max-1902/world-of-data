@@ -39,6 +39,7 @@ const DataCentersPanel = lazy(() => import('../components/panels/CountryDataPane
 const AIAnalystPanel = lazy(() => import('../components/panels/AIAnalystPanel').then(m => ({ default: m.AIAnalystPanel })))
 const HumanitarianPanel = lazy(() => import('../components/panels/HumanitarianPanel').then(m => ({ default: m.HumanitarianPanel })))
 const DisasterAlertsPanel = lazy(() => import('../components/panels/DisasterAlertsPanel').then(m => ({ default: m.DisasterAlertsPanel })))
+const CountryAnalyticsPanel = lazy(() => import('../components/panels/CountryAnalyticsPanel').then(m => ({ default: m.CountryAnalyticsPanel })))
 const AnalyticsPanel = lazy(() => import('../components/panels/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })))
 const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
@@ -207,7 +208,12 @@ const PANELS: PanelDef[] = [
 
   // ── ANALYSIS ────────────────────────────────────────────────────────────────
   {
-    id: 'analytics', title: 'Data Analytics', group: 'analysis',
+    id: 'countryAnalytics', title: 'Country Analytics', group: 'analysis',
+    dotColor: 'blue', desc: 'Compare any two country indicators (economy, population, military, society): trend, correlation, outliers and a map of the results (World Bank)',
+    render: (p) => <CountryAnalyticsPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} onGeoSearch={p.onGeoSearch} />,
+  },
+  {
+    id: 'analytics', title: 'Hazard Analytics', group: 'analysis',
     dotColor: 'blue', desc: 'Earthquake and wildfire data analysed in the browser: trends, magnitude law, heatmaps — plotted as 3D hexagons on the map',
     render: (p) => <AnalyticsPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} onGeoSearch={p.onGeoSearch} />,
   },

@@ -17,29 +17,37 @@ Meridian renders a live Mapbox GL globe with ten selectable view modes (satellit
 - **Markets** — indices, commodities, energy, tech, healthcare, and defense-sector tickers (Finnhub)
 - **Trade & supply chain** — chokepoints, shipping density, pipelines, ports, and World Bank country economic indicators
 - **News & OSINT** — aggregated reporting from Guardian, NYT, and NewsAPI, plus a keyword/coordinate search
-- **Data Analytics** — the earthquake and wildfire feeds the app already loads, analysed in the browser: hourly trends, a Gutenberg–Richter magnitude law fit, region × day heatmaps, depth and fire-power distributions, and a 3D hexagon layer that draws ~100k fire detections on the globe (see [Analytics](#analytics-from-100000-detections-to-one-picture))
+- **Country Analytics** — pick any two country indicators (GDP, population, military spending, armed forces, life expectancy, internet access, energy use… 20 World Bank series) and get a scatter with a fitted trend, Spearman/Pearson correlation with confidence intervals, the countries furthest above and below the trend, rankings, distributions, a 10-indicator correlation matrix, and a globe shaded by the results (see [Analytics](#analytics-comparing-countries-and-crunching-100000-detections))
+- **Hazard Analytics** — the earthquake and wildfire feeds analysed in the browser, with ~100k fire detections drawn as 3D hexagons
 - **AI Analyst** — an LLM-backed panel (via OpenRouter) that answers situational questions and can drive the map (fly-to, layer toggles) from natural language
 
 All panels live in a single extensible **panel registry** (`src/panels/registry.tsx`) grouped into INTEL / GEO / MIL / FIN / AI — adding a new data source is one entry, and the dock, pop-out tray, and settings pick it up automatically.
 
-## Analytics: from 100,000 detections to one picture
+## Analytics: comparing countries and crunching 100,000 detections
 
-The **Data Analytics** panel (Analysis workspace) works on the two high-volume feeds the app already uses — **USGS earthquakes** (M4.5+, last 7 days) and **NASA FIRMS VIIRS fire detections** (last 24 h). Both are free and keyless, and nothing new is fetched: it goes through the existing `services/earthquakes.ts` and `services/wildfires.ts`. Every chart has a Chart / Table switch and hover and keyboard readouts.
+### Country Analytics (Analysis workspace)
 
-| Chart | What it shows | Method |
-|---|---|---|
-| Earthquakes per hour | 168 hourly counts with a trailing 24 h mean | `bucketCounts`, `trailingMean`; the average is null until a full window exists |
-| Magnitude–frequency | Cumulative counts on a log axis with the fitted slope | Gutenberg–Richter: maximum-likelihood **b-value** (Aki–Utsu, bin-corrected) with the Shi & Bolt standard error; unit-tested against a sample drawn with b = 1 |
-| Where quakes cluster | Top-10 regions × 7 days heatmap; click a row to fly there | region = USGS place text after the last comma, verbatim; square-root colour scale |
-| How deep they are | Counts by depth class | shallow / intermediate / deep classes |
-| Detections by UTC hour | 24 bars; peaks follow the satellite's overpass times | parsed from FIRMS `acq_time` |
-| How intense the fires are | Log-spaced fire-radiative-power histogram | detections with no power reading are excluded and the chart says so |
+Compare any two of 20 World Bank indicators across all countries — economy (GDP, growth, inflation, trade, FDI…), population, military (spending % GDP, armed forces personnel and % of labour force) and society/infrastructure (life expectancy, internet, electricity, energy use, Gini…). Source: World Bank Open Data, free and keyless, the same service the Economy panels use. Start from a preset (*Wealth & health*, *Defence burden*, *Army size*, *Digital divide*, *Openness*, *Energy appetite*) or pick the axes yourself.
 
-**On the map**, *Show on map* bins either feed into H3 hexagons and extrudes them: wildfires at res 4 (~22 km) by summed fire radiative power, earthquakes at res 3 (~60 km) by count. A square-root scale keeps one huge cell from flattening the rest. Click a hexagon for its numbers, *Tilt map* shows the heights, and the legend switches between the two feeds.
+| View | Method |
+|---|---|
+| Scatter with trend | axes follow each indicator's scale (log for heavy-tailed positives such as GDP, population, troops; symmetric-log for signed ones such as inflation and FDI); least-squares fit in axis space, so a log axis gives a log-linear trend |
+| Correlation | Spearman ρ (rank-based, robust to outliers and any monotonic shape) with a 95% Fisher-z interval, plus Pearson r on the plotted axes and the trend's R²; the verdict sentence and slope reading are generated from these numbers |
+| Furthest from the trend | standardised residuals: the five countries most above and most below what the fit predicts, with actual vs expected |
+| Highest / distribution | top-10 ranking and a histogram (log-spaced bins for log indicators) |
+| What moves together | pairwise-complete Spearman matrix for ten indicators (needs ≥12 countries in common per cell); click a cell to plot that pair |
 
-**Scale.** On the run I checked (7 Oct 2026) the fire feed held 117,305 detections, which collapsed into 9,975 hexagons. Timing on *synthetic* uniformly random global points (Node, dev laptop — a worst case, since real fires cluster): 120,000 points bin into ~95,000 cells in about 0.55 s, and the summary statistics take ~30 ms, so it all runs client-side with no backend.
+**On the map**, *Show on map* shades every country by the Y indicator (colour clipped to the 2nd–98th percentile so a few giants don't wash out the rest) or, in *Vs trend* mode, by how far it sits above (red) or below (blue) the fitted trend. Click a country for its values, the trend's expectation and its distance from it.
 
-**No data, no chart.** If a feed returns nothing or fails, its section says so and offers a retry; nothing is estimated or filled in. Chart colours are validated for colour-vision deficiency against the app's dark surface (`--series-1/2` in `index.css`, ramp in `src/utils/vizPalette.ts`).
+**Data handling worth knowing.** Each country's value is its most recent non-empty year since 2010, so years differ by country and indicator (shown on hover and in the map popup). The World Bank's `MRV=1` returns only the single latest *year*, which is empty for most countries on slow-reporting series (internet users: 42 countries instead of 245), so the client uses `mrnev=1` and discards anything older than 2010 itself because that parameter ignores the date range. Requests are cached for an hour, de-duplicated, limited to four at a time and retried once on throttling or timeouts. Formal World Bank names ("Iran, Islamic Rep.") are shortened so labels fit and place lookups work. Correlation is not causation, and military series are the World Bank's SIPRI/IISS-derived indicators, which many countries lack.
+
+### Hazard Analytics
+
+Works on the two high-volume feeds the app already uses — **USGS earthquakes** (M4.5+, 7 days) and **NASA FIRMS VIIRS fire detections** (24 h) — with hourly trends, a Gutenberg–Richter magnitude–frequency fit (maximum-likelihood b-value, Aki–Utsu with Shi & Bolt standard error), a region × day heatmap, depth classes, detections by UTC hour and a fire-power histogram. *Show on map* bins either feed into H3 hexagons and extrudes them (fires at res 4 by summed fire radiative power, earthquakes at res 3 by count).
+
+**Scale.** On the run I checked (7 Oct 2026) the fire feed held 117,305 detections, which collapsed into 9,975 hexagons. Timing on *synthetic* uniformly random global points (Node, dev laptop — a worst case, since real fires cluster): 120,000 points bin into ~95,000 cells in about 0.55 s and the summary statistics take ~30 ms, so it all runs client-side.
+
+**No data, no chart.** If a feed returns nothing or fails, its section says so and offers a retry; nothing is estimated or filled in. Every chart has a Chart / Table switch and hover and keyboard readouts, and chart colours are validated for colour-vision deficiency against the app's dark surface (`--series-1/2/3` in `index.css`, ramps in `src/utils/vizPalette.ts`).
 
 **A bug the analytics work exposed, now fixed.** The trajectory rule used to compare a 3-day *sum* with a 7-day *sum*, so a perfectly steady country read as "falling" (about −57%) in the Outlook card, Watchlist and AI Analyst context. `computeTrajectories` now compares the last 72h with the pace the prior week implies (its score × 3/7), keeping `delta` in "points per 72h" so the flat band and boosts are unchanged.
 
