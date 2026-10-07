@@ -79,6 +79,10 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
         <IndicatorSelect id={y} label="Y axis" onChange={id => c.setSelection(x, id)} />
       </div>
 
+      <p className="viz-sub" style={{ margin: '-2px 2px 0' }}>
+        {INDICATORS.length} indicators from {[...new Set(INDICATORS.map(i => i.source))].join(', ')}. This pair: {xMeta.source}{xMeta.source !== yMeta.source ? ` and ${yMeta.source}` : ''}.
+      </p>
+
       <div className="viz-filters">
         <button className={`cy-btn ${layerOn ? 'active' : ''}`} aria-pressed={layerOn} onClick={() => onToggleLayer('countryAnalytics')} title="Colour the countries on the globe with these results">
           <MapIcon size={11} /> {layerOn ? 'On the map' : 'Show on map'}
@@ -121,7 +125,7 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
             footer="Each country's value is its latest year since 2010, so years differ by country (shown on hover). Correlation is not causation."
           >
             <p className="viz-verdict" style={{ marginBottom: 6 }}>{describePair(analysis, xMeta, yMeta)} {describeFit(analysis.fit, xs, ys, xMeta, yMeta)}</p>
-            <ScatterChart points={analysis.points} xs={xs} ys={ys} xMeta={xMeta} yMeta={yMeta} fit={analysis.fit} over={analysis.over} under={analysis.under} onSelect={iso => { const p = analysis.points.find(q => q.iso2 === iso); if (p) fly(p.name) }} />
+            <ScatterChart points={analysis.points} xs={xs} ys={ys} xMeta={xMeta} yMeta={yMeta} fit={analysis.fit} over={analysis.over} under={analysis.under} onSelect={iso => { const p = analysis.points.find(q => q.iso3 === iso); if (p) fly(p.name) }} />
           </ChartFrame>
 
           <ChartFrame
@@ -182,7 +186,7 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
       </ChartFrame>
 
       <div className="viz-note">
-        Source: World Bank Open Data (free, no key), the same service the Economy panels use. Military series are the World Bank's SIPRI- and IISS-derived indicators and are missing for many countries. Everything is computed in the browser from the rows the World Bank returns; nothing is estimated or filled in.
+        Sources: World Bank Open Data (economy, trade, population, military, society, resource rents), Our World in Data (conflict and terrorism deaths, R&D, primary and renewable energy) and Ember (electricity mix) — all free, no key, and the same feeds the other country panels use. Military series are SIPRI/IISS-derived and missing for many countries; conflict figures come from UCDP via Our World in Data. Everything is computed in the browser from the rows those services return; nothing is estimated or filled in.
       </div>
     </div>
   )

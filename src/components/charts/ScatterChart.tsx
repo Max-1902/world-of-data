@@ -23,7 +23,7 @@ export function ScatterChart({ points, xs, ys, xMeta, yMeta, fit, over, under, o
   fit: Fit
   over: Residual[]
   under: Residual[]
-  onSelect?: (iso2: string) => void
+  onSelect?: (iso3: string) => void
 }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [hover, setHover] = useState<{ p: Residual; x: number; y: number } | null>(null)
@@ -39,8 +39,8 @@ export function ScatterChart({ points, xs, ys, xMeta, yMeta, fit, over, under, o
   const py = (t: number) => M.t + innerH - ((t - y0) / (y1 - y0)) * innerH
   const xTicks = niceTicks(xs.kind, xs.inv(x0), xs.inv(x1)).filter(v => xs.valid(v))
   const yTicks = niceTicks(ys.kind, ys.inv(y0), ys.inv(y1)).filter(v => ys.valid(v))
-  const overSet = new Set(over.map(p => p.iso2)), underSet = new Set(under.map(p => p.iso2))
-  const color = (p: Residual) => overSet.has(p.iso2) ? 'var(--series-2)' : underSet.has(p.iso2) ? 'var(--series-3)' : 'var(--series-1)'
+  const overSet = new Set(over.map(p => p.iso3)), underSet = new Set(under.map(p => p.iso3))
+  const color = (p: Residual) => overSet.has(p.iso3) ? 'var(--series-2)' : underSet.has(p.iso3) ? 'var(--series-3)' : 'var(--series-1)'
   const lineY = (t: number) => fit.intercept + fit.slope * t
 
   function onMove(e: React.PointerEvent<SVGRectElement>) {
@@ -79,18 +79,18 @@ export function ScatterChart({ points, xs, ys, xMeta, yMeta, fit, over, under, o
         <text x={M.l + innerW / 2} y={H - 4} textAnchor="middle" fontSize={9.5} fill="var(--text2)">{xMeta.label}</text>
         <line x1={px(x0)} y1={py(lineY(x0))} x2={px(x1)} y2={py(lineY(x1))} stroke="var(--text2)" strokeWidth={2} strokeLinecap="round" />
         {points.map(p => (
-          <circle key={p.iso2} cx={px(p.tx)} cy={py(p.ty)} r={hover?.p.iso2 === p.iso2 ? 6 : 4}
-            fill={color(p)} fillOpacity={overSet.has(p.iso2) || underSet.has(p.iso2) ? 1 : 0.7} stroke="var(--surface)" strokeWidth={1.5} />
+          <circle key={p.iso3} cx={px(p.tx)} cy={py(p.ty)} r={hover?.p.iso3 === p.iso3 ? 6 : 4}
+            fill={color(p)} fillOpacity={overSet.has(p.iso3) || underSet.has(p.iso3) ? 1 : 0.7} stroke="var(--surface)" strokeWidth={1.5} />
         ))}
         {[...over.slice(0, 3), ...under.slice(0, 3)].map(p => {
           const right = px(p.tx) < M.l + innerW * 0.7
           return (
-            <text key={`l${p.iso2}`} x={px(p.tx) + (right ? 7 : -7)} y={py(p.ty) - 6} textAnchor={right ? 'start' : 'end'} fontSize={9.5} fill="var(--text1)"
+            <text key={`l${p.iso3}`} x={px(p.tx) + (right ? 7 : -7)} y={py(p.ty) - 6} textAnchor={right ? 'start' : 'end'} fontSize={9.5} fill="var(--text1)"
               stroke="var(--surface)" strokeWidth={3} paintOrder="stroke" style={{ pointerEvents: 'none' }}>{p.name.length > 18 ? p.name.slice(0, 17) + '…' : p.name}</text>
           )
         })}
         <rect x={M.l} y={M.t} width={innerW} height={innerH} fill="transparent" style={{ cursor: hover ? 'pointer' : 'default' }}
-          onPointerMove={onMove} onPointerLeave={() => setHover(null)} onClick={() => hover && onSelect?.(hover.p.iso2)} />
+          onPointerMove={onMove} onPointerLeave={() => setHover(null)} onClick={() => hover && onSelect?.(hover.p.iso3)} />
       </svg>
       {hover && (
         <Tooltip x={hover.x} y={hover.y} width={width}>

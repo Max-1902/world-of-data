@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createCountryAnalytics, sliceOf } from './countryAnalytics'
+import { createCountryAnalytics, selectForMap, sliceOf } from './countryAnalytics'
 import { PRESETS, type CountryValue } from './countryIndicators'
 
-const rows = (n: number): CountryValue[] => Array.from({ length: n }, (_, i) => ({ iso2: `C${i}`, iso3: `CC${i}`, name: `C${i}`, value: i, year: '2022' }))
+const rows = (n: number): CountryValue[] => Array.from({ length: n }, (_, i) => ({ iso3: `C${i}`, name: `C${i}`, value: i, year: '2022' }))
 
 describe('countryAnalytics store', () => {
   it('starts on the first preset with the value map mode', () => {
@@ -79,5 +79,24 @@ describe('countryAnalytics store', () => {
     off()
     store.setMapMode('value')
     expect(l).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('selectForMap', () => {
+  it('sets Y, keeps X, and switches the map to value mode', () => {
+    const store = createCountryAnalytics(async () => [])
+    store.setSelection('NY.GDP.PCAP.CD', 'SP.DYN.LE00.IN')
+    store.setMapMode('trend')
+    selectForMap('MS.MIL.TOTL.P1', store)
+    expect(store.getState().selection).toEqual({ x: 'NY.GDP.PCAP.CD', y: 'MS.MIL.TOTL.P1' })
+    expect(store.getState().mapMode).toBe('value')
+  })
+  it('moves X off the chosen indicator so the pair is never X against itself', () => {
+    const store = createCountryAnalytics(async () => [])
+    store.setSelection('SP.POP.TOTL', 'SP.DYN.LE00.IN')
+    selectForMap('SP.POP.TOTL', store)
+    expect(store.getState().selection).toEqual({ x: 'NY.GDP.PCAP.CD', y: 'SP.POP.TOTL' })
+    selectForMap('NY.GDP.PCAP.CD', store)
+    expect(store.getState().selection).toEqual({ x: 'SP.POP.TOTL', y: 'NY.GDP.PCAP.CD' })
   })
 })

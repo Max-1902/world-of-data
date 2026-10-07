@@ -109,7 +109,7 @@ const PANELS: PanelDef[] = [
   {
     id: 'infraIndicators', title: 'Power Output', group: 'geo',
     dotColor: 'blue', desc: 'Countries ranked by electricity generated, with source mix (Ember via Our World in Data)',
-    render: (p) => <InfraIndicatorsPanel onCountryClick={p.onCountryClick} />,
+    render: (p) => <InfraIndicatorsPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
   {
     id: 'infrastructureByCountry', title: 'Infrastructure Sites', group: 'geo',
@@ -151,7 +151,7 @@ const PANELS: PanelDef[] = [
   {
     id: 'militaryPersonnel', title: 'Force Size', group: 'security',
     dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
-    render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} />,
+    render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
   {
     id: 'nuclear', title: 'Nuclear', group: 'security',
@@ -173,7 +173,7 @@ const PANELS: PanelDef[] = [
   {
     id: 'economy', title: 'Economy', group: 'markets',
     dotColor: 'blue', desc: 'Global trade profiles & World Bank data',
-    render: (p) => <GlobalEconomyPanel onCountryClick={p.onCountryClick} />,
+    render: (p) => <GlobalEconomyPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
   {
     id: 'markets', title: 'Markets', group: 'markets',
@@ -203,7 +203,7 @@ const PANELS: PanelDef[] = [
   {
     id: 'owid', title: 'Global Trends', group: 'markets',
     dotColor: 'amber', desc: 'Agriculture, violence & war, energy & environment, innovation & tech (Our World in Data)',
-    render: (p) => <OwidPanel onCountryClick={p.onCountryClick} />,
+    render: (p) => <OwidPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
 
   // ── ANALYSIS ────────────────────────────────────────────────────────────────

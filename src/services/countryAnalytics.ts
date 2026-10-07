@@ -66,3 +66,15 @@ export function createCountryAnalytics(fetcher: (id: string) => Promise<CountryV
 }
 
 export const countryAnalytics = createCountryAnalytics()
+
+const DEFAULT_X = 'NY.GDP.PCAP.CD'
+
+/**
+ * Points the Country Analytics selection at `yId` in value mode, so another panel's "On the map" button can shade the
+ * globe by that indicator. The X axis stays as it was unless it would equal Y.
+ */
+export function selectForMap(yId: string, store: Pick<typeof countryAnalytics, 'getState' | 'setSelection' | 'setMapMode'> = countryAnalytics): void {
+  const x = store.getState().selection.x
+  store.setSelection(x === yId ? (yId === DEFAULT_X ? 'SP.POP.TOTL' : DEFAULT_X) : x, yId)
+  store.setMapMode('value')
+}

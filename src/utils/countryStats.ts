@@ -114,7 +114,7 @@ export function ols(x: number[], y: number[]): Fit | null {
 
 // ── Pair analysis ─────────────────────────────────────────────────────────────
 
-export interface Joined { iso2: string; iso3: string; name: string; x: number; y: number; xYear: string; yYear: string }
+export interface Joined { iso3: string; name: string; x: number; y: number; xYear: string; yYear: string }
 export interface Residual extends Joined {
   /** axis-space coordinates */
   tx: number
@@ -128,12 +128,12 @@ export interface Residual extends Joined {
 
 /** Countries present in both indicators with values the scales can place. */
 export function joinRows(xRows: CountryValue[], yRows: CountryValue[], xs: Scale, ys: Scale): Joined[] {
-  const yBy = new Map(yRows.map(r => [r.iso2, r]))
+  const yBy = new Map(yRows.map(r => [r.iso3, r]))
   const out: Joined[] = []
   for (const x of xRows) {
-    const y = yBy.get(x.iso2)
+    const y = yBy.get(x.iso3)
     if (!y || !xs.valid(x.value) || !ys.valid(y.value)) continue
-    out.push({ iso2: x.iso2, iso3: x.iso3, name: x.name, x: x.value, y: y.value, xYear: x.year, yYear: y.year })
+    out.push({ iso3: x.iso3, name: x.name, x: x.value, y: y.value, xYear: x.year, yYear: y.year })
   }
   return out
 }
@@ -231,7 +231,7 @@ export interface CorrMatrix { ids: string[]; rho: (number | null)[][]; n: number
 
 /** Pairwise-complete Spearman ρ for every pair of indicators; a pair with fewer than `minN` shared countries is null. */
 export function correlationMatrix(items: { id: string; rows: CountryValue[] }[], minN = 12): CorrMatrix {
-  const maps = items.map(i => new Map(i.rows.map(r => [r.iso2, r.value])))
+  const maps = items.map(i => new Map(i.rows.map(r => [r.iso3, r.value])))
   const k = items.length
   const rho: (number | null)[][] = Array.from({ length: k }, () => new Array(k).fill(null))
   const n: number[][] = Array.from({ length: k }, () => new Array(k).fill(0))
@@ -268,7 +268,7 @@ export interface CountryColors {
 export function countryColors(mode: MapMode, yRows: CountryValue[], ys: Scale, analysis: PairAnalysis | null): CountryColors {
   const colors: Record<string, string> = {}
   if (mode === 'trend') {
-    for (const p of analysis?.points ?? []) colors[p.iso2] = divergingColor(Math.max(-1, Math.min(1, p.z / 2.5)))
+    for (const p of analysis?.points ?? []) colors[p.iso3] = divergingColor(Math.max(-1, Math.min(1, p.z / 2.5)))
     return { mode, colors, lo: null, hi: null }
   }
   const usable = yRows.filter(r => ys.valid(r.value))
@@ -276,6 +276,6 @@ export function countryColors(mode: MapMode, yRows: CountryValue[], ys: Scale, a
   const t = usable.map(r => ys.fwd(r.value)).sort((a, b) => a - b)
   const lo = percentile(t, 0.02), hi = percentile(t, 0.98)
   const span = hi - lo || 1
-  for (const r of usable) colors[r.iso2] = sequentialColor(0.2 + 0.8 * Math.min(1, Math.max(0, (ys.fwd(r.value) - lo) / span)))
+  for (const r of usable) colors[r.iso3] = sequentialColor(0.2 + 0.8 * Math.min(1, Math.max(0, (ys.fwd(r.value) - lo) / span)))
   return { mode, colors, lo: ys.inv(lo), hi: ys.inv(hi) }
 }

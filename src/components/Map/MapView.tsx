@@ -172,7 +172,7 @@ export default function MapView({
   const militaryPersonnelRef = useRef<MilitaryPersonnelEntry[]>([])
   const infraIndicatorsRef = useRef<CountryInfraEntry[]>([])
   const countryAnalyticsRef = useRef<{
-    yRows: Map<string, { name: string; value: number; year: string }>
+    yRows: Map<string, { name: string; value: number; year: string }>   // keyed by ISO-3166 alpha-3
     points: Map<string, Residual>
     xShort: string; yShort: string
     xFormat: (v: number) => string; yFormat: (v: number) => string
@@ -1959,13 +1959,13 @@ export default function MapView({
       } as Parameters<typeof map.addLayer>[0])
       map.on('click', 'country-analytics-fill', (e) => {
         const feat = e.features?.[0]
-        const iso2 = feat?.properties?.iso_3166_1 as string | undefined
+        const iso3 = feat?.properties?.iso_3166_1_alpha_3 as string | undefined
         const info = countryAnalyticsRef.current
-        if (!iso2 || !info) return
+        if (!iso3 || !info) return
         const esc = (v: unknown) => String(v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string))
-        const yRow = info.yRows.get(iso2)
-        const pt = info.points.get(iso2)
-        const name = yRow?.name ?? pt?.name ?? (feat?.properties?.name_en as string | undefined) ?? iso2
+        const yRow = info.yRows.get(iso3)
+        const pt = info.points.get(iso3)
+        const name = yRow?.name ?? pt?.name ?? (feat?.properties?.name_en as string | undefined) ?? iso3
         const row = (k: string, v: string) => `<span style="color:#9ca3af;">${esc(k)}</span><span style="color:#14161a;">${v}</span>`
         const body = [
           yRow ? row(info.yShort, `<b>${esc(info.yFormat(yRow.value))}</b> (${esc(yRow.year)})`) : '',
@@ -3201,8 +3201,8 @@ export default function MapView({
     [countryData.state.mapMode, countryData.ySlice.rows, countryData.ys, countryData.analysis],
   )
   countryAnalyticsRef.current = {
-    yRows: new Map(countryData.ySlice.rows.map(r => [r.iso2, r])),
-    points: new Map((countryData.analysis?.points ?? []).map(p => [p.iso2, p])),
+    yRows: new Map(countryData.ySlice.rows.map(r => [r.iso3, r])),
+    points: new Map((countryData.analysis?.points ?? []).map(p => [p.iso3, p])),
     xShort: countryData.xMeta.short, yShort: countryData.yMeta.short,
     xFormat: countryData.xMeta.format, yFormat: countryData.yMeta.format,
   }
@@ -3215,7 +3215,7 @@ export default function MapView({
     const entries = Object.entries(countryShading.colors)
     // a `match` expression needs at least one label/output pair, so an empty result is a plain transparent fill
     map.setPaintProperty('country-analytics-fill', 'fill-color', entries.length
-      ? ['match', ['get', 'iso_3166_1'], ...entries.flat(), 'rgba(0,0,0,0)']
+      ? ['match', ['get', 'iso_3166_1_alpha_3'], ...entries.flat(), 'rgba(0,0,0,0)']
       : 'rgba(0,0,0,0)')
   }, [showCountryAnalytics, countryShading, mapReady])
 
