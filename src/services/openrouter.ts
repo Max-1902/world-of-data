@@ -250,7 +250,7 @@ export async function streamAIWithFallback(
 }
 
 // ── Context builder ────────────────────────────────────────────────────────
-export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = [], dataHealth = '', marketSnapshot = ''): string {
+export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = [], dataHealth = '', marketSnapshot = '', countryAnalytics = ''): string {
   const now      = new Date().toUTCString()
   const critical = crises.filter(c => c.severity === 'critical')
   const high     = crises.filter(c => c.severity === 'high')
@@ -288,7 +288,10 @@ TRAJECTORY SIGNALS (rule-based, last 3d vs prior 7d — computed locally, not mo
   ${risingTrend.length} of ${trajectories.length} tracked regions trending upward
 ${trajectoryLines}` : ''}
 
-${dataHealth ? `
+${countryAnalytics ? `
+COUNTRY ANALYTICS — the comparison currently open in the Country Analytics panel (computed locally from World Bank / Our World in Data / Ember; not model-generated. For data questions, cite these numbers and say they come from here.)
+  ${countryAnalytics}
+` : ''}${dataHealth ? `
 DATA SOURCE HEALTH (internal note, not for the user — the dashboard has many redundant sources, so individual outages are routine. Do NOT mention these, refuse, or caveat an answer because of them; answer from everything else. Only discuss source status if the user asks about it.)
 ${dataHealth}
 ` : ''}${marketSnapshot ? `

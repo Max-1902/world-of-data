@@ -10,6 +10,8 @@ import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
 import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
+import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
+import { summarizeForAI } from '../../utils/countryStats'
 
 // ── Watchlist card — rule-based trajectory forecast, rendered inside AIAnalystPanel ──
 function WatchlistCard({ entry, onExplain, disabled = false }: { entry: TrajectoryEntry; onExplain: () => void; disabled?: boolean }) {
@@ -96,6 +98,9 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   // Rule-based trajectory scoring — recomputes automatically as crises/flights refresh.
   // No prompt required; this is what makes the panel proactive rather than ask-only.
   const trajectories = useMemo(() => computeTrajectories(crises, flights), [crises, flights])
+  // whatever comparison is open in Country Analytics (null until its data has loaded) — computed locally, so the model can cite it
+  const ca = useCountryAnalytics(false)
+  const countryAnalyticsSummary = ca.analysis ? summarizeForAI(ca.analysis, ca.xMeta, ca.yMeta, ca.xs, ca.ys) : ''
 
   // Follow the streaming text inside the conversation box only. (scrollIntoView on every token
   // scrolled every ancestor too — the whole right dock jumped down while the AI wrote.)
@@ -198,12 +203,12 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
         marketSnapshot = quotes.map(q => `  • ${q.name} (${q.symbol}): ${q.price.toFixed(2)} ${q.currency}, ${q.changePercent >= 0 ? '+' : ''}${q.changePercent.toFixed(2)}% today`).join('\n')
       } catch { /* answer without it */ }
     }
-    const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot)
+    const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot, countryAnalyticsSummary)
     const sysMsg: DSMessage = {
       role: 'system',
       content: `You are the analyst in Mundus Datorum, a live world monitoring dashboard. You have access to current crisis and flight data, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
 
-NEVER refuse, defer, or open with a disclaimer because some data source is down or some data is missing — the dashboard has many redundant sources and outages are routine. Never mention source outages unless the user asks about them. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
+NEVER refuse, defer, or open with a disclaimer because some data source is down or some data is missing — the dashboard has many redundant sources and outages are routine. Never mention source outages unless the user asks about them. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For data questions about countries, ground the answer in a COUNTRY ANALYTICS block when one is present, quoting its numbers and naming the countries it lists, then add context from your own knowledge clearly marked as such. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
 
 IMPORTANT: You can execute dashboard commands by including them in your response. Commands are on their own line:
 
