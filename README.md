@@ -14,7 +14,7 @@ Mundus Datorum renders a live Mapbox GL globe with ten selectable view modes (sa
 
 - **Flights** — live ICAO24 aircraft tracking via OpenSky, with type detection (military/civil/cargo) from hex ranges and callsign patterns
 - **Vessels** — real-time AIS ship tracking over a WebSocket feed (AISStream)
-- **Crises & conflict** — ACLED conflict events and ICG crisis-watch data, scored into a composite DEFCON-style threat index
+- **Crises & conflict** — ICG CrisisWatch reporting plus, when you supply ACLED credentials, live ACLED conflict events, scored into a composite DEFCON-style threat index. Without ACLED the map shows only a short hand-maintained list of major ongoing conflicts and the top bar says **NO LIVE FEED** instead of inventing a threat level
 - **Wildfires** — NASA FIRMS active fire detections
 - **Markets** — indices, commodities, energy, tech, healthcare, and defense-sector tickers (Finnhub)
 - **Trade & supply chain** — chokepoints, shipping density, pipelines, ports, and World Bank country economic indicators
@@ -68,7 +68,7 @@ Most dashboards either pick one data source and go deep, or fake it with static 
 - **Tailwind CSS** — utility styling for the surrounding chrome
 - **date-fns**, **lucide-react**
 
-No backend — the app talks directly to public APIs from the browser, using Vite's dev proxy (and a deploy-time equivalent) to route around CORS where needed (OpenSky OAuth, NASA FIRMS, AISStream WebSocket, OpenRouter).
+No application server or database. The browser talks directly to public APIs; a few small stateless serverless functions in `api/` (Vercel format, also served by `npm run dev`) exist only to keep secrets out of the bundle (OpenSky and ACLED OAuth, Finnhub, Guardian, NYT, OpenRouter) or to add a missing CORS header (RSS, GPSJam). State lives in `localStorage`/IndexedDB.
 
 ## Architecture
 
@@ -76,7 +76,9 @@ No backend — the app talks directly to public APIs from the browser, using Vit
 src/
   App.tsx                    # root composition: TopBar + MapView + panel dock
   components/
-    Map/MapView.tsx          # Mapbox globe, all GeoJSON layers (helpers in Map/flightLayer, vesselImages, viewModes)
+    Map/MapView.tsx          # Mapbox globe composition root (~220 lines)
+    Map/layers/*.ts          # one module per map layer: add*Layers() setup + use*() data hook
+    Map/overlays/*.tsx       # on-map chrome: flight filter, overlay menu, legends, reticle
     TopBar.tsx                # live counters, threat index, view switcher, search
     PanelDock/                # draggable/collapsible dock + pop-out observe tray
     panels/*.tsx              # panel implementations, code-split and lazy-loaded via the registry
@@ -119,7 +121,7 @@ Two kinds of keys, because of how they're used:
 | Key | Service | Powers |
 |---|---|---|
 | `OPENSKY_USER` / `OPENSKY_PASS` | [OpenSky Network](https://opensky-network.org) | live flight tracking |
-| `ACLED_EMAIL` / `ACLED_PASSWORD` | [ACLED](https://acleddata.com) | conflict event data |
+| `ACLED_EMAIL` / `ACLED_PASSWORD` | [ACLED](https://acleddata.com) | live conflict events (optional; without it the threat index reads NO LIVE FEED) |
 | `FINNHUB_KEY` | [Finnhub](https://finnhub.io) | market/sector panels |
 | `GUARDIAN_KEY` / `NYT_KEY` | Guardian / NYT | news aggregation |
 | `OPENROUTER_KEY` | [OpenRouter](https://openrouter.ai) | AI Analyst panel |
@@ -151,4 +153,5 @@ Actively developed. Current focus: trade/supply-chain overlays (chokepoints, shi
 ## Further reading
 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — data flow, panel registry pattern, map layer system
+- [`DATA_PROVENANCE.md`](./DATA_PROVENANCE.md) — which data is live, which is a snapshot, which is hand-curated, and what hasn't been independently verified
 - [`CLAUDE.md`](./CLAUDE.md) — working agreement for AI agents contributing to this repo

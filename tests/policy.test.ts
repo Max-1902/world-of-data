@@ -126,3 +126,20 @@ describe('repo layout', () => {
     }
   })
 })
+
+describe('data provenance', () => {
+  // Hand-curated datasets (see DATA_PROVENANCE.md). Keep in sync: a dataset that is added, renamed
+  // or removed without the provenance doc being updated fails here.
+  const CURATED = ['military', 'tradeStats', 'resources', 'oilgas', 'infrastructure', 'sanctions', 'ports', 'chokepoints', 'supplychain', 'unhcr', 'earthcam', 'notam']
+  const doc = readFileSync(path.join(ROOT, 'DATA_PROVENANCE.md'), 'utf8')
+
+  it.each(CURATED)('services/%s.ts exists and is documented in DATA_PROVENANCE.md', (name) => {
+    expect(existsSync(path.join(ROOT, 'src/services', `${name}.ts`)), `${name}.ts is missing — update CURATED and DATA_PROVENANCE.md`).toBe(true)
+    expect(doc).toContain(`services/${name}.ts`)
+  })
+
+  it.each(CURATED)('services/%s.ts header does not claim to be complete or comprehensive', (name) => {
+    const header = readFileSync(path.join(ROOT, 'src/services', `${name}.ts`), 'utf8').split('\n').slice(0, 20).join('\n')
+    expect(header).not.toMatch(/\bcomplete\b|\bcomprehensive\b/i)
+  })
+})

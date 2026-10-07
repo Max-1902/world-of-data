@@ -2,13 +2,13 @@
 
 ## Shape
 
-No backend. This is a Vite-served React SPA that talks directly to public APIs from the browser. Where a provider doesn't send CORS headers or requires a server-side OAuth exchange (OpenSky, ACLED, GDELT, Guardian, AISStream's WebSocket), Vite's dev proxy (`vite.config.ts`) routes around it. There is no persistence layer beyond `localStorage` (panel layout, view mode, AI chat history) — every panel is a live view over whatever the last poll returned.
+No application server and no database. This is a Vite-built React SPA that talks directly to public APIs from the browser. The exceptions are a handful of thin serverless functions in `api/` (Vercel-style; `vite.api-dev.ts` serves the same files in `npm run dev`): they exist only to inject server-side secrets (OpenSky/ACLED OAuth, Finnhub, Guardian, NYT, OpenRouter keys) or to get around a missing CORS header (RSS, GPSJam), and hold no state. Everything else is fetched straight from the browser. There is no persistence layer beyond `localStorage` (panel layout, view mode, AI chat history) — every panel is a live view over whatever the last poll returned.
 
 ```
 src/
   App.tsx                       # root composition + top-level state (view mode, panel layout, selected country)
   components/
-    Map/MapView.tsx             # Mapbox GL instance, every GeoJSON source/layer, all 10 view modes
+    Map/MapView.tsx             # Mapbox GL composition root — see Map/layers, Map/overlays below
     Sidebar.tsx                 # left nav — one entry per panel group (INTEL/GEO/MIL/FIN/AI)
     TopBar.tsx                  # live counters, DEFCON-style threat badge, view switcher, search
     NewsTicker.tsx               # scrolling headline strip
@@ -24,6 +24,11 @@ src/
     panels/                       # panel implementations, grouped by theme (NewsPanels, SecurityPanels,
                                   #   MarketPanels, CountryDataPanels, AIAnalystPanel, HumanitarianPanel, ...)
     PanelHost.tsx                 # per-panel ErrorBoundary + Suspense (panels are lazy-loaded)
+    Map/MapView.tsx               # composition root (~220 lines): owns the map + refs, calls addAllLayers() once and each layer's use*() hook
+    Map/layers/<name>.ts          # one module per map layer: add<Name>Layers(map, ctx) = sources/layers/handlers (once, on style load),
+                                  #   use<Name>Data(handle, props) = visibility + data updates; layers/index.ts fixes draw order
+    Map/overlays/                 # on-map React chrome: FlightFilter, OverlayMenu, legends, Reticle, DeepStatePanel
+    Map/types.ts                  # MapViewProps + MapHandle (the map/refs every layer hook receives)
     Map/flightLayer.ts            # flight GeoJSON/popup/icon helpers (pure, no React)
     Map/vesselImages.ts           # vessel SDF icons; Map/viewModes.ts: CSS filter + overlay configs
   panels/
@@ -63,15 +68,17 @@ Every live data source follows the same three-layer shape:
 
 Refresh rates are chosen per-provider to stay under free-tier rate limits, not for UX reasons: flights 15s (OpenSky's polite ceiling), crises 5min, markets 60s, wildfires/earthquakes 5-10min, news on-demand.
 
-`useCrises` also seeds a hardcoded `BASELINE` array of major ongoing conflicts (Ukraine, Gaza, Sudan, etc.), each stamped with **today's date** so they always render even if ACLED/GDELT are rate-limited or down. This matters for anything doing time-series analysis over `crises` — see the Watchlist note below.
+`useCrises` also seeds a hardcoded `BASELINE` array of major ongoing conflicts (Ukraine, Gaza, Sudan, etc.), each stamped with **today's date** so they always render when ACLED is unconfigured, rate-limited or down (GDELT was dropped — see the note in `services/crises.ts`). Their coordinates are region centres, not event locations, and the date is the load date, not an event date; `useCrises` therefore also reports `liveCount` so the UI (the top-bar threat badge reads **NO LIVE FEED**) can say when nothing live is loaded. This matters for anything doing time-series analysis over `crises` — see the Watchlist note below.
 
-## Map layer system (`MapView.tsx`)
+## Map layer system (`components/Map/`)
 
-One Mapbox GL instance, ~20 independently toggleable `addSource`/`addLayer` pairs (flights, vessels, crises, military, nuclear, pipelines, ports, chokepoints, supply chain, shipping density, humanitarian, GPS jamming, etc.), each gated by a boolean in `PanelState` (`src/types/index.ts`). `App.tsx` owns `panelState` and passes `showX` booleans down; `MapView` adds/removes layer visibility, it never owns the toggle state itself.
+One Mapbox GL instance, ~25 independently toggleable layer groups (flights, vessels, crises, military, nuclear, pipelines, ports, chokepoints, supply chain, shipping density, humanitarian, GPS jamming, etc.), each gated by a boolean in `PanelState` (`src/types/index.ts`). `App.tsx` owns `panelState` and passes `showX` booleans down; the map adds/removes layer visibility, it never owns the toggle state itself.
 
-Ten view modes (`earth/standard/dark/satellite/city3d/nightvision/bw/infrared/snow/thermal`) are implemented two ways: `city3d` tilts the camera and shows a real `fill-extrusion` buildings layer; the rest (`nightvision/bw/infrared/snow/thermal`) are CSS `filter()` overlays applied to the canvas element (`CANVAS_FILTERS` in `MapView.tsx`), not different Mapbox styles — cheap to add, no extra tile requests.
+`MapView.tsx` is only the composition root. Each layer is one module in `Map/layers/` with two halves: `add<Name>Layers(map, ctx)` registers its sources, layers and click/hover handlers once when the style loads (`ctx` carries the shared popup ref and the few refs/callbacks handlers need), and `use<Name>Data(handle, props)` is the hook that shows/hides the layer and pushes data into its source as props change. `layers/index.ts` calls the `add*` functions in a fixed order — **that order is the draw order** — and re-exports the hooks. Hooks all wait on `layersReadyRef`/`mapReady`, which flip only after every source exists.
 
-A known race condition worth knowing about: flight data can arrive before the map's `load` event fires. The fix already in place is a `flightDataRef` that buffers pending data and flushes it inside `map.on('load')`.
+Ten view modes (`earth/standard/dark/satellite/city3d/nightvision/bw/infrared/snow/thermal`) are implemented two ways: `city3d` tilts the camera and shows a real `fill-extrusion` buildings layer; the rest (`nightvision/bw/infrared/snow/thermal`) are CSS `filter()` overlays applied to the canvas element (`CANVAS_FILTERS` in `Map/viewModes.ts`, applied by `useViewMode`), not different Mapbox styles — cheap to add, no extra tile requests.
+
+A known race condition worth knowing about: flight data can arrive before the map's `load` event fires. The fix already in place is a `flightDataRef` that buffers pending data; `addFlightLayers` flushes it once the source exists.
 
 ## Oil & gas pipelines (`services/pipelines.ts`)
 

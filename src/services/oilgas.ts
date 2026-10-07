@@ -1,7 +1,8 @@
 /**
- * Oil & Gas Reserves — COMPLETE global dataset. Every country with any proven
- * oil or gas reserves or production, sourced from EIA, OPEC, BP Statistical
- * Review 2023, CIA World Factbook, and national reporting agencies.
+ * Oil & Gas Reserves — curated list of the main oil and gas countries (not every
+ * country with any reserves). Figures are attributed to EIA, OPEC, BP Statistical
+ * Review 2023, CIA World Factbook and national reporting agencies, but are not
+ * cited or dated per value — see DATA_PROVENANCE.md.
  *
  * Units: Oil reserves in billion barrels (Gbbl), Gas reserves in trillion
  * cubic metres (Tcm), Oil production in million bbl/day (Mbbl/d),
@@ -36,7 +37,7 @@ export const METRIC_COLORS: Record<OilGasMetric, string> = {
   gasProduction: '#44ccff',
 }
 
-// ── COMPLETE global dataset — 98 countries ──────────────────────────────────────
+// ── Curated list — see DATA_PROVENANCE.md ────────────────────────────────────
 export const OIL_GAS_DATA: OilGasCountry[] = [
   // ═══════════════ MIDDLE EAST ═══════════════
   { iso2: 'SA', name: 'Saudi Arabia',     lat: 23.88,  lng: 45.08,  oilReserves: 258.6, gasReserves: 9.4,  oilProduction: 10.5,  gasProduction: 117,  region: 'Middle East' },

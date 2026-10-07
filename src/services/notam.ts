@@ -2,7 +2,9 @@
  * NOTAM / Airspace Status Monitor
  * Detects regional airspace closures by comparing live OpenSky flight density
  * to per-FIR baselines. A "NOTAM-class alert" fires when traffic drops >70%
- * below the regional baseline — a reliable leading indicator of military/crisis activity.
+ * below the regional baseline. The boxes and baselines below are hand-set heuristic
+ * parameters, not official FIR boundaries or measured traffic — this is an anomaly
+ * signal, not a NOTAM (see DATA_PROVENANCE.md).
  *
  * Data: OpenSky flight states (already polled by useFlights hook)
  * No direct NOTAM API required — anomaly detection is more reliable in practice.

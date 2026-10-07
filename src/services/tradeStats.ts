@@ -1,10 +1,10 @@
 /**
- * Trade Statistics — comprehensive country-level trade intelligence.
- * Combines World Bank WITS data patterns, UN Comtrade concepts, and
- * CIA World Factbook trade partner data.
+ * Trade Statistics — hand-curated trade profiles for major economies.
+ * Attributed to World Bank WITS, UN Comtrade and the CIA World Factbook; values
+ * are not cited or dated per entry — see DATA_PROVENANCE.md.
  *
- * This is static reference data (updated annually) that enriches the
- * real-time World Bank API indicators with structural trade context.
+ * Static reference data that sits beside the live World Bank API indicators to
+ * give structural trade context. It is not updated automatically.
  */
 
 export interface TradeProfile {
