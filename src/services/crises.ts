@@ -14,40 +14,9 @@ const RETRY_KEY = 'ws-acled-retry-at'
 const TOKEN_RETRY_COOLDOWN_MS = 30 * 60 * 1000
 const LOCKED_RETRY_COOLDOWN_MS = 2 * 60 * 60 * 1000
 
-const REASON_KEY = 'ws-acled-issue'
-
-/** Why the last login failed — surfaced by panels so "no data" can say what is actually wrong. */
-export type ACLEDAuthIssue = 'unconfigured' | 'rejected' | 'locked' | 'unavailable'
-
-const ISSUE_MESSAGES: Record<ACLEDAuthIssue, string> = {
-  unconfigured: 'ACLED_EMAIL and ACLED_PASSWORD are not set in .env.',
-  rejected: 'ACLED rejected the login in .env (invalid credentials). Check ACLED_EMAIL and ACLED_PASSWORD, then restart the dev server. The app waits 30 minutes between login attempts so the account is not locked.',
-  locked: 'ACLED has temporarily locked this account after failed logins. The app will try again automatically in about 2 hours.',
-  unavailable: 'ACLED\'s login service could not be reached. The app will retry automatically.',
-}
-
 let _token: string | null = null
 let _tokenExpiry = 0
 let _tokenRetryAt = 0
-let _issue: ACLEDAuthIssue | null = null
-
-function setIssue(issue: ACLEDAuthIssue | null): void {
-  _issue = issue
-  try {
-    if (issue) localStorage.setItem(REASON_KEY, issue); else localStorage.removeItem(REASON_KEY)
-  } catch { /* ignore */ }
-}
-
-/** Human-readable reason the ACLED login is failing, or null when there is no known auth problem. */
-export function acledAuthMessage(): string | null {
-  if (!_issue) {
-    try {
-      const stored = localStorage.getItem(REASON_KEY) as ACLEDAuthIssue | null
-      if (stored && stored in ISSUE_MESSAGES) _issue = stored
-    } catch { /* ignore */ }
-  }
-  return _issue ? ISSUE_MESSAGES[_issue] : null
-}
 
 function readStored(): void {
   try {
@@ -80,7 +49,6 @@ async function getACLEDToken(): Promise<string | null> {
 
     if (!res.ok) {
       console.warn('[ACLED OAuth] token request failed:', res.status)
-      setIssue(res.status === 403 ? 'locked' : res.status === 400 || res.status === 401 ? 'rejected' : 'unavailable')
       backOff(res.status === 403 ? LOCKED_RETRY_COOLDOWN_MS : TOKEN_RETRY_COOLDOWN_MS)
       return null
     }
@@ -89,12 +57,11 @@ async function getACLEDToken(): Promise<string | null> {
     _token = data.access_token ?? null
     // expires_in is in seconds; subtract 60 s buffer
     _tokenExpiry = Date.now() + ((data.expires_in ?? 86400) - 60) * 1000
-    if (!_token) { setIssue('unconfigured'); backOff(TOKEN_RETRY_COOLDOWN_MS) }
-    else { setIssue(null); storeToken() }
+    if (!_token) backOff(TOKEN_RETRY_COOLDOWN_MS)
+    else storeToken()
     return _token
   } catch (err) {
     console.warn('[ACLED OAuth] error:', err)
-    setIssue('unavailable')
     backOff(TOKEN_RETRY_COOLDOWN_MS)
     return null
   }
@@ -169,81 +136,6 @@ export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
     console.warn('[ACLED] fetch error:', err)
     return []
   }
-}
-
-// ── Long-window history for the Analytics panel ─────────────────────────────────
-// Same source, token and severity mapping as above, but paginated and without the free-text `notes`
-// column (by far the heaviest field) — the analytics only need when, where, what kind and how deadly.
-const HISTORY_FIELDS = 'event_id_cnty|event_date|event_type|country|latitude|longitude|fatalities'
-const HISTORY_PAGE_SIZE = 5000
-/** Hard ceiling on requests per load, so a broad window can never turn into a flood against ACLED. */
-const HISTORY_MAX_PAGES = 10
-
-export interface ACLEDHistory {
-  events: CrisisEvent[]
-  /** Why nothing was returned, when the cause is a known login problem. */
-  reason?: string | null
-  /** True when the page ceiling was hit or a later page failed — the window is then incomplete. */
-  truncated: boolean
-}
-
-export async function fetchACLEDHistory(days = 75): Promise<ACLEDHistory> {
-  const token = await getACLEDToken()
-  if (!token) return { events: [], truncated: false, reason: acledAuthMessage() }
-
-  const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0]
-  const today = new Date().toISOString().split('T')[0]
-  const events: CrisisEvent[] = []
-  let truncated = false
-
-  for (let page = 1; page <= HISTORY_MAX_PAGES; page++) {
-    let rows: Record<string, string>[]
-    try {
-      const params = new URLSearchParams({
-        _format: 'json',
-        event_date: `${since}|${today}`,
-        event_date_where: 'BETWEEN',
-        limit: String(HISTORY_PAGE_SIZE),
-        page: String(page),
-        fields: HISTORY_FIELDS,
-      })
-      const res = await fetch(`${ACLED_API}?${params}`, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      })
-      if (!res.ok) throw new Error(`ACLED ${res.status}`)
-      const json = await res.json()
-      if (json.status !== 200) throw new Error(String(json.error ?? 'ACLED error'))
-      rows = Array.isArray(json.data) ? json.data : []
-    } catch (err) {
-      console.warn('[ACLED history] fetch error:', err)
-      truncated = events.length > 0
-      break
-    }
-
-    for (const e of rows) {
-      const latitude = parseFloat(e.latitude)
-      const longitude = parseFloat(e.longitude)
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || !e.country || !e.event_date) continue
-      const type = TYPE_MAP[e.event_type] ?? 'conflict'
-      events.push({
-        id: e.event_id_cnty,
-        title: `${e.event_type} in ${e.country}`,
-        type,
-        severity: SEVERITY_MAP[type] ?? 'medium',
-        latitude, longitude,
-        country: e.country,
-        date: e.event_date,
-        description: '',
-        source: 'ACLED',
-        fatalities: parseInt(e.fatalities) || 0,
-      })
-    }
-
-    if (rows.length < HISTORY_PAGE_SIZE) break
-    if (page === HISTORY_MAX_PAGES) truncated = true
-  }
-
-  return { events, truncated }
 }
 
 // No GDELT here on purpose. The GEO 2.0 API this used to call (/api/v2/geo/geo) now 404s for every
