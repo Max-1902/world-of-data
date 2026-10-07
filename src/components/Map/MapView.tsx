@@ -24,8 +24,10 @@ import { FIR_REGIONS, analyzeAirspace } from '../../services/notam'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../services/aisstream'
 import { OIL_GAS_DATA, getMaxValue, formatValue, getRegionTotals, METRIC_COLORS, METRIC_LABELS, type OilGasMetric } from '../../services/oilgas'
 import { SEVERITY_COLORS, SEVERITY_LABELS, GPSJAM_ATTRIBUTION, type GPSJamData } from '../../services/gpsjam'
-import { useConflictHistory } from '../../hooks/useConflictHistory'
-import { sequentialColor, divergingColor, SEQUENTIAL, FALLING, NEUTRAL, RISING } from '../../utils/vizPalette'
+import { useAnalyticsData } from '../../hooks/useAnalyticsData'
+import { analyticsData } from '../../services/analyticsData'
+import { HEIGHT_SCALE } from '../../utils/hexbin'
+import { sequentialColor, SEQUENTIAL } from '../../utils/vizPalette'
 import { CHOKEPOINTS, CHOKEPOINT_COLORS, SHIPPING_LANE_LABEL_IDS } from '../../services/chokepoints'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../services/supplychain'
 import { getCountryCentroid, type OutageEvent } from '../../services/outages'
@@ -130,7 +132,7 @@ const OVERLAY_ITEMS: Record<keyof import('../../types').PanelState, { label: str
   supplychain: { label: 'SUPPLY CHAIN', icon: '◆', color: '#00ccff' },
   shippingDensity: { label: 'SHIPPING', icon: '≋', color: '#ff4466' },
   infraIndicators: { label: 'INFRA ACCESS', icon: '↯', color: '#22d3ee' },
-  analyticsHex: { label: 'CONFLICT HEX', icon: '⬢', color: '#3987e5' },
+  analyticsHex: { label: 'DATA HEX', icon: '⬢', color: '#3987e5' },
   datacenters: { label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
 }
 
@@ -1951,20 +1953,20 @@ export default function MapView({
       map.on('click', 'analytics-hex-extrusion', (e) => {
         if (!e.features?.[0]) return
         const p = e.features[0].properties as Record<string, unknown>
-        const esc = (s: unknown) => String(s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string))
-        const change = Number(p.change)
+        const fires = p.source === 'fires'
+        const n = (v: unknown) => Number(v).toLocaleString()
+        const rows = fires
+          ? `<span style="color:#9ca3af;">Detections</span><span style="color:#14161a;font-weight:700;">${n(p.count)}</span>
+             <span style="color:#9ca3af;">Total fire power</span><span style="color:#14161a;">${n(Math.round(Number(p.value)))} MW</span>
+             <span style="color:#9ca3af;">Strongest fire</span><span style="color:#14161a;">${n(Math.round(Number(p.peak)))} MW</span>`
+          : `<span style="color:#9ca3af;">Earthquakes</span><span style="color:#14161a;font-weight:700;">${n(p.count)}</span>
+             <span style="color:#9ca3af;">Strongest</span><span style="color:#14161a;">M${Number(p.peak).toFixed(1)}</span>`
         const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:220px;">
-          <div style="font-size:12px;font-weight:700;color:#14161a;margin-bottom:2px;">${esc(p.country)}</div>
-          <div style="font-size:10px;color:#9ca3af;letter-spacing:.1em;margin-bottom:6px;">CONFLICT ACTIVITY · ~60 KM CELL</div>
-          <div style="display:grid;grid-template-columns:110px 1fr;gap:3px 8px;font-size:11px;">
-            <span style="color:#9ca3af;">Last 7 days</span><span style="color:#14161a;font-weight:700;">score ${Number(p.recent)}</span>
-            <span style="color:#9ca3af;">Prior 7 days</span><span style="color:#14161a;">score ${Number(p.prior)}</span>
-            <span style="color:#9ca3af;">Change</span><span style="color:${change > 0 ? '#c0392b' : change < 0 ? '#256abf' : '#14161a'};font-weight:700;">${change > 0 ? '▲ +' : change < 0 ? '▼ −' : ''}${Math.abs(change)}</span>
-            <span style="color:#9ca3af;">Events (14 days)</span><span style="color:#14161a;">${Number(p.events)}</span>
-            <span style="color:#9ca3af;">Reported deaths</span><span style="color:#14161a;">${Number(p.fatalities)}</span>
-          </div>
-          <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">Score weights events by severity (critical 10 · high 6 · medium 3 · low 1). ACLED reports with a lag, so the newest days read low.</div>
-          <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ACLED</div>
+          <div style="font-size:12px;font-weight:700;color:#14161a;margin-bottom:2px;">${fires ? 'WILDFIRE DETECTIONS' : 'EARTHQUAKES'}</div>
+          <div style="font-size:10px;color:#9ca3af;letter-spacing:.1em;margin-bottom:6px;">${fires ? 'LAST 24 H · ~22 KM CELL' : 'M4.5+ · LAST 7 DAYS · ~60 KM CELL'}</div>
+          <div style="display:grid;grid-template-columns:120px 1fr;gap:3px 8px;font-size:11px;">${rows}</div>
+          <div style="margin-top:6px;font-size:10px;color:#6b7280;line-height:1.5;">${fires ? 'Satellite detections in this cell; height and colour follow the summed fire radiative power.' : 'Height and colour follow the number of quakes in this cell.'}</div>
+          <div style="margin-top:5px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ${fires ? 'NASA FIRMS (VIIRS)' : 'USGS'}</div>
         </div>`
         if (popupRef.current) popupRef.current.remove()
         popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' }).setLngLat(e.lngLat).setHTML(html).addTo(map)
@@ -3140,8 +3142,16 @@ export default function MapView({
     areaSrc.setData({ type: 'FeatureCollection', features: areaFeatures })
   }, [showGPSJam, gpsJam, mapReady])
 
-  // ── Conflict hex (Analytics) update ────────────────────────────────────────────
-  const conflictHex = useConflictHistory(showAnalyticsHex)
+  // ── Analytics hexagons (wildfires / earthquakes) update ───────────────────────
+  const analytics = useAnalyticsData({})
+  useEffect(() => {
+    if (!showAnalyticsHex) return
+    const load = () => { void analyticsData.load(analytics.hexSource) }
+    load()
+    const timer = window.setInterval(load, 5 * 60 * 1000)
+    return () => clearInterval(timer)
+  }, [showAnalyticsHex, analytics.hexSource])
+  const hexSlice = analytics[analytics.hexSource]
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layersReadyRef.current) return
@@ -3152,22 +3162,16 @@ export default function MapView({
       src.setData({ type: 'FeatureCollection', features: [] })
       return
     }
-    const change = conflictHex.mapMode === 'change'
-    const features: GeoJSON.Feature[] = []
-    for (const c of conflictHex.hexes) {
-      if (change ? c.change === 0 : c.recent === 0) continue   // intensity shows the latest week only; change shows any movement
-      features.push({
-        type: 'Feature',
-        geometry: { type: 'Polygon', coordinates: [c.ring] },
-        properties: {
-          color: change ? divergingColor(c.divergence) : sequentialColor(c.intensity),
-          height: change ? Math.abs(c.divergence) * c.heightScale + 1500 : c.intensity * c.heightScale + 1500,
-          country: c.country, recent: c.recent, prior: c.prior, change: c.change, events: c.events, fatalities: c.fatalities,
-        },
-      })
-    }
-    src.setData({ type: 'FeatureCollection', features })
-  }, [showAnalyticsHex, conflictHex.hexes, conflictHex.mapMode, mapReady])
+    src.setData({
+      type: 'FeatureCollection',
+      features: hexSlice.cells.map(c => ({
+        type: 'Feature' as const,
+        geometry: { type: 'Polygon' as const, coordinates: [c.ring] },
+        // the map ramp starts above the chart ramp's darkest step so low cells don't vanish into satellite imagery
+        properties: { source: analytics.hexSource, color: sequentialColor(0.3 + 0.7 * c.intensity), height: c.intensity * HEIGHT_SCALE + 15000, value: c.value, count: c.count, peak: c.peak },
+      })),
+    })
+  }, [showAnalyticsHex, hexSlice.cells, analytics.hexSource, mapReady])
 
   // ── Resize Mapbox when deepstate split activates / deactivates ───────────
   useEffect(() => {
@@ -3467,28 +3471,32 @@ export default function MapView({
         }}
       >
 
-      {/* ── Conflict hex legend (Analytics layer) ─────────────────────── */}
+      {/* ── Analytics hexagon legend ─────────────────────────────────── */}
       {showAnalyticsHex && !deepstateMode && (
-        <div style={{ position:'absolute', right:10, bottom:58, zIndex:30, width:210, padding:'8px 10px', background:'rgba(9,16,22,0.94)', border:'1px solid #263843', borderRadius:6, backdropFilter:'blur(10px)', boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
+        <div style={{ position:'absolute', right:10, bottom:58, zIndex:30, width:220, padding:'8px 10px', background:'rgba(9,16,22,0.94)', border:'1px solid #263843', borderRadius:6, backdropFilter:'blur(10px)', boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
           <div style={{ fontSize:10.5, fontWeight:650, color:'#e5ecef' }}>
-            {conflictHex.mapMode === 'change' ? 'Change vs prior 7 days' : 'Conflict activity, latest 7 days'}
+            {analytics.hexSource === 'fires' ? 'Wildfire power, last 24 h' : 'Earthquakes M4.5+, last 7 days'}
           </div>
-          <div style={{ marginTop:6, height:6, borderRadius:3, background: conflictHex.mapMode === 'change'
-            ? `linear-gradient(90deg, ${FALLING}, ${NEUTRAL}, ${RISING})`
-            : `linear-gradient(90deg, ${SEQUENTIAL.join(',')})` }} />
-          <div style={{ display:'flex', justifyContent:'space-between', marginTop:3, fontSize:9, color:'#98aab4' }}>
-            {conflictHex.mapMode === 'change' ? <><span>Falling</span><span>No change</span><span>Rising</span></> : <><span>Low</span><span>High</span></>}
-          </div>
+          <div style={{ marginTop:6, height:6, borderRadius:3, background:`linear-gradient(90deg, ${SEQUENTIAL.join(',')})` }} />
+          <div style={{ display:'flex', justifyContent:'space-between', marginTop:3, fontSize:9, color:'#98aab4' }}><span>Low</span><span>High</span></div>
           <div style={{ marginTop:5, fontSize:9, color:'#647883', lineHeight:1.45 }}>
-            {conflictHex.status === 'loading' || conflictHex.status === 'idle' ? 'Loading 75 days of ACLED events…'
-              : conflictHex.status === 'empty' ? (conflictHex.reason ?? 'No ACLED events available — nothing to draw.')
-              : conflictHex.status === 'error' ? 'Could not load the conflict history.'
-              : `${conflictHex.hexes.length.toLocaleString()} cells from ${conflictHex.events.length.toLocaleString()} events. Height = activity. Click a cell for detail.`}
+            {hexSlice.status === 'loading' || hexSlice.status === 'idle' ? 'Loading…'
+              : hexSlice.status === 'error' ? `Could not load this feed${hexSlice.error ? ` (${hexSlice.error})` : ''}.`
+              : hexSlice.status === 'empty' ? 'The feed returned no data — nothing to draw.'
+              : `${hexSlice.cells.length.toLocaleString()} cells from ${hexSlice.data.length.toLocaleString()} ${analytics.hexSource === 'fires' ? 'detections' : 'quakes'}. Height and colour = ${analytics.hexSource === 'fires' ? 'total fire power' : 'quake count'}. Click a cell.`}
           </div>
-          <button onClick={() => { const m = mapRef.current; if (m) m.easeTo({ pitch: m.getPitch() > 10 ? 0 : 55, duration: 800 }) }}
-            style={{ marginTop:6, padding:'3px 8px', fontSize:9.5, color:'#e5ecef', background:'rgba(255,255,255,0.06)', border:'1px solid #263843', borderRadius:4, cursor:'pointer' }}>
-            Tilt map to see heights
-          </button>
+          <div style={{ marginTop:6, display:'flex', gap:4, flexWrap:'wrap' }}>
+            {(['fires', 'quakes'] as const).map(k => (
+              <button key={k} onClick={() => analyticsData.setHexSource(k)}
+                style={{ padding:'3px 8px', fontSize:9.5, color: analytics.hexSource === k ? '#d5a85f' : '#e5ecef', background: analytics.hexSource === k ? 'rgba(213,168,95,0.12)' : 'rgba(255,255,255,0.06)', border:'1px solid #263843', borderRadius:4, cursor:'pointer' }}>
+                {k === 'fires' ? 'Wildfires' : 'Earthquakes'}
+              </button>
+            ))}
+            <button onClick={() => { const m = mapRef.current; if (m) m.easeTo({ pitch: m.getPitch() > 10 ? 0 : 55, duration: 800 }) }}
+              style={{ padding:'3px 8px', fontSize:9.5, color:'#e5ecef', background:'rgba(255,255,255,0.06)', border:'1px solid #263843', borderRadius:4, cursor:'pointer' }}>
+              Tilt map
+            </button>
+          </div>
         </div>
       )}
 

@@ -207,9 +207,9 @@ const PANELS: PanelDef[] = [
 
   // ── ANALYSIS ────────────────────────────────────────────────────────────────
   {
-    id: 'analytics', title: 'Conflict Analytics', group: 'analysis',
-    dotColor: 'blue', desc: '75 days of ACLED data: trends, heatmap, movers, and a backtest of the rising flag — plotted on the map',
-    render: (p) => <AnalyticsPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} onCountryClick={p.onCountryClick} />,
+    id: 'analytics', title: 'Data Analytics', group: 'analysis',
+    dotColor: 'blue', desc: 'Earthquake and wildfire data analysed in the browser: trends, magnitude law, heatmaps — plotted as 3D hexagons on the map',
+    render: (p) => <AnalyticsPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} onGeoSearch={p.onGeoSearch} />,
   },
   {
     id: 'analyst', title: 'Analyst chat', group: 'analysis',
