@@ -10,7 +10,15 @@ import { fetchPowerGenerationRanking, formatTwh, POWER_SOURCES, type PowerGenera
 import { RESOURCE_PROFILES, fetchResourceRents, type ResourceRent } from '../../services/resources'
 import { ALL_INFRA_POINTS, INFRA_COLORS } from '../../services/infrastructure'
 import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
+import { OnMapButton } from './OnMapButton'
+import { INDICATOR_BY_ID } from '../../services/countryIndicators'
+import type { PanelState } from '../../types'
 import { OWID_CHARTS, fetchOwidChart, formatOwidValue, TOPIC_LABELS, type OwidTopic, type OwidChartData } from '../../services/owid'
+
+/** Props for panels that can shade the globe through the Country Analytics layer. */
+interface MapLinkProps { panelState?: PanelState; onToggleLayer?: (id: keyof PanelState) => void }
+
+const infoStrip: React.CSSProperties = { fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }
 
 // ── Global Economy Panel ──────────────────────────────────────────────────
 // All 249 countries/territories (ISO 3166-1) for World Bank lookup
@@ -57,7 +65,7 @@ const ALL_COUNTRIES: { iso2: string; name: string }[] = [
   {iso2:'HK',name:'Hong Kong'},{iso2:'MO',name:'Macau'},{iso2:'PS',name:'Palestine'},{iso2:'XK',name:'Kosovo'},
 ]
 
-export function GlobalEconomyPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
+export function GlobalEconomyPanel({ onCountryClick, panelState, onToggleLayer }: { onCountryClick?: (country: string) => void } & MapLinkProps) {
   const [selected, setSelected] = useState<string | null>(null)
   const [econData, setEconData] = useState<CountryEconData | null>(null)
   const [econLoading, setEconLoading] = useState(false)
@@ -96,8 +104,9 @@ export function GlobalEconomyPanel({ onCountryClick }: { onCountryClick?: (count
           }}
         />
       </div>
-      <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
-        {filtered.length} countries · {TRADE_PROFILES.length} with trade profiles · Click for World Bank data
+      <div style={infoStrip}>
+        <span>{filtered.length} countries · {TRADE_PROFILES.length} with trade profiles · Click for World Bank data</span>
+        <OnMapButton indicatorId="NY.GDP.MKTP.CD" panelState={panelState} onToggleLayer={onToggleLayer} />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
         {filtered.map(c => {
@@ -666,7 +675,7 @@ export function TradeProductsByCountryPanel({ onCountryClick }: { onCountryClick
 }
 
 // ── Military Personnel Panel — ranked by armed forces personnel (World Bank) ──
-export function MilitaryPersonnelPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
+export function MilitaryPersonnelPanel({ onCountryClick, panelState, onToggleLayer }: { onCountryClick?: (country: string) => void } & MapLinkProps) {
   const [ranking, setRanking] = useState<MilitaryPersonnelEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -695,8 +704,9 @@ export function MilitaryPersonnelPanel({ onCountryClick }: { onCountryClick?: (c
           }}
         />
       </div>
-      <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
-        Ranked by total armed forces personnel · World Bank (IISS Military Balance)
+      <div style={infoStrip}>
+        <span>Ranked by total armed forces personnel · World Bank (IISS Military Balance)</span>
+        <OnMapButton indicatorId="MS.MIL.TOTL.P1" panelState={panelState} onToggleLayer={onToggleLayer} />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
         {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading World Bank ranking…</div>}
@@ -737,7 +747,7 @@ const POWER_COLORS: Record<PowerSource, string> = {
   solar: 'var(--series-4)', bioenergy: 'var(--green)', other: 'var(--series-1)',
 }
 
-export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
+export function InfraIndicatorsPanel({ onCountryClick, panelState, onToggleLayer }: { onCountryClick?: (country: string) => void } & MapLinkProps) {
   const [ranking, setRanking] = useState<PowerGenerationEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -768,8 +778,9 @@ export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (cou
           }}
         />
       </div>
-      <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
-        Ranked by electricity generated per year · low-carbon share · Ember via Our World in Data
+      <div style={infoStrip}>
+        <span>Ranked by electricity generated per year · low-carbon share · Ember via Our World in Data</span>
+        <OnMapButton indicatorId="ember:total" panelState={panelState} onToggleLayer={onToggleLayer} />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
         {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading electricity data…</div>}
@@ -830,7 +841,7 @@ export function InfraIndicatorsPanel({ onCountryClick }: { onCountryClick?: (cou
 // ── Our World in Data Panel — agriculture, violence & war, energy & environment, innovation & tech ──
 const OWID_TOPICS: OwidTopic[] = ['agriculture', 'violence', 'energy', 'innovation']
 
-export function OwidPanel({ onCountryClick }: { onCountryClick?: (country: string) => void }) {
+export function OwidPanel({ onCountryClick, panelState, onToggleLayer }: { onCountryClick?: (country: string) => void } & MapLinkProps) {
   const [topic, setTopic] = useState<OwidTopic>('violence')
   const [chartSlug, setChartSlug] = useState<string>(OWID_CHARTS.find(c => c.topic === 'violence')!.slug)
   const [data, setData] = useState<OwidChartData | null>(null)
@@ -893,8 +904,9 @@ export function OwidPanel({ onCountryClick }: { onCountryClick?: (country: strin
           }}
         />
       </div>
-      <div style={{ fontSize: 9, color: 'var(--text2)', padding: '3px 8px', borderBottom: '1px solid var(--border)' }}>
-        Our World in Data (OECD / UCDP / World Bank / WIPO — most recent year per country)
+      <div style={infoStrip}>
+        <span>Our World in Data (OECD / UCDP / World Bank / WIPO — most recent year per country)</span>
+        <OnMapButton indicatorId={INDICATOR_BY_ID.has(`owid:${chartSlug}`) ? `owid:${chartSlug}` : null} panelState={panelState} onToggleLayer={onToggleLayer} />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
         {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading Our World in Data…</div>}

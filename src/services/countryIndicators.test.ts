@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockFetch, jsonResponse } from '../test/helpers'
-import { INDICATORS, INDICATOR_BY_ID, MATRIX_IDS, PRESETS, parseWorldBank, INDICATOR_GROUPS, cleanCountryName } from './countryIndicators'
+import { INDICATORS, INDICATOR_BY_ID, MATRIX_IDS, PRESETS, parseWorldBank, INDICATOR_GROUPS, cleanCountryName, owidToRows, emberToRows } from './countryIndicators'
+import type { OwidChartData } from './owid'
+import type { PowerGenerationEntry } from './powerGeneration'
 
 const row = (iso2: string, iso3: string, value: unknown, date = '2022', name = `N-${iso2}`) =>
   ({ country: { id: iso2, value: name }, countryiso3code: iso3, value, date })
@@ -48,16 +50,16 @@ describe('parseWorldBank', () => {
       row('US', 'USA', 100), row('1W', 'WLD', 999), row('FR', 'FRA', null), row('DE', 'DEU', 'n/a'), row('JP', 'JPN', NaN),
       row('CN', 'CHN', 7, '2020', 'China'),
     ]])
-    expect(out.map(r => r.iso2)).toEqual(['US', 'CN'])
-    expect(out[1]).toEqual({ iso2: 'CN', iso3: 'CHN', name: 'China', value: 7, year: '2020' })
+    expect(out.map(r => r.iso3)).toEqual(['USA', 'CHN'])
+    expect(out[1]).toEqual({ iso3: 'CHN', name: 'China', value: 7, year: '2020' })
   })
   it('drops values older than the minimum year, because mrnev ignores the request date range', () => {
     const out = parseWorldBank([{}, [row('US', 'USA', 1, '1995'), row('FR', 'FRA', 2, '2009'), row('DE', 'DEU', 3, '2010'), row('JP', 'JPN', 4, '2023')]])
-    expect(out.map(r => r.iso2)).toEqual(['DE', 'JP'])
+    expect(out.map(r => r.iso3)).toEqual(['DEU', 'JPN'])
     expect(parseWorldBank([{}, [row('US', 'USA', 1, '1995')]], 1990)).toHaveLength(1)
   })
   it('keeps the first row per country and skips rows missing codes', () => {
-    const out = parseWorldBank([{}, [row('US', 'USA', 1), row('US', 'USA', 2), { country: {}, countryiso3code: 'XXX', value: 3 }, row('', 'ZZZ', 4)]])
+    const out = parseWorldBank([{}, [row('US', 'USA', 1), row('US', 'USA', 2), { country: {}, countryiso3code: '', value: 3 }, row('ZZ', '', 4), { country: {}, value: 5 }]])
     expect(out).toHaveLength(1)
     expect(out[0].value).toBe(1)
   })
@@ -147,5 +149,69 @@ describe('fetchIndicatorAll', () => {
     mockFetch(() => jsonResponse({ message: 'bad' }))
     const fresh = await load()
     await expect(fresh.fetchIndicatorAll('Z.Z')).rejects.toThrow(/Unexpected/)
+  })
+})
+
+describe('source adapters', () => {
+  const owidData = (values: OwidChartData['values']): OwidChartData => ({ slug: 's', label: 'L', topic: 'violence', unit: 'deaths', values, fetchedAt: 0 })
+  it('turns OWID rows into country rows, dropping aggregates, odd codes and pre-2010 values', () => {
+    const out = owidToRows(owidData([
+      { entity: 'Ukraine', code: 'UKR', year: 2023, value: 80_000 },
+      { entity: 'World', code: 'OWID_WRL', year: 2023, value: 1e6 },
+      { entity: 'Kosovo', code: 'OWID_KOS', year: 2023, value: 5 },
+      { entity: 'Asia', code: '', year: 2023, value: 9 },
+      { entity: 'Old', code: 'OLD', year: 2005, value: 1 },
+      { entity: 'Korea, Rep.', code: 'KOR', year: 2020, value: 3 },
+    ]))
+    expect(out.map(r => r.iso3)).toEqual(['UKR', 'KOR'])
+    expect(out[0]).toEqual({ iso3: 'UKR', name: 'Ukraine', value: 80_000, year: '2023' })
+    expect(out[1].name).toBe('South Korea')
+  })
+
+  const power = (code: string, year: number, bySource: Partial<PowerGenerationEntry['bySource']>): PowerGenerationEntry => {
+    const full = { coal: 0, gas: 0, oil: 0, nuclear: 0, hydro: 0, wind: 0, solar: 0, bioenergy: 0, other: 0, ...bySource }
+    const total = Object.values(full).reduce((a, b) => a + b, 0)
+    return { country: `P-${code}`, code, year, totalTwh: total, bySource: full, lowCarbonPct: (1 - (full.coal + full.gas + full.oil) / total) * 100, rank: 1 }
+  }
+  it('derives each Ember measure from the generation mix', () => {
+    const entries = [power('DEU', 2023, { coal: 20, wind: 30, solar: 10, gas: 40 }), power('OLD', 2005, { coal: 1 }), power('OWID_WRL', 2023, { coal: 5 })]
+    expect(emberToRows(entries, 'total').map(r => [r.iso3, r.value])).toEqual([['DEU', 100]])
+    expect(emberToRows(entries, 'coal')[0].value).toBeCloseTo(20)
+    expect(emberToRows(entries, 'windsolar')[0].value).toBeCloseTo(40)
+    expect(emberToRows(entries, 'lowcarbon')[0].value).toBeCloseTo(40)
+    expect(() => emberToRows(entries, 'nope')).toThrow(/Unknown Ember/)
+  })
+
+  it('tags every indicator with its source and uses a matching id scheme', () => {
+    for (const i of INDICATORS) {
+      if (i.source === 'Our World in Data') expect(i.id.startsWith('owid:')).toBe(true)
+      else if (i.source === 'Ember') expect(i.id.startsWith('ember:')).toBe(true)
+      else expect(i.id).toMatch(/^[A-Z0-9.]+$/)
+    }
+    expect(new Set(INDICATORS.map(i => i.source))).toEqual(new Set(['World Bank', 'Our World in Data', 'Ember']))
+  })
+})
+
+describe('fetchIndicatorAll dispatch', () => {
+  beforeEach(() => { vi.resetModules() })
+
+  it('routes owid: ids through the OWID service and fails clearly when it returns nothing', async () => {
+    vi.doMock('./owid', () => ({ fetchOwidChart: vi.fn(async (slug: string) => slug === 'good'
+      ? { slug, label: 'L', topic: 'violence', unit: 'x', fetchedAt: 0, values: [{ entity: 'France', code: 'FRA', year: 2022, value: 4 }] }
+      : null) }))
+    const mod = await import('./countryIndicators')
+    expect(await mod.fetchIndicatorAll('owid:good')).toEqual([{ iso3: 'FRA', name: 'France', value: 4, year: '2022' }])
+    await expect(mod.fetchIndicatorAll('owid:bad')).rejects.toThrow(/Our World in Data/)
+    vi.doUnmock('./owid')
+  })
+
+  it('routes ember: ids through the power-generation service', async () => {
+    vi.doMock('./powerGeneration', async importOriginal => ({
+      ...(await importOriginal<typeof import('./powerGeneration')>()),
+      fetchPowerGenerationRanking: vi.fn(async () => [{ country: 'Norway', code: 'NOR', year: 2023, totalTwh: 100, bySource: { coal: 0, gas: 1, oil: 0, nuclear: 0, hydro: 90, wind: 9, solar: 0, bioenergy: 0, other: 0 }, lowCarbonPct: 99, rank: 1 }]),
+    }))
+    const mod = await import('./countryIndicators')
+    expect(await mod.fetchIndicatorAll('ember:lowcarbon')).toEqual([{ iso3: 'NOR', name: 'Norway', value: 99, year: '2023' }])
+    vi.doUnmock('./powerGeneration')
   })
 })

@@ -5,7 +5,7 @@ import {
 } from './countryStats'
 import { INDICATOR_BY_ID, type CountryValue } from '../services/countryIndicators'
 
-const cv = (iso2: string, value: number, year = '2022'): CountryValue => ({ iso2, iso3: iso2 + 'X', name: `Country ${iso2}`, value, year })
+const cv = (iso3: string, value: number, year = '2022'): CountryValue => ({ iso3, name: `Country ${iso3}`, value, year })
 const rows = (vals: number[], prefix = 'C'): CountryValue[] => vals.map((v, i) => cv(`${prefix}${i}`, v))
 
 describe('scales', () => {
@@ -91,7 +91,7 @@ describe('joinRows', () => {
     const x = [cv('A', 10), cv('B', 0), cv('C', 5), cv('D', 7)]
     const y = [cv('A', 1), cv('B', 2), cv('C', -1), cv('E', 9)]
     const j = joinRows(x, y, makeScale('log'), makeScale('linear'))
-    expect(j.map(r => r.iso2)).toEqual(['A', 'C'])      // B has x=0 (invalid on log), D/E are unmatched
+    expect(j.map(r => r.iso3)).toEqual(['A', 'C'])      // B has x=0 (invalid on log), D/E are unmatched
     expect(j[0]).toMatchObject({ x: 10, y: 1, xYear: '2022' })
   })
 })
@@ -111,8 +111,8 @@ describe('analyzePair', () => {
     const a = analyzePair(rows(xs), rows(ys), lin, lin)!
     expect(a.n).toBe(20)
     expect(a.spearman!).toBeGreaterThan(0.9)
-    expect(a.over[0].iso2).toBe('C4')
-    expect(a.under[0].iso2).toBe('C14')
+    expect(a.over[0].iso3).toBe('C4')
+    expect(a.under[0].iso3).toBe('C14')
     expect(a.over[0].z).toBeGreaterThan(2)
     expect(a.under[0].z).toBeLessThan(-2)
     expect(a.over[0].expected).toBeGreaterThan(0)
