@@ -8,6 +8,17 @@ Built as a personal engineering project to explore high-density real-time UI des
 
 ![stack](https://img.shields.io/badge/TypeScript-strict-3178c6) ![stack](https://img.shields.io/badge/React-18-61dafb) ![stack](https://img.shields.io/badge/Mapbox_GL-v3-000000) ![stack](https://img.shields.io/badge/Vite-6-646cff)
 
+## Screenshots
+
+Captured from a local run against live feeds on 7 Oct 2026 (headless Chromium, 1600×950). Nothing is mocked or retouched — including the top bar, which reads **NO LIVE FEED** and a few "issues" because the ACLED conflict feed and some rate-limited sources were not available during the capture.
+
+| | |
+|---|---|
+| ![Overview: the globe with live flights, vessels, crises, market chips and the Crisis Monitor panel](docs/screenshots/overview.jpg) | ![Layers: chokepoints, global shipping lanes, pipelines and ports switched on](docs/screenshots/layers.jpg) |
+| **Overview** — live flights and vessels, crisis markers, exchange chips, Crisis Monitor and Watchlist in the dock | **Layers** — chokepoints, shipping density, pipelines (OSM) and ports |
+| ![Country Analytics: every country shaded by life expectancy, with the GDP-vs-life-expectancy scatter and correlation stats in the dock](docs/screenshots/country-analytics.jpg) | ![Hazard Analytics: 121,146 wildfire detections binned into extruded H3 hexagons over Africa](docs/screenshots/hazard-hex.jpg) |
+| **Country Analytics** — 214 countries shaded by one indicator; Spearman ρ, trend fit and outliers in the panel | **Hazard Analytics** — a day of NASA FIRMS detections binned into 3D hexagons client-side |
+
 ## What it does
 
 Mundus Datorum renders a live Mapbox GL globe with ten selectable view modes (satellite, night vision, thermal, 3D buildings, infrared, etc.) and overlays it with continuously polled data:
