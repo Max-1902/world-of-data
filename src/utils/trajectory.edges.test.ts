@@ -80,23 +80,32 @@ describe('scoring', () => {
       crisis({ severity: 'high', ageMs: DAY }), crisis({ severity: 'low', ageMs: 2 * DAY }),
       crisis({ severity: 'critical', ageMs: 5 * DAY }),
     ])
-    expect(e).toMatchObject({ recentScore: 7, priorScore: 10, delta: -3, recentCount: 2, priorCount: 1 })
+    // delta = recent − prior × 3/7 = 7 − 4.29
+    expect(e).toMatchObject({ recentScore: 7, priorScore: 10, delta: 2.7, recentCount: 2, priorCount: 1 })
   })
 
   it.each([
-    // recent - prior -> trend  (dead-zone is |delta| <= 2)
-    [2, 'flat'], [3, 'rising'], [-2, 'flat'], [-3, 'falling'], [0, 'flat'],
-  ] as const)('delta %i reads as %s', (delta, trend) => {
-    // medium (3) events: build recent/prior scores that differ by `delta` using low (1) events
-    const recent = Math.max(delta, 0), prior = Math.max(-delta, 0)
+    // [recent score, prior score, delta, trend]. The prior week's pace over 72h is prior × 3/7, and the
+    // dead-zone is |delta| <= 2, so 3 points in 72h against 7 in the prior week is *steady*, not a drop.
+    [3, 7, 0, 'flat'],      // steady pace
+    [5, 7, 2, 'flat'],      // exactly on the dead-zone edge
+    [6, 7, 3, 'rising'],
+    [1, 7, -2, 'flat'],     // exactly on the dead-zone edge
+    [0, 7, -3, 'falling'],
+    [3, 14, -3, 'falling'], // half the previous pace
+  ] as const)('recent %i vs prior %i gives delta %d (%s)', (recentScore, priorScore, delta, trend) => {
+    // low (weight 1) events: score == count
     const events = [
-      ...Array.from({ length: recent }, () => crisis({ severity: 'low', ageMs: HOUR })),
-      ...Array.from({ length: prior }, () => crisis({ severity: 'low', ageMs: 5 * DAY })),
-      // anchor so the country always has activity even at delta 0
-      crisis({ severity: 'low', ageMs: HOUR }), crisis({ severity: 'low', ageMs: 5 * DAY }),
+      ...Array.from({ length: recentScore }, () => crisis({ severity: 'low', ageMs: HOUR })),
+      ...Array.from({ length: priorScore }, () => crisis({ severity: 'low', ageMs: 5 * DAY })),
     ]
-    expect(one(events).trend).toBe(trend)
-    expect(one(events).delta).toBe(delta)
+    expect(one(events)).toMatchObject({ recentScore, priorScore, delta, trend })
+  })
+
+  it('does not read steady daily activity as falling', () => {
+    // one low event every day for 10 days: 3 in the last 72h, 7 before that
+    const events = Array.from({ length: 10 }, (_, d) => crisis({ severity: 'low', ageMs: d * DAY + HOUR }))
+    expect(one(events)).toMatchObject({ recentScore: 3, priorScore: 7, trend: 'flat', velocity: 50 })
   })
 })
 
@@ -106,8 +115,9 @@ describe('velocity', () => {
     expect(one([crisis({ severity: 'critical', ageMs: 5 * DAY })]).velocity).toBe(0)
   })
 
-  it('is 50 when recent and prior activity are equal', () => {
-    expect(one([crisis({ ageMs: HOUR }), crisis({ ageMs: 5 * DAY })]).velocity).toBe(50)
+  it('is 50 when the last 72h match the prior week\'s pace', () => {
+    const steady = [...Array.from({ length: 3 }, () => crisis({ severity: 'low', ageMs: HOUR })), ...Array.from({ length: 7 }, () => crisis({ severity: 'low', ageMs: 5 * DAY }))]
+    expect(one(steady).velocity).toBe(50)
   })
 
   it('always stays within 0..100, including with both boosts applied', () => {
@@ -196,13 +206,14 @@ describe('reason text', () => {
   })
 
   it('falling', () => {
-    const e = one([crisis({ severity: 'low' }), crisis({ severity: 'critical', ageMs: 5 * DAY })])
+    const e = one([crisis({ severity: 'low' }), crisis({ severity: 'critical', ageMs: 5 * DAY }), crisis({ severity: 'critical', ageMs: 6 * DAY })])
     expect(e.trend).toBe('falling')
-    expect(e.reason).toBe('1 event in 72h, down from 1 in the prior week')
+    expect(e.reason).toBe('1 event in 72h, down from 2 in the prior week')
   })
 
   it('flat', () => {
-    expect(one([crisis({ ageMs: HOUR }), crisis({ ageMs: 5 * DAY })]).reason).toBe('Steady at ~1 event in 72h')
+    const steady = [...Array.from({ length: 3 }, () => crisis({ severity: 'low', ageMs: HOUR })), ...Array.from({ length: 7 }, () => crisis({ severity: 'low', ageMs: 5 * DAY }))]
+    expect(one(steady).reason).toBe('Steady at ~3 events in 72h')
   })
 
   it('a focus country mentioned in the news gets a distinct quiet-entry reason', () => {

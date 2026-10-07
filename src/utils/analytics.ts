@@ -114,8 +114,8 @@ export interface RateMover {
 
 /**
  * Change in each country's average daily score: the latest `recentDays` versus the `priorDays` before them.
- * Rates (not raw sums) are compared, so a country that is simply steady reads as ~0 rather than "falling" —
- * the live trajectory rule compares a 3-day sum with a 7-day sum, which makes steady activity look like a drop.
+ * Rates (not raw sums) are compared, so a country that is simply steady reads as ~0 rather than "falling".
+ * Same idea as the live trajectory rule's pace-adjusted delta, but in score points per day and unrounded.
  */
 export function rateMovers(events: CrisisEvent[], endDay: number, recentDays = 3, priorDays = 7): RateMover[] {
   const recentFrom = endDay - (recentDays - 1) * DAY_MS

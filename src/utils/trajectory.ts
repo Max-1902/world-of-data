@@ -18,7 +18,7 @@ export const SEV_WEIGHT: Record<CrisisEvent['severity'], number> = {
 }
 
 const RECENT_WINDOW_MS = 3 * 24 * 60 * 60 * 1000   // last 3 days
-const PRIOR_WINDOW_MS  = 10 * 24 * 60 * 60 * 1000  // 4–10 days before that
+const PRIOR_WINDOW_MS  = 10 * 24 * 60 * 60 * 1000  // outer cutoff: events up to 10 days old count; 3–10 days old is the "prior" bucket
 const FLAT_DEADZONE    = 2                          // |delta| below this reads as "flat"
 
 function parseDate(d: string): number {
@@ -58,7 +58,7 @@ function findNewsHit(country: string, articles: NewsArticle[], now: number): New
 
 /**
  * Rule-based trajectory scoring: compares each country's crisis activity in the
- * last 3 days against the 4–10 day-prior window (using each event's own date),
+ * last 3 days against the pace of the 3–10 day-prior window (using each event's own date),
  * ranking the fastest-rising regions. Pure function, no network calls.
  *
  * `now` is the "as of" instant; it defaults to the present and exists so the same rule can be replayed
@@ -86,7 +86,11 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
   const entries: TrajectoryEntry[] = Object.entries(byCountry).map(([country, { recent, prior }]) => {
     const recentScore = score(recent)
     const priorScore   = score(prior)
-    const delta = recentScore - priorScore
+    // The windows differ in length (3 days vs 7), so comparing raw sums would read steady activity as a ~57%
+    // drop. Compare the last 72h against what the prior week's pace predicts for 72h instead; `delta` stays in
+    // "score points per 72h", so the flat band and the +2 boosts below keep their meaning.
+    const priorPace = priorScore * (RECENT_WINDOW_MS / (PRIOR_WINDOW_MS - RECENT_WINDOW_MS))
+    const delta = Math.round((recentScore - priorPace) * 10) / 10
     const trend: TrajectoryEntry['trend'] = delta > FLAT_DEADZONE ? 'rising' : delta < -FLAT_DEADZONE ? 'falling' : 'flat'
 
     // Cross-check: flight density near this country's crisis coordinates
@@ -101,9 +105,9 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
     // Cross-check: is this country mentioned in recent (48h) news coverage?
     const newsHit = findNewsHit(country, articles, now)
 
-    const adjustedDelta = delta + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)
+    const adjustedDelta = Math.round((delta + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)) * 10) / 10
 
-    const maxPossible = Math.max(recentScore, priorScore, 1) + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)
+    const maxPossible = Math.max(recentScore, priorPace, 1) + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)
     const velocity = Math.max(0, Math.min(100, Math.round((adjustedDelta / maxPossible) * 50 + 50)))
 
     return {

@@ -45,7 +45,7 @@ The **Conflict Analytics** panel (Analysis workspace) takes a 75-day ACLED windo
 
 Chart colours are validated with a colour-vision-deficiency check against the app's dark surface (`--series-1/2` and the ramps in `src/utils/vizPalette.ts`); direction is never carried by colour alone (arrows and signs on movers, a table view on every chart).
 
-**Design note found while building this.** The live trajectory rule compares a 3-day *sum* with a 7-day *sum*, so a perfectly steady country reads as "falling". The Analytics movers chart therefore compares per-day rates; the Watchlist rule itself is unchanged and is what the backtest evaluates.
+**A bug the analytics exposed, now fixed.** The trajectory rule used to compare a 3-day *sum* with a 7-day *sum*, so a perfectly steady country read as "falling" (about −57%) in the Outlook card, Watchlist and AI Analyst context. `computeTrajectories` now compares the last 72h with the pace the prior week implies (its score × 3/7), keeping `delta` in "points per 72h" so the flat band and boosts are unchanged. The backtest replays this corrected rule.
 
 ## Why this exists
 

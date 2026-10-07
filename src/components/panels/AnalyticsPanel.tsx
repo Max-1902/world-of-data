@@ -133,7 +133,7 @@ export function AnalyticsPanel({ panelState, onToggleLayer, onCountryClick }: {
 
       <ChartFrame
         title="Does the app's “rising” flag predict anything?"
-        subtitle={`Walk-forward backtest of the Watchlist rule (3-day total beats the 7-day total before it): replayed on each past day using only data up to that day, then scored on the next ${bt.horizonDays} days.`}
+        subtitle={`Walk-forward backtest of the Watchlist rule (last 72h well above the prior week's pace): replayed on each past day using only data up to that day, then scored on the next ${bt.horizonDays} days.`}
         table={{
           columns: ['Group', 'Hit rate', 'Hits', 'Samples', '95% interval'],
           rows: [
