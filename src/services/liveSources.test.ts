@@ -146,6 +146,15 @@ describe('civil facilities (OSM Overpass)', () => {
     expect(ok).toHaveBeenCalled()
   })
 
+  it('fetchCivilFacilitiesAround queries the given point and radius, and caches per point', async () => {
+    const fetchMock = mockFetch((_u, init) => jsonResponse({ elements: String(init!.body).includes('data_center') ? [] : [node(1, 'hospital')] }))
+    const { fetchCivilFacilitiesAround } = await loadMod()
+    expect(await fetchCivilFacilitiesAround(29.95, -90.07, 15_000)).toHaveLength(1)
+    expect(decodeURIComponent(String(fetchMock.mock.calls[0][1]!.body))).toContain('around:15000,29.95,-90.07')
+    await fetchCivilFacilitiesAround(29.95, -90.07, 15_000)
+    expect(fetchMock).toHaveBeenCalledTimes(2) // two sub-queries once; the repeat is cached
+  })
+
   it('sends a User-Agent (Overpass rejects requests without one)', async () => {
     const fetchMock = mockFetch(() => jsonResponse({ elements: [] }))
     await (await loadMod()).fetchCivilFacilities('DE')
@@ -267,6 +276,19 @@ describe('power plants (WRI GPPD)', () => {
     expect(de[0].name).toBe('P39')
     const fr = await fetchPowerPlantsForCountry('France')
     expect(fr[0]).toMatchObject({ name: 'Mystery', type: 'grid' })
+  })
+
+  it('fetchPowerPlantsNear returns only plants inside the radius, biggest first, capped', async () => {
+    mockFetch(() => textResponse(csv(
+      'USA,United States,Small,100,30.0,-90.0,Gas',
+      'USA,United States,Big,2000,29.9,-90.1,Gas',
+      'USA,United States,TooFar,5000,35,-90,Coal',
+      'USA,United States,Medium,500,29.95,-90.07,Coal',
+    )))
+    const { fetchPowerPlantsNear } = await loadMod()
+    expect((await fetchPowerPlantsNear(29.95, -90.07, 60)).map(p => p.name)).toEqual(['Big', 'Medium', 'Small'])
+    expect(await fetchPowerPlantsNear(29.95, -90.07, 60, 1)).toHaveLength(1)
+    expect((await fetchPowerPlantsNear(29.95, -90.07, 60))[0]).toMatchObject({ capacityMw: 2000, capacity: '2,000 MW' })
   })
 
   it('throws on HTTP errors', async () => {

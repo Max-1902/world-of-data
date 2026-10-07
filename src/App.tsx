@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from 'react'
-import type { MapViewMode, PanelState, Flight, CrisisEvent } from './types'
+import type { MapViewMode, PanelState, Flight, CrisisEvent, SelectedPlace } from './types'
 import type { PanelGroup } from './panels/types'
 import { useFlights }     from './hooks/useFlights'
 import { useCrises }      from './hooks/useCrises'
@@ -108,11 +108,19 @@ export default function App() {
   // (the regional outlook, or one country's brief), so picking another country shows it again.
   const [tickerHidden, setTickerHidden] = useState(false)
   const [dismissedCard, setDismissedCard] = useState<string | null>(null)
-  const cardKey = selectedCountry ?? '\u0000outlook'
+  // A picked city (map click) and a picked country are mutually exclusive; the city takes over the outlook card.
+  const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null)
+  const cardKey = selectedPlace ? `\u0000place:${selectedPlace.name}:${selectedPlace.lat}:${selectedPlace.lng}` : selectedCountry ?? '\u0000outlook'
   // Any explicit pick (map click, search, toast) re-opens the outlook box, even for a country whose brief was closed earlier.
   const selectCountry = useCallback((country: string | null) => {
     if (country) setDismissedCard(null)
+    setSelectedPlace(null)
     setSelectedCountry(country)
+  }, [])
+  const selectPlace = useCallback((place: SelectedPlace) => {
+    setDismissedCard(null)
+    setSelectedCountry(null)
+    setSelectedPlace(place)
   }, [])
   const [reticleColor, setReticleColor] = useState(() => {
     try { return localStorage.getItem('ws-reticle-color') || '#16a34a' } catch { return '#16a34a' }
@@ -180,6 +188,7 @@ export default function App() {
       if (d.viewMode) setViewMode(d.viewMode)
       if (d.layers) setPanelState(prev => layersToPanelState(prev, d.layers!))
       if (d.group) setActiveGroup(d.group as PanelGroup)
+      setSelectedPlace(null)
       setSelectedCountry(d.country ?? null)
     }
     window.addEventListener('hashchange', onHashChange)
@@ -212,7 +221,7 @@ export default function App() {
     onViewMode: setViewMode,
     onToggleLayer: toggleLayer,
     onSettingsOpen: () => setSettingsOpen(true),
-    onCloseDrawer: () => { setSelectedCountry(null); setSettingsOpen(false) },
+    onCloseDrawer: () => { setSelectedCountry(null); setSelectedPlace(null); setSettingsOpen(false) },
   })
 
   const handleFlightSelect = useCallback((_f: Flight) => {}, [])
@@ -315,7 +324,9 @@ export default function App() {
             flyToQuery={searchQuery}
             geoFlyTo={geoFlyTo}
             onCountryClick={selectCountry}
+            onPlaceClick={selectPlace}
             selectedCountry={selectedCountry}
+            selectedPlace={selectedPlace}
             reticleColor={reticleColor}
             panelState={panelState}
             onToggleLayer={toggleLayer}
@@ -336,7 +347,7 @@ export default function App() {
           </Suspense>
           <AlertToasts onSelectCountry={selectCountry} />
           {dismissedCard !== cardKey && (
-            <OutlookCard crises={crises} flights={flights} articles={articles} selectedCountry={selectedCountry} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />
+            <OutlookCard crises={crises} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={selectedCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />
           )}
           <Suspense fallback={null}>
           <SettingsModal

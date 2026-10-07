@@ -808,6 +808,36 @@ export async function fetchCountryHeadlines(country: string): Promise<NewsArticl
     })
 }
 
+/** Google News search for a city: "Name" plus its state/province (when known) to keep namesakes out. */
+export function placeNewsQuery(name: string, region?: string): string {
+  return `"${name.trim()}"${region?.trim() ? ` "${region.trim()}"` : ''} when:14d`
+}
+
+async function searchGoogleNews(query: string, idPrefix: string): Promise<NewsArticle[]> {
+  const feed = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en-US&gl=US&ceid=US:en`
+  const items = await fetchRSSFeed(feed, 'Google News')
+  return items
+    .filter(a => a.title && a.url)
+    .map((a, i) => {
+      const { title, source } = splitGoogleNewsTitle(a.title)
+      return { ...a, id: `${idPrefix}-${i}`, title, source, description: '' }
+    })
+}
+
+/**
+ * Recent headlines about a city. Tries the name + state/province first; if that finds almost nothing
+ * (many stories only say "New Orleans"), widens to the bare name. [] on failure.
+ */
+export async function fetchPlaceHeadlines(name: string, region?: string): Promise<NewsArticle[]> {
+  if (!name.trim()) return []
+  const id = `gplace-${name}`
+  const specific = region?.trim() ? await searchGoogleNews(placeNewsQuery(name, region), id) : []
+  if (specific.length >= 5) return specific
+  const broad = await searchGoogleNews(placeNewsQuery(name), id)
+  const seen = new Set(specific.map(a => a.url))
+  return [...specific, ...broad.filter(a => !seen.has(a.url))]
+}
+
 // ── CrisisWatch (International Crisis Group) ──────────────────────────────────
 // Monthly conflict monitoring across 70+ countries — no API key required
 export const CRISISWATCH_FEEDS = [

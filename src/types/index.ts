@@ -86,3 +86,13 @@ export interface PanelState {
   infraIndicators: boolean
   analyticsHex:   boolean
 }
+
+/** A city/town picked on the map: the regional outlook then reports on the area around it, not the whole country. */
+export interface SelectedPlace {
+  name: string
+  /** state / province, when the geocoder knows one */
+  region?: string
+  country: string
+  lat: number
+  lng: number
+}

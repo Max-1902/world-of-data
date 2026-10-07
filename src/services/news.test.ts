@@ -410,3 +410,38 @@ describe('country headlines', () => {
     expect(await fetchCountryHeadlines('  ')).toEqual([])
   })
 })
+
+describe('place headlines', () => {
+  beforeEach(() => { vi.useFakeTimers(); quietConsole() })
+  afterEach(() => vi.useRealTimers())
+
+  it('quotes the city and its state, and bounds the age', async () => {
+    const { placeNewsQuery } = await load()
+    expect(placeNewsQuery('New Orleans', 'Louisiana')).toBe('"New Orleans" "Louisiana" when:14d')
+    expect(placeNewsQuery('Paris')).toBe('"Paris" when:14d')
+  })
+
+  it('widens to the bare name when the state-qualified search finds little, without duplicates', async () => {
+    const fetchMock = mockFetch(url => decodeURIComponent(decodeURIComponent(url)).includes('"Louisiana"')
+      ? rssBody([rssItem(1, { title: 'Levee repair - WWL' })])
+      : rssBody([rssItem(1, { title: 'Levee repair - WWL' }), rssItem(2, { title: 'Saints win at the Superdome - NOLA.com' })]))
+    const { fetchPlaceHeadlines } = await load()
+    const out = await settle(fetchPlaceHeadlines('New Orleans', 'Louisiana'))
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(out.map(a => a.title)).toEqual(['Levee repair', 'Saints win at the Superdome'])
+  })
+
+  it('does not search twice when the first search already has enough stories', async () => {
+    const fetchMock = mockFetch(() => rssBody([1, 2, 3, 4, 5].map(i => rssItem(i))))
+    const { fetchPlaceHeadlines } = await load()
+    await settle(fetchPlaceHeadlines('New Orleans', 'Louisiana'))
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns [] on HTTP failure or a blank name without throwing', async () => {
+    mockFetch(() => new Response('nope', { status: 502 }))
+    const { fetchPlaceHeadlines } = await load()
+    expect(await settle(fetchPlaceHeadlines('New Orleans', 'Louisiana'))).toEqual([])
+    expect(await fetchPlaceHeadlines('  ')).toEqual([])
+  })
+})

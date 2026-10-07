@@ -7,6 +7,7 @@ import { FirePoint } from '../../services/wildfires'
 import { Earthquake } from '../../services/earthquakes'
 import { MARKET_HUBS } from '../../services/stocks'
 import { addHoverMarker, type HoverMarker } from './hoverMarker'
+import { PLACE_MIN_ZOOM, pickClickedPlace } from '../../utils/placePick'
 import { NEWS_COLORS, esc, marketPinHTML, newsPinHTML } from './geoPopups'
 import type { GeoNewsPin } from '../../utils/geoNews'
 import { LAYER_SECTIONS } from '../../utils/layerSections'
@@ -93,7 +94,10 @@ interface Props {
   flyToQuery?:        string
   geoFlyTo?:          string
   onCountryClick?:    (country: string) => void
+  /** a click on a city (zoomed in enough to target one); otherwise the click is reported via onCountryClick */
+  onPlaceClick?:      (place: import('../../types').SelectedPlace) => void
   selectedCountry?:   string | null
+  selectedPlace?:     import('../../types').SelectedPlace | null
   reticleColor?:      string
   panelState?:        import('../../types').PanelState
   onToggleLayer?:     (id: keyof import('../../types').PanelState) => void
@@ -143,7 +147,7 @@ export default function MapView({
   showChokepoints, showSupplyChain, showShippingDensity,
   outages, showOutages, showResources, showTradeStats, showMilitaryPersonnel,
   showInfraIndicators, showAnalyticsHex,
-  flyToQuery, geoFlyTo, onCountryClick, selectedCountry,
+  flyToQuery, geoFlyTo, onCountryClick, onPlaceClick, selectedCountry, selectedPlace,
   reticleColor = '#00ff88',
   panelState, onToggleLayer,
 }: Props) {
@@ -156,6 +160,9 @@ export default function MapView({
   const flightDataRef  = useRef<Flight[]>([])
   const onCountryClickRef = useRef(onCountryClick)
   onCountryClickRef.current = onCountryClick
+  const onPlaceClickRef = useRef(onPlaceClick)
+  onPlaceClickRef.current = onPlaceClick
+  const placeMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const militaryPersonnelRef = useRef<MilitaryPersonnelEntry[]>([])
   const infraIndicatorsRef = useRef<CountryInfraEntry[]>([])
 
@@ -2282,11 +2289,20 @@ export default function MapView({
             return
           }
           if (!onCountryClickRef.current) return
-          // Reverse geocode — works for every click on land
-          fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${e.lngLat.lng},${e.lngLat.lat}.json?types=country&access_token=${TOKEN}`)
-            .then(r => r.json())
-            .then(json => {
-              const countryName = json.features?.[0]?.text || json.features?.[0]?.place_name
+          // Reverse geocode — works for every click on land. Zoomed in far enough, a city wins over its country.
+          const { lng, lat } = e.lngLat
+          const geocode = (types: string, limit = 1) =>
+            fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${lng},${lat}.json?types=${types}&limit=${limit}&access_token=${TOKEN}`)
+              .then(r => r.json())
+          const wantPlace = !!onPlaceClickRef.current && map.getZoom() >= PLACE_MIN_ZOOM
+          Promise.all([
+            geocode('country'),
+            wantPlace ? geocode('place', 3).catch(() => null) : Promise.resolve(null),
+          ])
+            .then(([countryJson, placeJson]) => {
+              const place = placeJson ? pickClickedPlace(placeJson, { lng, lat }) : null
+              if (place && onPlaceClickRef.current) { onPlaceClickRef.current(place); return }
+              const countryName = countryJson.features?.[0]?.text || countryJson.features?.[0]?.place_name
               if (countryName && onCountryClickRef.current) {
                 onCountryClickRef.current(countryName)
               }
@@ -2386,6 +2402,19 @@ export default function MapView({
     if (!map.getLayer('selected-country-outline')) return
     map.setFilter('selected-country-outline', ['==', ['get', 'name_en'], selectedCountry || ''])
   }, [selectedCountry, mapReady])
+
+  // ── Picked-city marker ───────────────────────────────────────────────────
+  useEffect(() => {
+    placeMarkerRef.current?.remove()
+    placeMarkerRef.current = null
+    const map = mapRef.current
+    if (!map || !selectedPlace) return
+    const el = document.createElement('div')
+    el.className = 'place-pin'
+    el.setAttribute('aria-label', `Selected place: ${selectedPlace.name}`)
+    placeMarkerRef.current = new mapboxgl.Marker({ element: el }).setLngLat([selectedPlace.lng, selectedPlace.lat]).addTo(map)
+    return () => { placeMarkerRef.current?.remove(); placeMarkerRef.current = null }
+  }, [selectedPlace, mapReady])
 
   // ── Sanctions layer visibility ─────────────────────────────────────────────
   useEffect(() => {

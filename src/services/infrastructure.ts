@@ -12,6 +12,8 @@
  * plant trackers), national health-ministry facility lists, public OSINT.
  */
 
+import { distanceKm } from '../utils/geo'
+
 export type InfraType =
   | 'dam' | 'pipeline' | 'lng' | 'refinery' | 'grid'
   | 'power_coal' | 'power_gas' | 'power_oil' | 'power_wind' | 'power_solar'
@@ -330,18 +332,33 @@ export async function fetchPowerPlantsForCountry(countryName: string): Promise<I
     return rc.includes(lc) || lc.includes(rc)
   })
   matches.sort((a, b) => b.capacityMw - a.capacityMw)
-  return matches.slice(0, 30).map(r => {
-    const type = FUEL_TO_INFRA_TYPE[r.fuel.toLowerCase()]
-    return {
-      id:       `gppd-${r.name}-${r.lat}-${r.lng}`,
-      name:     r.name,
-      type:     (type ?? 'grid') as InfraType,
-      country:  r.countryLong,
-      lat:      r.lat,
-      lng:      r.lng,
-      capacity: `${Math.round(r.capacityMw).toLocaleString()} MW`,
-      status:   'operational',
-      notes:    `${r.fuel} — Source: WRI Global Power Plant Database`,
-    }
-  })
+  return matches.slice(0, 30).map(toInfraPoint)
+}
+
+/** The largest power plants within `radiusKm` of a point (WRI GPPD), biggest first. */
+export async function fetchPowerPlantsNear(lat: number, lng: number, radiusKm: number, limit = 8): Promise<InfraPoint[]> {
+  const rows = await fetchGppd()
+  // cheap bounding-box prefilter, then exact distance — the table has ~35k rows
+  const dLat = radiusKm / 111
+  const dLng = radiusKm / (111 * Math.max(Math.cos(lat * Math.PI / 180), 0.01))
+  const box = rows.filter(r => Math.abs(r.lat - lat) <= dLat && Math.abs(r.lng - lng) <= dLng)
+  const near = box.filter(r => distanceKm({ lat, lng }, r) <= radiusKm)
+  near.sort((a, b) => b.capacityMw - a.capacityMw)
+  return near.slice(0, limit).map(toInfraPoint)
+}
+
+function toInfraPoint(r: PowerPlantRow): InfraPoint {
+  const type = FUEL_TO_INFRA_TYPE[r.fuel.toLowerCase()]
+  return {
+    id:         `gppd-${r.name}-${r.lat}-${r.lng}`,
+    name:       r.name,
+    type:       (type ?? 'grid') as InfraType,
+    country:    r.countryLong,
+    lat:        r.lat,
+    lng:        r.lng,
+    capacity:   `${Math.round(r.capacityMw).toLocaleString()} MW`,
+    capacityMw: r.capacityMw,
+    status:     'operational',
+    notes:      `${r.fuel} — Source: WRI Global Power Plant Database`,
+  }
 }

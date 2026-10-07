@@ -4,8 +4,11 @@ import { formatDistanceToNow } from 'date-fns'
 import { useHistory, PREVIOUS_VISIT } from '../hooks/useHistory'
 import { changesSince, scoreByCountry } from '../services/history'
 import CountryBrief from './CountryBrief'
+import PlaceBrief from './PlaceBrief'
 import CloseButton from './CloseButton'
-import type { CrisisEvent, Flight, NewsArticle } from '../types'
+import type { Earthquake } from '../services/earthquakes'
+import type { FirePoint } from '../services/wildfires'
+import type { CrisisEvent, Flight, NewsArticle, SelectedPlace } from '../types'
 
 /** Don't report "since last visit" for a reload a few minutes after the previous one. */
 const MIN_AWAY_MS = 30 * 60 * 1000
@@ -14,35 +17,42 @@ interface Props {
   crises: CrisisEvent[]
   flights: Flight[]
   articles: NewsArticle[]
+  earthquakes?: Earthquake[]
+  fires?: FirePoint[]
   selectedCountry?: string | null
+  /** a picked city; takes over the card from the regional outlook */
+  selectedPlace?: SelectedPlace | null
   onSelectCountry: (country: string) => void
   onClose: () => void
 }
 
-export default function OutlookCard({ crises, flights, articles, selectedCountry, onSelectCountry, onClose }: Props) {
-  const entries = computeTrajectories(crises, flights, 6, articles, selectedCountry)
+export default function OutlookCard({ crises, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, onSelectCountry, onClose }: Props) {
+  const subject = selectedPlace ? null : selectedCountry
+  const entries = computeTrajectories(crises, flights, 6, articles, subject)
   const rising = entries.filter(entry => entry.trend === 'rising')
   const snaps = useHistory()
   const since = PREVIOUS_VISIT !== null && Date.now() - PREVIOUS_VISIT >= MIN_AWAY_MS
     ? changesSince(snaps, PREVIOUS_VISIT, scoreByCountry(crises))
     : null
-  const featured = selectedCountry ? entries : (rising.length ? rising : entries).slice(0, 2)
+  const featured = subject ? entries : (rising.length ? rising : entries).slice(0, 2)
 
   return (
-    <section className={`outlook-card${selectedCountry ? ' outlook-card-country' : ''}`} aria-label={selectedCountry ? `${selectedCountry} brief` : 'Regional activity outlook'}>
+    <section className={`outlook-card${selectedCountry || selectedPlace ? ' outlook-card-country' : ''}`} aria-label={selectedPlace ? `${selectedPlace.name} brief` : selectedCountry ? `${selectedCountry} brief` : 'Regional activity outlook'}>
       <div className="outlook-head">
         <div className="outlook-title">
           <span className="outlook-icon"><Radar size={13} /></span>
           <div>
-            <div className="outlook-eyebrow">{selectedCountry ? selectedCountry.toUpperCase() : 'REGIONAL OUTLOOK'}</div>
-            <div className="outlook-subtitle">{selectedCountry ? 'Country brief · news and facts' : 'Activity trend · 72 hours'}</div>
+            <div className="outlook-eyebrow">{selectedPlace ? selectedPlace.name.toUpperCase() : selectedCountry ? selectedCountry.toUpperCase() : 'REGIONAL OUTLOOK'}</div>
+            <div className="outlook-subtitle">{selectedPlace ? `${[selectedPlace.region, selectedPlace.country].filter(Boolean).join(', ')} · local brief` : selectedCountry ? 'Country brief · news and facts' : 'Activity trend · 72 hours'}</div>
           </div>
         </div>
-        <span className="outlook-live"><i /> {selectedCountry ? 'LIVE' : 'RULE BASED'}</span>
-        <CloseButton onClick={onClose} label={selectedCountry ? `Close ${selectedCountry} brief` : 'Close regional outlook'} />
+        <span className="outlook-live"><i /> {selectedCountry || selectedPlace ? 'LIVE' : 'RULE BASED'}</span>
+        <CloseButton onClick={onClose} label={selectedPlace ? `Close ${selectedPlace.name} brief` : selectedCountry ? `Close ${selectedCountry} brief` : 'Close regional outlook'} />
       </div>
 
-      {selectedCountry ? (
+      {selectedPlace ? (
+        <PlaceBrief place={selectedPlace} crises={crises} flights={flights} earthquakes={earthquakes} fires={fires} articles={articles} onSelectCountry={onSelectCountry} />
+      ) : selectedCountry ? (
         <CountryBrief country={selectedCountry} crises={crises} articles={articles} trend={entries[0]} />
       ) : featured.length > 0 ? (
         <div className="outlook-list">
@@ -79,7 +89,7 @@ export default function OutlookCard({ crises, flights, articles, selectedCountry
         <div className="outlook-empty">No recent regional activity trend is available.</div>
       )}
 
-      {!selectedCountry && since && since.movers.length > 0 && (
+      {!selectedCountry && !selectedPlace && since && since.movers.length > 0 && (
         <div className="outlook-since">
           <div className="outlook-since-head">SINCE YOUR LAST VISIT · {formatDistanceToNow(since.baselineT, { addSuffix: true }).toUpperCase()}</div>
           {since.movers.map(m => (
