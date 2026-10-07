@@ -83,13 +83,19 @@ function toFacility(e: OverpassElement, type: CivilFacilityType): CivilFacility 
  */
 export async function fetchCivilFacilities(iso2: string, limitPerType = 40): Promise<CivilFacility[]> {
   const key = iso2.toUpperCase()
-  const cached = cache.get(key)
-  if (cached) return cached
-
   const centroid = COUNTRY_CENTROIDS[key]
   if (!centroid) return []
   const [lng, lat] = centroid
-  const around = `around:${RADIUS_M},${lat},${lng}`
+  return fetchCivilFacilitiesAround(lat, lng, RADIUS_M, limitPerType, key)
+}
+
+/** Same lookup centred on any point — used for a picked city. Cached per rounded point + radius. */
+export async function fetchCivilFacilitiesAround(
+  lat: number, lng: number, radiusM = RADIUS_M, limitPerType = 40, cacheKey = `${lat.toFixed(2)},${lng.toFixed(2)}@${radiusM}`,
+): Promise<CivilFacility[]> {
+  const cached = cache.get(cacheKey)
+  if (cached) return cached
+  const around = `around:${radiusM},${lat},${lng}`
 
   const hospitalPoliceQuery = `
     [out:json][timeout:25];
@@ -140,8 +146,8 @@ export async function fetchCivilFacilities(iso2: string, limitPerType = 40): Pro
   // Only cache if at least one sub-query succeeded — don't lock in an empty
   // result for the TTL window just because Overpass hiccuped once.
   if (hpResult.status === 'fulfilled' || telecomResult.status === 'fulfilled') {
-    cache.set(key, facilities)
-    setTimeout(() => cache.delete(key), CACHE_TTL)
+    cache.set(cacheKey, facilities)
+    setTimeout(() => cache.delete(cacheKey), CACHE_TTL)
   }
   return facilities
 }

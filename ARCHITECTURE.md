@@ -13,6 +13,8 @@ src/
     TopBar.tsx                  # live counters, DEFCON-style threat badge, view switcher, search
     NewsTicker.tsx               # scrolling headline strip
     CountryDrawer.tsx            # click-a-country intel aggregation (crises, bases, trade, econ, refugees...)
+    OutlookCard.tsx              # bottom-left card: regional outlook, or the brief for a picked country (CountryBrief)
+                                 #   or picked city (PlaceBrief: local news + everything tracked within ~50-200 km)
     SettingsModal.tsx            # layers / data sources / API key status / display prefs
     PanelDock/
       PanelDock.tsx               # right-hand panel stack — resizable, drag-to-reorder
