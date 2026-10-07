@@ -4,7 +4,7 @@ import { BELOW, ABOVE, NEUTRAL, divergingColor } from '../../utils/vizPalette'
 import { useElementWidth } from './useElementWidth'
 import { Tooltip } from './ChartFrame'
 
-const LABEL_W = 64
+const LABEL_W = 84
 const TOP = 54
 
 /**
