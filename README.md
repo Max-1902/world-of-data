@@ -51,6 +51,7 @@ These are observations from the build itself, not results of a controlled study:
 - *No systematic evaluation of the AI's answers yet:* no logged sessions, no rubric for accuracy, calibration or grounding, no grounded-versus-ungrounded comparison. Treat everything the analyst says as unvalidated.
 - *The analyst sees only a fraction of the data layer.* Its context is a short text summary (crisis counts, trajectory signals, flight count, source health, and live quotes for market questions). It does not receive the Country Analytics or Hazard Analytics results, so "an AI that can evaluate all of it" is only partly realised.
 - *Transparency trade-off.* To stop outage disclaimers swamping answers, the prompt tells the model not to mention source outages unless asked. That improves usability and weakens exactly the honesty about coverage that question 4 is about.
+- *Not measured versus zero.* The context reports `Airborne flights tracked: N` from whatever the flights hook holds, so a layer that is switched off reads as zero aircraft. In the probe above a small model concluded "no active aircraft" from it and described layers as active that the context never mentioned (see [One probe of the AI analyst](#one-probe-of-the-ai-analyst-a-single-sample-not-a-result)). The project's own history store already refuses to store a missing flight count as zero; the AI context does not yet.
 - *Two grounding gaps in that context:* the capability list is static, so it still says conflict events come from ACLED when the login is failing; and conflict totals count the hand-maintained baseline markers as events without labelling them as such (the trajectory engine already excludes them).
 - *Forecast validity is untested.* A walk-forward backtest of the "rising" flag was built (added in `0e6ea3a`, removed in `28323e2`) but only ever ran on synthetic test data, and it was removed when ACLED became unavailable; nothing replaces it yet, so the trajectory flags are explanatory heuristics, not validated predictors.
 
@@ -69,6 +70,30 @@ Captured from a local run against live feeds on 7 Oct 2026 (headless Chromium, 1
 | ![Country Analytics: every country shaded by life expectancy, with the GDP-vs-life-expectancy scatter and correlation stats in the dock](docs/screenshots/country-analytics.jpg) | ![Hazard Analytics: 121,146 wildfire detections binned into extruded H3 hexagons over Africa](docs/screenshots/hazard-hex.jpg) |
 | **Country Analytics** — 214 countries shaded by one indicator; Spearman ρ, trend fit and outliers in the panel | **Hazard Analytics** — a day of NASA FIRMS detections binned into 3D hexagons client-side |
 
+### The analysis in pictures
+
+Same live, unmocked run as above (7 Oct 2026, headless Chromium, 1600×950). The numbers in the captions are the ones on screen.
+
+| | |
+|---|---|
+| ![Country Analytics, Wealth & health preset: the globe coloured red and blue by how far each country's life expectancy sits above or below the trend predicted by GDP per capita, with the log-axis scatter and named outliers in the dock](docs/screenshots/trend-map.jpg) | ![Country Analytics, Army size preset: population against armed forces personnel on log axes with North Korea, Eritrea and Israel labelled above the trend and Liberia, Haiti and Mozambique below](docs/screenshots/army-size.jpg) |
+| **Seeing a relationship, then its exceptions.** GDP per capita against life expectancy for 214 countries (Spearman ρ = 0.86, 72% of the variation along the trend). The map is in *Vs trend* mode: red countries live longer than their income predicts, blue shorter | **Military data on the same footing.** Population against armed forces personnel, 165 countries, ρ = 0.79 on log axes. North Korea, Eritrea and Israel sit furthest above the trend; Liberia, Haiti and Mozambique below. The map shades armed forces directly |
+| ![Correlation matrix of twelve country indicators, blue for negative and red for positive Spearman correlations with the value printed in every cell](docs/screenshots/correlation-matrix.jpg) | ![Hazard Analytics: the Gutenberg–Richter magnitude–frequency plot with its fitted line and b-value, beside quake hexagons on the tilted globe](docs/screenshots/magnitude-law.jpg) |
+| **What moves together.** Pairwise Spearman correlations between twelve indicators. Colour is diverging around zero and every cell also prints its value, so colour never carries the number alone; click a cell to plot that pair | **A law you can check.** A week of M4.5+ earthquakes on a log axis with a maximum-likelihood fit: b = 1.19 ± 0.08 from 118 quakes, close to the value of about 1 usually reported for global catalogues |
+
+### One probe of the AI analyst (a single sample, not a result)
+
+![The Analyst chat panel after the question "What data are you working from right now, and how current is each source?"; the answer's data-freshness section says air traffic currently shows zero flights, and the context bar reads 16 incidents and 0 flights](docs/screenshots/ai-analyst.jpg)
+
+I asked the default free model (LiquidAI LFM 2.5, a 2.6-billion-parameter model) one question: *"What data are you working from right now, and how current is each source? Be specific about what is live and what is not."* One run, not repeated or selected from several. For this run the flights, wildfires and markets layers were switched off and the ACLED login was failing. What happened:
+
+- **It matched the context where the context was specific.** It reported ACLED as down (HTTP 400), the GDELT news search as rate-limited (429) and the Guardian as unauthorised (401), which is the source-health note it was given and what the app was actually experiencing.
+- **It turned "not measured" into a claim about the world.** The context says `Airborne flights tracked: 0`, which is what a switched-off flights layer produces. The model read that as "no active commercial or military aircraft in the monitored area" and "a snapshot consistent with recent low-traffic conditions". The context bar in the screenshot shows the same "0 flights".
+- **It described layer states it was never given.** It called the flights, wildfires, military, nuclear and airspace layers "active" or "enabled"; the context contains no layer states, and in this run flights and wildfires were off.
+- **It echoed command syntax as if it were status** ("Each country flag (e.g. [COUNTRY:Iran]) is open").
+
+One sample from one small model shows what *can* go wrong, not how often or with other models. It is the kind of failure the open questions below are about, and the reason the AI layer is described here as unevaluated.
+
 ## What it does
 
 Mundus Datorum renders a live Mapbox GL globe with ten selectable view modes (satellite, night vision, thermal, 3D buildings, infrared, etc.) and overlays it with continuously polled data:
@@ -80,7 +105,7 @@ Mundus Datorum renders a live Mapbox GL globe with ten selectable view modes (sa
 - **Markets** — indices, commodities, energy, tech, healthcare, and defense-sector tickers (Finnhub)
 - **Trade & supply chain** — chokepoints, shipping density, pipelines, ports, and World Bank country economic indicators
 - **News & OSINT** — aggregated reporting from Guardian, NYT, and NewsAPI, plus a keyword/coordinate search
-- **Country Analytics** — pick any two of 50 country indicators (GDP, trade, population, military spending, armed forces, conflict and terrorism deaths, energy mix, R&D, life expectancy, internet access… from the World Bank, Our World in Data and Ember) and get a scatter with a fitted trend, Spearman/Pearson correlation with confidence intervals, the countries furthest above and below the trend, rankings, distributions, a 10-indicator correlation matrix, and a globe shaded by the results (see [Analytics](#analytics-comparing-countries-and-crunching-100000-detections))
+- **Country Analytics** — pick any two of 50 country indicators (GDP, trade, population, military spending, armed forces, conflict and terrorism deaths, energy mix, R&D, life expectancy, internet access… from the World Bank, Our World in Data and Ember) and get a scatter with a fitted trend, Spearman/Pearson correlation with confidence intervals, the countries furthest above and below the trend, rankings, distributions, a 12-indicator correlation matrix, and a globe shaded by the results (see [Analytics](#analytics-comparing-countries-and-crunching-100000-detections))
 - **Hazard Analytics** — the earthquake and wildfire feeds analysed in the browser, with ~100k fire detections drawn as 3D hexagons
 - **AI Analyst** — an LLM-backed panel (via OpenRouter) that answers situational questions and can drive the map (fly-to, layer toggles) from natural language
 
@@ -98,7 +123,7 @@ Compare any two of **50 indicators** across all countries, in seven groups: econ
 | Correlation | Spearman ρ (rank-based, robust to outliers and any monotonic shape) with a 95% Fisher-z interval, plus Pearson r on the plotted axes and the trend's R²; the verdict sentence and slope reading are generated from these numbers |
 | Furthest from the trend | standardised residuals: the five countries most above and most below what the fit predicts, with actual vs expected |
 | Highest / distribution | top-10 ranking and a histogram (log-spaced bins for log indicators) |
-| What moves together | pairwise-complete Spearman matrix for ten indicators (needs ≥12 countries in common per cell); click a cell to plot that pair |
+| What moves together | pairwise-complete Spearman matrix for twelve indicators (needs ≥12 countries in common per cell); click a cell to plot that pair |
 
 **Show on map from the other country panels too.** Military Personnel, Power Output, Global Trends (OWID) and Global Economy each have a *Show on map* button that points the Country Analytics layer at that panel's data, so the same globe, legend and click popup serve all of them.
 

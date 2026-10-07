@@ -170,7 +170,7 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
 
       <ChartFrame
         title="What moves together"
-        subtitle="Spearman rank correlation between ten indicators, using the countries each pair has in common. Click a cell to plot that pair."
+        subtitle={`Spearman rank correlation between ${MATRIX_IDS.length} indicators, using the countries each pair has in common. Click a cell to plot that pair.`}
         table={{
           columns: ['Indicator', ...MATRIX_IDS.map(id => INDICATOR_BY_ID.get(id)!.short)],
           rows: matrix ? MATRIX_IDS.map((id, i) => [INDICATOR_BY_ID.get(id)!.short, ...matrix.rho[i].map(r => (r === null ? '—' : r.toFixed(2)))]) : [],
@@ -178,7 +178,7 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
         footer={matrix ? `Blank cells ("–") have fewer than 12 countries in common.${matrixFailed ? ` ${matrixFailed} indicator${matrixFailed === 1 ? '' : 's'} could not be loaded.` : ''}` : undefined}
       >
         {!showMatrix ? (
-          <button className="cy-btn" onClick={() => setShowMatrix(true)} title="Fetches ten World Bank indicators">Compute (loads 10 indicators)</button>
+          <button className="cy-btn" onClick={() => setShowMatrix(true)} title={`Fetches ${MATRIX_IDS.length} indicators`}>Compute (loads {MATRIX_IDS.length} indicators)</button>
         ) : matrix && !matrixLoading ? (
           <CorrMatrixChart matrix={matrix} labels={MATRIX_IDS.map(id => INDICATOR_BY_ID.get(id)!.short)} names={MATRIX_IDS.map(id => INDICATOR_BY_ID.get(id)!.label)}
             onPick={(i, j) => c.setSelection(MATRIX_IDS[j], MATRIX_IDS[i])} />
