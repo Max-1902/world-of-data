@@ -1,6 +1,6 @@
 {
-  "name": "Meridian — Live World Monitor",
-  "short_name": "Meridian",
+  "name": "Mundus Datorum — Live World Monitor",
+  "short_name": "Mundus",
   "description": "Live global situational-awareness dashboard",
   "start_url": "/",
   "scope": "/",

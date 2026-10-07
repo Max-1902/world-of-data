@@ -1,4 +1,6 @@
-# Meridian
+# Mundus Datorum
+
+*Latin for "world of data" (*mundus*, world; *datorum*, genitive plural of *datum*, "that which is given").*
 
 A real-time global situational awareness platform — a single-page command-center dashboard that fuses live flight tracking, maritime AIS data, geopolitical crisis feeds, market data, and OSINT sources onto one interactive 3D globe.
 
@@ -8,7 +10,7 @@ Built as a personal engineering project to explore high-density real-time UI des
 
 ## What it does
 
-Meridian renders a live Mapbox GL globe with ten selectable view modes (satellite, night vision, thermal, 3D buildings, infrared, etc.) and overlays it with continuously polled data:
+Mundus Datorum renders a live Mapbox GL globe with ten selectable view modes (satellite, night vision, thermal, 3D buildings, infrared, etc.) and overlays it with continuously polled data:
 
 - **Flights** — live ICAO24 aircraft tracking via OpenSky, with type detection (military/civil/cargo) from hex ranges and callsign patterns
 - **Vessels** — real-time AIS ship tracking over a WebSocket feed (AISStream)
