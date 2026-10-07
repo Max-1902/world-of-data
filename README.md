@@ -4,9 +4,59 @@
 
 A real-time global situational awareness platform — a single-page command-center dashboard that fuses live flight tracking, maritime AIS data, geopolitical crisis feeds, market data, and OSINT sources onto one interactive 3D globe.
 
-Built as a personal engineering project to explore high-density real-time UI design, multi-source data fusion, and working within the constraints of free-tier public APIs.
+**Mundus Datorum is a research case, not a product.** It is a working apparatus for studying two things: what happens to data once it is made visible, and what happens when a language model is wired into a system that can evaluate all of it. The questions, the controls, what has been learned so far and, just as important, what has *not* been measured are set out in [Purpose and research questions](#purpose-and-research-questions).
 
 ![stack](https://img.shields.io/badge/TypeScript-strict-3178c6) ![stack](https://img.shields.io/badge/React-18-61dafb) ![stack](https://img.shields.io/badge/Mapbox_GL-v3-000000) ![stack](https://img.shields.io/badge/Vite-6-646cff)
+
+## Purpose and research questions
+
+The project treats data as the subject: what it is, where it comes from, how much of it you can actually trust, and how much changes when you choose one way of drawing it over another. It then asks what happens when an AI model is given a seat inside that system.
+
+**Questions**
+
+1. **Seeing.** What does data become when it is visualised? Which encodings (log versus linear axes, aggregation into hexagons, residuals against a trend, colour clipped to percentiles) surface structure, and which hide it or mislead?
+2. **Evaluating.** What happens when an LLM is wired into a system that can evaluate all of it? Does it add insight, or only fluent confidence? Which constraints keep it honest, and what breaks when they are loosened?
+3. **Acting.** The model can drive the interface (fly to a place, open a country, toggle layers). What does it change for a person exploring data when the thing explaining the map can also move it?
+4. **Trusting.** How does a multi-source, real-time system stay honest about provenance, coverage and staleness, especially when feeds fail?
+
+**The apparatus**
+
+- *Data layer:* dozens of free, keyless or free-tier sources fused in the browser (flights, vessels, conflict and crisis reporting, markets, news, hazards, trade, and 50 country-level indicators from the World Bank, Our World in Data and Ember).
+- *Analysis layer:* tested, deterministic statistics (Spearman correlation with confidence intervals, trend fits in axis space, outlier detection, a Gutenberg–Richter fit, a rule-based trajectory engine) that run locally, so any claim can be checked against its numbers.
+- *Visualisation layer:* a 3D globe and SVG charts, each with a table view, so what is drawn can always be read as numbers.
+- *AI layer:* an analyst panel (any OpenRouter model, free by default) that receives a compact summary of the live dashboard, explains numbers the system has already computed, and can issue map commands.
+- *Open problem behind the engineering:* how far a real-time, multi-source system can be pushed on free-tier APIs without collapsing into ad-hoc fetch code. The answer so far is a small set of repeated patterns: one typed service and hook per source, a shared panel contract, and refresh rates budgeted to each provider's limits.
+
+**Design choices that act as controls**
+
+- *Real data only.* Nothing is fabricated, approximated or filled in; every static entry must trace to a named source, and empty states say so ([`CLAUDE.md`](./CLAUDE.md), [`DATA_PROVENANCE.md`](./DATA_PROVENANCE.md)).
+- *Compute first, explain second.* Numbers are calculated locally, deterministically and under test; the model is asked to explain them, not to produce them. Prices, for example, may only be cited from a live snapshot injected into the prompt.
+- *Separate evidence from inference.* The analyst is instructed to distinguish what the live data shows from what is its own inference, and to avoid unsupported confidence scores.
+- *Free sources, free default model.* Nothing here can bill by accident; paid models are an explicit user choice.
+- *The AI sees dashboard data only,* never this repository's source code, and must not claim otherwise.
+
+**What building it has already shown**
+
+These are observations from the build itself, not results of a controlled study:
+
+- *Encoding choices change the finding.* Heavy-tailed indicators (GDP, population, troops) are unreadable on linear axes and sensible on log axes; a zero-filled row looks like a value until a log scale refuses to plot it; colour clipped to the 2nd–98th percentile lets ordinary countries show up next to a few giants.
+- *Coverage is part of the data.* The World Bank's `MRV=1` query returned only the single latest *year*, which left internet-user data with 42 countries instead of 245. Our World in Data stores zeros for countries the Energy Institute does not report, so a "world map" of primary energy honestly covers about 78 countries. Counts per country are printed on every chart for this reason.
+- *Analysis found a bug in the system's own heuristic.* The trajectory rule compared a 3-day sum with a 7-day sum, so any perfectly steady country read as "falling" by about 57%. It was only visible once the same data was plotted another way, and it had been feeding the Outlook card, the Watchlist and the AI's context.
+- *Curated is not exhaustive.* Counting hand-collected bases, ports or trade profiles per country would present gaps in the list as findings, so those lists are deliberately kept out of the statistics.
+- *Sources fail and decay.* GDELT's event geocoding was measured at roughly one in three top events being actual armed conflict and was dropped; ACLED publishes with a lag and, when its login fails, the system shows **NO LIVE FEED** rather than inventing a threat level.
+- *Models need constraints, and the constraints have costs.* The analyst began as a prompt-only chatbot; the project then added a rule-based watchlist that computes trends first and has the model explain them. The prompt now forbids refusing, or opening with disclaimers, because a feed is down (the commit history records that change). See the transparency trade-off below for why that fix is itself a cost.
+
+**What has not been measured, and known gaps**
+
+- *No systematic evaluation of the AI's answers yet:* no logged sessions, no rubric for accuracy, calibration or grounding, no grounded-versus-ungrounded comparison. Treat everything the analyst says as unvalidated.
+- *The analyst sees only a fraction of the data layer.* Its context is a short text summary (crisis counts, trajectory signals, flight count, source health, and live quotes for market questions). It does not receive the Country Analytics or Hazard Analytics results, so "an AI that can evaluate all of it" is only partly realised.
+- *Transparency trade-off.* To stop outage disclaimers swamping answers, the prompt tells the model not to mention source outages unless asked. That improves usability and weakens exactly the honesty about coverage that question 4 is about.
+- *Two grounding gaps in that context:* the capability list is static, so it still says conflict events come from ACLED when the login is failing; and conflict totals count the hand-maintained baseline markers as events without labelling them as such (the trajectory engine already excludes them).
+- *Forecast validity is untested.* A walk-forward backtest of the "rising" flag was built (added in `0e6ea3a`, removed in `28323e2`) but only ever ran on synthetic test data, and it was removed when ACLED became unavailable; nothing replaces it yet, so the trajectory flags are explanatory heuristics, not validated predictors.
+
+**Next experiments** (not done): expose the analytics as tools the model can call and compare grounded with ungrounded answers on a fixed question set; log prompts, actions and responses locally for rubric scoring; generate the capability list from live source health and label baseline markers; restore predictive validation once a dated event feed is available.
+
+**Limits.** This is not a decision-support or forecasting tool. Correlation is not causation, many series are years old for some countries, and nothing here has been independently validated.
 
 ## Screenshots
 
@@ -67,10 +117,6 @@ Works on the two high-volume feeds the app already uses — **USGS earthquakes**
 **No data, no chart.** If a feed returns nothing or fails, its section says so and offers a retry; nothing is estimated or filled in. Every chart has a Chart / Table switch and hover and keyboard readouts, and chart colours are validated for colour-vision deficiency against the app's dark surface (`--series-1/2/3` in `index.css`, ramps in `src/utils/vizPalette.ts`).
 
 **A bug the analytics work exposed, now fixed.** The trajectory rule used to compare a 3-day *sum* with a 7-day *sum*, so a perfectly steady country read as "falling" (about −57%) in the Outlook card, Watchlist and AI Analyst context. `computeTrajectories` now compares the last 72h with the pace the prior week implies (its score × 3/7), keeping `delta` in "points per 72h" so the flat band and boosts are unchanged.
-
-## Why this exists
-
-Most dashboards either pick one data source and go deep, or fake it with static data. The interesting engineering problem here was: how far can you push a real-time, multi-source dashboard using only free-tier APIs, without the UI collapsing into a mess of ad-hoc fetch calls? The answer is a small set of patterns reused everywhere — typed hooks per data source, a shared panel contract, and careful refresh-rate budgeting to stay under rate limits.
 
 ## Tech stack
 
@@ -154,7 +200,7 @@ Every polled source runs at a rate chosen to respect its provider's free-tier li
 
 ## Status
 
-Actively developed. Current focus: trade/supply-chain overlays (chokepoints, shipping density, pipelines, ports) and World Bank country economic profiles.
+A research apparatus under active development, not a finished study. The data, analysis and visualisation layers are built and tested; the AI layer works but has not been evaluated. The open items under [Purpose and research questions](#purpose-and-research-questions) are the current focus.
 
 ## Security notes
 
