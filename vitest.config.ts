@@ -6,7 +6,8 @@ export default defineConfig({
     alias: { '@': path.resolve(__dirname, './src') },
   },
   test: {
-    include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
+    // Component tests (.tsx) opt into jsdom with a `// @vitest-environment jsdom` pragma; everything else stays on node.
+    include: ['src/**/*.test.{ts,tsx}', 'tests/**/*.test.ts'],
     environment: 'node',
     setupFiles: ['src/test/setup.ts'],
     // Every test starts from a clean slate: no leaked mocks, stubbed globals, or fake timers.

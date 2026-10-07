@@ -1,4 +1,5 @@
-import { beforeEach, vi } from 'vitest'
+import { afterEach, beforeEach, vi } from 'vitest'
+import { cleanup } from '@testing-library/react'
 
 // Hermetic by default: any test that forgets to mock `fetch` fails loudly instead of
 // silently hitting a live API (flaky, slow, rate-limited, and against the free-tier-only rule).
@@ -8,3 +9,6 @@ beforeEach(() => {
     throw new Error(`Unmocked network call in test: ${String(input)}`)
   }))
 })
+
+// Unmount anything a component test rendered (no-op for the node-environment tests).
+afterEach(() => cleanup())
