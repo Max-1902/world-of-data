@@ -21,3 +21,10 @@ export function rampColor(stops: readonly string[], t: number): string {
 }
 
 export const sequentialColor = (t: number) => rampColor(SEQUENTIAL, t)
+
+/** Diverging ramp: blue (below) ↔ neutral gray ↔ red (above); the midpoint is a neutral, never a hue. */
+export const BELOW = '#3987e5'
+export const ABOVE = '#e66767'
+export const NEUTRAL = '#2a3d49'
+/** v in −1..1: negative → blue, positive → red, 0 → neutral. */
+export const divergingColor = (v: number) => v >= 0 ? rampColor([NEUTRAL, ABOVE], v) : rampColor([NEUTRAL, BELOW], -v)

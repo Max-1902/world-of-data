@@ -8,7 +8,7 @@ export const LAYER_SECTIONS = [
   { title: 'LIVE TRACKING',        keys: ['flights', 'vessels', 'cameras'] },
   { title: 'EVENTS & HAZARDS',     keys: ['crises', 'analyticsHex', 'news', 'wildfires', 'humanitarian', 'gpsjam', 'outages'] },
   { title: 'SECURITY & DEFENSE',   keys: ['military', 'militaryPersonnel', 'nuclear', 'sanctions', 'airspace'] },
-  { title: 'ECONOMY',              keys: ['stocks', 'tradeStats', 'resources', 'oil', 'gas', 'supplychain'] },
+  { title: 'ECONOMY',              keys: ['stocks', 'tradeStats', 'resources', 'oil', 'gas', 'supplychain', 'countryAnalytics'] },
   { title: 'INFRASTRUCTURE',       keys: ['infrastructure', 'infraIndicators', 'datacenters', 'pipelines', 'ports', 'chokepoints', 'shippingDensity'] },
 ] as const satisfies readonly { title: string; keys: readonly (keyof PanelState)[] }[]
 

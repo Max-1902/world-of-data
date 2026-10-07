@@ -48,7 +48,7 @@ const DEFAULT_PANEL_STATE: PanelState = {
   chokepoints: false, supplychain: false, shippingDensity: false,
   outages: false, resources: false, tradeStats: false,
   militaryPersonnel: false, datacenters: false, infraIndicators: false,
-  analyticsHex: false,
+  analyticsHex: false, countryAnalytics: false,
 }
 
 /** A shared link (#v=…&l=…) wins over localStorage, so opening it shows exactly what was sent. */
@@ -321,6 +321,7 @@ export default function App() {
             showMilitaryPersonnel={panelState.militaryPersonnel}
             showInfraIndicators={panelState.infraIndicators}
             showAnalyticsHex={panelState.analyticsHex}
+            showCountryAnalytics={panelState.countryAnalytics}
             flyToQuery={searchQuery}
             geoFlyTo={geoFlyTo}
             onCountryClick={selectCountry}

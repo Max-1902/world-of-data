@@ -20,7 +20,7 @@ src/
       PanelDock.tsx               # right-hand panel stack — resizable, drag-to-reorder
       ObserveTray.tsx             # bottom tray for panels popped out of the dock (up to 6)
       FloatingPanel.tsx           # legacy single floating panel (pre-registry)
-    charts/                       # SVG chart primitives (TimeSeriesChart, BarsChart, MagnitudeChart, HeatmapChart, ChartFrame)
+    charts/                       # SVG chart primitives (TimeSeries, Bars, Magnitude, Heatmap, Scatter, Rank, CorrMatrix, ChartFrame)
     panels/                       # panel implementations, grouped by theme (NewsPanels, SecurityPanels,
                                   #   MarketPanels, CountryDataPanels, AIAnalystPanel, HumanitarianPanel, ...)
     PanelHost.tsx                 # per-panel ErrorBoundary + Suspense (panels are lazy-loaded)
@@ -34,6 +34,7 @@ src/
   utils/
     trajectory.ts                 # rule-based trend scoring (crisis escalation/de-escalation)
     dataAnalytics.ts              # pure stats over the quake/fire feeds: bucketing, Gutenberg–Richter b-value, region matrix, FRP histogram
+    countryStats.ts               # scales, Spearman/Pearson + Fisher CI, OLS trend, residual outliers, correlation matrix, map colouring
     hexbin.ts                     # weighted points → H3 cells (lazy h3-js) + draw scaling for the map layer
     vizPalette.ts                 # sequential / diverging ramps shared by charts and the map layer
     flightType.ts                  # ICAO24 hex-range + callsign heuristics (military/civil/cargo)
@@ -87,11 +88,17 @@ The AI Analyst panel doesn't just answer prompts — `computeTrajectories()` is 
 
 **Load-bearing detail:** this function explicitly filters out `BASELINE` crisis entries (`source === 'Baseline'` / `id` starting with `baseline-`) before scoring. Baseline entries are stamped with today's date on every load, so including them would make every long-running conflict misread as "rising, no prior activity" on every single render — a bug caught during implementation, not a hypothetical.
 
-## Data Analytics (`AnalyticsPanel`, `services/analyticsData.ts`)
+## Country Analytics (`CountryAnalyticsPanel`, `services/countryIndicators.ts`, `services/countryAnalytics.ts`)
 
-The panel analyses data the app already loads — the USGS earthquake feed and NASA FIRMS fire detections — by calling the existing `fetchEarthquakes` / `fetchWildfires`. `analyticsData` is a small observable store (same shape as `services/history.ts`, read via `useSyncExternalStore`) with one slice per feed (`idle | loading | ready | empty | error`), a 10-minute TTL, in-flight de-duplication, and keep-old-data-on-failed-refresh. It is memory-only because the fire feed is ~100k rows. Each slice also holds its H3 cells, built once per load, so the panel and the map layer share both the fetch and the aggregation.
+`countryIndicators.ts` holds the catalogue of 20 World Bank indicators (label, short label, group, axis scale, formatter), the presets, and `fetchIndicatorAll(id)`: one request returns every country's most recent non-empty value (`mrnev=1`; see the README for why not `MRV=1`), parsed by the pure `parseWorldBank` (drops aggregates/nulls/pre-2010 values, shortens formal names), cached for an hour, de-duplicated and retried once on throttling or timeouts. `countryAnalytics.ts` is a small observable store (same shape as `services/history.ts`, read through `useSyncExternalStore` in `hooks/useCountryAnalytics.ts`) holding the selected X/Y pair, the map mode and one slice per indicator; `loadMany` caps concurrency at four.
 
-Everything downstream is pure and tested: `utils/dataAnalytics.ts` (bucketing, trailing mean, Gutenberg–Richter b-value, region × day matrix, depth and FRP histograms) and `utils/hexbin.ts` (weighted H3 aggregation; `h3-js` is imported lazily like in `services/gpsjam.ts`). The `analyticsHex` layer follows the GPS-jam pattern in `MapView` (source + `fill-extrusion` layer, visibility gated by a `PanelState` boolean) but reads the store itself through `useAnalyticsData`, so `App` doesn't re-render when the data changes. Fires and quakes use different H3 resolutions (`HEX_RES`) because their point counts differ by three orders of magnitude.
+All the maths is pure and tested in `utils/countryStats.ts`: scales and tick generation, Spearman (average ranks for ties), Fisher-z intervals, OLS in axis space, standardised residuals, histograms, the pairwise-complete correlation matrix and the map colour assignment. The hook derives the pair analysis with `useMemo`, so the panel and the map layer share one computation. The `countryAnalytics` layer is the same country-boundaries fill pattern as `militaryPersonnel` / `infraIndicators`, but the colours come from `countryColors()` as a `match` expression keyed by `iso_3166_1`, and `MapView` reads the store itself so `App` doesn't re-render when data arrives.
+
+## Hazard Analytics (`AnalyticsPanel`, `services/analyticsData.ts`)
+
+The panel analyses data the app already loads — the USGS earthquake feed and NASA FIRMS fire detections — by calling the existing `fetchEarthquakes` / `fetchWildfires`. `analyticsData` is a small observable store with one slice per feed (`idle | loading | ready | empty | error`), a 10-minute TTL, in-flight de-duplication and keep-old-data-on-failed-refresh. It is memory-only because the fire feed is ~100k rows. Each slice also holds its H3 cells, built once per load, so the panel and the map layer share both the fetch and the aggregation.
+
+Everything downstream is pure and tested: `utils/dataAnalytics.ts` and `utils/hexbin.ts` (weighted H3 aggregation; `h3-js` is imported lazily like in `services/gpsjam.ts`). The `analyticsHex` layer follows the GPS-jam pattern in `MapView` (source + `fill-extrusion` layer gated by a `PanelState` boolean). Fires and quakes use different H3 resolutions (`HEX_RES`) because their point counts differ by three orders of magnitude.
 
 `computeTrajectories` has an optional `now` argument (default unchanged) and compares the last 72h with the prior week's pace (prior score × 3/7) rather than raw 3-day vs 7-day sums, which used to make steady activity read as falling.
 
