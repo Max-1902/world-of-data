@@ -3,7 +3,6 @@ import mapboxgl from 'mapbox-gl'
 import { CHOKEPOINTS, CHOKEPOINT_COLORS, EIA_CHOKEPOINTS_SOURCE, oilSharePct } from '../../../services/chokepoints'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
-import { markFeatureClick } from './countryClick'
 
 export function addChokepointLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -69,7 +68,7 @@ export function addChokepointLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '340px', className: 'cy-popup' })
       .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    markFeatureClick(map)
+    ;(map as any).__markFeatureClick?.()
   })
   map.on('mouseenter', 'chokepoint-zones', () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', 'chokepoint-zones', () => { map.getCanvas().style.cursor = '' })
