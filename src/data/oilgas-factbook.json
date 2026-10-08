@@ -1,0 +1,1844 @@
+{
+  "source": "CIA World Factbook — Energy (public domain), via github.com/factbook/factbook.json",
+  "url": "https://github.com/factbook/factbook.json",
+  "retrieved": "2026-10-08",
+  "units": {
+    "oilReserves": "billion bbl",
+    "gasReserves": "trillion m³",
+    "oilProduction": "million bbl/day (all petroleum liquids)",
+    "gasProduction": "billion m³/yr"
+  },
+  "countries": {
+    "AE": {
+      "factbookFile": "middle-east/ae.json",
+      "oilReserves": {
+        "value": 97.8,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 6.091,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 4.146,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 55.8,
+        "year": 2023
+      }
+    },
+    "AF": {
+      "factbookFile": "south-asia/af.json",
+      "gasReserves": {
+        "value": 0.049554,
+        "year": 2021
+      },
+      "gasProduction": {
+        "value": 0.0802,
+        "year": 2020
+      }
+    },
+    "AL": {
+      "factbookFile": "europe/al.json",
+      "oilReserves": {
+        "value": 0.15,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.005692,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.014,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.049977,
+        "year": 2023
+      }
+    },
+    "AO": {
+      "factbookFile": "africa/ao.json",
+      "oilReserves": {
+        "value": 7.783,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.343,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 1.175,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 5.984,
+        "year": 2023
+      }
+    },
+    "AR": {
+      "factbookFile": "south-america/ar.json",
+      "oilReserves": {
+        "value": 2.483,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.39646,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.807,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 43.69,
+        "year": 2023
+      }
+    },
+    "AT": {
+      "factbookFile": "europe/au.json",
+      "oilReserves": {
+        "value": 0.0352,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.00504,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.018,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.54898,
+        "year": 2023
+      }
+    },
+    "AU": {
+      "factbookFile": "australia-oceania/as.json",
+      "oilReserves": {
+        "value": 2.446,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 3.228,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.386,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 151.31,
+        "year": 2023
+      }
+    },
+    "AZ": {
+      "factbookFile": "central-asia/aj.json",
+      "oilReserves": {
+        "value": 7,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.699,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.618,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 35.775,
+        "year": 2023
+      }
+    },
+    "BB": {
+      "factbookFile": "central-america-n-caribbean/bb.json",
+      "oilReserves": {
+        "value": 0.001978,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.00011327,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.002,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.007957,
+        "year": 2023
+      }
+    },
+    "BD": {
+      "factbookFile": "south-asia/bg.json",
+      "oilReserves": {
+        "value": 0.028,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.12629,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.013,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 22.334,
+        "year": 2023
+      }
+    },
+    "BG": {
+      "factbookFile": "europe/bu.json",
+      "oilReserves": {
+        "value": 0.015,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.005663,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.004,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.010444,
+        "year": 2023
+      }
+    },
+    "BH": {
+      "factbookFile": "middle-east/ba.json",
+      "oilReserves": {
+        "value": 0.1865,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.081383,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.19,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 19.55,
+        "year": 2023
+      }
+    },
+    "BJ": {
+      "factbookFile": "africa/bn.json",
+      "oilReserves": {
+        "value": 0.008,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.001133,
+        "year": 2021
+      }
+    },
+    "BN": {
+      "factbookFile": "east-n-southeast-asia/bx.json",
+      "oilReserves": {
+        "value": 1.1,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.26051,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.095,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 10.093,
+        "year": 2023
+      }
+    },
+    "BO": {
+      "factbookFile": "south-america/bl.json",
+      "oilReserves": {
+        "value": 0.2409,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.30299,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.058,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 12.302,
+        "year": 2023
+      }
+    },
+    "BR": {
+      "factbookFile": "south-america/br.json",
+      "oilReserves": {
+        "value": 12.715,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.36399,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 4.221,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 22.702,
+        "year": 2023
+      }
+    },
+    "BY": {
+      "factbookFile": "europe/bo.json",
+      "oilReserves": {
+        "value": 0.198,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.002832,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.03,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.068494,
+        "year": 2023
+      }
+    },
+    "BZ": {
+      "factbookFile": "central-america-n-caribbean/bh.json",
+      "oilReserves": {
+        "value": 0.0067,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.0008,
+        "year": 2023
+      }
+    },
+    "CA": {
+      "factbookFile": "north-america/ca.json",
+      "oilReserves": {
+        "value": 170.3,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 2.067,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 5.688,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 194.1,
+        "year": 2023
+      }
+    },
+    "CD": {
+      "factbookFile": "africa/cg.json",
+      "oilReserves": {
+        "value": 0.18,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.00099109,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.019,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.00038,
+        "year": 2019
+      }
+    },
+    "CG": {
+      "factbookFile": "africa/cf.json",
+      "oilReserves": {
+        "value": 2.882,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.28399,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.267,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.425,
+        "year": 2023
+      }
+    },
+    "CL": {
+      "factbookFile": "south-america/ci.json",
+      "oilReserves": {
+        "value": 0.15,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.097976,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.011,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 1.362,
+        "year": 2023
+      }
+    },
+    "CM": {
+      "factbookFile": "africa/cm.json",
+      "oilReserves": {
+        "value": 0.2,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.13507,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.064,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 2.356,
+        "year": 2023
+      }
+    },
+    "CN": {
+      "factbookFile": "east-n-southeast-asia/ch.json",
+      "oilReserves": {
+        "value": 26.023,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 6.654,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 4.984,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 239.4,
+        "year": 2023
+      }
+    },
+    "CO": {
+      "factbookFile": "south-america/co.json",
+      "oilReserves": {
+        "value": 2.036,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.087782,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.8,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 10.927,
+        "year": 2023
+      }
+    },
+    "CU": {
+      "factbookFile": "central-america-n-caribbean/cu.json",
+      "oilReserves": {
+        "value": 0.124,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.070792,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.034,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.85013,
+        "year": 2023
+      }
+    },
+    "CZ": {
+      "factbookFile": "europe/ez.json",
+      "oilReserves": {
+        "value": 0.015,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.003964,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.004,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.16333,
+        "year": 2023
+      }
+    },
+    "DE": {
+      "factbookFile": "europe/gm.json",
+      "oilReserves": {
+        "value": 0.1152,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.02339,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.131,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 4.337,
+        "year": 2023
+      }
+    },
+    "DK": {
+      "factbookFile": "europe/da.json",
+      "oilReserves": {
+        "value": 0.441,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.029534,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.063,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 2.021,
+        "year": 2023
+      }
+    },
+    "DZ": {
+      "factbookFile": "africa/ag.json",
+      "oilReserves": {
+        "value": 12.2,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 4.504,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 1.443,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 104.9,
+        "year": 2023
+      }
+    },
+    "EC": {
+      "factbookFile": "south-america/ec.json",
+      "oilReserves": {
+        "value": 8.273,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.010902,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.48,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.27105,
+        "year": 2023
+      }
+    },
+    "EG": {
+      "factbookFile": "africa/eg.json",
+      "oilReserves": {
+        "value": 3.3,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.784,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.667,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 57.181,
+        "year": 2023
+      }
+    },
+    "ES": {
+      "factbookFile": "europe/sp.json",
+      "oilReserves": {
+        "value": 0.15,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.002549,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.047,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.034124,
+        "year": 2023
+      }
+    },
+    "ET": {
+      "factbookFile": "africa/et.json",
+      "oilReserves": {
+        "value": 0.000428,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.024919,
+        "year": 2021
+      }
+    },
+    "FR": {
+      "factbookFile": "europe/fr.json",
+      "oilReserves": {
+        "value": 0.061719,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.007787,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.08,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.017928,
+        "year": 2023
+      }
+    },
+    "GA": {
+      "factbookFile": "africa/gb.json",
+      "oilReserves": {
+        "value": 2,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.025995,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.204,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.463,
+        "year": 2023
+      }
+    },
+    "GB": {
+      "factbookFile": "europe/uk.json",
+      "oilReserves": {
+        "value": 2.5,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.18066,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.753,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 34.029,
+        "year": 2023
+      }
+    },
+    "GE": {
+      "factbookFile": "central-asia/gg.json",
+      "oilReserves": {
+        "value": 0.035,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.008495,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.0003,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.01077,
+        "year": 2023
+      }
+    },
+    "GH": {
+      "factbookFile": "africa/gh.json",
+      "oilReserves": {
+        "value": 0.66,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.022653,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.176,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 3.116,
+        "year": 2023
+      }
+    },
+    "GQ": {
+      "factbookFile": "africa/ek.json",
+      "oilReserves": {
+        "value": 1.1,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.13901,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.098,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 6.013,
+        "year": 2023
+      }
+    },
+    "GR": {
+      "factbookFile": "europe/gr.json",
+      "oilReserves": {
+        "value": 0.01,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.00099109,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.005,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.001323,
+        "year": 2023
+      }
+    },
+    "GT": {
+      "factbookFile": "central-america-n-caribbean/gt.json",
+      "oilReserves": {
+        "value": 0.08611,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.006,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.002016,
+        "year": 2023
+      }
+    },
+    "GY": {
+      "factbookFile": "south-america/gy.json",
+      "oilProduction": {
+        "value": 0.391,
+        "year": 2023
+      }
+    },
+    "HR": {
+      "factbookFile": "europe/hr.json",
+      "oilReserves": {
+        "value": 0.071,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.024919,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.011,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.72223,
+        "year": 2023
+      }
+    },
+    "HU": {
+      "factbookFile": "europe/hu.json",
+      "oilReserves": {
+        "value": 0.0121,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.003738,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.036,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 1.612,
+        "year": 2023
+      }
+    },
+    "ID": {
+      "factbookFile": "east-n-southeast-asia/id.json",
+      "oilReserves": {
+        "value": 2.48,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.408,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.865,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 58.691,
+        "year": 2023
+      }
+    },
+    "IL": {
+      "factbookFile": "middle-east/is.json",
+      "oilReserves": {
+        "value": 0.01273,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.17602,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.015,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 24.186,
+        "year": 2023
+      }
+    },
+    "IN": {
+      "factbookFile": "south-asia/in.json",
+      "oilReserves": {
+        "value": 4.605,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.381,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.822,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 35.168,
+        "year": 2023
+      }
+    },
+    "IQ": {
+      "factbookFile": "middle-east/iz.json",
+      "oilReserves": {
+        "value": 145.02,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 3.729,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 4.448,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 10.537,
+        "year": 2023
+      }
+    },
+    "IR": {
+      "factbookFile": "middle-east/ir.json",
+      "oilReserves": {
+        "value": 208.6,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 33.987,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 4.112,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 265.09,
+        "year": 2023
+      }
+    },
+    "IT": {
+      "factbookFile": "europe/it.json",
+      "oilReserves": {
+        "value": 0.49793,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.04576,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.111,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 2.778,
+        "year": 2023
+      }
+    },
+    "JO": {
+      "factbookFile": "middle-east/jo.json",
+      "oilReserves": {
+        "value": 0.001,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.006031,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.00002,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.2,
+        "year": 2023
+      }
+    },
+    "JP": {
+      "factbookFile": "east-n-southeast-asia/ja.json",
+      "oilReserves": {
+        "value": 0.044115,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.020898,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.008,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 2.019,
+        "year": 2023
+      }
+    },
+    "KE": {
+      "factbookFile": "africa/ke.json"
+    },
+    "KG": {
+      "factbookFile": "central-asia/kg.json",
+      "oilReserves": {
+        "value": 0.04,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.005663,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.006,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.028638,
+        "year": 2023
+      }
+    },
+    "KR": {
+      "factbookFile": "east-n-southeast-asia/ks.json",
+      "gasReserves": {
+        "value": 0.007079,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.038,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.055127,
+        "year": 2021
+      }
+    },
+    "KW": {
+      "factbookFile": "middle-east/ku.json",
+      "oilReserves": {
+        "value": 101.5,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.784,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 2.91,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 19.207,
+        "year": 2023
+      }
+    },
+    "KZ": {
+      "factbookFile": "central-asia/kz.json",
+      "oilReserves": {
+        "value": 30,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 2.407,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 1.955,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 28.769,
+        "year": 2023
+      }
+    },
+    "LB": {
+      "factbookFile": "middle-east/le.json"
+    },
+    "LR": {
+      "factbookFile": "africa/li.json"
+    },
+    "LT": {
+      "factbookFile": "europe/lh.json",
+      "oilReserves": {
+        "value": 0.012,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.004,
+        "year": 2023
+      }
+    },
+    "LY": {
+      "factbookFile": "africa/ly.json",
+      "oilReserves": {
+        "value": 48.363,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.505,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 1.245,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 11.16,
+        "year": 2023
+      }
+    },
+    "MG": {
+      "factbookFile": "africa/ma.json"
+    },
+    "MM": {
+      "factbookFile": "east-n-southeast-asia/bm.json",
+      "oilReserves": {
+        "value": 0.139,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.63713,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.007,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 13.549,
+        "year": 2023
+      }
+    },
+    "MN": {
+      "factbookFile": "east-n-southeast-asia/mg.json",
+      "oilProduction": {
+        "value": 0.015,
+        "year": 2023
+      }
+    },
+    "MR": {
+      "factbookFile": "africa/mr.json",
+      "oilReserves": {
+        "value": 0.02,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.028317,
+        "year": 2021
+      }
+    },
+    "MX": {
+      "factbookFile": "north-america/mx.json",
+      "oilReserves": {
+        "value": 5.786,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.18032,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 2.101,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 33.118,
+        "year": 2023
+      }
+    },
+    "MY": {
+      "factbookFile": "east-n-southeast-asia/my.json",
+      "oilReserves": {
+        "value": 3.6,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.189,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.582,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 74.32,
+        "year": 2023
+      }
+    },
+    "MZ": {
+      "factbookFile": "africa/mz.json",
+      "gasReserves": {
+        "value": 2.832,
+        "year": 2021
+      },
+      "gasProduction": {
+        "value": 8.873,
+        "year": 2023
+      }
+    },
+    "NA": {
+      "factbookFile": "africa/wa.json",
+      "gasReserves": {
+        "value": 0.062297,
+        "year": 2021
+      }
+    },
+    "NE": {
+      "factbookFile": "africa/ng.json",
+      "oilReserves": {
+        "value": 0.15,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.013,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.026805,
+        "year": 2023
+      }
+    },
+    "NG": {
+      "factbookFile": "africa/ni.json",
+      "oilReserves": {
+        "value": 36.89,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 5.761,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 1.514,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 38.248,
+        "year": 2023
+      }
+    },
+    "NL": {
+      "factbookFile": "europe/nl.json",
+      "oilReserves": {
+        "value": 0.13775,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.13261,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.07,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 11.788,
+        "year": 2023
+      }
+    },
+    "NO": {
+      "factbookFile": "europe/no.json",
+      "oilReserves": {
+        "value": 8.122,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.544,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 2.02,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 121.64,
+        "year": 2023
+      }
+    },
+    "NZ": {
+      "factbookFile": "australia-oceania/nz.json",
+      "oilReserves": {
+        "value": 0.040993,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.031149,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.012,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 3.97,
+        "year": 2023
+      }
+    },
+    "OM": {
+      "factbookFile": "middle-east/mu.json",
+      "oilReserves": {
+        "value": 5.373,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.65129,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 1.056,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 41.726,
+        "year": 2023
+      }
+    },
+    "PE": {
+      "factbookFile": "south-america/pe.json",
+      "oilReserves": {
+        "value": 0.85889,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.30016,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.118,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 14.647,
+        "year": 2023
+      }
+    },
+    "PG": {
+      "factbookFile": "east-n-southeast-asia/pp.json",
+      "oilReserves": {
+        "value": 0.15966,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.18313,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.032,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 11.57,
+        "year": 2023
+      }
+    },
+    "PH": {
+      "factbookFile": "east-n-southeast-asia/rp.json",
+      "oilReserves": {
+        "value": 0.1385,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.098543,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.01,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 2.325,
+        "year": 2023
+      }
+    },
+    "PK": {
+      "factbookFile": "south-asia/pk.json",
+      "oilReserves": {
+        "value": 0.54,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.59222,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.091,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 27.476,
+        "year": 2023
+      }
+    },
+    "PL": {
+      "factbookFile": "europe/pl.json",
+      "oilReserves": {
+        "value": 0.113,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.091492,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.024,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 5.345,
+        "year": 2023
+      }
+    },
+    "QA": {
+      "factbookFile": "middle-east/qa.json",
+      "oilReserves": {
+        "value": 25.244,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 23.861,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 1.818,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 171.81,
+        "year": 2023
+      }
+    },
+    "RO": {
+      "factbookFile": "europe/ro.json",
+      "oilReserves": {
+        "value": 0.6,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.10548,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.067,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 9.632,
+        "year": 2023
+      }
+    },
+    "RS": {
+      "factbookFile": "europe/ri.json",
+      "oilReserves": {
+        "value": 0.0775,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.048139,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.013,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.3366,
+        "year": 2023
+      }
+    },
+    "RU": {
+      "factbookFile": "central-asia/rs.json",
+      "oilReserves": {
+        "value": 80,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 47.805,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 10.879,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 613.45,
+        "year": 2023
+      }
+    },
+    "SA": {
+      "factbookFile": "middle-east/sa.json",
+      "oilReserves": {
+        "value": 258.6,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 9.423,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 11.174,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 121.22,
+        "year": 2023
+      }
+    },
+    "SD": {
+      "factbookFile": "africa/su.json",
+      "oilReserves": {
+        "value": 1.25,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.084951,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.068,
+        "year": 2023
+      }
+    },
+    "SN": {
+      "factbookFile": "africa/sg.json",
+      "oilProduction": {
+        "value": 0.009,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.034646,
+        "year": 2023
+      }
+    },
+    "SO": {
+      "factbookFile": "africa/so.json",
+      "gasReserves": {
+        "value": 0.005663,
+        "year": 2021
+      }
+    },
+    "SR": {
+      "factbookFile": "south-america/ns.json",
+      "oilReserves": {
+        "value": 0.089,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.014,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.007173,
+        "year": 2023
+      }
+    },
+    "SS": {
+      "factbookFile": "africa/od.json",
+      "oilReserves": {
+        "value": 3.75,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.146,
+        "year": 2023
+      }
+    },
+    "SY": {
+      "factbookFile": "middle-east/sy.json",
+      "oilReserves": {
+        "value": 2.5,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.24069,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.065,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 2.763,
+        "year": 2023
+      }
+    },
+    "TD": {
+      "factbookFile": "africa/cd.json",
+      "oilReserves": {
+        "value": 1.5,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.124,
+        "year": 2023
+      }
+    },
+    "TH": {
+      "factbookFile": "east-n-southeast-asia/th.json",
+      "oilReserves": {
+        "value": 0.25275,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.13824,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.386,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 29.614,
+        "year": 2023
+      }
+    },
+    "TJ": {
+      "factbookFile": "central-asia/ti.json",
+      "oilReserves": {
+        "value": 0.012,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.005663,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.0003,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.018476,
+        "year": 2023
+      }
+    },
+    "TL": {
+      "factbookFile": "east-n-southeast-asia/tt.json",
+      "oilProduction": {
+        "value": 0.005,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.52103,
+        "year": 2023
+      }
+    },
+    "TM": {
+      "factbookFile": "central-asia/tx.json",
+      "oilReserves": {
+        "value": 0.6,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 11.327,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.272,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 84.277,
+        "year": 2023
+      }
+    },
+    "TN": {
+      "factbookFile": "africa/ts.json",
+      "oilReserves": {
+        "value": 0.425,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.065129,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.035,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 1.313,
+        "year": 2023
+      }
+    },
+    "TR": {
+      "factbookFile": "middle-east/tu.json",
+      "oilReserves": {
+        "value": 0.366,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.003794,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.083,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.80728,
+        "year": 2023
+      }
+    },
+    "TT": {
+      "factbookFile": "central-america-n-caribbean/td.json",
+      "oilReserves": {
+        "value": 0.24298,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.29806,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.072,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 25.994,
+        "year": 2023
+      }
+    },
+    "TZ": {
+      "factbookFile": "africa/tz.json",
+      "gasReserves": {
+        "value": 0.006513,
+        "year": 2021
+      },
+      "gasProduction": {
+        "value": 2.016,
+        "year": 2023
+      }
+    },
+    "UA": {
+      "factbookFile": "europe/up.json",
+      "oilReserves": {
+        "value": 0.395,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.104,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.003,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 17.681,
+        "year": 2023
+      }
+    },
+    "UG": {
+      "factbookFile": "africa/ug.json",
+      "oilReserves": {
+        "value": 2.5,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.014158,
+        "year": 2021
+      }
+    },
+    "US": {
+      "factbookFile": "north-america/us.json",
+      "oilReserves": {
+        "value": 38.212,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 13.402,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 20.953,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 1072,
+        "year": 2023
+      }
+    },
+    "UZ": {
+      "factbookFile": "central-asia/uz.json",
+      "oilReserves": {
+        "value": 0.594,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 1.841,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.064,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 43.249,
+        "year": 2023
+      }
+    },
+    "VE": {
+      "factbookFile": "south-america/ve.json",
+      "oilReserves": {
+        "value": 303.81,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 5.674,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.801,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 23.873,
+        "year": 2023
+      }
+    },
+    "VN": {
+      "factbookFile": "east-n-southeast-asia/vm.json",
+      "oilReserves": {
+        "value": 4.4,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.69943,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.187,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 7.48,
+        "year": 2023
+      }
+    },
+    "YE": {
+      "factbookFile": "middle-east/ym.json",
+      "oilReserves": {
+        "value": 3,
+        "year": 2021
+      },
+      "gasReserves": {
+        "value": 0.47856,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.015,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.010286,
+        "year": 2023
+      }
+    },
+    "ZA": {
+      "factbookFile": "africa/sf.json",
+      "oilReserves": {
+        "value": 0.015,
+        "year": 2021
+      },
+      "oilProduction": {
+        "value": 0.088,
+        "year": 2023
+      },
+      "gasProduction": {
+        "value": 0.066094,
+        "year": 2023
+      }
+    }
+  }
+}
