@@ -41,6 +41,7 @@ const HumanitarianPanel = lazy(() => import('../components/panels/HumanitarianPa
 const DisasterAlertsPanel = lazy(() => import('../components/panels/DisasterAlertsPanel').then(m => ({ default: m.DisasterAlertsPanel })))
 const CountryAnalyticsPanel = lazy(() => import('../components/panels/CountryAnalyticsPanel').then(m => ({ default: m.CountryAnalyticsPanel })))
 const AnalyticsPanel = lazy(() => import('../components/panels/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })))
+const CountryLookupPanel = lazy(() => import('../components/panels/CountryLookupPanel').then(m => ({ default: m.CountryLookupPanel })))
 const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
@@ -227,6 +228,14 @@ const PANELS: PanelDef[] = [
     dotColor: 'red', desc: 'Correlated intel for active query',
     render: (p) => <IntelBriefPanel query={p.searchQuery ?? ''} crises={p.crises} flights={p.flights} />,
   },
+
+  // ── COUNTRY LOOKUP (single-country research tool) ───────────────────────────
+  {
+    id: 'countryLookup', title: 'Country Lookup', group: 'country',
+    dotColor: 'blue', minHeight: 1400,
+    desc: "One country's full World Bank record by category, ECB/Eurostat data for Europe, and an analysis of that economy's own history",
+    render: () => <CountryLookupPanel />,
+  },
 ]
 
 /* ── Lookup helpers ────────────────────────────────────────────────────────── */
@@ -247,4 +256,5 @@ export const GROUP_ORDER: { id: PanelGroup; label: string }[] = [
   { id: 'markets',  label: 'ECONOMY' },
   { id: 'geo',      label: 'INFRASTRUCTURE' },
   { id: 'analysis', label: 'ANALYSIS' },
+  { id: 'country',  label: 'COUNTRY LOOKUP' },
 ]

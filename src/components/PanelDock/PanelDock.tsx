@@ -120,7 +120,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
           // Give each panel a sensible min-height based on type
           const isAI = def.id === 'analyst'
           const isLarge = isAI || def.id === 'markets' || def.id === 'humanitarian'
-          const minH = isAI ? 900 : isLarge ? 800 : 700
+          const minH = def.minHeight ?? (isAI ? 900 : isLarge ? 800 : 700)
           return (
             <div
               key={def.id}

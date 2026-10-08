@@ -34,6 +34,9 @@ export const SOURCE_RULES: SourceRule[] = [
   { id: 'unhcr',     label: 'Displacement (UNHCR)',      match: has('api.unhcr.org') },
   { id: 'worldbank', label: 'Economy (World Bank)',      match: has('api.worldbank.org') },
   { id: 'owid',      label: 'Our World in Data',         match: has('ourworldindata.org') },
+  { id: 'ecb',       label: 'ECB Data Portal',           match: has('data-api.ecb.europa.eu') },
+  { id: 'eurostat',  label: 'Eurostat',                  match: has('ec.europa.eu/eurostat') },
+  { id: 'bis',       label: 'BIS policy rates',          match: has('stats.bis.org') },
   { id: 'osm',       label: 'OpenStreetMap (Overpass)',  match: has('overpass-api.de', 'overpass.openstreetmap.fr') },
   { id: 'ai',        label: 'AI Analyst (OpenRouter)',   match: has('/api/openrouter') },
 ]

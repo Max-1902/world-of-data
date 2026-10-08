@@ -1,4 +1,4 @@
-import { BookOpen, LayoutDashboard, LineChart, Radio, ShieldHalf, Network } from 'lucide-react'
+import { BookOpen, LayoutDashboard, LineChart, Radio, ShieldHalf, Network, SearchCheck } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { GROUP_ORDER, panelsForGroup } from '../panels/registry'
 import type { PanelGroup } from '../panels/types'
@@ -10,6 +10,7 @@ const GROUP_ICONS: Record<PanelGroup, LucideIcon> = {
   security: ShieldHalf,
   markets:  LineChart,
   analysis: BookOpen,
+  country:  SearchCheck,
 }
 
 const GROUP_HINTS: Record<PanelGroup, string> = {
@@ -19,6 +20,7 @@ const GROUP_HINTS: Record<PanelGroup, string> = {
   security: 'Sanctions, bases, force size, nuclear sites, airspace, trafficking',
   markets: 'Markets, trade partners & products, resources, economic indicators',
   analysis: 'Data analytics, briefings and regional outlook',
+  country: 'One country in depth: World Bank record, ECB/Eurostat for Europe, economic analysis',
 }
 
 interface Props {
