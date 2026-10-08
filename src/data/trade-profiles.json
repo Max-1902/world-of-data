@@ -1,0 +1,6361 @@
+{
+  "sources": {
+    "trade": {
+      "name": "UN Comtrade (reporter data, HS)",
+      "url": "https://comtradeplus.un.org/"
+    },
+    "macro": {
+      "name": "World Bank Open Data",
+      "url": "https://data.worldbank.org/",
+      "indicators": [
+        "NE.TRD.GNFS.ZS",
+        "BN.CAB.XOKA.GD.ZS"
+      ]
+    }
+  },
+  "retrieved": "2026-10-08",
+  "profiles": {
+    "US": {
+      "comtradeReporter": 842,
+      "year": 2025,
+      "exportsUsdBn": 2177.1,
+      "importsUsdBn": 3504.3,
+      "tradeBalanceUsdBn": -1327.1,
+      "topExportPartners": [
+        {
+          "country": "Mexico",
+          "pct": 15.5
+        },
+        {
+          "country": "Canada",
+          "pct": 15.1
+        },
+        {
+          "country": "China",
+          "pct": 4.9
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 4.4
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.4
+        },
+        {
+          "country": "Germany",
+          "pct": 3.8
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Mexico",
+          "pct": 15.4
+        },
+        {
+          "country": "Canada",
+          "pct": 11.2
+        },
+        {
+          "country": "China",
+          "pct": 9.3
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 5.9
+        },
+        {
+          "country": "Vietnam",
+          "pct": 5.7
+        },
+        {
+          "country": "Germany",
+          "pct": 4.5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 14.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 13
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 10.4
+        },
+        {
+          "product": "Aircraft & spacecraft",
+          "hs": "88",
+          "pct": 7.5
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 6.8
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 6
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 4.9
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 4.5
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 19
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 14.7
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 9.6
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 6.2
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 6.1
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 4.3
+        }
+      ],
+      "tradeToGDP": null,
+      "currentAccount": {
+        "value": -3.6,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "CN": {
+      "comtradeReporter": 156,
+      "year": 2025,
+      "exportsUsdBn": 3776.4,
+      "importsUsdBn": 2579.3,
+      "tradeBalanceUsdBn": 1197.1,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 11.1
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 8.9
+        },
+        {
+          "country": "Vietnam",
+          "pct": 5.3
+        },
+        {
+          "country": "Japan",
+          "pct": 4.2
+        },
+        {
+          "country": "South Korea",
+          "pct": 3.8
+        },
+        {
+          "country": "India",
+          "pct": 3.6
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 8.9
+        },
+        {
+          "country": "South Korea",
+          "pct": 7.3
+        },
+        {
+          "country": "Japan",
+          "pct": 6.4
+        },
+        {
+          "country": "United States",
+          "pct": 5.5
+        },
+        {
+          "country": "Australia",
+          "pct": 5
+        },
+        {
+          "country": "China",
+          "pct": 4.9
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 26.9
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 16
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 6.6
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.8
+        },
+        {
+          "product": "Furniture & lighting",
+          "hs": "94",
+          "pct": 3.1
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 3.1
+        },
+        {
+          "product": "Iron & steel articles",
+          "hs": "73",
+          "pct": 2.9
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 2.2
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 24.3
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 17.2
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 10.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 9.7
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 4.6
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 38,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 3.8,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "DE": {
+      "comtradeReporter": 276,
+      "year": 2025,
+      "exportsUsdBn": 1773.8,
+      "importsUsdBn": 1549.7,
+      "tradeBalanceUsdBn": 224.2,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 9.4
+        },
+        {
+          "country": "France",
+          "pct": 7.5
+        },
+        {
+          "country": "Netherlands",
+          "pct": 7.1
+        },
+        {
+          "country": "Poland",
+          "pct": 6.4
+        },
+        {
+          "country": "Italy",
+          "pct": 5.3
+        },
+        {
+          "country": "China",
+          "pct": 5.2
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 12.9
+        },
+        {
+          "country": "United States",
+          "pct": 6.8
+        },
+        {
+          "country": "Netherlands",
+          "pct": 6.4
+        },
+        {
+          "country": "Poland",
+          "pct": 5.9
+        },
+        {
+          "country": "Italy",
+          "pct": 5.3
+        },
+        {
+          "country": "France",
+          "pct": 5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 16.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 16.1
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 11.1
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 7.6
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 5.3
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.8
+        },
+        {
+          "product": "Aircraft & spacecraft",
+          "hs": "88",
+          "pct": 2.4
+        },
+        {
+          "product": "Iron & steel articles",
+          "hs": "73",
+          "pct": 2
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 14.6
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12.3
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.2
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 7.5
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 5.5
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 3.5
+        }
+      ],
+      "tradeToGDP": {
+        "value": 78.5,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 4.5,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "JP": {
+      "comtradeReporter": 392,
+      "year": 2025,
+      "exportsUsdBn": 738.2,
+      "importsUsdBn": 755.4,
+      "tradeBalanceUsdBn": -17.2,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 18.6
+        },
+        {
+          "country": "China",
+          "pct": 17
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 7.2
+        },
+        {
+          "country": "South Korea",
+          "pct": 6.3
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 5.8
+        },
+        {
+          "country": "Thailand",
+          "pct": 3.8
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 23.6
+        },
+        {
+          "country": "United States",
+          "pct": 11.6
+        },
+        {
+          "country": "Australia",
+          "pct": 6
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 4.4
+        },
+        {
+          "country": "UAE",
+          "pct": 4.3
+        },
+        {
+          "country": "Vietnam",
+          "pct": 4
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 20.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 17.7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 14.4
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 9.2
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 5
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 4.1
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.4
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 3.4
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 19.6
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 15.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 11
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 4.3
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 3.8
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 3.4
+        }
+      ],
+      "tradeToGDP": null,
+      "currentAccount": {
+        "value": 4.9,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "GB": {
+      "comtradeReporter": 826,
+      "year": 2025,
+      "exportsUsdBn": 554.9,
+      "importsUsdBn": 948.9,
+      "tradeBalanceUsdBn": -394,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 15.9
+        },
+        {
+          "country": "Germany",
+          "pct": 7.7
+        },
+        {
+          "country": "China",
+          "pct": 6.6
+        },
+        {
+          "country": "Netherlands",
+          "pct": 5.9
+        },
+        {
+          "country": "Switzerland",
+          "pct": 5.5
+        },
+        {
+          "country": "France",
+          "pct": 5.4
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "United States",
+          "pct": 11.9
+        },
+        {
+          "country": "China",
+          "pct": 11.4
+        },
+        {
+          "country": "Germany",
+          "pct": 8.4
+        },
+        {
+          "country": "Switzerland",
+          "pct": 5.5
+        },
+        {
+          "country": "France",
+          "pct": 4.5
+        },
+        {
+          "country": "Canada",
+          "pct": 3.9
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 19.3
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 19
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 7.4
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 6.7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 5.9
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 5
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 4
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 3.1
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 19
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12.2
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 9.9
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 8
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 8
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 3.8
+        }
+      ],
+      "tradeToGDP": {
+        "value": 62.5,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -2.4,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "IN": {
+      "comtradeReporter": 699,
+      "year": 2025,
+      "exportsUsdBn": 445.8,
+      "importsUsdBn": 752.7,
+      "tradeBalanceUsdBn": -307,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 20.8
+        },
+        {
+          "country": "UAE",
+          "pct": 8.7
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.3
+        },
+        {
+          "country": "China",
+          "pct": 4.1
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 3.1
+        },
+        {
+          "country": "Germany",
+          "pct": 2.5
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 19.9
+        },
+        {
+          "country": "Russia",
+          "pct": 8.4
+        },
+        {
+          "country": "UAE",
+          "pct": 7.4
+        },
+        {
+          "country": "United States",
+          "pct": 6.3
+        },
+        {
+          "country": "Saudi Arabia",
+          "pct": 4.2
+        },
+        {
+          "country": "Iraq",
+          "pct": 3.6
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 13.1
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 12
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 8.1
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 6.7
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 5.8
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 5.6
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 4.5
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 2.8
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 27.8
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 13.4
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 12.5
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 9.4
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 3.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 2.9
+        }
+      ],
+      "tradeToGDP": {
+        "value": 46.3,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.4,
+        "year": 2025
+      },
+      "incomeGroup": "lower-middle"
+    },
+    "RU": {
+      "comtradeReporter": 643,
+      "year": 2021,
+      "exportsUsdBn": 492.3,
+      "importsUsdBn": 293.5,
+      "tradeBalanceUsdBn": 198.8,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 14
+        },
+        {
+          "country": "Netherlands",
+          "pct": 8.6
+        },
+        {
+          "country": "Germany",
+          "pct": 6
+        },
+        {
+          "country": "Turkey",
+          "pct": 5.4
+        },
+        {
+          "country": "Belarus",
+          "pct": 4.7
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 4.5
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 24.8
+        },
+        {
+          "country": "Germany",
+          "pct": 9.3
+        },
+        {
+          "country": "United States",
+          "pct": 5.9
+        },
+        {
+          "country": "Belarus",
+          "pct": 5.3
+        },
+        {
+          "country": "South Korea",
+          "pct": 4.4
+        },
+        {
+          "country": "France",
+          "pct": 4.2
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 43.1
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 14.9
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 6.4
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 5.9
+        },
+        {
+          "product": "Fertilizers",
+          "hs": "31",
+          "pct": 2.5
+        },
+        {
+          "product": "Wood",
+          "hs": "44",
+          "pct": 2.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 2.2
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 1.9
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 18.5
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 12.6
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 9.1
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 4.7
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 4.7
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 33.7,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 1.7,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "SA": {
+      "comtradeReporter": 682,
+      "year": 2025,
+      "exportsUsdBn": 312,
+      "importsUsdBn": 253.3,
+      "tradeBalanceUsdBn": 58.7,
+      "topExportPartners": [
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 49.6
+        },
+        {
+          "country": "UAE",
+          "pct": 9
+        },
+        {
+          "country": "India",
+          "pct": 2.9
+        },
+        {
+          "country": "China",
+          "pct": 2.5
+        },
+        {
+          "country": "Turkey",
+          "pct": 1
+        },
+        {
+          "country": "Egypt",
+          "pct": 0.9
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 27.5
+        },
+        {
+          "country": "United States",
+          "pct": 8.3
+        },
+        {
+          "country": "UAE",
+          "pct": 5.7
+        },
+        {
+          "country": "India",
+          "pct": 4.8
+        },
+        {
+          "country": "Germany",
+          "pct": 4.4
+        },
+        {
+          "country": "Japan",
+          "pct": 4
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 68.7
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 5.8
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 5.2
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 3.2
+        },
+        {
+          "product": "Ships & boats",
+          "hs": "89",
+          "pct": 2.2
+        },
+        {
+          "product": "Fertilizers",
+          "hs": "31",
+          "pct": 2.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 1.8
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 1.4
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 14.8
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 14.2
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 11.3
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 4.7
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 4.5
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 3.8
+        }
+      ],
+      "tradeToGDP": {
+        "value": 57.9,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -2.6,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "BR": {
+      "comtradeReporter": 76,
+      "year": 2025,
+      "exportsUsdBn": 348.7,
+      "importsUsdBn": 293.9,
+      "tradeBalanceUsdBn": 54.8,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 28.7
+        },
+        {
+          "country": "United States",
+          "pct": 10.9
+        },
+        {
+          "country": "Argentina",
+          "pct": 5.2
+        },
+        {
+          "country": "Netherlands",
+          "pct": 3.4
+        },
+        {
+          "country": "Spain",
+          "pct": 2.5
+        },
+        {
+          "country": "Mexico",
+          "pct": 2.2
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 25.8
+        },
+        {
+          "country": "United States",
+          "pct": 16.3
+        },
+        {
+          "country": "Germany",
+          "pct": 5
+        },
+        {
+          "country": "Argentina",
+          "pct": 4.6
+        },
+        {
+          "country": "Russia",
+          "pct": 3.5
+        },
+        {
+          "country": "India",
+          "pct": 3
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 16.1
+        },
+        {
+          "product": "Oil seeds (incl. soybeans)",
+          "hs": "12",
+          "pct": 12.8
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 10
+        },
+        {
+          "product": "Meat",
+          "hs": "02",
+          "pct": 8.6
+        },
+        {
+          "product": "Coffee, tea & spices",
+          "hs": "09",
+          "pct": 4.5
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 4.3
+        },
+        {
+          "product": "Sugar",
+          "hs": "17",
+          "pct": 4.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 4
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 16.6
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 11.1
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 10.7
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 8.2
+        },
+        {
+          "product": "Fertilizers",
+          "hs": "31",
+          "pct": 5.7
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 5.3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 35.3,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -2.9,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "AU": {
+      "comtradeReporter": 36,
+      "year": 2025,
+      "exportsUsdBn": 335.8,
+      "importsUsdBn": 310,
+      "tradeBalanceUsdBn": 25.9,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 30.3
+        },
+        {
+          "country": "Japan",
+          "pct": 7.5
+        },
+        {
+          "country": "United States",
+          "pct": 7.4
+        },
+        {
+          "country": "South Korea",
+          "pct": 5.9
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 4.1
+        },
+        {
+          "country": "India",
+          "pct": 3.9
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 26.7
+        },
+        {
+          "country": "United States",
+          "pct": 11
+        },
+        {
+          "country": "Japan",
+          "pct": 5.3
+        },
+        {
+          "country": "South Korea",
+          "pct": 4.7
+        },
+        {
+          "country": "Singapore",
+          "pct": 4.2
+        },
+        {
+          "country": "Thailand",
+          "pct": 4.1
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 28.4
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 26.9
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 11.9
+        },
+        {
+          "product": "Meat",
+          "hs": "02",
+          "pct": 5.2
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 2.9
+        },
+        {
+          "product": "Inorganic chemicals",
+          "hs": "28",
+          "pct": 2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 1.8
+        },
+        {
+          "product": "Aluminium",
+          "hs": "76",
+          "pct": 1.5
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 14.4
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 13.3
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 11.6
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 11.4
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 5.3
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 3.8
+        }
+      ],
+      "tradeToGDP": {
+        "value": 45.9,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -2.7,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "KR": {
+      "comtradeReporter": 410,
+      "year": 2025,
+      "exportsUsdBn": 709,
+      "importsUsdBn": 631.6,
+      "tradeBalanceUsdBn": 77.4,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 18.4
+        },
+        {
+          "country": "United States",
+          "pct": 17.4
+        },
+        {
+          "country": "Vietnam",
+          "pct": 8.9
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 6.9
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 4.9
+        },
+        {
+          "country": "Japan",
+          "pct": 4
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 22.5
+        },
+        {
+          "country": "United States",
+          "pct": 11.7
+        },
+        {
+          "country": "Japan",
+          "pct": 7.7
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 5.1
+        },
+        {
+          "country": "Australia",
+          "pct": 5.1
+        },
+        {
+          "country": "Vietnam",
+          "pct": 5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 33.1
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 13
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 6.7
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.8
+        },
+        {
+          "product": "Ships & boats",
+          "hs": "89",
+          "pct": 4.2
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 3.2
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 2.7
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 22.2
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 20.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 11.8
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 3.9
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 3.3
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 3.3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 86.4,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 6.6,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "SG": {
+      "comtradeReporter": 702,
+      "year": 2025,
+      "exportsUsdBn": 566,
+      "importsUsdBn": 503.9,
+      "tradeBalanceUsdBn": 62.1,
+      "topExportPartners": [
+        {
+          "country": "Hong Kong",
+          "pct": 11.1
+        },
+        {
+          "country": "China",
+          "pct": 10.9
+        },
+        {
+          "country": "Malaysia",
+          "pct": 9.9
+        },
+        {
+          "country": "United States",
+          "pct": 9.6
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 8.7
+        },
+        {
+          "country": "Indonesia",
+          "pct": 6.8
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 16.1
+        },
+        {
+          "country": "China",
+          "pct": 12.5
+        },
+        {
+          "country": "Malaysia",
+          "pct": 10.9
+        },
+        {
+          "country": "United States",
+          "pct": 10.6
+        },
+        {
+          "country": "South Korea",
+          "pct": 6.4
+        },
+        {
+          "country": "Japan",
+          "pct": 5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 36.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 22.4
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 9.4
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 5.5
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 4.7
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 4.5
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 2.1
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 2.1
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 34.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 21.3
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 15.5
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 5.8
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 3.1
+        },
+        {
+          "product": "Aircraft & spacecraft",
+          "hs": "88",
+          "pct": 1.6
+        }
+      ],
+      "tradeToGDP": {
+        "value": 320.3,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 16.7,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "TR": {
+      "comtradeReporter": 792,
+      "year": 2025,
+      "exportsUsdBn": 273.4,
+      "importsUsdBn": 365.4,
+      "tradeBalanceUsdBn": -92,
+      "topExportPartners": [
+        {
+          "country": "Germany",
+          "pct": 8.1
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 6.1
+        },
+        {
+          "country": "United States",
+          "pct": 6
+        },
+        {
+          "country": "Italy",
+          "pct": 4.8
+        },
+        {
+          "country": "Iraq",
+          "pct": 4.5
+        },
+        {
+          "country": "France",
+          "pct": 4.1
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 13.6
+        },
+        {
+          "country": "Russia",
+          "pct": 11.6
+        },
+        {
+          "country": "Germany",
+          "pct": 8.2
+        },
+        {
+          "country": "United States",
+          "pct": 4.9
+        },
+        {
+          "country": "Switzerland",
+          "pct": 4.3
+        },
+        {
+          "country": "Italy",
+          "pct": 4.3
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 13.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 9.5
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 6.5
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 5.6
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 4.9
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.1
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 3.9
+        },
+        {
+          "product": "Iron & steel articles",
+          "hs": "73",
+          "pct": 3.5
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 17.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 11.4
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.1
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 8.2
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 7.7
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 6.1
+        }
+      ],
+      "tradeToGDP": {
+        "value": 49.9,
+        "year": 2025
+      },
+      "currentAccount": null,
+      "incomeGroup": "upper-middle"
+    },
+    "AE": {
+      "comtradeReporter": 784,
+      "year": 2023,
+      "exportsUsdBn": 570.2,
+      "importsUsdBn": 470.5,
+      "tradeBalanceUsdBn": 99.7,
+      "topExportPartners": [
+        {
+          "country": "Saudi Arabia",
+          "pct": 5.2
+        },
+        {
+          "country": "India",
+          "pct": 4.4
+        },
+        {
+          "country": "Iraq",
+          "pct": 4
+        },
+        {
+          "country": "Turkey",
+          "pct": 3.3
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 2.5
+        },
+        {
+          "country": "United States",
+          "pct": 2.4
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 16.5
+        },
+        {
+          "country": "India",
+          "pct": 6.5
+        },
+        {
+          "country": "United States",
+          "pct": 5.7
+        },
+        {
+          "country": "Turkey",
+          "pct": 3.8
+        },
+        {
+          "country": "Japan",
+          "pct": 3.2
+        },
+        {
+          "country": "Germany",
+          "pct": 2.4
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 49.5
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 15.8
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 7.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 4.3
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 3.2
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 2.9
+        },
+        {
+          "product": "Aluminium",
+          "hs": "76",
+          "pct": 1.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 1.3
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 24.4
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 16.7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 13.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 8.7
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 7.2
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 4.5
+        }
+      ],
+      "tradeToGDP": null,
+      "currentAccount": null,
+      "incomeGroup": "high"
+    },
+    "ZA": {
+      "comtradeReporter": 710,
+      "year": 2025,
+      "exportsUsdBn": 115.8,
+      "importsUsdBn": 105.1,
+      "tradeBalanceUsdBn": 10.8,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 10.7
+        },
+        {
+          "country": "Germany",
+          "pct": 7.7
+        },
+        {
+          "country": "United States",
+          "pct": 7.1
+        },
+        {
+          "country": "Japan",
+          "pct": 4.7
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 4.6
+        },
+        {
+          "country": "Mozambique",
+          "pct": 4.5
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 22.5
+        },
+        {
+          "country": "India",
+          "pct": 7.3
+        },
+        {
+          "country": "Germany",
+          "pct": 6.9
+        },
+        {
+          "country": "United States",
+          "pct": 6.9
+        },
+        {
+          "country": "Oman",
+          "pct": 3.3
+        },
+        {
+          "country": "Thailand",
+          "pct": 3.3
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 20.5
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 15.2
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 13.2
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 8
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 5.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 5.1
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 3
+        },
+        {
+          "product": "Aluminium",
+          "hs": "76",
+          "pct": 2.1
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 17.5
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 13.4
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 9.9
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 8.3
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 8.1
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 2.7
+        }
+      ],
+      "tradeToGDP": {
+        "value": 60.9,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.4,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "NG": {
+      "comtradeReporter": 566,
+      "year": 2025,
+      "exportsUsdBn": 56.1,
+      "importsUsdBn": 44.4,
+      "tradeBalanceUsdBn": 11.7,
+      "topExportPartners": [
+        {
+          "country": "India",
+          "pct": 10.5
+        },
+        {
+          "country": "Spain",
+          "pct": 8.7
+        },
+        {
+          "country": "Netherlands",
+          "pct": 8.7
+        },
+        {
+          "country": "France",
+          "pct": 7.2
+        },
+        {
+          "country": "United States",
+          "pct": 5.8
+        },
+        {
+          "country": "Canada",
+          "pct": 5.1
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 29.4
+        },
+        {
+          "country": "United States",
+          "pct": 12.6
+        },
+        {
+          "country": "India",
+          "pct": 9.8
+        },
+        {
+          "country": "Netherlands",
+          "pct": 5
+        },
+        {
+          "country": "Belgium",
+          "pct": 4.7
+        },
+        {
+          "country": "UAE",
+          "pct": 4.2
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 85.9
+        },
+        {
+          "product": "Cocoa",
+          "hs": "18",
+          "pct": 4.2
+        },
+        {
+          "product": "Fertilizers",
+          "hs": "31",
+          "pct": 3.9
+        },
+        {
+          "product": "Ships & boats",
+          "hs": "89",
+          "pct": 1.3
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 1
+        },
+        {
+          "product": "Oil seeds (incl. soybeans)",
+          "hs": "12",
+          "pct": 0.7
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 0.4
+        },
+        {
+          "product": "Aluminium",
+          "hs": "76",
+          "pct": 0.4
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 33.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 11.5
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 7.3
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 6.1
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.9
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 3.2
+        }
+      ],
+      "tradeToGDP": null,
+      "currentAccount": {
+        "value": 4.8,
+        "year": 2025
+      },
+      "incomeGroup": "lower-middle"
+    },
+    "FR": {
+      "comtradeReporter": 251,
+      "year": 2025,
+      "exportsUsdBn": 689.2,
+      "importsUsdBn": 799.2,
+      "tradeBalanceUsdBn": -110,
+      "topExportPartners": [
+        {
+          "country": "Germany",
+          "pct": 13.4
+        },
+        {
+          "country": "United States",
+          "pct": 8.1
+        },
+        {
+          "country": "Italy",
+          "pct": 7.9
+        },
+        {
+          "country": "Spain",
+          "pct": 7.5
+        },
+        {
+          "country": "Belgium",
+          "pct": 7.5
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 6.4
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Germany",
+          "pct": 12.4
+        },
+        {
+          "country": "China",
+          "pct": 10.5
+        },
+        {
+          "country": "United States",
+          "pct": 7.9
+        },
+        {
+          "country": "Italy",
+          "pct": 7.8
+        },
+        {
+          "country": "Spain",
+          "pct": 6.5
+        },
+        {
+          "country": "Belgium",
+          "pct": 6.4
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12.1
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 8.4
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 7.5
+        },
+        {
+          "product": "Aircraft & spacecraft",
+          "hs": "88",
+          "pct": 6.8
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 6.4
+        },
+        {
+          "product": "Cosmetics & perfumes",
+          "hs": "33",
+          "pct": 4.2
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 3.8
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 3.7
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12.5
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 10.5
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 8.7
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 5
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.5
+        }
+      ],
+      "tradeToGDP": {
+        "value": 67.2,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.3,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "IT": {
+      "comtradeReporter": 380,
+      "year": 2025,
+      "exportsUsdBn": 726.8,
+      "importsUsdBn": 669.5,
+      "tradeBalanceUsdBn": 57.3,
+      "topExportPartners": [
+        {
+          "country": "Germany",
+          "pct": 11.2
+        },
+        {
+          "country": "United States",
+          "pct": 10.8
+        },
+        {
+          "country": "France",
+          "pct": 10.1
+        },
+        {
+          "country": "Spain",
+          "pct": 5.9
+        },
+        {
+          "country": "Switzerland",
+          "pct": 5.5
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 4.2
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Germany",
+          "pct": 14.4
+        },
+        {
+          "country": "China",
+          "pct": 10.2
+        },
+        {
+          "country": "France",
+          "pct": 8
+        },
+        {
+          "country": "Netherlands",
+          "pct": 6.6
+        },
+        {
+          "country": "United States",
+          "pct": 6
+        },
+        {
+          "country": "Spain",
+          "pct": 5.6
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 16.7
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 10.4
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 6.5
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 6.4
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 4.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.4
+        },
+        {
+          "product": "Iron & steel articles",
+          "hs": "73",
+          "pct": 3
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 2.6
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 10.7
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 9.3
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 9.1
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 7.7
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 7
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 5.6
+        }
+      ],
+      "tradeToGDP": {
+        "value": 62.5,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 1.1,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "CA": {
+      "comtradeReporter": 124,
+      "year": 2025,
+      "exportsUsdBn": 555.5,
+      "importsUsdBn": 564.2,
+      "tradeBalanceUsdBn": -8.7,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 72.3
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 6
+        },
+        {
+          "country": "China",
+          "pct": 4.5
+        },
+        {
+          "country": "Japan",
+          "pct": 1.9
+        },
+        {
+          "country": "Netherlands",
+          "pct": 1.2
+        },
+        {
+          "country": "Germany",
+          "pct": 1.2
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "United States",
+          "pct": 45.8
+        },
+        {
+          "country": "China",
+          "pct": 11.5
+        },
+        {
+          "country": "Mexico",
+          "pct": 6.8
+        },
+        {
+          "country": "Germany",
+          "pct": 3.2
+        },
+        {
+          "country": "Japan",
+          "pct": 2.7
+        },
+        {
+          "country": "Vietnam",
+          "pct": 2.5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 24.8
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 9.4
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 7.9
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 7.5
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 4.3
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 3.1
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 2.7
+        },
+        {
+          "product": "Aircraft & spacecraft",
+          "hs": "88",
+          "pct": 2.5
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 15.5
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 15.5
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 9.2
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 6.1
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 4.6
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.4
+        }
+      ],
+      "tradeToGDP": {
+        "value": 63.5,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.9,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "MX": {
+      "comtradeReporter": 484,
+      "year": 2025,
+      "exportsUsdBn": 665.9,
+      "importsUsdBn": 663.6,
+      "tradeBalanceUsdBn": 2.3,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 81.9
+        },
+        {
+          "country": "Canada",
+          "pct": 3.3
+        },
+        {
+          "country": "China",
+          "pct": 1.5
+        },
+        {
+          "country": "Germany",
+          "pct": 1.2
+        },
+        {
+          "country": "South Korea",
+          "pct": 0.8
+        },
+        {
+          "country": "Brazil",
+          "pct": 0.7
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "United States",
+          "pct": 37.7
+        },
+        {
+          "country": "China",
+          "pct": 20.1
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 7
+        },
+        {
+          "country": "South Korea",
+          "pct": 3.5
+        },
+        {
+          "country": "Vietnam",
+          "pct": 3.4
+        },
+        {
+          "country": "Germany",
+          "pct": 2.9
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 24.6
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 22.8
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 17
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 4.9
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 3.1
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 1.9
+        },
+        {
+          "product": "Furniture & lighting",
+          "hs": "94",
+          "pct": 1.9
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 1.8
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 21.8
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 21.1
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 9.5
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 5.6
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.6
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 4.3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 79.9,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.4,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "ID": {
+      "comtradeReporter": 360,
+      "year": 2025,
+      "exportsUsdBn": 281.7,
+      "importsUsdBn": 241.8,
+      "tradeBalanceUsdBn": 39.9,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 23.8
+        },
+        {
+          "country": "United States",
+          "pct": 11
+        },
+        {
+          "country": "India",
+          "pct": 6.5
+        },
+        {
+          "country": "Japan",
+          "pct": 6.3
+        },
+        {
+          "country": "Singapore",
+          "pct": 4.9
+        },
+        {
+          "country": "Malaysia",
+          "pct": 4.6
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 36.2
+        },
+        {
+          "country": "Singapore",
+          "pct": 7.9
+        },
+        {
+          "country": "Japan",
+          "pct": 6
+        },
+        {
+          "country": "United States",
+          "pct": 5.3
+        },
+        {
+          "country": "Malaysia",
+          "pct": 4.6
+        },
+        {
+          "country": "Australia",
+          "pct": 3.9
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 16
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 12.2
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 9.9
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 6.8
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 4.3
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 3.7
+        },
+        {
+          "product": "Nickel",
+          "hs": "75",
+          "pct": 3.5
+        },
+        {
+          "product": "Misc. chemical products",
+          "hs": "38",
+          "pct": 3.4
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 15.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 15.2
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 13.2
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 4.5
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.3
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 3.9
+        }
+      ],
+      "tradeToGDP": {
+        "value": 43.4,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.1,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "TH": {
+      "comtradeReporter": 764,
+      "year": 2025,
+      "exportsUsdBn": 340.2,
+      "importsUsdBn": 343,
+      "tradeBalanceUsdBn": -2.8,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 21.3
+        },
+        {
+          "country": "China",
+          "pct": 11.7
+        },
+        {
+          "country": "Japan",
+          "pct": 6.9
+        },
+        {
+          "country": "India",
+          "pct": 4.7
+        },
+        {
+          "country": "Malaysia",
+          "pct": 4
+        },
+        {
+          "country": "Vietnam",
+          "pct": 3.8
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 31.4
+        },
+        {
+          "country": "Japan",
+          "pct": 8.6
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 7.5
+        },
+        {
+          "country": "United States",
+          "pct": 6.1
+        },
+        {
+          "country": "UAE",
+          "pct": 4.9
+        },
+        {
+          "country": "Malaysia",
+          "pct": 4.3
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 18.6
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 18
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.2
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 7.9
+        },
+        {
+          "product": "Rubber",
+          "hs": "40",
+          "pct": 6.1
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 2.4
+        },
+        {
+          "product": "Meat & fish preparations",
+          "hs": "16",
+          "pct": 2.1
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 26.1
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 12.3
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 11.7
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 8.3
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 3.5
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 3.5
+        }
+      ],
+      "tradeToGDP": {
+        "value": 138.4,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 2.8,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "VN": {
+      "comtradeReporter": 704,
+      "year": 2023,
+      "exportsUsdBn": 353.1,
+      "importsUsdBn": 325.4,
+      "tradeBalanceUsdBn": 27.6,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 27.5
+        },
+        {
+          "country": "China",
+          "pct": 17.2
+        },
+        {
+          "country": "South Korea",
+          "pct": 6.6
+        },
+        {
+          "country": "Japan",
+          "pct": 6.6
+        },
+        {
+          "country": "Netherlands",
+          "pct": 2.9
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 2.7
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 34
+        },
+        {
+          "country": "South Korea",
+          "pct": 16.1
+        },
+        {
+          "country": "Japan",
+          "pct": 6.6
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 5.7
+        },
+        {
+          "country": "United States",
+          "pct": 4.2
+        },
+        {
+          "country": "Thailand",
+          "pct": 3.6
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 37.6
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 9.1
+        },
+        {
+          "product": "Footwear",
+          "hs": "64",
+          "pct": 5.9
+        },
+        {
+          "product": "Apparel (not knitted)",
+          "hs": "62",
+          "pct": 4.3
+        },
+        {
+          "product": "Apparel (knitted)",
+          "hs": "61",
+          "pct": 4.2
+        },
+        {
+          "product": "Furniture & lighting",
+          "hs": "94",
+          "pct": 3.4
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 2.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 2.1
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 34.6
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 7.9
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 7.2
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 5.4
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 3.8
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 2.3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 190.3,
+        "year": 2025
+      },
+      "currentAccount": null,
+      "incomeGroup": "upper-middle"
+    },
+    "MY": {
+      "comtradeReporter": 458,
+      "year": 2025,
+      "exportsUsdBn": 462.3,
+      "importsUsdBn": 339.6,
+      "tradeBalanceUsdBn": 122.8,
+      "topExportPartners": [
+        {
+          "country": "Singapore",
+          "pct": 17.5
+        },
+        {
+          "country": "United States",
+          "pct": 13.2
+        },
+        {
+          "country": "China",
+          "pct": 11.3
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 6.8
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 6.1
+        },
+        {
+          "country": "Japan",
+          "pct": 4.3
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 24.3
+        },
+        {
+          "country": "Singapore",
+          "pct": 10.5
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 10
+        },
+        {
+          "country": "United States",
+          "pct": 9.1
+        },
+        {
+          "country": "Japan",
+          "pct": 4.6
+        },
+        {
+          "country": "South Korea",
+          "pct": 4.5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 43.2
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 12.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 10.4
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 4.8
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 4.2
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 2.2
+        },
+        {
+          "product": "Misc. chemical products",
+          "hs": "38",
+          "pct": 1.8
+        },
+        {
+          "product": "Aluminium",
+          "hs": "76",
+          "pct": 1.8
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 32.3
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 15.5
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 12
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 2.7
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 2.6
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 2.5
+        }
+      ],
+      "tradeToGDP": {
+        "value": 136.4,
+        "year": 2025
+      },
+      "currentAccount": null,
+      "incomeGroup": "upper-middle"
+    },
+    "PH": {
+      "comtradeReporter": 608,
+      "year": 2025,
+      "exportsUsdBn": 84.5,
+      "importsUsdBn": 141.9,
+      "tradeBalanceUsdBn": -57.4,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 16
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 14.6
+        },
+        {
+          "country": "Japan",
+          "pct": 13.7
+        },
+        {
+          "country": "China",
+          "pct": 11
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.3
+        },
+        {
+          "country": "Singapore",
+          "pct": 4.2
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 28.4
+        },
+        {
+          "country": "Japan",
+          "pct": 7.9
+        },
+        {
+          "country": "South Korea",
+          "pct": 7.9
+        },
+        {
+          "country": "Indonesia",
+          "pct": 7.7
+        },
+        {
+          "country": "United States",
+          "pct": 6.2
+        },
+        {
+          "country": "Thailand",
+          "pct": 5.5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 52.6
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 8.4
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 4
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 3.7
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 3.4
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 3.4
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 3.3
+        },
+        {
+          "product": "Copper",
+          "hs": "74",
+          "pct": 2.9
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 23.7
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 12.7
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 8.3
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 7.5
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.6
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 3.4
+        }
+      ],
+      "tradeToGDP": {
+        "value": 66.8,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -3.3,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "NL": {
+      "comtradeReporter": 528,
+      "year": 2025,
+      "exportsUsdBn": 737.6,
+      "importsUsdBn": 657.7,
+      "tradeBalanceUsdBn": 80,
+      "topExportPartners": [
+        {
+          "country": "Germany",
+          "pct": 22.2
+        },
+        {
+          "country": "Belgium",
+          "pct": 11.5
+        },
+        {
+          "country": "France",
+          "pct": 7.6
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 6.3
+        },
+        {
+          "country": "United States",
+          "pct": 4.9
+        },
+        {
+          "country": "Italy",
+          "pct": 4.4
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Germany",
+          "pct": 16.9
+        },
+        {
+          "country": "United States",
+          "pct": 9.8
+        },
+        {
+          "country": "Belgium",
+          "pct": 9.6
+        },
+        {
+          "country": "China",
+          "pct": 8.3
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 4.3
+        },
+        {
+          "country": "France",
+          "pct": 3.6
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 14.4
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 13.1
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 9.1
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 6.2
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 4.6
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 3.5
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.5
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 2.4
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 16
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12.2
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 11.7
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 5.7
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 5.5
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 4
+        }
+      ],
+      "tradeToGDP": {
+        "value": 150.1,
+        "year": 2025
+      },
+      "currentAccount": null,
+      "incomeGroup": "high"
+    },
+    "CH": {
+      "comtradeReporter": 757,
+      "year": 2025,
+      "exportsUsdBn": 553.5,
+      "importsUsdBn": 508.7,
+      "tradeBalanceUsdBn": 44.8,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 21.9
+        },
+        {
+          "country": "Germany",
+          "pct": 11
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 10.6
+        },
+        {
+          "country": "China",
+          "pct": 6.5
+        },
+        {
+          "country": "France",
+          "pct": 5.9
+        },
+        {
+          "country": "Slovenia",
+          "pct": 5.7
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Germany",
+          "pct": 15.1
+        },
+        {
+          "country": "United States",
+          "pct": 13.5
+        },
+        {
+          "country": "UAE",
+          "pct": 9.4
+        },
+        {
+          "country": "Italy",
+          "pct": 7.7
+        },
+        {
+          "country": "Slovenia",
+          "pct": 6.1
+        },
+        {
+          "country": "China",
+          "pct": 5.1
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 39.9
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 21.8
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 9.1
+        },
+        {
+          "product": "Clocks & watches",
+          "hs": "91",
+          "pct": 5.6
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 4.7
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 3.9
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 3
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 1.1
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 46.6
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 15.5
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 4.6
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 4
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 3.6
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 2.3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 147.2,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 7,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "ES": {
+      "comtradeReporter": 724,
+      "year": 2025,
+      "exportsUsdBn": 433.3,
+      "importsUsdBn": 502.2,
+      "tradeBalanceUsdBn": -68.9,
+      "topExportPartners": [
+        {
+          "country": "France",
+          "pct": 14.1
+        },
+        {
+          "country": "Germany",
+          "pct": 10
+        },
+        {
+          "country": "Portugal",
+          "pct": 8.7
+        },
+        {
+          "country": "Italy",
+          "pct": 8
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 6.4
+        },
+        {
+          "country": "United States",
+          "pct": 4.2
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 11.1
+        },
+        {
+          "country": "Germany",
+          "pct": 11
+        },
+        {
+          "country": "France",
+          "pct": 8.3
+        },
+        {
+          "country": "Italy",
+          "pct": 6.9
+        },
+        {
+          "country": "United States",
+          "pct": 6.7
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.7
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 14.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 7.2
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 5.6
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 5.2
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 4.9
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 3.6
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.3
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 3
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 11.8
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.6
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 9.3
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 9
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 5.7
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 69.5,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 2.9,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "PL": {
+      "comtradeReporter": 616,
+      "year": 2025,
+      "exportsUsdBn": 414.4,
+      "importsUsdBn": 422.7,
+      "tradeBalanceUsdBn": -8.3,
+      "topExportPartners": [
+        {
+          "country": "Germany",
+          "pct": 27
+        },
+        {
+          "country": "Czechia",
+          "pct": 6.3
+        },
+        {
+          "country": "France",
+          "pct": 6.1
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 5.1
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.7
+        },
+        {
+          "country": "Italy",
+          "pct": 4.5
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Germany",
+          "pct": 19.1
+        },
+        {
+          "country": "China",
+          "pct": 15.5
+        },
+        {
+          "country": "Italy",
+          "pct": 4.7
+        },
+        {
+          "country": "United States",
+          "pct": 4.7
+        },
+        {
+          "country": "Netherlands",
+          "pct": 3.9
+        },
+        {
+          "country": "France",
+          "pct": 3.4
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 13.7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 11.2
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.4
+        },
+        {
+          "product": "Furniture & lighting",
+          "hs": "94",
+          "pct": 4.6
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.5
+        },
+        {
+          "product": "Iron & steel articles",
+          "hs": "73",
+          "pct": 3
+        },
+        {
+          "product": "Meat",
+          "hs": "02",
+          "pct": 2.7
+        },
+        {
+          "product": "Apparel (not knitted)",
+          "hs": "62",
+          "pct": 2.2
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12.9
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 12
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.8
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 6.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.8
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 3.7
+        }
+      ],
+      "tradeToGDP": {
+        "value": 97,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.9,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "SE": {
+      "comtradeReporter": 752,
+      "year": 2025,
+      "exportsUsdBn": 208.5,
+      "importsUsdBn": 202.2,
+      "tradeBalanceUsdBn": 6.3,
+      "topExportPartners": [
+        {
+          "country": "Germany",
+          "pct": 9.9
+        },
+        {
+          "country": "Norway",
+          "pct": 9.8
+        },
+        {
+          "country": "United States",
+          "pct": 8
+        },
+        {
+          "country": "Denmark",
+          "pct": 7
+        },
+        {
+          "country": "Finland",
+          "pct": 6.5
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 5.2
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Germany",
+          "pct": 15.9
+        },
+        {
+          "country": "Netherlands",
+          "pct": 10.9
+        },
+        {
+          "country": "Norway",
+          "pct": 8.8
+        },
+        {
+          "country": "Denmark",
+          "pct": 6.7
+        },
+        {
+          "country": "China",
+          "pct": 6.4
+        },
+        {
+          "country": "Belgium",
+          "pct": 4.9
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 14.6
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 12.3
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 9.5
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 7.2
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 6
+        },
+        {
+          "product": "Paper & paperboard",
+          "hs": "48",
+          "pct": 4.5
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 4.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.5
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 12.7
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12.6
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.9
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 8.3
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 5.1
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 4.2
+        }
+      ],
+      "tradeToGDP": {
+        "value": 104.3,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 6.1,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "NO": {
+      "comtradeReporter": 579,
+      "year": 2025,
+      "exportsUsdBn": 170.9,
+      "importsUsdBn": 107.9,
+      "tradeBalanceUsdBn": 63,
+      "topExportPartners": [
+        {
+          "country": "United Kingdom",
+          "pct": 17.7
+        },
+        {
+          "country": "Germany",
+          "pct": 17.4
+        },
+        {
+          "country": "Netherlands",
+          "pct": 9.7
+        },
+        {
+          "country": "Sweden",
+          "pct": 6.5
+        },
+        {
+          "country": "Poland",
+          "pct": 5.9
+        },
+        {
+          "country": "France",
+          "pct": 5.8
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 11.9
+        },
+        {
+          "country": "Germany",
+          "pct": 11.7
+        },
+        {
+          "country": "Sweden",
+          "pct": 9.9
+        },
+        {
+          "country": "United States",
+          "pct": 7.1
+        },
+        {
+          "country": "Denmark",
+          "pct": 4.2
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 4.1
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 62.1
+        },
+        {
+          "product": "Fish & seafood",
+          "hs": "03",
+          "pct": 9.7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 4.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 3.7
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 3.2
+        },
+        {
+          "product": "Aluminium",
+          "hs": "76",
+          "pct": 3.1
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 1.4
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 0.9
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 15
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 11.4
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 9.9
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 5.3
+        },
+        {
+          "product": "Iron & steel articles",
+          "hs": "73",
+          "pct": 4.9
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 3.9
+        }
+      ],
+      "tradeToGDP": {
+        "value": 79.1,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 14,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "IL": {
+      "comtradeReporter": 376,
+      "year": 2025,
+      "exportsUsdBn": 58.7,
+      "importsUsdBn": 95.5,
+      "tradeBalanceUsdBn": -36.8,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 27.5
+        },
+        {
+          "country": "Germany",
+          "pct": 5.1
+        },
+        {
+          "country": "China",
+          "pct": 4.8
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.5
+        },
+        {
+          "country": "India",
+          "pct": 4.2
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 3.5
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 15.4
+        },
+        {
+          "country": "United States",
+          "pct": 10
+        },
+        {
+          "country": "Germany",
+          "pct": 6.8
+        },
+        {
+          "country": "Switzerland",
+          "pct": 5.5
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.4
+        },
+        {
+          "country": "Italy",
+          "pct": 3.9
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 23.1
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 13.2
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 8.5
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 8.3
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 6.7
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.3
+        },
+        {
+          "product": "Arms & ammunition",
+          "hs": "93",
+          "pct": 4.2
+        },
+        {
+          "product": "Misc. chemical products",
+          "hs": "38",
+          "pct": 3.5
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 13.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 8.8
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 8.3
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 4.2
+        },
+        {
+          "product": "Optical & medical instruments",
+          "hs": "90",
+          "pct": 4.2
+        }
+      ],
+      "tradeToGDP": {
+        "value": 53,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": 1.4,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "EG": {
+      "comtradeReporter": 818,
+      "year": 2025,
+      "exportsUsdBn": 51.4,
+      "importsUsdBn": 101,
+      "tradeBalanceUsdBn": -49.6,
+      "topExportPartners": [
+        {
+          "country": "UAE",
+          "pct": 13.7
+        },
+        {
+          "country": "Italy",
+          "pct": 7.9
+        },
+        {
+          "country": "Turkey",
+          "pct": 6.4
+        },
+        {
+          "country": "Saudi Arabia",
+          "pct": 5.8
+        },
+        {
+          "country": "United States",
+          "pct": 5.3
+        },
+        {
+          "country": "Switzerland",
+          "pct": 3.4
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 18.6
+        },
+        {
+          "country": "United States",
+          "pct": 12.6
+        },
+        {
+          "country": "Saudi Arabia",
+          "pct": 9.4
+        },
+        {
+          "country": "Russia",
+          "pct": 5.1
+        },
+        {
+          "country": "Germany",
+          "pct": 4.3
+        },
+        {
+          "country": "Brazil",
+          "pct": 4.3
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 14.8
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 9.8
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 6.7
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 5.8
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 5
+        },
+        {
+          "product": "Apparel (not knitted)",
+          "hs": "62",
+          "pct": 4.5
+        },
+        {
+          "product": "Fertilizers",
+          "hs": "31",
+          "pct": 4.4
+        },
+        {
+          "product": "Vegetables",
+          "hs": "07",
+          "pct": 4.3
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 21.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 8
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 6.7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 6.6
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 5.8
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 4.2
+        }
+      ],
+      "tradeToGDP": {
+        "value": 51.3,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -3.8,
+        "year": 2025
+      },
+      "incomeGroup": "lower-middle"
+    },
+    "IR": {
+      "comtradeReporter": 364,
+      "year": 2023,
+      "exportsUsdBn": 104.5,
+      "importsUsdBn": 65.6,
+      "tradeBalanceUsdBn": 38.9,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 27.1
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 21.7
+        },
+        {
+          "country": "Iraq",
+          "pct": 11.5
+        },
+        {
+          "country": "Turkey",
+          "pct": 6.8
+        },
+        {
+          "country": "UAE",
+          "pct": 5.8
+        },
+        {
+          "country": "India",
+          "pct": 2.3
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "UAE",
+          "pct": 31.4
+        },
+        {
+          "country": "China",
+          "pct": 28
+        },
+        {
+          "country": "Turkey",
+          "pct": 10.5
+        },
+        {
+          "country": "Germany",
+          "pct": 3.5
+        },
+        {
+          "country": "India",
+          "pct": 3.3
+        },
+        {
+          "country": "Russia",
+          "pct": 2.8
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 68
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 5.9
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.5
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 3.8
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 2.1
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 1.8
+        },
+        {
+          "product": "Fertilizers",
+          "hs": "31",
+          "pct": 1.5
+        },
+        {
+          "product": "Copper",
+          "hs": "74",
+          "pct": 1.4
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 14.8
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 11.7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 11.5
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 8
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 4.2
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 4.1
+        }
+      ],
+      "tradeToGDP": {
+        "value": 60.2,
+        "year": 2025
+      },
+      "currentAccount": null,
+      "incomeGroup": "upper-middle"
+    },
+    "PK": {
+      "comtradeReporter": 586,
+      "year": 2025,
+      "exportsUsdBn": 30.8,
+      "importsUsdBn": 65.2,
+      "tradeBalanceUsdBn": -34.4,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 19.3
+        },
+        {
+          "country": "China",
+          "pct": 7.4
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 6.8
+        },
+        {
+          "country": "UAE",
+          "pct": 6.3
+        },
+        {
+          "country": "Germany",
+          "pct": 5.5
+        },
+        {
+          "country": "Spain",
+          "pct": 5.2
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 31.4
+        },
+        {
+          "country": "UAE",
+          "pct": 10.7
+        },
+        {
+          "country": "Indonesia",
+          "pct": 6.7
+        },
+        {
+          "country": "Saudi Arabia",
+          "pct": 6.4
+        },
+        {
+          "country": "Qatar",
+          "pct": 4.9
+        },
+        {
+          "country": "United States",
+          "pct": 4.2
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Other textile articles",
+          "hs": "63",
+          "pct": 18.5
+        },
+        {
+          "product": "Apparel (knitted)",
+          "hs": "61",
+          "pct": 16.6
+        },
+        {
+          "product": "Apparel (not knitted)",
+          "hs": "62",
+          "pct": 13.8
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 8.2
+        },
+        {
+          "product": "Cotton",
+          "hs": "52",
+          "pct": 7.7
+        },
+        {
+          "product": "Copper",
+          "hs": "74",
+          "pct": 2.7
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 2.4
+        },
+        {
+          "product": "Leather goods",
+          "hs": "42",
+          "pct": 2.2
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 25.7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 9.9
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 6.7
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 6.6
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 6.3
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 4.9
+        }
+      ],
+      "tradeToGDP": {
+        "value": 27.2,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.1,
+        "year": 2025
+      },
+      "incomeGroup": "lower-middle"
+    },
+    "BD": {
+      "comtradeReporter": 50,
+      "year": 2018,
+      "exportsUsdBn": 40.1,
+      "importsUsdBn": 80.5,
+      "tradeBalanceUsdBn": -40.4,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 16.3
+        },
+        {
+          "country": "Germany",
+          "pct": 15.5
+        },
+        {
+          "country": "United Kingdom",
+          "pct": 10.1
+        },
+        {
+          "country": "Spain",
+          "pct": 6.4
+        },
+        {
+          "country": "France",
+          "pct": 5.3
+        },
+        {
+          "country": "Italy",
+          "pct": 4
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 19
+        },
+        {
+          "country": "India",
+          "pct": 11.7
+        },
+        {
+          "country": "Spain",
+          "pct": 8.2
+        },
+        {
+          "country": "Singapore",
+          "pct": 7.3
+        },
+        {
+          "country": "Hong Kong",
+          "pct": 5.8
+        },
+        {
+          "country": "Indonesia",
+          "pct": 4
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Apparel (not knitted)",
+          "hs": "62",
+          "pct": 41.6
+        },
+        {
+          "product": "Apparel (knitted)",
+          "hs": "61",
+          "pct": 40.6
+        },
+        {
+          "product": "Other textile articles",
+          "hs": "63",
+          "pct": 2.4
+        },
+        {
+          "product": "Footwear",
+          "hs": "64",
+          "pct": 2.1
+        },
+        {
+          "product": "Other vegetable fibres",
+          "hs": "53",
+          "pct": 2
+        },
+        {
+          "product": "Fish & seafood",
+          "hs": "03",
+          "pct": 1.3
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 1.1
+        },
+        {
+          "product": "Leather goods",
+          "hs": "42",
+          "pct": 0.6
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Cotton",
+          "hs": "52",
+          "pct": 13.3
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 11.5
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 10.1
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 7.2
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 4.8
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 4.3
+        }
+      ],
+      "tradeToGDP": {
+        "value": 28,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -0.1,
+        "year": 2025
+      },
+      "incomeGroup": "lower-middle"
+    },
+    "CL": {
+      "comtradeReporter": 152,
+      "year": 2025,
+      "exportsUsdBn": 110.4,
+      "importsUsdBn": 93,
+      "tradeBalanceUsdBn": 17.4,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 36.8
+        },
+        {
+          "country": "United States",
+          "pct": 16.1
+        },
+        {
+          "country": "Japan",
+          "pct": 8.1
+        },
+        {
+          "country": "South Korea",
+          "pct": 4.7
+        },
+        {
+          "country": "Brazil",
+          "pct": 4.4
+        },
+        {
+          "country": "India",
+          "pct": 3.8
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 28.5
+        },
+        {
+          "country": "United States",
+          "pct": 17.8
+        },
+        {
+          "country": "Brazil",
+          "pct": 8.4
+        },
+        {
+          "country": "Argentina",
+          "pct": 7.4
+        },
+        {
+          "country": "Germany",
+          "pct": 3.2
+        },
+        {
+          "country": "Peru",
+          "pct": 2.3
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 38.9
+        },
+        {
+          "product": "Copper",
+          "hs": "74",
+          "pct": 18.5
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 8.8
+        },
+        {
+          "product": "Fish & seafood",
+          "hs": "03",
+          "pct": 7
+        },
+        {
+          "product": "Inorganic chemicals",
+          "hs": "28",
+          "pct": 4.4
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 3.4
+        },
+        {
+          "product": "Wood pulp",
+          "hs": "47",
+          "pct": 2.9
+        },
+        {
+          "product": "Wood",
+          "hs": "44",
+          "pct": 1.9
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 15.5
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 12.8
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 11.6
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.1
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 2.7
+        }
+      ],
+      "tradeToGDP": {
+        "value": 65,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -1.2,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "CO": {
+      "comtradeReporter": 170,
+      "year": 2025,
+      "exportsUsdBn": 50.2,
+      "importsUsdBn": 70.5,
+      "tradeBalanceUsdBn": -20.3,
+      "topExportPartners": [
+        {
+          "country": "United States",
+          "pct": 29.6
+        },
+        {
+          "country": "Panama",
+          "pct": 7.3
+        },
+        {
+          "country": "Other Asia nes (Taiwan)",
+          "pct": 4.3
+        },
+        {
+          "country": "India",
+          "pct": 4.3
+        },
+        {
+          "country": "Brazil",
+          "pct": 3.8
+        },
+        {
+          "country": "Nigeria",
+          "pct": 3.8
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 27.5
+        },
+        {
+          "country": "United States",
+          "pct": 22.9
+        },
+        {
+          "country": "Mexico",
+          "pct": 5
+        },
+        {
+          "country": "Brazil",
+          "pct": 5
+        },
+        {
+          "country": "Germany",
+          "pct": 3.3
+        },
+        {
+          "country": "India",
+          "pct": 2.5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 34.9
+        },
+        {
+          "product": "Coffee, tea & spices",
+          "hs": "09",
+          "pct": 11.9
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 9.7
+        },
+        {
+          "product": "Live plants & flowers",
+          "hs": "06",
+          "pct": 4.9
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 4.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 3.5
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 2.6
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 2.2
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 10.6
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 9.9
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 9.7
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 8.2
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 6.1
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.5
+        }
+      ],
+      "tradeToGDP": {
+        "value": 35.4,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -2.4,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "AR": {
+      "comtradeReporter": 32,
+      "year": 2025,
+      "exportsUsdBn": 87.1,
+      "importsUsdBn": 75.8,
+      "tradeBalanceUsdBn": 11.3,
+      "topExportPartners": [
+        {
+          "country": "Brazil",
+          "pct": 14.7
+        },
+        {
+          "country": "China",
+          "pct": 11.2
+        },
+        {
+          "country": "United States",
+          "pct": 9.6
+        },
+        {
+          "country": "Chile",
+          "pct": 7.2
+        },
+        {
+          "country": "India",
+          "pct": 6.3
+        },
+        {
+          "country": "Vietnam",
+          "pct": 3.1
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "Brazil",
+          "pct": 24.3
+        },
+        {
+          "country": "China",
+          "pct": 23.7
+        },
+        {
+          "country": "United States",
+          "pct": 8.8
+        },
+        {
+          "country": "Germany",
+          "pct": 4.1
+        },
+        {
+          "country": "Paraguay",
+          "pct": 3.9
+        },
+        {
+          "country": "Thailand",
+          "pct": 2.8
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 13.2
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 12
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 10.3
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 9.7
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 8.8
+        },
+        {
+          "product": "Animal feed & food residues",
+          "hs": "23",
+          "pct": 8.4
+        },
+        {
+          "product": "Oil seeds (incl. soybeans)",
+          "hs": "12",
+          "pct": 7
+        },
+        {
+          "product": "Meat",
+          "hs": "02",
+          "pct": 4.9
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 19
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 16.5
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 10.3
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 4
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4
+        }
+      ],
+      "tradeToGDP": {
+        "value": 30.4,
+        "year": 2025
+      },
+      "currentAccount": {
+        "value": -1.1,
+        "year": 2025
+      },
+      "incomeGroup": "upper-middle"
+    },
+    "QA": {
+      "comtradeReporter": 634,
+      "year": 2024,
+      "exportsUsdBn": 95,
+      "importsUsdBn": 35.8,
+      "tradeBalanceUsdBn": 59.2,
+      "topExportPartners": [
+        {
+          "country": "China",
+          "pct": 19.9
+        },
+        {
+          "country": "South Korea",
+          "pct": 13.5
+        },
+        {
+          "country": "India",
+          "pct": 11.7
+        },
+        {
+          "country": "Japan",
+          "pct": 7.1
+        },
+        {
+          "country": "Singapore",
+          "pct": 7
+        },
+        {
+          "country": "UAE",
+          "pct": 6.3
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 15
+        },
+        {
+          "country": "United States",
+          "pct": 12.9
+        },
+        {
+          "country": "Italy",
+          "pct": 5.6
+        },
+        {
+          "country": "India",
+          "pct": 5.4
+        },
+        {
+          "country": "Japan",
+          "pct": 5.1
+        },
+        {
+          "country": "UAE",
+          "pct": 4.6
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 83.8
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 2.8
+        },
+        {
+          "product": "Aluminium",
+          "hs": "76",
+          "pct": 2
+        },
+        {
+          "product": "Fertilizers",
+          "hs": "31",
+          "pct": 1.9
+        },
+        {
+          "product": "Inorganic chemicals",
+          "hs": "28",
+          "pct": 1.8
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 1.1
+        },
+        {
+          "product": "Ships & boats",
+          "hs": "89",
+          "pct": 1.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 0.8
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 20.5
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 8.1
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 8
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 6.2
+        },
+        {
+          "product": "Iron & steel articles",
+          "hs": "73",
+          "pct": 4.6
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 3.9
+        }
+      ],
+      "tradeToGDP": null,
+      "currentAccount": {
+        "value": 14.8,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "KW": {
+      "comtradeReporter": 414,
+      "year": 2025,
+      "exportsUsdBn": 69.7,
+      "importsUsdBn": 42.6,
+      "tradeBalanceUsdBn": 27.2,
+      "topExportPartners": [
+        {
+          "country": "UAE",
+          "pct": 2.7
+        },
+        {
+          "country": "India",
+          "pct": 2.1
+        },
+        {
+          "country": "Saudi Arabia",
+          "pct": 1.6
+        },
+        {
+          "country": "China",
+          "pct": 1.1
+        },
+        {
+          "country": "Iraq",
+          "pct": 1.1
+        },
+        {
+          "country": "Jordan",
+          "pct": 0.4
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 20.6
+        },
+        {
+          "country": "UAE",
+          "pct": 11.9
+        },
+        {
+          "country": "United States",
+          "pct": 8.8
+        },
+        {
+          "country": "Japan",
+          "pct": 6.3
+        },
+        {
+          "country": "Saudi Arabia",
+          "pct": 5
+        },
+        {
+          "country": "India",
+          "pct": 4.8
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 87.8
+        },
+        {
+          "product": "Organic chemicals",
+          "hs": "29",
+          "pct": 3.3
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 2.7
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 1.1
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 0.9
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 0.5
+        },
+        {
+          "product": "Cosmetics & perfumes",
+          "hs": "33",
+          "pct": 0.3
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 15.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 9.1
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 8.8
+        },
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 7.7
+        },
+        {
+          "product": "Pharmaceuticals",
+          "hs": "30",
+          "pct": 6.1
+        },
+        {
+          "product": "Iron & steel articles",
+          "hs": "73",
+          "pct": 4.7
+        }
+      ],
+      "tradeToGDP": null,
+      "currentAccount": {
+        "value": 22.7,
+        "year": 2025
+      },
+      "incomeGroup": "high"
+    },
+    "KE": {
+      "comtradeReporter": 404,
+      "year": 2025,
+      "exportsUsdBn": 8.6,
+      "importsUsdBn": 21.7,
+      "tradeBalanceUsdBn": -13.1,
+      "topExportPartners": [
+        {
+          "country": "Uganda",
+          "pct": 14.5
+        },
+        {
+          "country": "United States",
+          "pct": 7.1
+        },
+        {
+          "country": "UAE",
+          "pct": 7
+        },
+        {
+          "country": "Pakistan",
+          "pct": 6.8
+        },
+        {
+          "country": "Netherlands",
+          "pct": 6.2
+        },
+        {
+          "country": "United Rep. of Tanzania",
+          "pct": 5.6
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 23.9
+        },
+        {
+          "country": "UAE",
+          "pct": 11.5
+        },
+        {
+          "country": "India",
+          "pct": 10.4
+        },
+        {
+          "country": "Malaysia",
+          "pct": 5.1
+        },
+        {
+          "country": "Japan",
+          "pct": 5
+        },
+        {
+          "country": "United States",
+          "pct": 4.9
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Coffee, tea & spices",
+          "hs": "09",
+          "pct": 21.8
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 10.5
+        },
+        {
+          "product": "Live plants & flowers",
+          "hs": "06",
+          "pct": 10.2
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 4.6
+        },
+        {
+          "product": "Vegetables",
+          "hs": "07",
+          "pct": 3.8
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 3.7
+        },
+        {
+          "product": "Apparel (knitted)",
+          "hs": "61",
+          "pct": 2.9
+        },
+        {
+          "product": "Apparel (not knitted)",
+          "hs": "62",
+          "pct": 2.8
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 21.2
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 10.2
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 6.6
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 5.8
+        },
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 5.5
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 5.2
+        }
+      ],
+      "tradeToGDP": {
+        "value": 37.5,
+        "year": 2025
+      },
+      "currentAccount": null,
+      "incomeGroup": "lower-middle"
+    },
+    "ET": {
+      "comtradeReporter": 231,
+      "year": 2023,
+      "exportsUsdBn": 2.9,
+      "importsUsdBn": 17.1,
+      "tradeBalanceUsdBn": -14.2,
+      "topExportPartners": [
+        {
+          "country": "Saudi Arabia",
+          "pct": 10.4
+        },
+        {
+          "country": "United States",
+          "pct": 9.7
+        },
+        {
+          "country": "Netherlands",
+          "pct": 7.6
+        },
+        {
+          "country": "UAE",
+          "pct": 5.7
+        },
+        {
+          "country": "Somalia",
+          "pct": 5
+        },
+        {
+          "country": "India",
+          "pct": 4.9
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 32.7
+        },
+        {
+          "country": "India",
+          "pct": 9.6
+        },
+        {
+          "country": "Kuwait",
+          "pct": 7.8
+        },
+        {
+          "country": "Saudi Arabia",
+          "pct": 6.6
+        },
+        {
+          "country": "United States",
+          "pct": 6.3
+        },
+        {
+          "country": "Morocco",
+          "pct": 4
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Coffee, tea & spices",
+          "hs": "09",
+          "pct": 43.2
+        },
+        {
+          "product": "Vegetables",
+          "hs": "07",
+          "pct": 17.5
+        },
+        {
+          "product": "Oil seeds (incl. soybeans)",
+          "hs": "12",
+          "pct": 14.8
+        },
+        {
+          "product": "Live plants & flowers",
+          "hs": "06",
+          "pct": 9.2
+        },
+        {
+          "product": "Meat",
+          "hs": "02",
+          "pct": 2.2
+        },
+        {
+          "product": "Apparel (knitted)",
+          "hs": "61",
+          "pct": 2.1
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 2
+        },
+        {
+          "product": "Apparel (not knitted)",
+          "hs": "62",
+          "pct": 1.2
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 15.5
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 11.3
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 7.8
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 7.7
+        },
+        {
+          "product": "Fertilizers",
+          "hs": "31",
+          "pct": 7
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.9
+        }
+      ],
+      "tradeToGDP": {
+        "value": 33.5,
+        "year": 2025
+      },
+      "currentAccount": null,
+      "incomeGroup": "low"
+    },
+    "GH": {
+      "comtradeReporter": 288,
+      "year": 2025,
+      "exportsUsdBn": 32,
+      "importsUsdBn": 20.2,
+      "tradeBalanceUsdBn": 11.8,
+      "topExportPartners": [
+        {
+          "country": "UAE",
+          "pct": 25.9
+        },
+        {
+          "country": "India",
+          "pct": 16
+        },
+        {
+          "country": "Switzerland",
+          "pct": 14.2
+        },
+        {
+          "country": "South Africa",
+          "pct": 10.3
+        },
+        {
+          "country": "China",
+          "pct": 4.9
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.5
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 22.7
+        },
+        {
+          "country": "United States",
+          "pct": 7
+        },
+        {
+          "country": "India",
+          "pct": 6.8
+        },
+        {
+          "country": "UAE",
+          "pct": 6
+        },
+        {
+          "country": "Belgium",
+          "pct": 5
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.5
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Precious metals & stones (incl. gold)",
+          "hs": "71",
+          "pct": 63.1
+        },
+        {
+          "product": "Cocoa",
+          "hs": "18",
+          "pct": 14
+        },
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 8.8
+        },
+        {
+          "product": "Fruit & nuts",
+          "hs": "08",
+          "pct": 2.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 1.7
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 1.2
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 1.2
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 0.8
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 25.7
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 15.4
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 10.6
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.1
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 4
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 3.3
+        }
+      ],
+      "tradeToGDP": null,
+      "currentAccount": {
+        "value": 8.2,
+        "year": 2025
+      },
+      "incomeGroup": "lower-middle"
+    },
+    "UA": {
+      "comtradeReporter": 804,
+      "year": 2024,
+      "exportsUsdBn": 41.7,
+      "importsUsdBn": 70.8,
+      "tradeBalanceUsdBn": -29,
+      "topExportPartners": [
+        {
+          "country": "Poland",
+          "pct": 11.3
+        },
+        {
+          "country": "Spain",
+          "pct": 6.9
+        },
+        {
+          "country": "Germany",
+          "pct": 6.8
+        },
+        {
+          "country": "China",
+          "pct": 5.7
+        },
+        {
+          "country": "Turkey",
+          "pct": 5.3
+        },
+        {
+          "country": "Netherlands",
+          "pct": 4.8
+        }
+      ],
+      "topImportPartners": [
+        {
+          "country": "China",
+          "pct": 20.3
+        },
+        {
+          "country": "Poland",
+          "pct": 9.9
+        },
+        {
+          "country": "Germany",
+          "pct": 7.6
+        },
+        {
+          "country": "Turkey",
+          "pct": 6
+        },
+        {
+          "country": "United States",
+          "pct": 4.9
+        },
+        {
+          "country": "Italy",
+          "pct": 3.6
+        }
+      ],
+      "topExports": [
+        {
+          "product": "Cereals",
+          "hs": "10",
+          "pct": 22.6
+        },
+        {
+          "product": "Animal & vegetable fats/oils",
+          "hs": "15",
+          "pct": 13.8
+        },
+        {
+          "product": "Oil seeds (incl. soybeans)",
+          "hs": "12",
+          "pct": 8.1
+        },
+        {
+          "product": "Iron & steel",
+          "hs": "72",
+          "pct": 7.4
+        },
+        {
+          "product": "Ores, slag & ash",
+          "hs": "26",
+          "pct": 7
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 5.5
+        },
+        {
+          "product": "Animal feed & food residues",
+          "hs": "23",
+          "pct": 3.5
+        },
+        {
+          "product": "Wood",
+          "hs": "44",
+          "pct": 3.5
+        }
+      ],
+      "topImports": [
+        {
+          "product": "Mineral fuels, oil & gas",
+          "hs": "27",
+          "pct": 12.6
+        },
+        {
+          "product": "Electrical machinery & electronics",
+          "hs": "85",
+          "pct": 11.9
+        },
+        {
+          "product": "Vehicles & parts",
+          "hs": "87",
+          "pct": 10.7
+        },
+        {
+          "product": "Machinery & computers",
+          "hs": "84",
+          "pct": 9.4
+        },
+        {
+          "product": "Commodities not specified",
+          "hs": "99",
+          "pct": 8.4
+        },
+        {
+          "product": "Plastics",
+          "hs": "39",
+          "pct": 4.1
+        }
+      ],
+      "tradeToGDP": {
+        "value": 77.2,
+        "year": 2025
+      },
+      "currentAccount": null,
+      "incomeGroup": "upper-middle"
+    }
+  }
+}
