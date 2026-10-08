@@ -21,15 +21,25 @@ vi.mock('./components/OutlookCard', () => ({
 }))
 
 describe('country drawer and outlook card', () => {
-  it('closing the drawer leaves the regional outlook open', async () => {
+  async function pickCountry() {
     const { default: App } = await import('./App')
     render(<App />)
     fireEvent.click(await screen.findByText('pick-country'))
     expect(await screen.findByTestId('drawer')).toBeTruthy()
     expect(screen.getByTestId('card').textContent).toContain('Ukraine')
+  }
 
+  it('closing the drawer leaves the card open on the same country', async () => {
+    await pickCountry()
     fireEvent.click(screen.getByText('close-drawer'))
     await waitFor(() => expect(screen.queryByTestId('drawer')).toBeNull())
-    expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
+    expect(screen.getByTestId('card').textContent).toContain('Ukraine')
+  })
+
+  it('closing the card leaves the drawer open', async () => {
+    await pickCountry()
+    fireEvent.click(screen.getByText('close-card'))
+    await waitFor(() => expect(screen.queryByTestId('card')).toBeNull())
+    expect(screen.getByTestId('drawer')).toBeTruthy()
   })
 })
