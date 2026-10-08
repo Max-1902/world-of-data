@@ -86,4 +86,27 @@ describe('OverlayMenu', () => {
     // each key renders one toggle (the menu would throw on a key missing from OVERLAY_ITEMS)
     expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(keys.length + 1)
   })
+  it('lists DeepState as a toggle that reports its state, and is not counted as a map layer', () => {
+    const onToggleDeepstate = vi.fn()
+    const base = { panelState: { flights: false } as unknown as PanelState, onToggleLayer: () => {}, top: 52 }
+    const { unmount } = render(<OverlayMenu {...base} onToggleDeepstate={onToggleDeepstate} />)
+    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
+    const row = screen.getByRole('button', { name: /DEEPSTATE UKRAINE/ })
+    expect(row.getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(row)
+    expect(onToggleDeepstate).toHaveBeenCalledTimes(1)
+    unmount()
+
+    render(<OverlayMenu {...base} deepstateMode onToggleDeepstate={onToggleDeepstate} />)
+    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
+    expect(screen.getByRole('button', { name: /DEEPSTATE UKRAINE/ }).getAttribute('aria-pressed')).toBe('true')
+    // DeepState is a split view, not a PanelState layer, so it must not enable "deselect all"
+    expect(screen.getByRole('button', { name: /OVERLAYS/ }).textContent).toContain('0')
+  })
+
+  it('hides the DeepState row when no toggle is wired', () => {
+    render(<OverlayMenu panelState={{} as PanelState} onToggleLayer={() => {}} top={52} />)
+    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
+    expect(screen.queryByRole('button', { name: /DEEPSTATE/ })).toBeNull()
+  })
 })

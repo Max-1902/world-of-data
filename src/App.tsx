@@ -299,6 +299,7 @@ export default function App() {
             showStocks={panelState.stocks}
             deepstateMode={deepstateMode}
             onCloseDeepstate={() => setDeepstateMode(false)}
+            onToggleDeepstate={() => setDeepstateMode(v => !v)}
             onFlightClick={handleFlightSelect}
             onCrisisClick={handleCrisisSelect}
             fires={fires}
