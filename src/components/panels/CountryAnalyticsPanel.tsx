@@ -6,7 +6,7 @@ import { INDICATORS, INDICATOR_BY_ID, INDICATOR_GROUPS, MATRIX_IDS, PRESETS } fr
 import { correlationMatrix, describeFit, describePair, histogram, type MapMode } from '../../utils/countryStats'
 import { ChartFrame } from '../charts/ChartFrame'
 import { ScatterChart } from '../charts/ScatterChart'
-import { RankChart } from '../charts/RankChart'
+import { RankChart, type RankItem } from '../charts/RankChart'
 import { BarsChart } from '../charts/BarsChart'
 import { CorrMatrixChart } from '../charts/CorrMatrixChart'
 import type { PanelState } from '../../types'
@@ -62,6 +62,10 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
   const loading = [xSlice, ySlice].some(s => s.status === 'idle' || s.status === 'loading')
   const failed = [xSlice, ySlice].find(s => s.status === 'error')
   const fly = (name: string) => onGeoSearch?.(name)
+  // Above and below share one bar scale and label column (via sizeWith) so −2σ never looks as long as +3σ.
+  const overItems: RankItem[] = (analysis?.over ?? []).map(p => ({ key: p.name, label: p.name, value: p.z, text: `+${p.z.toFixed(1)} σ`, detail: `${yMeta.format(p.y)} actual vs ${yMeta.format(p.expected)} expected` }))
+  const underItems: RankItem[] = (analysis?.under ?? []).map(p => ({ key: p.name, label: p.name, value: -p.z, text: `−${Math.abs(p.z).toFixed(1)} σ`, detail: `${yMeta.format(p.y)} actual vs ${yMeta.format(p.expected)} expected` }))
+  const trendItems = [...overItems, ...underItems]
 
   return (
     <div className="viz-root">
@@ -137,11 +141,9 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
             }}
           >
             <p className="viz-sub" style={{ margin: '0 0 2px' }}>Above the trend</p>
-            <RankChart ariaLabel={`Countries furthest above the trend line for ${yMeta.label}`} onSelect={k => fly(k)}
-              items={analysis.over.map(p => ({ key: p.name, label: p.name, value: p.z, text: `+${p.z.toFixed(1)} σ`, detail: `${yMeta.format(p.y)} actual vs ${yMeta.format(p.expected)} expected` }))} />
+            <RankChart ariaLabel={`Countries furthest above the trend line for ${yMeta.label}`} onSelect={k => fly(k)} items={overItems} sizeWith={trendItems} color="var(--series-2)" />
             <p className="viz-sub" style={{ margin: '8px 0 2px' }}>Below the trend</p>
-            <RankChart ariaLabel={`Countries furthest below the trend line for ${yMeta.label}`} onSelect={k => fly(k)}
-              items={analysis.under.map(p => ({ key: p.name, label: p.name, value: -p.z, text: `−${Math.abs(p.z).toFixed(1)} σ`, detail: `${yMeta.format(p.y)} actual vs ${yMeta.format(p.expected)} expected` }))} />
+            <RankChart ariaLabel={`Countries furthest below the trend line for ${yMeta.label}`} onSelect={k => fly(k)} items={underItems} sizeWith={trendItems} color="var(--series-3)" />
           </ChartFrame>
         </>
       )}
