@@ -1,87 +1,131 @@
-import { describe, it, expect } from 'vitest'
-import { fetchOutageEvents, getCountryCentroid, COUNTRY_CENTROIDS } from './outages'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mockFetch, jsonResponse } from '../test/helpers'
 
+type Mod = typeof import('./outages')
+let m: Mod
+beforeEach(async () => { vi.resetModules(); m = await import('./outages') })   // region points are cached per module
+
 const alert = (o: Record<string, unknown>) => ({
-  entity: { name: 'Testland', type: 'country', code: 'TL' },
+  entity: { name: 'Testland', type: 'country', code: 'DE' }, datasource: 'bgp',
   time: 1_700_000_000, level: 'critical', value: 20, historyValue: 100, ...o,
+})
+const region = (code: string, cc = 'CM') => ({ name: 'Nord', type: 'region', code, attrs: { country_code: cc } })
+const REGIONS = { '684': [13.908, 8.462, 'Nord', 'CM'] as [number, number, string, string] }
+
+/** Serves the IODA alert payload and the static region file. */
+function serve(data: unknown, regions: unknown = { regions: REGIONS }) {
+  return mockFetch((url: string) => String(url).startsWith('/data/') ? jsonResponse(regions) : jsonResponse({ data }))
+}
+
+describe('foldOutageAlerts', () => {
+  it('folds an entity\'s alert stream into one event, ongoing while any signal is still critical', () => {
+    const [e] = m.foldOutageAlerts([
+      alert({ time: 1, datasource: 'bgp', value: 40, historyValue: 100 }),
+      alert({ time: 2, datasource: 'ping-slash24', value: 10, historyValue: 100 }),
+      alert({ time: 3, datasource: 'bgp', level: 'normal', value: 100, historyValue: 100 }),
+    ])
+    expect(e).toMatchObject({ id: 'country:DE', status: 'ongoing', level: 'critical', dropPct: 90, severity: 'severe', start: 1, lastAlert: 3 })
+    expect(e.signals.map(s => [s.source, s.level])).toEqual([['ping-slash24', 'critical'], ['bgp', 'normal']])
+  })
+
+  it('marks an entity recovered once every signal is back to normal, keeping the worst drop seen', () => {
+    const [e] = m.foldOutageAlerts([alert({ time: 1, value: 70 }), alert({ time: 5, level: 'normal', value: 100 })])
+    expect(e).toMatchObject({ status: 'recovered', level: 'normal', dropPct: 30, severity: 'major', lastAlert: 5 })
+  })
+
+  it('drops entities that only have recovery notices (their outage began before the window)', () => {
+    expect(m.foldOutageAlerts([alert({ level: 'normal' })])).toEqual([])
+  })
+
+  it('grades severity by drop: ≥50 severe, 20–49 major, under 20 minor', () => {
+    expect([50, 49, 20, 19, 0].map(m.outageSeverity)).toEqual(['severe', 'major', 'major', 'minor', 'minor'])
+  })
+
+  it('never yields a negative or NaN drop when value exceeds baseline or baseline is 0', () => {
+    const out = m.foldOutageAlerts([
+      alert({ entity: { type: 'country', code: 'AA' }, value: 150, historyValue: 100 }),
+      alert({ entity: { type: 'country', code: 'BB' }, value: 0, historyValue: 0 }),
+    ])
+    for (const e of out) expect(e.dropPct).toBe(0)
+  })
+
+  it('sorts ongoing before recovered, then deepest drop first', () => {
+    const out = m.foldOutageAlerts([
+      alert({ entity: { type: 'country', code: 'AA' }, value: 90 }),
+      alert({ entity: { type: 'country', code: 'BB' }, value: 10 }),
+      alert({ entity: { type: 'country', code: 'CC' }, value: 0 }), alert({ entity: { type: 'country', code: 'CC' }, time: 1_700_000_100, level: 'normal' }),
+    ])
+    expect(out.map(e => e.entityCode)).toEqual(['BB', 'AA', 'CC'])
+  })
+
+  it('places regions on their region point, network-in-region on the region, countries on the country, plain networks nowhere', () => {
+    const out = m.foldOutageAlerts([
+      alert({ entity: region('684') }),
+      alert({ entity: { name: 'X -- Nord', type: 'geoasn', code: '1234-684', attrs: { org: 'Telco' } } }),
+      alert({ entity: { name: 'Y -- Canada', type: 'geoasn', code: '36522-CA' } }),
+      alert({ entity: { name: 'AS1', type: 'asn', code: '1' } }),
+      alert({ entity: region('9999', 'CM') }),   // unknown region → country fallback
+    ], REGIONS)
+    const loc = Object.fromEntries(out.map(e => [e.id, e.location]))
+    expect(loc['region:684']).toEqual({ lng: 13.908, lat: 8.462, precision: 'region', label: 'Nord, CM' })
+    expect(loc['geoasn:1234-684']).toMatchObject({ precision: 'region', label: 'Nord, CM' })
+    expect(loc['geoasn:36522-CA']).toMatchObject({ precision: 'country', label: 'CA' })
+    expect(loc['asn:1']).toBeNull()
+    expect(loc['region:9999']).toMatchObject({ precision: 'country', label: 'CM' })
+    expect(out.find(e => e.id === 'geoasn:1234-684')?.org).toBe('Telco')
+  })
+
+  it('tolerates junk entries and missing fields', () => {
+    const out = m.foldOutageAlerts([null, 7, 'x', { level: 'critical' }])
+    expect(out).toHaveLength(1)
+    expect(out[0]).toMatchObject({ entityName: '—', entityType: 'unknown', entityCode: '', location: null })
+  })
 })
 
 describe('fetchOutageEvents', () => {
-  it('scores by percent drop below baseline, weighting critical 5x and others 2x', async () => {
-    mockFetch(() => jsonResponse({ data: [
-      alert({ id: 'a', level: 'critical', value: 20, historyValue: 100 }),                                   // 80% * 5
-      alert({ id: 'b', entity: { name: 'X', type: 'country', code: 'XX' }, level: 'warning', value: 50, historyValue: 100 }), // 50% * 2
-    ] }))
-    const events = await fetchOutageEvents()
-    expect(events.map(e => [e.id, e.score])).toEqual([['a', 400], ['b', 100]])
-    expect(events[0]).toMatchObject({ entityName: 'Testland', entityCode: 'TL', entityType: 'country', start: 1_700_000_000, overallScore: 100 })
+  it('requests the look-back window with a limit large enough for a full day of alerts', async () => {
+    const f = serve([])
+    await m.fetchOutageEvents(6)
+    const url = new URL(String(f.mock.calls.find(c => String(c[0]).startsWith('https://'))![0]))
+    expect(url.pathname).toBe('/v2/outages/alerts')
+    expect(Number(url.searchParams.get('until')) - Number(url.searchParams.get('from'))).toBe(6 * 3600)
+    expect(Number(url.searchParams.get('limit'))).toBeGreaterThanOrEqual(5000)
   })
 
-  it('sorts most severe first', async () => {
-    mockFetch(() => jsonResponse({ data: [
-      alert({ id: 'low',  entity: { name: 'A', type: 'country', code: 'AA' }, level: 'warning',  value: 90, historyValue: 100 }),
-      alert({ id: 'high', entity: { name: 'B', type: 'country', code: 'BB' }, level: 'critical', value: 10, historyValue: 100 }),
-    ] }))
-    const events = await fetchOutageEvents()
-    expect(events.map(e => e.id)).toEqual(['high', 'low'])
+  it('places region alerts with the static region file', async () => {
+    serve([alert({ entity: region('684') })])
+    const [e] = await m.fetchOutageEvents()
+    expect(e.location).toMatchObject({ precision: 'region', lng: 13.908 })
   })
 
-  it('never yields a negative score when value exceeds baseline, or NaN when baseline is 0', async () => {
-    mockFetch(() => jsonResponse({ data: [
-      alert({ id: 'up',   entity: { name: 'A', type: 'country', code: 'AA' }, value: 150, historyValue: 100 }),
-      alert({ id: 'zero', entity: { name: 'B', type: 'country', code: 'BB' }, value: 0,   historyValue: 0 }),
-    ] }))
-    const events = await fetchOutageEvents()
-    for (const e of events) {
-      expect(e.score).toBe(0)
-      expect(Number.isNaN(e.score)).toBe(false)
-    }
-  })
-
-  it('de-duplicates alerts with the same entity code and level', async () => {
-    mockFetch(() => jsonResponse({ data: [alert({ id: '1' }), alert({ id: '2' }), alert({ id: '3', level: 'warning' })] }))
-    const events = await fetchOutageEvents()
-    expect(events).toHaveLength(2)
-    expect(events.map(e => e.id).sort()).toEqual(['1', '3'])
-  })
-
-  it('tolerates missing fields, generating an id and defaults', async () => {
-    mockFetch(() => jsonResponse({ data: [{}] }))
-    const [e] = await fetchOutageEvents()
-    expect(e).toMatchObject({ id: 'ioda-0', entityName: '—', entityType: 'unknown', entityCode: '', level: 'warning', start: 0 })
+  it('falls back to the country when the region file cannot be loaded', async () => {
+    mockFetch((url: string) => String(url).startsWith('/data/') ? jsonResponse({}, { status: 404 }) : jsonResponse({ data: [alert({ entity: region('684') })] }))
+    const [e] = await m.fetchOutageEvents()
+    expect(e.location).toMatchObject({ precision: 'country', label: 'CM' })
   })
 
   it('returns [] when the payload has no data array', async () => {
-    mockFetch(() => jsonResponse({ data: 'nope' }))
-    expect(await fetchOutageEvents()).toEqual([])
-    mockFetch(() => jsonResponse(null))
-    expect(await fetchOutageEvents()).toEqual([])
+    serve('nope')
+    expect(await m.fetchOutageEvents()).toEqual([])
   })
 
-  it('requests the requested lookback window and throws on HTTP errors', async () => {
-    const fetchMock = mockFetch(() => jsonResponse({ data: [] }))
-    await fetchOutageEvents(6)
-    const url = new URL(String(fetchMock.mock.calls[0][0]))
-    expect(url.pathname).toBe('/v2/outages/alerts')
-    expect(Number(url.searchParams.get('until')) - Number(url.searchParams.get('from'))).toBe(6 * 3600)
-
-    mockFetch(() => jsonResponse({}, { status: 502 }))
-    await expect(fetchOutageEvents()).rejects.toThrow('IODA HTTP 502')
+  it('throws on HTTP errors', async () => {
+    mockFetch((url: string) => String(url).startsWith('/data/') ? jsonResponse({ regions: REGIONS }) : jsonResponse({}, { status: 502 }))
+    await expect(m.fetchOutageEvents()).rejects.toThrow('IODA HTTP 502')
   })
 })
 
 describe('getCountryCentroid', () => {
   it('looks up case-insensitively', () => {
-    expect(getCountryCentroid('de')).toEqual(COUNTRY_CENTROIDS.DE)
-    expect(getCountryCentroid('DE')).toEqual(COUNTRY_CENTROIDS.DE)
+    expect(m.getCountryCentroid('de')).toEqual(m.COUNTRY_CENTROIDS.DE)
+    expect(m.getCountryCentroid('DE')).toEqual(m.COUNTRY_CENTROIDS.DE)
   })
   it('returns null for unknown codes', () => {
-    expect(getCountryCentroid('ZZ')).toBeNull()
-    expect(getCountryCentroid('')).toBeNull()
+    expect(m.getCountryCentroid('ZZ')).toBeNull()
+    expect(m.getCountryCentroid('')).toBeNull()
   })
   it('stores every centroid as a valid [lng, lat] pair', () => {
-    for (const [code, [lng, lat]] of Object.entries(COUNTRY_CENTROIDS)) {
+    for (const [code, [lng, lat]] of Object.entries(m.COUNTRY_CENTROIDS)) {
       expect(code, code).toMatch(/^[A-Z]{2}$/)
       expect(lng, `${code} lng`).toBeGreaterThanOrEqual(-180)
       expect(lng, `${code} lng`).toBeLessThanOrEqual(180)

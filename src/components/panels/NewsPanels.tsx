@@ -10,7 +10,7 @@ import { fetchOutageEvents, type OutageEvent } from '../../services/outages'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { useAutoTranslate, useTranslatedArticle } from '../../hooks/useTranslation'
 import { SEV_COLORS } from './OverviewPanels'
-import { outageScoreColor } from './OutagesPanel'
+import { outageColor, outageBadge, tint } from './OutagesPanel'
 import { StateMediaBadge } from '../StateMediaBadge'
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
@@ -416,15 +416,15 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
             ? <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO OUTAGES MATCHED</div>
             : outages.map(ev => (
               <div key={ev.id} className="intel-row" style={{ alignItems: 'flex-start' }}>
-                <div style={{ width: 2, alignSelf: 'stretch', flexShrink: 0, background: outageScoreColor(ev.score), boxShadow: `0 0 4px ${outageScoreColor(ev.score)}66` }} />
+                <div style={{ width: 2, alignSelf: 'stretch', flexShrink: 0, background: outageColor(ev) }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: '12.5px', color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.entityName}</div>
                   <div style={{ display: 'flex', gap: 5, fontSize: '10px', color: 'var(--text3)' }}>
-                    <span style={{ color: outageScoreColor(ev.score), fontWeight: 700, fontSize: '9.5px', border: `1px solid ${outageScoreColor(ev.score)}44`, padding: '0 3px' }}>
-                      {ev.score >= 500 ? 'CRITICAL' : ev.score >= 200 ? 'MAJOR' : ev.score >= 50 ? 'MODERATE' : 'MINOR'}
+                    <span style={{ color: outageColor(ev), fontWeight: 700, fontSize: '9.5px', border: `1px solid ${tint(outageColor(ev))}`, padding: '0 3px' }}>
+                      {outageBadge(ev)}
                     </span>
                     <span>{ev.entityType}</span>
-                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>{ev.score}</span>
+                    <span style={{ fontVariantNumeric: 'tabular-nums' }}>−{ev.dropPct}% vs normal</span>
                   </div>
                 </div>
               </div>

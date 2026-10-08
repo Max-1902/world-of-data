@@ -79,6 +79,7 @@ export interface PanelState {
   supplychain:    boolean
   shippingDensity: boolean
   outages:        boolean
+  disasters:      boolean
   resources:      boolean
   tradeStats:     boolean
   militaryPersonnel: boolean

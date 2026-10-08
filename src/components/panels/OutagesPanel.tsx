@@ -4,11 +4,11 @@
 import { useState, useCallback, useEffect } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
-import { fetchOutageEvents, type OutageEvent } from '../../services/outages'
+import { fetchOutageEvents, SEVERITY_LABEL, OUTAGE_SOURCES, type OutageEvent } from '../../services/outages'
 import { onGlobalReload } from '../../utils/reloadBus'
 
 // ── Outages panel ──────────────────────────────────────────────────────────────
-const OUTAGE_TABS = ['All', 'Country', 'ASN', 'Region'] as const
+const OUTAGE_TABS = ['Ongoing', 'All', 'Country', 'Region', 'ASN'] as const
 
 type OutageTab = typeof OUTAGE_TABS[number]
 
@@ -19,18 +19,20 @@ const LOOKBACK_OPTIONS = [
   { label: '48h', hours: 48 },
 ]
 
-export function outageScoreColor(score: number): string {
-  if (score >= 500) return 'var(--red)'
-  if (score >= 200) return 'var(--amber)'
-  if (score >= 50)  return 'var(--amber)'
-  return 'var(--accent)'
+/** Panel colour for an outage — the same severity bands as the map pins, via the theme tokens. */
+export function outageColor(ev: OutageEvent): string {
+  if (ev.status === 'recovered') return 'var(--text3)'
+  return ev.severity === 'severe' ? 'var(--red)' : ev.severity === 'major' ? 'var(--amber)' : 'var(--accent)'
 }
 
-function formatDuration(secs: number): string {
-  if (secs < 60)   return `${secs}s`
-  if (secs < 3600) return `${Math.round(secs / 60)}m`
-  return `${(secs / 3600).toFixed(1)}h`
+/** "SEVERE · ONGOING" / "RECOVERED" */
+export function outageBadge(ev: OutageEvent): string {
+  return ev.status === 'recovered' ? 'RECOVERED' : `${SEVERITY_LABEL[ev.severity].toUpperCase()} · ONGOING`
 }
+
+export const tint = (color: string, pct = 30) => `color-mix(in srgb, ${color} ${pct}%, transparent)`
+
+const ENTITY_LABEL: Record<string, string> = { country: 'country-wide', region: 'region', asn: 'network', geoasn: 'network in region' }
 
 function formatOutageTime(epoch: number): string {
   if (!epoch) return ''
@@ -38,7 +40,7 @@ function formatOutageTime(epoch: number): string {
 }
 
 export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => void }) {
-  const [tab, setTab]             = useState<OutageTab>('All')
+  const [tab, setTab]             = useState<OutageTab>('Ongoing')
   const [lookback, setLookback]   = useState(24)
   const [events, setEvents]       = useState<OutageEvent[]>([])
   const [loading, setLoading]     = useState(false)
@@ -71,8 +73,9 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
   const filtered = tab === 'All'
     ? events
     : events.filter(e => {
+        if (tab === 'Ongoing') return e.status === 'ongoing'
         if (tab === 'Country') return e.entityType === 'country'
-        if (tab === 'ASN')     return e.entityType === 'asn'
+        if (tab === 'ASN')     return e.entityType === 'asn' || e.entityType === 'geoasn'
         if (tab === 'Region')  return e.entityType === 'region'
         return true
       })
@@ -108,6 +111,10 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
         )}
       </div>
 
+      <div style={{ padding: '4px 8px', fontSize: '9.5px', color: 'var(--text3)', lineHeight: 1.45, borderBottom: '1px solid var(--border)' }}>
+        % = how far the signal fell below IODA's normal level. Severe ≥ 50 %, major 20–49 %, minor &lt; 20 % (this app's bands).
+      </div>
+
       {/* Event list */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {loading && events.length === 0 && (
@@ -119,49 +126,46 @@ export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => voi
         {!loading && !error && filtered.length === 0 && (
           <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO OUTAGES DETECTED</div>
         )}
-        {filtered.map(ev => (
+        {filtered.map(ev => {
+          const color = outageColor(ev)
+          const live = ev.signals.filter(x => x.level === 'critical').map(x => OUTAGE_SOURCES[x.source]?.label ?? x.source)
+          return (
           <div
             key={ev.id}
             className="intel-row"
             style={{ alignItems: 'flex-start', cursor: onGeoSearch ? 'pointer' : 'default' }}
-            title={onGeoSearch ? `Fly to ${ev.entityName}` : undefined}
-            onClick={() => onGeoSearch?.(ev.entityName)}
+            title={onGeoSearch ? `Fly to ${ev.location?.label ?? ev.entityName}` : undefined}
+            onClick={() => onGeoSearch?.(ev.location?.precision === 'region' ? ev.location.label : ev.entityName)}
           >
-            <div style={{
-              width: 2, alignSelf: 'stretch', flexShrink: 0,
-              background: outageScoreColor(ev.score),
-              boxShadow: `0 0 4px ${outageScoreColor(ev.score)}66`,
-            }} />
+            <div style={{ width: 2, alignSelf: 'stretch', flexShrink: 0, background: color }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '12.5px', color: 'var(--text1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: 1.4 }}>
                 {ev.entityName}
               </div>
+              {ev.org && <div style={{ fontSize: '10px', color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.org}</div>}
               <div style={{ display: 'flex', gap: 5, fontSize: '10px', color: 'var(--text3)', marginTop: 1, flexWrap: 'wrap' }}>
                 <span style={{
-                  color: outageScoreColor(ev.score),
-                  border: `1px solid ${outageScoreColor(ev.score)}44`,
-                  padding: '0 3px', fontWeight: 700, letterSpacing: '.08em',
-                  textTransform: 'uppercase', fontSize: '9.5px',
+                  color, border: `1px solid ${tint(color)}`,
+                  padding: '0 3px', fontWeight: 700, letterSpacing: '.08em', fontSize: '9.5px',
                 }}>
-                  {ev.score >= 500 ? 'CRITICAL' : ev.score >= 200 ? 'MAJOR' : ev.score >= 50 ? 'MODERATE' : 'MINOR'}
+                  {outageBadge(ev)}
                 </span>
-                <span style={{ color: 'var(--text3)', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '.06em' }}>{ev.entityType}</span>
-                {ev.duration > 0 && (
-                  <span style={{ color: 'var(--text3)' }}>◷ {formatDuration(ev.duration)}</span>
-                )}
-                {ev.start > 0 && (
-                  <span style={{ color: 'var(--text3)' }}>{formatOutageTime(ev.start)}</span>
-                )}
+                <span style={{ fontSize: '9.5px', letterSpacing: '.06em' }}>{ENTITY_LABEL[ev.entityType] ?? ev.entityType}</span>
+                {ev.start > 0 && <span>began {formatOutageTime(ev.start)}</span>}
+                {ev.status === 'recovered' && ev.lastAlert > 0 && <span>· recovered {formatOutageTime(ev.lastAlert)}</span>}
+                {!ev.location && <span title="IODA gives no location for this network, so it is not on the map">· not mapped</span>}
               </div>
+              {live.length > 0 && <div style={{ fontSize: '9.5px', color: 'var(--text3)', marginTop: 1 }}>seen in: {live.join(', ')}</div>}
             </div>
             <div style={{ flexShrink: 0, textAlign: 'right', paddingLeft: 4 }}>
-              <div style={{ fontSize: '12.5px', fontVariantNumeric: 'tabular-nums', color: outageScoreColor(ev.score), fontWeight: 700 }}>
-                {ev.score}
+              <div style={{ fontSize: '12.5px', fontVariantNumeric: 'tabular-nums', color, fontWeight: 700 }}>
+                −{ev.dropPct}%
               </div>
-              <div style={{ fontSize: '9.5px', color: 'var(--text3)' }}>score</div>
+              <div style={{ fontSize: '9.5px', color: 'var(--text3)' }}>vs normal</div>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     </>
   )

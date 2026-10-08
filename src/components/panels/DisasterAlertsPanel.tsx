@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ExternalLink, RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { useDisasterAlerts } from '../../hooks/useDisasterAlerts'
-import { DISASTER_LABELS, type DisasterType } from '../../services/gdacs'
+import { DISASTER_LABELS, ALERT_MEANING, type DisasterType } from '../../services/gdacs'
 
 const WINDOWS = [{ label: '7D', days: 7 }, { label: '14D', days: 14 }, { label: '30D', days: 30 }]
 const ALERT_COLOR = { Red: 'var(--red)', Orange: 'var(--amber)' } as const
@@ -60,7 +60,10 @@ export function DisasterAlertsPanel({ onGeoSearch }: { onGeoSearch?: (q: string)
                 <span style={{ color: ALERT_COLOR[a.alert], fontWeight: 700 }}>{a.alert.toUpperCase()}</span>
                 {' · '}{DISASTER_LABELS[a.type]}
                 {fmt(a.from) && ` · ${fmt(a.from)} → ${fmt(a.to)}`}
+                {!a.isCurrent && ' · ended'}
               </div>
+              {a.severityText && <div style={{ fontSize: 10.5, color: 'var(--text2)', marginTop: 2 }}>{a.severityText}</div>}
+              {a.affectedCountries.length > 0 && <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1 }}>{a.affectedCountries.join(', ')}</div>}
             </div>
             {a.reportUrl && (
               <a href={a.reportUrl} target="_blank" rel="noopener noreferrer" title="GDACS report" aria-label={`GDACS report: ${a.name}`}
@@ -73,6 +76,7 @@ export function DisasterAlertsPanel({ onGeoSearch }: { onGeoSearch?: (q: string)
       </div>
 
       <div style={{ padding: '3px 10px', borderTop: '1px solid var(--border)', fontSize: 9, color: 'var(--text3)' }}>
+        <div><b style={{ color: ALERT_COLOR.Red }}>Red</b>: {ALERT_MEANING.Red.toLowerCase()}. <b style={{ color: ALERT_COLOR.Orange }}>Orange</b>: {ALERT_MEANING.Orange.toLowerCase()}.</div>
         GDACS (EU JRC / UN OCHA) · Orange &amp; Red alerts only
         {lastUpdated && ` · ${formatDistanceToNow(lastUpdated, { addSuffix: true })}`}
       </div>

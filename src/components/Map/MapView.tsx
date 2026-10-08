@@ -27,6 +27,7 @@ import {
   useNuclearData,
   useOilGasData,
   useOutageData,
+  useDisasterData,
   usePipelineData,
   usePortData,
   useResourcesVisibility,
@@ -44,6 +45,7 @@ import {
 import type { MapHandle, MapViewProps } from './types'
 import CountryAnalyticsLegend from './overlays/CountryAnalyticsLegend'
 import HazardHexLegend from './overlays/HazardHexLegend'
+import IncidentLegend from './overlays/IncidentLegend'
 import FlightFilter from './overlays/FlightFilter'
 import OverlayMenu from './overlays/OverlayMenu'
 import Reticle from './overlays/Reticle'
@@ -61,7 +63,7 @@ export default function MapView({
   showCameras, showInfrastructure, showDatacenters, showAirspace, showHumanitarian,
   vessels, showVessels, showOil, showGas, showGPSJam, gpsJam, showPorts, showPipelines,
   showChokepoints, showSupplyChain, showShippingDensity,
-  outages, showOutages, showResources, showTradeStats, showMilitaryPersonnel,
+  outages, showOutages, disasterAlerts, showDisasters, showResources, showTradeStats, showMilitaryPersonnel,
   showInfraIndicators, showAnalyticsHex, showCountryAnalytics,
   flyToQuery, geoFlyTo, onCountryClick, onPlaceClick, selectedCountry, selectedPlace,
   reticleColor = '#00ff88',
@@ -181,6 +183,7 @@ export default function MapView({
   useTradeStatsVisibility(handle, { showTradeStats })
   useCountryIndicatorData(handle, { showMilitaryPersonnel, showInfraIndicators })
   useOutageData(handle, { outages, showOutages })
+  useDisasterData(handle, { disasterAlerts, showDisasters })
   useMilitaryData(handle, { showMilitary })
   usePortData(handle, { showPorts })
   usePipelineData(handle, { showPipelines })
@@ -229,6 +232,9 @@ export default function MapView({
 
       {showCountryAnalytics && !deepstateMode && (
         <CountryAnalyticsLegend countryData={countryData} countryShading={countryShading} raised={showAnalyticsHex} />
+      )}
+      {(showOutages || showDisasters) && !deepstateMode && (
+        <IncidentLegend outages={showOutages ? outages : null} disasters={showDisasters ? disasterAlerts : null} />
       )}
       {showAnalyticsHex && !deepstateMode && (
         <HazardHexLegend

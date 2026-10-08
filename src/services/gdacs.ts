@@ -21,6 +21,20 @@ export interface DisasterAlert {
   from: string
   to: string
   reportUrl: string
+  /** GDACS's own plain-language severity, e.g. "Magnitude 6.8M, Depth:10km" or "Tropical Storm (maximum wind speed of 204 km/h)" */
+  severityText: string
+  /** agency that reported the underlying event (USGS, NOAA, JRC …) */
+  source: string
+  /** every country GDACS lists as affected; `country` is only the primary one */
+  affectedCountries: string[]
+  /** false once GDACS marks the event as over */
+  isCurrent: boolean
+}
+
+/** What GDACS's alert levels mean, paraphrasing GDACS's alert-level definitions (gdacs.org). */
+export const ALERT_MEANING: Record<DisasterAlert['alert'], string> = {
+  Red: 'High expected humanitarian impact — international assistance likely needed',
+  Orange: 'Medium expected impact — international assistance may be needed',
 }
 
 const BASE = 'https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH'
@@ -32,6 +46,9 @@ interface RawFeature {
     eventtype?: string; eventid?: number | string; episodeid?: number | string
     name?: string; eventname?: string; country?: string; alertlevel?: string; alertscore?: number
     fromdate?: string; todate?: string; url?: { report?: string }
+    source?: string; iscurrent?: string | boolean
+    severitydata?: { severitytext?: string }
+    affectedcountries?: { countryname?: string }[]
   }
 }
 
@@ -62,6 +79,12 @@ export function parseDisasterAlerts(json: unknown): DisasterAlert[] {
       to: p.todate ?? '',
       // only ever link back to GDACS itself
       reportUrl: report.startsWith('https://www.gdacs.org/') ? report : '',
+      severityText: typeof p.severitydata?.severitytext === 'string' ? p.severitydata.severitytext.trim() : '',
+      source: typeof p.source === 'string' ? p.source : '',
+      affectedCountries: Array.isArray(p.affectedcountries)
+        ? p.affectedcountries.map(c => c?.countryname).filter((n): n is string => typeof n === 'string' && n.length > 0)
+        : [],
+      isCurrent: p.iscurrent !== false && p.iscurrent !== 'false',
     })
   }
   return out.sort((a, b) =>

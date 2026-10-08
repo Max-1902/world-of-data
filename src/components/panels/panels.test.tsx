@@ -8,30 +8,37 @@ const fetchOutageEvents = vi.fn<(hours: number) => Promise<OutageEvent[]>>()
 vi.mock('../../services/outages', async (orig) => ({ ...(await orig<typeof import('../../services/outages')>()), fetchOutageEvents: (h: number) => fetchOutageEvents(h) }))
 
 const outage = (over: Partial<OutageEvent>): OutageEvent => ({
-  id: 'x', entityType: 'country', entityName: 'Testland', entityCode: 'TL', start: 0, duration: 0, score: 10, overallScore: 100, level: 'warning', ...over,
+  id: 'x', entityType: 'country', entityName: 'Testland', entityCode: 'TL', org: '', status: 'ongoing', level: 'critical',
+  severity: 'minor', dropPct: 10, start: 0, lastAlert: 0, signals: [], location: null, ...over,
 })
 
 describe('OutagesPanel', () => {
   beforeEach(() => { fetchOutageEvents.mockReset() })
 
-  it('shows a loading line, then the events with severity labels', async () => {
+  it('shows a loading line, then ongoing events with severity, drop and status', async () => {
     fetchOutageEvents.mockResolvedValue([
-      outage({ id: '1', entityName: 'Iran', score: 800, level: 'critical' }),
-      outage({ id: '2', entityName: 'AS1234', entityType: 'asn', score: 60 }),
+      outage({ id: '1', entityName: 'Iran', severity: 'severe', dropPct: 80 }),
+      outage({ id: '2', entityName: 'AS1234', entityType: 'asn', severity: 'major', dropPct: 30 }),
+      outage({ id: '3', entityName: 'Fixedland', status: 'recovered', level: 'normal' }),
     ])
     const { OutagesPanel } = await import('./OutagesPanel')
     render(<OutagesPanel />)
     expect(screen.getByText(/QUERYING IODA/)).toBeTruthy()
     expect(await screen.findByText('Iran')).toBeTruthy()
-    expect(screen.getByText('CRITICAL')).toBeTruthy()
-    expect(screen.getByText('MODERATE')).toBeTruthy()
+    expect(screen.getByText('SEVERE · ONGOING')).toBeTruthy()
+    expect(screen.getByText('MAJOR · ONGOING')).toBeTruthy()
+    expect(screen.getByText('−80%')).toBeTruthy()
+    expect(screen.getAllByText('not mapped', { exact: false })).toHaveLength(2)   // fixtures have no location
+    expect(screen.queryByText('Fixedland')).toBeNull()      // default tab is "Ongoing"
+    fireEvent.click(screen.getByRole('button', { name: 'ALL' }))
+    expect(screen.getByText('RECOVERED')).toBeTruthy()
     expect(fetchOutageEvents).toHaveBeenCalledWith(24)   // default look-back
   })
 
   it('filters by entity type and refetches when the look-back changes', async () => {
     fetchOutageEvents.mockResolvedValue([
-      outage({ id: '1', entityName: 'Iran', entityType: 'country', score: 800 }),
-      outage({ id: '2', entityName: 'AS1234', entityType: 'asn', score: 60 }),
+      outage({ id: '1', entityName: 'Iran', entityType: 'country' }),
+      outage({ id: '2', entityName: 'AS1234', entityType: 'asn' }),
     ])
     const { OutagesPanel } = await import('./OutagesPanel')
     render(<OutagesPanel />)
@@ -60,12 +67,17 @@ describe('OutagesPanel', () => {
   })
 
   it('clicking an event asks the map to fly there', async () => {
-    fetchOutageEvents.mockResolvedValue([outage({ id: '1', entityName: 'Iran', score: 800 })])
+    fetchOutageEvents.mockResolvedValue([
+      outage({ id: '1', entityName: 'Iran' }),
+      outage({ id: '2', entityName: 'TELCO -- Nord', entityType: 'geoasn', location: { lng: 13.9, lat: 8.5, precision: 'region', label: 'Nord, CM' } }),
+    ])
     const onGeoSearch = vi.fn()
     const { OutagesPanel } = await import('./OutagesPanel')
     render(<OutagesPanel onGeoSearch={onGeoSearch} />)
     fireEvent.click(await screen.findByText('Iran'))
     expect(onGeoSearch).toHaveBeenCalledWith('Iran')
+    fireEvent.click(screen.getByText('TELCO -- Nord'))
+    expect(onGeoSearch).toHaveBeenLastCalledWith('Nord, CM')   // a region-located outage flies to its region
   })
 })
 

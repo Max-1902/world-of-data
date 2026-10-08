@@ -1,22 +1,78 @@
 /**
- * Internet outage data via IODA (Internet Outage Detection and Analysis)
- * API: https://api.ioda.inetintel.cc.gatech.edu/v2/
- * No authentication required.
+ * Internet outage data via IODA (Internet Outage Detection and Analysis, Georgia Tech).
+ * API: https://api.ioda.inetintel.cc.gatech.edu/v2/ — free, no authentication.
  *
- * Confirmed working endpoint: /outages/alerts
- * Response shape: { data: [ { entity: { name, type, code }, time, level, value, historyValue } ] }
+ * Endpoint: /outages/alerts → { data: [ { entity: { name, type, code, attrs }, datasource, time, level, condition, value, historyValue } ] }
+ * IODA raises `level: "critical"` when a signal drops below its threshold and `level: "normal"` when it
+ * recovers, so the feed is a stream of state changes. We fold it into one event per entity (country,
+ * region, network or network-in-region): ongoing if any signal's latest alert is critical, recovered if
+ * all of them have since returned to normal.
+ *
+ * Severity is this app's own grading of the measured drop below IODA's baseline (IODA itself only says
+ * "critical"): ≥50 % severe, 20–49 % major, under 20 % minor.
+ *
+ * Location: IODA has no coordinates finer than a region. Region alerts (and network-in-region alerts)
+ * are placed on their region via public/data/ioda-regions.json (built from IODA's own region topology
+ * by scripts/build-ioda-regions.mjs); country alerts on the country; network-only alerts are left
+ * unplaced rather than guessed.
  */
+
+export type OutageSeverity = 'severe' | 'major' | 'minor'
+
+/** One IODA measurement for an entity — its latest alert in the window. */
+export interface OutageSignal {
+  /** IODA datasource id: bgp, ping-slash24, merit-nt, gtr … */
+  source: string
+  level: string
+  /** % below the baseline at that alert (0 when at/above baseline) */
+  dropPct: number
+  value: number
+  baseline: number
+  time: number
+}
+
+export interface OutageLocation {
+  lng: number
+  lat: number
+  /** region = the sub-national region IODA detected it in; country = only known country-wide */
+  precision: 'region' | 'country'
+  /** human name of the place the point stands for */
+  label: string
+}
 
 export interface OutageEvent {
   id: string
   entityType: 'country' | 'asn' | 'region' | 'geoasn' | string
   entityName: string
   entityCode: string
-  start: number       // unix epoch seconds
-  duration: number    // seconds (0 for alerts — point-in-time)
-  score: number       // current value (lower = worse outage)
-  overallScore: number // historical baseline value
-  level: 'critical' | 'warning' | string
+  /** network operator, for asn/geoasn entities */
+  org: string
+  status: 'ongoing' | 'recovered'
+  /** 'critical' while ongoing, 'normal' once recovered (kept for callers that count critical outages) */
+  level: 'critical' | 'normal'
+  severity: OutageSeverity
+  /** worst drop among the currently-critical signals (or, once recovered, the worst seen in the window) */
+  dropPct: number
+  /** first critical alert in the window, unix seconds */
+  start: number
+  /** latest alert of any kind, unix seconds — the recovery time when recovered */
+  lastAlert: number
+  signals: OutageSignal[]
+  location: OutageLocation | null
+}
+
+/** Plain-language meaning of each IODA datasource, for popups and the panel. */
+export const OUTAGE_SOURCES: Record<string, { label: string; meaning: string }> = {
+  'bgp':          { label: 'BGP routing',      meaning: 'share of the area\'s address blocks still visible in global Internet routing' },
+  'ping-slash24': { label: 'Active probing',   meaning: 'share of the area\'s /24 address blocks still answering IODA\'s pings' },
+  'merit-nt':     { label: 'Network telescope', meaning: 'background traffic from the area reaching Merit\'s network telescope' },
+  'gtr':          { label: 'Google traffic',   meaning: 'traffic to Google products from the area (Google Transparency Report)' },
+}
+
+export const SEVERITY_LABEL: Record<OutageSeverity, string> = { severe: 'Severe', major: 'Major', minor: 'Minor' }
+
+export function outageSeverity(dropPct: number): OutageSeverity {
+  return dropPct >= 50 ? 'severe' : dropPct >= 20 ? 'major' : 'minor'
 }
 
 const BASE = 'https://api.ioda.inetintel.cc.gatech.edu/v2'
@@ -62,61 +118,117 @@ export function getCountryCentroid(code: string): [number, number] | null {
   return COUNTRY_CENTROIDS[code.toUpperCase()] ?? null
 }
 
+/** [lng, lat, name, iso2] per IODA region code. */
+export type RegionPoints = Record<string, [number, number, string, string]>
+
+const REGIONS_URL = '/data/ioda-regions.json'
+let regionsPromise: Promise<RegionPoints> | null = null
+
+/** Region points, fetched once. Resolves to {} on failure (alerts then fall back to the country). */
+export function loadRegionPoints(): Promise<RegionPoints> {
+  regionsPromise ??= fetch(REGIONS_URL)
+    .then(r => (r.ok ? r.json() : null))
+    .then(j => (j && typeof j.regions === 'object' && j.regions ? (j.regions as RegionPoints) : {}))
+    .catch(() => ({}))
+    .then(r => { if (!Object.keys(r).length) regionsPromise = null; return r })
+  return regionsPromise
+}
+
+export function locateOutage(entityType: string, code: string, countryCode: string, regions: RegionPoints): OutageLocation | null {
+  const region = (id: string): OutageLocation | null => {
+    const r = regions[id]
+    return r ? { lng: r[0], lat: r[1], precision: 'region', label: r[3] ? `${r[2]}, ${r[3]}` : r[2] } : null
+  }
+  const country = (cc: string): OutageLocation | null => {
+    const c = getCountryCentroid(cc)
+    return c ? { lng: c[0], lat: c[1], precision: 'country', label: cc.toUpperCase() } : null
+  }
+  if (entityType === 'country') return country(code)
+  if (entityType === 'region') return region(code) ?? (countryCode ? country(countryCode) : null)
+  if (entityType === 'geoasn') {
+    // "ASN-REGION" where REGION is an IODA region id, or "ASN-CC" for a network's whole-country slice
+    const suffix = code.slice(code.indexOf('-') + 1)
+    return /^\d+$/.test(suffix) ? region(suffix) : /^[A-Za-z]{2}$/.test(suffix) ? country(suffix) : null
+  }
+  return null   // plain ASN: IODA gives no location
+}
+
+interface RawAlert {
+  entity?: { name?: unknown; type?: unknown; code?: unknown; attrs?: { org?: unknown; country_code?: unknown } }
+  datasource?: unknown; time?: unknown; level?: unknown; value?: unknown; historyValue?: unknown
+}
+
+/** Folds IODA's alert stream into one event per entity. Exported for tests. */
+export function foldOutageAlerts(raw: unknown[], regions: RegionPoints = {}): OutageEvent[] {
+  type Acc = { type: string; code: string; name: string; org: string; cc: string; critical: boolean; first: number; last: number; worst: number; bySource: Map<string, OutageSignal> }
+  const byEntity = new Map<string, Acc>()
+  const alerts = raw
+    .filter((a): a is RawAlert => !!a && typeof a === 'object')
+    .map(a => ({ a, t: Number(a.time) || 0 }))
+    .sort((x, y) => x.t - y.t)
+
+  for (const { a, t } of alerts) {
+    const e = a.entity ?? {}
+    const type = String(e.type ?? 'unknown')
+    const code = String(e.code ?? '')
+    const key = `${type}:${code}`
+    const value = Number(a.value) || 0
+    const baseline = Number(a.historyValue ?? value) || 0
+    const dropPct = baseline > 0 ? Math.round((Math.max(0, baseline - value) / baseline) * 100) : 0
+    const level = a.level === 'critical' ? 'critical' : 'normal'
+    let acc = byEntity.get(key)
+    if (!acc) {
+      acc = { type, code, name: String(e.name ?? '—'), org: String(e.attrs?.org ?? ''), cc: String(e.attrs?.country_code ?? ''), critical: false, first: 0, last: 0, worst: 0, bySource: new Map() }
+      byEntity.set(key, acc)
+    }
+    if (level === 'critical') {
+      if (!acc.critical) { acc.critical = true; acc.first = t }
+      acc.worst = Math.max(acc.worst, dropPct)
+    }
+    acc.last = Math.max(acc.last, t)
+    const source = String(a.datasource ?? 'unknown')
+    acc.bySource.set(source, { source, level, dropPct, value, baseline, time: t })
+  }
+
+  const out: OutageEvent[] = []
+  for (const [key, acc] of byEntity) {
+    if (!acc.critical) continue   // only recovery notices for something that started before the window
+    const signals = [...acc.bySource.values()].sort((x, y) => y.dropPct - x.dropPct)
+    const live = signals.filter(s => s.level === 'critical')
+    const ongoing = live.length > 0
+    const dropPct = ongoing ? Math.max(...live.map(s => s.dropPct)) : acc.worst
+    out.push({
+      id: key,
+      entityType: acc.type,
+      entityName: acc.name,
+      entityCode: acc.code,
+      org: acc.org,
+      status: ongoing ? 'ongoing' : 'recovered',
+      level: ongoing ? 'critical' : 'normal',
+      severity: outageSeverity(dropPct),
+      dropPct,
+      start: acc.first,
+      lastAlert: acc.last,
+      signals,
+      location: locateOutage(acc.type, acc.code, acc.cc, regions),
+    })
+  }
+  // ongoing first, then the deepest drop, then the most recent
+  return out.sort((a, b) =>
+    (a.status === b.status ? 0 : a.status === 'ongoing' ? -1 : 1) || b.dropPct - a.dropPct || b.lastAlert - a.lastAlert)
+}
+
 export async function fetchOutageEvents(lookbackHours = 24): Promise<OutageEvent[]> {
   const until = Math.floor(Date.now() / 1000)
   const from  = until - lookbackHours * 3600
+  // The window holds ~1,200 alerts a day; a small limit silently drops most of them.
+  const url = `${BASE}/outages/alerts?from=${from}&until=${until}&limit=10000`
 
-  // /outages/alerts is the correct, working endpoint (v2 API)
-  const url = `${BASE}/outages/alerts?from=${from}&until=${until}&limit=200`
-
-  const resp = await fetch(url, {
-    signal: AbortSignal.timeout(15_000),
-    headers: { 'Accept': 'application/json' },
-  })
-
+  const [resp, regions] = await Promise.all([
+    fetch(url, { signal: AbortSignal.timeout(20_000), headers: { 'Accept': 'application/json' } }),
+    loadRegionPoints(),
+  ])
   if (!resp.ok) throw new Error(`IODA HTTP ${resp.status}`)
-
   const json = await resp.json()
-
-  // Response: { data: [ { entity: { name, type, code }, time, level, value, historyValue } ] }
-  const raw: unknown[] = Array.isArray(json?.data) ? json.data : []
-
-  const seen = new Set<string>()
-  const results: OutageEvent[] = []
-
-  for (let i = 0; i < raw.length; i++) {
-    const e = raw[i] as Record<string, unknown>
-    const entity = (e.entity ?? {}) as Record<string, unknown>
-    const name   = String(entity.name ?? '—')
-    const type   = String(entity.type ?? 'unknown')
-    const code   = String(entity.code ?? '')
-    const value  = Number(e.value ?? 0)
-    const hist   = Number(e.historyValue ?? value)
-
-    // Compute severity score: how far below historical baseline (higher = worse)
-    // For outages, value < historyValue means degradation
-    const drop = Math.max(0, hist - value)
-    const pct  = hist > 0 ? Math.round((drop / hist) * 100) : 0
-    const score = pct * (e.level === 'critical' ? 5 : 2)
-
-    // Deduplicate by entity name + approximate time window
-    const key = `${code}-${e.level}`
-    if (seen.has(key)) continue
-    seen.add(key)
-
-    results.push({
-      id:           String(e.id ?? `ioda-${i}`),
-      entityType:   type,
-      entityName:   name,
-      entityCode:   code,
-      start:        Number(e.time ?? 0),
-      duration:     0,
-      score,
-      overallScore: hist,
-      level:        String(e.level ?? 'warning'),
-    })
-  }
-
-  // Sort by score descending (most severe first)
-  return results.sort((a, b) => b.score - a.score)
+  return foldOutageAlerts(Array.isArray(json?.data) ? json.data : [], regions)
 }

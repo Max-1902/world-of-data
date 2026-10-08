@@ -9,6 +9,7 @@ import { addResourcesLayers } from './resources'
 import { addTradeStatsLayers } from './tradeStats'
 import { addCountryIndicatorLayers } from './countryIndicators'
 import { addOutageLayers } from './outages'
+import { addDisasterLayers } from './disasters'
 import { addMilitaryLayers } from './military'
 import { addPortLayers } from './ports'
 import { addPipelineLayers } from './pipelines'
@@ -43,6 +44,7 @@ export function addAllLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   addTradeStatsLayers(map, ctx)
   addCountryIndicatorLayers(map, ctx)
   addOutageLayers(map, ctx)
+  addDisasterLayers(map, ctx)
   addMilitaryLayers(map, ctx)
   addPortLayers(map, ctx)
   addPipelineLayers(map, ctx)
@@ -68,6 +70,7 @@ export { useChokepointData } from './chokepoints'
 export { useCountryAnalyticsLayer } from './countryAnalytics'
 export { useCountryIndicatorData } from './countryIndicators'
 export { useDatacenterData } from './datacenters'
+export { useDisasterData } from './disasters'
 export { useFlightData } from './flights'
 export { useGpsJamData } from './gpsjam'
 export { useHazardHexLayer } from './hazardHex'
