@@ -1,0 +1,3119 @@
+{
+  "source": "IMF PortWatch — ports database and Daily Port Activity Data and Trade Estimates",
+  "url": "https://portwatch.imf.org/pages/ports",
+  "year": 2025,
+  "retrieved": "2026-10-08",
+  "ports": {
+    "ae-fujairah": {
+      "portid": "port362",
+      "portwatchName": "Fujairah",
+      "locode": null,
+      "lat": 25.2002,
+      "lng": 56.3594,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Plastics, Rubber, Leather"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3781,
+        "containerCalls": 14,
+        "tankerCalls": 3471,
+        "tradeMt": 88
+      }
+    },
+    "ae-jebel": {
+      "portid": "port744",
+      "portwatchName": "Jebel Ali",
+      "locode": "AE JEA",
+      "lat": 24.9994,
+      "lng": 55.0778,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 9084,
+        "containerCalls": 5109,
+        "tankerCalls": 1510,
+        "tradeMt": 233
+      }
+    },
+    "ae-khor": {
+      "portid": "port561",
+      "portwatchName": "Khor Fakkan",
+      "locode": "AE KLF",
+      "lat": 25.3537,
+      "lng": 56.3688,
+      "topIndustries": [
+        "Machinery & Electrical Equipment",
+        "Vegetable Products",
+        "Textiles & Footwear"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 366,
+        "containerCalls": 76,
+        "tankerCalls": 232,
+        "tradeMt": 2.6
+      }
+    },
+    "ar-buenosaires": {
+      "portid": "port184",
+      "portwatchName": "Buenos Aires",
+      "locode": "AR BUE",
+      "lat": -34.6198,
+      "lng": -58.3524,
+      "topIndustries": [
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1519,
+        "containerCalls": 693,
+        "tankerCalls": 537,
+        "tradeMt": 18.6
+      }
+    },
+    "ar-rosario": {
+      "portid": "port1108",
+      "portwatchName": "Rosario",
+      "locode": "AR ROS",
+      "lat": -33.0486,
+      "lng": -60.5735,
+      "topIndustries": [
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages",
+        "Mineral Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1744,
+        "containerCalls": 112,
+        "tankerCalls": 504,
+        "tradeMt": 33.6
+      }
+    },
+    "au-brisbane": {
+      "portid": "port174",
+      "portwatchName": "Brisbane",
+      "locode": "AU BNE",
+      "lat": -27.4085,
+      "lng": 153.1456,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2192,
+        "containerCalls": 886,
+        "tankerCalls": 405,
+        "tradeMt": 39.2
+      }
+    },
+    "au-dampier": {
+      "portid": "port276",
+      "portwatchName": "Dampier",
+      "locode": "AU DAM",
+      "lat": -20.6267,
+      "lng": 116.7425,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1574,
+        "containerCalls": 0,
+        "tankerCalls": 342,
+        "tradeMt": 163.4
+      }
+    },
+    "au-fremantle": {
+      "portid": "port361",
+      "portwatchName": "Fremantle",
+      "locode": "AU FRE",
+      "lat": -32.152,
+      "lng": 115.7705,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1333,
+        "containerCalls": 313,
+        "tankerCalls": 245,
+        "tradeMt": 22.6
+      }
+    },
+    "au-gladstone": {
+      "portid": "port398",
+      "portwatchName": "Gladstone",
+      "locode": "AU GLT",
+      "lat": -23.8191,
+      "lng": 151.2155,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1830,
+        "containerCalls": 32,
+        "tankerCalls": 557,
+        "tradeMt": 99.1
+      }
+    },
+    "au-melbourne": {
+      "portid": "port729",
+      "portwatchName": "Melbourne",
+      "locode": "AU MEL",
+      "lat": -37.8282,
+      "lng": 144.9176,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2027,
+        "containerCalls": 1007,
+        "tankerCalls": 255,
+        "tradeMt": 34.9
+      }
+    },
+    "au-porthedland": {
+      "portid": "port955",
+      "portwatchName": "Port Hedland",
+      "locode": "AU PHE",
+      "lat": -20.3307,
+      "lng": 118.5643,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3372,
+        "containerCalls": 2,
+        "tankerCalls": 70,
+        "tradeMt": 537.2
+      }
+    },
+    "au-sydney": {
+      "portid": "port1243",
+      "portwatchName": "Sydney",
+      "locode": "AU SYD",
+      "lat": -33.8532,
+      "lng": 151.1856,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Plastics, Rubber, Leather"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 137,
+        "containerCalls": 2,
+        "tankerCalls": 87,
+        "tradeMt": 3.4
+      }
+    },
+    "bd-chittagong": {
+      "portid": "port241",
+      "portwatchName": "Chittagong",
+      "locode": null,
+      "lat": 22.2812,
+      "lng": 91.8139,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Textiles & Footwear"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2242,
+        "containerCalls": 1295,
+        "tankerCalls": 374,
+        "tradeMt": 19.3
+      }
+    },
+    "be-antwerp": {
+      "portid": "port57",
+      "portwatchName": "Antwerp",
+      "locode": "BE ANR",
+      "lat": 51.2794,
+      "lng": 4.3178,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 21218,
+        "containerCalls": 4669,
+        "tankerCalls": 11972,
+        "tradeMt": 250.3
+      }
+    },
+    "be-zeebrugge": {
+      "portid": "port1424",
+      "portwatchName": "Zeebrugge",
+      "locode": "BE ZEE",
+      "lat": 51.3263,
+      "lng": 3.2122,
+      "topIndustries": [
+        "Mineral Products",
+        "Vehicles & Equipment",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 5080,
+        "containerCalls": 749,
+        "tankerCalls": 719,
+        "tradeMt": 12.8
+      }
+    },
+    "bg-varna": {
+      "portid": "port1355",
+      "portwatchName": "Varna",
+      "locode": "BG VAR",
+      "lat": 43.1923,
+      "lng": 27.9081,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 494,
+        "containerCalls": 32,
+        "tankerCalls": 63,
+        "tradeMt": 3.1
+      }
+    },
+    "br-itaqui": {
+      "portid": "port506",
+      "portwatchName": "Itaqui",
+      "locode": "BR IQI",
+      "lat": -2.6271,
+      "lng": -44.3535,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1934,
+        "containerCalls": 2,
+        "tankerCalls": 413,
+        "tradeMt": 185.6
+      }
+    },
+    "br-paranagua": {
+      "portid": "port885",
+      "portwatchName": "Paranaguá",
+      "locode": "BR PNG",
+      "lat": -25.5052,
+      "lng": -48.5171,
+      "topIndustries": [
+        "Vegetable Products",
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2214,
+        "containerCalls": 649,
+        "tankerCalls": 482,
+        "tradeMt": 68.5
+      }
+    },
+    "br-riodejaneiro": {
+      "portid": "port1103",
+      "portwatchName": "Rio De Janeiro",
+      "locode": "BR RIO",
+      "lat": -22.8827,
+      "lng": -43.1995,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3204,
+        "containerCalls": 904,
+        "tankerCalls": 853,
+        "tradeMt": 31.2
+      }
+    },
+    "br-santos": {
+      "portid": "port1160",
+      "portwatchName": "Santos",
+      "locode": "BR SSZ",
+      "lat": -23.9171,
+      "lng": -46.3366,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 5748,
+        "containerCalls": 2287,
+        "tankerCalls": 915,
+        "tradeMt": 153.3
+      }
+    },
+    "ca-montreal": {
+      "portid": "port766",
+      "portwatchName": "Montreal",
+      "locode": "CA MTR",
+      "lat": 45.5446,
+      "lng": -73.5348,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1117,
+        "containerCalls": 416,
+        "tankerCalls": 185,
+        "tradeMt": 7.2
+      }
+    },
+    "ca-princerobert": {
+      "portid": "port1021",
+      "portwatchName": "Prince Rupert",
+      "locode": "CA PRR",
+      "lat": 54.2667,
+      "lng": -130.3378,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 533,
+        "containerCalls": 168,
+        "tankerCalls": 98,
+        "tradeMt": 17.9
+      }
+    },
+    "ca-vancouver": {
+      "portid": "port1350",
+      "portwatchName": "Vancouver",
+      "locode": "CA VAN",
+      "lat": 49.29,
+      "lng": -123.0289,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2348,
+        "containerCalls": 299,
+        "tankerCalls": 541,
+        "tradeMt": 110.9
+      }
+    },
+    "ci-abidjan": {
+      "portid": "port4",
+      "portwatchName": "Abidjan",
+      "locode": "CI ABJ",
+      "lat": 5.284,
+      "lng": -4.0109,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Plastics, Rubber, Leather"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2032,
+        "containerCalls": 945,
+        "tankerCalls": 256,
+        "tradeMt": 27.2
+      }
+    },
+    "cl-sanantonio": {
+      "portid": "port1058",
+      "portwatchName": "Puerto San Antonio",
+      "locode": null,
+      "lat": -33.5932,
+      "lng": -71.6189,
+      "topIndustries": [
+        "Vegetable Products",
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1017,
+        "containerCalls": 594,
+        "tankerCalls": 120,
+        "tradeMt": 28.1
+      }
+    },
+    "cl-valparaiso": {
+      "portid": "port89",
+      "portwatchName": "Bahia De Valparaiso",
+      "locode": null,
+      "lat": -33.0332,
+      "lng": -71.6277,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 493,
+        "containerCalls": 286,
+        "tankerCalls": 36,
+        "tradeMt": 3.6
+      }
+    },
+    "cn-dalian": {
+      "portid": "port273",
+      "portwatchName": "Dalian",
+      "locode": "CN DAG",
+      "lat": 38.987,
+      "lng": 121.7703,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 7634,
+        "containerCalls": 2817,
+        "tankerCalls": 1898,
+        "tradeMt": 98.1
+      }
+    },
+    "cn-guangzhou": {
+      "portid": "port425",
+      "portwatchName": "Guangzhou (Nansha)",
+      "locode": "CN GGZ",
+      "lat": 23.0275,
+      "lng": 113.4836,
+      "topIndustries": [
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 11326,
+        "containerCalls": 7047,
+        "tankerCalls": 1847,
+        "tradeMt": 80.8
+      }
+    },
+    "cn-ningbo": {
+      "portid": "port824",
+      "portwatchName": "Ningbo",
+      "locode": "CN NBO",
+      "lat": 29.9208,
+      "lng": 121.8818,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 20921,
+        "containerCalls": 12297,
+        "tankerCalls": 5202,
+        "tradeMt": 719
+      }
+    },
+    "cn-qingdao": {
+      "portid": "port1069",
+      "portwatchName": "Qingdao Port",
+      "locode": "CN QDG",
+      "lat": 36.0268,
+      "lng": 120.2226,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 11997,
+        "containerCalls": 8102,
+        "tankerCalls": 1324,
+        "tradeMt": 507.6
+      }
+    },
+    "cn-shanghai": {
+      "portid": "port1188",
+      "portwatchName": "Shanghai",
+      "locode": "CN SGH",
+      "lat": 31.1918,
+      "lng": 121.6442,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 43566,
+        "containerCalls": 13519,
+        "tankerCalls": 8721,
+        "tradeMt": 597.5
+      }
+    },
+    "cn-shenzhen": {
+      "portid": "port1414",
+      "portwatchName": "Yantian",
+      "locode": "CN YTN",
+      "lat": 22.5849,
+      "lng": 114.2935,
+      "topIndustries": [
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3944,
+        "containerCalls": 3597,
+        "tankerCalls": 335,
+        "tradeMt": 44.7
+      }
+    },
+    "cn-tangshan": {
+      "portid": "port1266",
+      "portwatchName": "Tangshan (Jingtang)",
+      "locode": null,
+      "lat": 39.2353,
+      "lng": 119.0212,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3387,
+        "containerCalls": 305,
+        "tankerCalls": 86,
+        "tradeMt": 188.6
+      }
+    },
+    "cn-tianjin": {
+      "portid": "port1297",
+      "portwatchName": "Tianjin Xin Gang",
+      "locode": null,
+      "lat": 38.9397,
+      "lng": 117.7336,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 12076,
+        "containerCalls": 3928,
+        "tankerCalls": 2007,
+        "tradeMt": 543.9
+      }
+    },
+    "cn-xiamen": {
+      "portid": "port1404",
+      "portwatchName": "Xiamen",
+      "locode": "CN XAM",
+      "lat": 24.4659,
+      "lng": 118.0206,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 7878,
+        "containerCalls": 5505,
+        "tankerCalls": 532,
+        "tradeMt": 190.3
+      }
+    },
+    "co-buenaventura": {
+      "portid": "port183",
+      "portwatchName": "Buenaventura",
+      "locode": "CO BUN",
+      "lat": 3.8944,
+      "lng": -77.0665,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1356,
+        "containerCalls": 766,
+        "tankerCalls": 134,
+        "tradeMt": 15.3
+      }
+    },
+    "co-cartagena": {
+      "portid": "port218",
+      "portwatchName": "Cartagena",
+      "locode": "CO CTG",
+      "lat": 10.335,
+      "lng": -75.5129,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3843,
+        "containerCalls": 2405,
+        "tankerCalls": 694,
+        "tradeMt": 29.5
+      }
+    },
+    "cy-limassol": {
+      "portid": "port647",
+      "portwatchName": "Limassol",
+      "locode": "CY LMS",
+      "lat": 34.6507,
+      "lng": 33.0152,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1177,
+        "containerCalls": 641,
+        "tankerCalls": 134,
+        "tradeMt": 1.8
+      }
+    },
+    "de-bremerhaven": {
+      "portid": "port168",
+      "portwatchName": "Bremerhaven",
+      "locode": "DE BRV",
+      "lat": 53.5494,
+      "lng": 8.5551,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4548,
+        "containerCalls": 2699,
+        "tankerCalls": 413,
+        "tradeMt": 62.5
+      }
+    },
+    "de-hamburg": {
+      "portid": "port446",
+      "portwatchName": "Hamburg",
+      "locode": "DE HAM",
+      "lat": 53.5164,
+      "lng": 9.9643,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 6232,
+        "containerCalls": 3490,
+        "tankerCalls": 1146,
+        "tradeMt": 127.2
+      }
+    },
+    "de-wilhelmshaven": {
+      "portid": "port1396",
+      "portwatchName": "Wilhelmshaven",
+      "locode": "DE WVN",
+      "lat": 53.5803,
+      "lng": 8.1244,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1438,
+        "containerCalls": 643,
+        "tankerCalls": 566,
+        "tradeMt": 29.2
+      }
+    },
+    "dj-doraleh": {
+      "portid": "port294",
+      "portwatchName": "Djibouti",
+      "locode": "DJ JIB",
+      "lat": 11.5975,
+      "lng": 43.1037,
+      "topIndustries": [
+        "Vegetable Products",
+        "Mineral Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1466,
+        "containerCalls": 679,
+        "tankerCalls": 251,
+        "tradeMt": 16.1
+      }
+    },
+    "dk-copenhagen": {
+      "portid": "port582",
+      "portwatchName": "København",
+      "locode": "DK CPH",
+      "lat": 55.6951,
+      "lng": 12.6153,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1373,
+        "containerCalls": 227,
+        "tankerCalls": 286,
+        "tradeMt": 3.8
+      }
+    },
+    "do-caucedo": {
+      "portid": "port51",
+      "portwatchName": "Caucedo",
+      "locode": "DO CAU",
+      "lat": 18.4189,
+      "lng": -69.6333,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1101,
+        "containerCalls": 943,
+        "tankerCalls": 35,
+        "tradeMt": 7
+      }
+    },
+    "dz-algiers": {
+      "portid": "port32",
+      "portwatchName": "Alger",
+      "locode": null,
+      "lat": 36.7667,
+      "lng": 3.0663,
+      "topIndustries": [
+        "Vegetable Products",
+        "Mineral Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1281,
+        "containerCalls": 601,
+        "tankerCalls": 220,
+        "tradeMt": 8.5
+      }
+    },
+    "ee-tallinn": {
+      "portid": "port1258",
+      "portwatchName": "Tallinn",
+      "locode": "EE TLL",
+      "lat": 59.4486,
+      "lng": 24.7127,
+      "topIndustries": [
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 377,
+        "containerCalls": 75,
+        "tankerCalls": 39,
+        "tradeMt": 0.8
+      }
+    },
+    "eg-ainsukhna": {
+      "portid": "port828",
+      "portwatchName": "El Sokhna",
+      "locode": "EG SOK",
+      "lat": 29.6474,
+      "lng": 32.3539,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 905,
+        "containerCalls": 434,
+        "tankerCalls": 280,
+        "tradeMt": 26.3
+      }
+    },
+    "eg-alexandria": {
+      "portid": "port23",
+      "portwatchName": "Alexandria",
+      "locode": "EG ALY",
+      "lat": 31.1554,
+      "lng": 29.8376,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4003,
+        "containerCalls": 1361,
+        "tankerCalls": 408,
+        "tradeMt": 56.5
+      }
+    },
+    "eg-said": {
+      "portid": "port192",
+      "portwatchName": "Port Said",
+      "locode": "EG PSD",
+      "lat": 31.2496,
+      "lng": 32.3077,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 795,
+        "containerCalls": 418,
+        "tankerCalls": 158,
+        "tradeMt": 4.2
+      }
+    },
+    "es-algeciras": {
+      "portid": "port31",
+      "portwatchName": "Algeciras",
+      "locode": "ES ALG",
+      "lat": 36.1659,
+      "lng": -5.4143,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 6042,
+        "containerCalls": 2841,
+        "tankerCalls": 2420,
+        "tradeMt": 79.3
+      }
+    },
+    "es-barcelona": {
+      "portid": "port118",
+      "portwatchName": "Barcelona",
+      "locode": "ES BCN",
+      "lat": 41.338,
+      "lng": 2.1465,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4242,
+        "containerCalls": 2001,
+        "tankerCalls": 1054,
+        "tradeMt": 45.5
+      }
+    },
+    "es-valencia": {
+      "portid": "port1348",
+      "portwatchName": "Valencia",
+      "locode": "ES VLC",
+      "lat": 39.4422,
+      "lng": -0.3223,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3721,
+        "containerCalls": 2809,
+        "tankerCalls": 253,
+        "tradeMt": 50.3
+      }
+    },
+    "fi-helsinki": {
+      "portid": "port460",
+      "portwatchName": "Helsinki",
+      "locode": "FI HEL",
+      "lat": 60.1859,
+      "lng": 25.0468,
+      "topIndustries": [
+        "Wood & Wood Products",
+        "Mineral Products",
+        "Machinery & Electrical Equipment"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 755,
+        "containerCalls": 555,
+        "tankerCalls": 9,
+        "tradeMt": 1.5
+      }
+    },
+    "fr-lehavre": {
+      "portid": "port985",
+      "portwatchName": "Le Havre",
+      "locode": "FR LEH",
+      "lat": 49.4721,
+      "lng": 0.2094,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3579,
+        "containerCalls": 1714,
+        "tankerCalls": 1318,
+        "tradeMt": 66.1
+      }
+    },
+    "fr-marseille": {
+      "portid": "port712",
+      "portwatchName": "Marseille",
+      "locode": "FR MRS",
+      "lat": 43.3315,
+      "lng": 5.3478,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 961,
+        "containerCalls": 271,
+        "tankerCalls": 157,
+        "tradeMt": 1.4
+      }
+    },
+    "gb-felixstowe": {
+      "portid": "port343",
+      "portwatchName": "Felixstowe",
+      "locode": "GB FXT",
+      "lat": 51.9541,
+      "lng": 1.2931,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1470,
+        "containerCalls": 909,
+        "tankerCalls": 111,
+        "tradeMt": 26.7
+      }
+    },
+    "gb-london": {
+      "portid": "port659",
+      "portwatchName": "London Gateway",
+      "locode": "GB LGP",
+      "lat": 51.5103,
+      "lng": 0.5163,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1957,
+        "containerCalls": 1221,
+        "tankerCalls": 139,
+        "tradeMt": 15.7
+      }
+    },
+    "gb-milford": {
+      "portid": "port740",
+      "portwatchName": "Milford Haven",
+      "locode": "GB MLF",
+      "lat": 51.7005,
+      "lng": -5.0235,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Plastics, Rubber, Leather"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1174,
+        "containerCalls": 1,
+        "tankerCalls": 1164,
+        "tradeMt": 29.6
+      }
+    },
+    "gb-southampton": {
+      "portid": "port1216",
+      "portwatchName": "Southampton",
+      "locode": "GB SOU",
+      "lat": 50.9021,
+      "lng": -1.4295,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2049,
+        "containerCalls": 977,
+        "tankerCalls": 193,
+        "tradeMt": 19.9
+      }
+    },
+    "ge-batumi": {
+      "portid": "port127",
+      "portwatchName": "Batumi",
+      "locode": "GE BUS",
+      "lat": 41.6486,
+      "lng": 41.6686,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 552,
+        "containerCalls": 77,
+        "tankerCalls": 167,
+        "tradeMt": 3.3
+      }
+    },
+    "gh-tema": {
+      "portid": "port1282",
+      "portwatchName": "Tema",
+      "locode": "GH TEM",
+      "lat": 5.6262,
+      "lng": 0.0008,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1614,
+        "containerCalls": 1003,
+        "tankerCalls": 146,
+        "tradeMt": 20.6
+      }
+    },
+    "gr-piraeus": {
+      "portid": "port908",
+      "portwatchName": "Piraeus",
+      "locode": "GR PIR",
+      "lat": 37.9524,
+      "lng": 23.6037,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4964,
+        "containerCalls": 2438,
+        "tankerCalls": 1133,
+        "tradeMt": 51.3
+      }
+    },
+    "hk-hongkong": {
+      "portid": "port474",
+      "portwatchName": "Hong Kong",
+      "locode": "HK HKG",
+      "lat": 22.3351,
+      "lng": 114.0967,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 15533,
+        "containerCalls": 12542,
+        "tankerCalls": 1962,
+        "tradeMt": 185
+      }
+    },
+    "id-surabaya": {
+      "portid": "port1237",
+      "portwatchName": "Surabaya",
+      "locode": "ID SUB",
+      "lat": -7.2009,
+      "lng": 112.7217,
+      "topIndustries": [
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 6070,
+        "containerCalls": 3004,
+        "tankerCalls": 1077,
+        "tradeMt": 19.7
+      }
+    },
+    "id-tanjungpriok": {
+      "portid": "port514",
+      "portwatchName": "Tanjung Priok",
+      "locode": null,
+      "lat": -6.1005,
+      "lng": 106.9055,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 10027,
+        "containerCalls": 4558,
+        "tankerCalls": 1352,
+        "tradeMt": 40.6
+      }
+    },
+    "il-ashdod": {
+      "portid": "port73",
+      "portwatchName": "Ashdod",
+      "locode": "IL ASH",
+      "lat": 31.8363,
+      "lng": 34.6685,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2012,
+        "containerCalls": 1176,
+        "tankerCalls": 55,
+        "tradeMt": 14.6
+      }
+    },
+    "il-haifa": {
+      "portid": "port435",
+      "portwatchName": "Haifa",
+      "locode": "IL HFA",
+      "lat": 32.8105,
+      "lng": 35.035,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2666,
+        "containerCalls": 1026,
+        "tankerCalls": 216,
+        "tradeMt": 13.7
+      }
+    },
+    "in-chennai": {
+      "portid": "port235",
+      "portwatchName": "Chennai (Madras)",
+      "locode": null,
+      "lat": 13.1005,
+      "lng": 80.2943,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1625,
+        "containerCalls": 669,
+        "tankerCalls": 429,
+        "tradeMt": 23.3
+      }
+    },
+    "in-kandla": {
+      "portid": "port540",
+      "portwatchName": "Kandla",
+      "locode": "IN IXY",
+      "lat": 23.0091,
+      "lng": 70.2157,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1746,
+        "containerCalls": 185,
+        "tankerCalls": 680,
+        "tradeMt": 35.1
+      }
+    },
+    "in-mundra": {
+      "portid": "port777",
+      "portwatchName": "Mundra",
+      "locode": "IN MUN",
+      "lat": 22.763,
+      "lng": 69.622,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3198,
+        "containerCalls": 2362,
+        "tankerCalls": 264,
+        "tradeMt": 56.2
+      }
+    },
+    "in-nhavasheva": {
+      "portid": "port776",
+      "portwatchName": "Mumbai-Jawaharlal Nehru (Nhava Sheva)",
+      "locode": "IN BOM",
+      "lat": 18.9173,
+      "lng": 72.9397,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 6174,
+        "containerCalls": 2209,
+        "tankerCalls": 1195,
+        "tradeMt": 144.1
+      }
+    },
+    "in-visakhapatnam": {
+      "portid": "port1367",
+      "portwatchName": "Visakhapatnam",
+      "locode": "IN VTZ",
+      "lat": 17.6555,
+      "lng": 83.2314,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1449,
+        "containerCalls": 211,
+        "tankerCalls": 298,
+        "tradeMt": 48.3
+      }
+    },
+    "iq-basra": {
+      "portid": "port2479",
+      "portwatchName": "Basrah Oil Terminal",
+      "locode": null,
+      "lat": 29.6816,
+      "lng": 48.8248,
+      "topIndustries": [],
+      "activity": {
+        "days": 365,
+        "portCalls": 747,
+        "containerCalls": 1,
+        "tankerCalls": 741,
+        "tradeMt": 126.6
+      }
+    },
+    "ir-bandar": {
+      "portid": "port107",
+      "portwatchName": "Bandar Abbas",
+      "locode": "IR BND",
+      "lat": 27.1475,
+      "lng": 56.2029,
+      "topIndustries": [
+        "Vegetable Products",
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 195,
+        "containerCalls": 25,
+        "tankerCalls": 69,
+        "tradeMt": 0.3
+      }
+    },
+    "ir-kharg": {
+      "portid": "port2164",
+      "portwatchName": "Kharg Island",
+      "locode": null,
+      "lat": 29.2431,
+      "lng": 50.3351,
+      "topIndustries": [],
+      "activity": {
+        "days": 365,
+        "portCalls": 34,
+        "containerCalls": 1,
+        "tankerCalls": 13,
+        "tradeMt": 0.2
+      }
+    },
+    "it-genoa": {
+      "portid": "port387",
+      "portwatchName": "Genova",
+      "locode": "IT GOA",
+      "lat": 44.4131,
+      "lng": 8.8587,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3125,
+        "containerCalls": 1515,
+        "tankerCalls": 605,
+        "tradeMt": 49
+      }
+    },
+    "it-gioia": {
+      "portid": "port395",
+      "portwatchName": "Gioia Tauro",
+      "locode": "IT GIT",
+      "lat": 38.4634,
+      "lng": 15.9136,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1865,
+        "containerCalls": 1444,
+        "tankerCalls": 172,
+        "tradeMt": 40.8
+      }
+    },
+    "it-trieste": {
+      "portid": "port1318",
+      "portwatchName": "Trieste",
+      "locode": "IT TRS",
+      "lat": 45.6226,
+      "lng": 13.7898,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1902,
+        "containerCalls": 509,
+        "tankerCalls": 492,
+        "tradeMt": 46.3
+      }
+    },
+    "jm-kingston": {
+      "portid": "port572",
+      "portwatchName": "Kingston",
+      "locode": "JM KIN",
+      "lat": 17.9829,
+      "lng": -76.8044,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2598,
+        "containerCalls": 1752,
+        "tankerCalls": 347,
+        "tradeMt": 8.3
+      }
+    },
+    "jp-chiba": {
+      "portid": "port239",
+      "portwatchName": "Chiba",
+      "locode": "JP CHB",
+      "lat": 35.5251,
+      "lng": 140.0523,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 12364,
+        "containerCalls": 126,
+        "tankerCalls": 8426,
+        "tradeMt": 44.5
+      }
+    },
+    "jp-kobe": {
+      "portid": "port581",
+      "portwatchName": "Kobe",
+      "locode": "JP UKB",
+      "lat": 34.6729,
+      "lng": 135.2293,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 10696,
+        "containerCalls": 4102,
+        "tankerCalls": 2444,
+        "tradeMt": 38.7
+      }
+    },
+    "jp-nagoya": {
+      "portid": "port786",
+      "portwatchName": "Nagoya",
+      "locode": "JP NGO",
+      "lat": 35.0362,
+      "lng": 136.8501,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 15309,
+        "containerCalls": 3691,
+        "tankerCalls": 3904,
+        "tradeMt": 67.9
+      }
+    },
+    "jp-osaka": {
+      "portid": "port862",
+      "portwatchName": "Osaka",
+      "locode": "JP OSA",
+      "lat": 34.6449,
+      "lng": 135.43,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 8850,
+        "containerCalls": 3242,
+        "tankerCalls": 1168,
+        "tradeMt": 31.2
+      }
+    },
+    "jp-tokyo": {
+      "portid": "port1305",
+      "portwatchName": "Tokyo",
+      "locode": "JP TYO",
+      "lat": 35.6061,
+      "lng": 139.7926,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 9466,
+        "containerCalls": 4680,
+        "tankerCalls": 963,
+        "tradeMt": 55.5
+      }
+    },
+    "jp-yokohama": {
+      "portid": "port1417",
+      "portwatchName": "Yokohama",
+      "locode": "JP YOK",
+      "lat": 35.4276,
+      "lng": 139.6688,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 14021,
+        "containerCalls": 4990,
+        "tankerCalls": 3042,
+        "tradeMt": 56.5
+      }
+    },
+    "ke-mombasa": {
+      "portid": "port757",
+      "portwatchName": "Mombasa",
+      "locode": "KE MBA",
+      "lat": -4.0481,
+      "lng": 39.6345,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1657,
+        "containerCalls": 663,
+        "tankerCalls": 310,
+        "tradeMt": 29.2
+      }
+    },
+    "kh-sihanoukville": {
+      "portid": "port535",
+      "portwatchName": "Kâmpóng Saôm",
+      "locode": "KH KOS",
+      "lat": 10.679,
+      "lng": 103.5275,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1108,
+        "containerCalls": 790,
+        "tankerCalls": 173,
+        "tradeMt": 4.5
+      }
+    },
+    "kr-busan": {
+      "portid": "port1065",
+      "portwatchName": "Busan",
+      "locode": "KR PUS",
+      "lat": 35.0896,
+      "lng": 128.9386,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 19466,
+        "containerCalls": 11741,
+        "tankerCalls": 3067,
+        "tradeMt": 148.3
+      }
+    },
+    "kr-incheon": {
+      "portid": "port494",
+      "portwatchName": "Incheon",
+      "locode": "KR INC",
+      "lat": 37.4444,
+      "lng": 126.6201,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 7275,
+        "containerCalls": 2674,
+        "tankerCalls": 1992,
+        "tradeMt": 57.3
+      }
+    },
+    "kr-ulsan": {
+      "portid": "port1338",
+      "portwatchName": "Ulsan",
+      "locode": "KR USN",
+      "lat": 35.4865,
+      "lng": 129.3781,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Plastics, Rubber, Leather"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 8708,
+        "containerCalls": 726,
+        "tankerCalls": 6258,
+        "tradeMt": 111.3
+      }
+    },
+    "kw-shuwaikh": {
+      "portid": "port25",
+      "portwatchName": "Shuwaikh",
+      "locode": "KW SWK",
+      "lat": 29.3521,
+      "lng": 47.9239,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 503,
+        "containerCalls": 238,
+        "tankerCalls": 13,
+        "tradeMt": 3.3
+      }
+    },
+    "lb-beirut": {
+      "portid": "port132",
+      "portwatchName": "Beirut",
+      "locode": "LB BEY",
+      "lat": 33.9023,
+      "lng": 35.5285,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1208,
+        "containerCalls": 555,
+        "tankerCalls": 192,
+        "tradeMt": 6.8
+      }
+    },
+    "lk-colombo": {
+      "portid": "port254",
+      "portwatchName": "Colombo",
+      "locode": "LK CMB",
+      "lat": 6.95,
+      "lng": 79.8398,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4179,
+        "containerCalls": 3385,
+        "tankerCalls": 394,
+        "tradeMt": 30.6
+      }
+    },
+    "lt-klaipeda": {
+      "portid": "port579",
+      "portwatchName": "Klaipeda",
+      "locode": "LT KLJ",
+      "lat": 55.6842,
+      "lng": 21.1381,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3220,
+        "containerCalls": 1129,
+        "tankerCalls": 517,
+        "tradeMt": 24.8
+      }
+    },
+    "lv-riga": {
+      "portid": "port1100",
+      "portwatchName": "Riga",
+      "locode": "LV RIX",
+      "lat": 57.0181,
+      "lng": 24.0866,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2393,
+        "containerCalls": 700,
+        "tankerCalls": 193,
+        "tradeMt": 8.9
+      }
+    },
+    "ma-tangier": {
+      "portid": "port1265",
+      "portwatchName": "Tangier-Mediterranean",
+      "locode": null,
+      "lat": 35.8799,
+      "lng": -5.511,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4621,
+        "containerCalls": 3395,
+        "tankerCalls": 765,
+        "tradeMt": 139
+      }
+    },
+    "mg-toamasina": {
+      "portid": "port1301",
+      "portwatchName": "Toamasina",
+      "locode": "MG TOA",
+      "lat": -18.1579,
+      "lng": 49.4263,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 494,
+        "containerCalls": 192,
+        "tankerCalls": 92,
+        "tradeMt": 5.7
+      }
+    },
+    "mm-yangon": {
+      "portid": "port1086",
+      "portwatchName": "Yangon",
+      "locode": "MM RGN",
+      "lat": 16.716,
+      "lng": 96.2128,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1638,
+        "containerCalls": 598,
+        "tankerCalls": 479,
+        "tradeMt": 11.4
+      }
+    },
+    "mt-marsaxlokk": {
+      "portid": "port711",
+      "portwatchName": "Marsaxlokk",
+      "locode": "MT MAR",
+      "lat": 35.8216,
+      "lng": 14.538,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2537,
+        "containerCalls": 1379,
+        "tankerCalls": 998,
+        "tradeMt": 16.5
+      }
+    },
+    "mx-lazaro": {
+      "portid": "port637",
+      "portwatchName": "Lazaro Cardenas",
+      "locode": "MX LZC",
+      "lat": 17.9443,
+      "lng": -102.1844,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1813,
+        "containerCalls": 937,
+        "tankerCalls": 217,
+        "tradeMt": 44.7
+      }
+    },
+    "mx-manzanillo": {
+      "portid": "port699",
+      "portwatchName": "Manzanillo",
+      "locode": "MX ZLO",
+      "lat": 19.0563,
+      "lng": -104.2877,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1503,
+        "containerCalls": 939,
+        "tankerCalls": 168,
+        "tradeMt": 56.4
+      }
+    },
+    "mx-veracruz": {
+      "portid": "port1358",
+      "portwatchName": "Veracruz",
+      "locode": "MX VER",
+      "lat": 19.2212,
+      "lng": -96.1543,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1839,
+        "containerCalls": 722,
+        "tankerCalls": 238,
+        "tradeMt": 29.1
+      }
+    },
+    "my-portklang": {
+      "portid": "port960",
+      "portwatchName": "Port Klang",
+      "locode": "MY PKG",
+      "lat": 2.9726,
+      "lng": 101.3403,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 12769,
+        "containerCalls": 7793,
+        "tankerCalls": 3114,
+        "tradeMt": 112.9
+      }
+    },
+    "my-tanjung": {
+      "portid": "port1269",
+      "portwatchName": "Tanjung Pelepas",
+      "locode": "MY TPP",
+      "lat": 1.35,
+      "lng": 103.5464,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 5758,
+        "containerCalls": 3893,
+        "tankerCalls": 1728,
+        "tradeMt": 39.1
+      }
+    },
+    "mz-maputo": {
+      "portid": "port702",
+      "portwatchName": "Maputo",
+      "locode": "MZ MPM",
+      "lat": -25.9556,
+      "lng": 32.521,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 961,
+        "containerCalls": 153,
+        "tankerCalls": 165,
+        "tradeMt": 26.1
+      }
+    },
+    "ng-bonny": {
+      "portid": "port155",
+      "portwatchName": "Bonny",
+      "locode": "NG BON",
+      "lat": 4.4207,
+      "lng": 7.157,
+      "topIndustries": [
+        "Mineral Products",
+        "Stone & Glass",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 318,
+        "containerCalls": 0,
+        "tankerCalls": 301,
+        "tradeMt": 8.3
+      }
+    },
+    "ng-lagos": {
+      "portid": "port626",
+      "portwatchName": "Lagos",
+      "locode": "NG LOS",
+      "lat": 6.4473,
+      "lng": 3.3341,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1955,
+        "containerCalls": 703,
+        "tankerCalls": 642,
+        "tradeMt": 24.7
+      }
+    },
+    "nl-amsterdam": {
+      "portid": "port45",
+      "portwatchName": "Amsterdam",
+      "locode": "NL AMS",
+      "lat": 52.4104,
+      "lng": 4.8196,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 7667,
+        "containerCalls": 243,
+        "tankerCalls": 5413,
+        "tradeMt": 55.4
+      }
+    },
+    "nl-rotterdam": {
+      "portid": "port1114",
+      "portwatchName": "Rotterdam",
+      "locode": "NL RTM",
+      "lat": 51.9223,
+      "lng": 4.2151,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 30164,
+        "containerCalls": 6574,
+        "tankerCalls": 15513,
+        "tradeMt": 353.6
+      }
+    },
+    "no-bergen": {
+      "portid": "port147",
+      "portwatchName": "Bergen",
+      "locode": "NO BGO",
+      "lat": 60.4016,
+      "lng": 5.227,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1009,
+        "containerCalls": 236,
+        "tankerCalls": 169,
+        "tradeMt": 0.5
+      }
+    },
+    "nz-auckland": {
+      "portid": "port79",
+      "portwatchName": "Auckland",
+      "locode": "NZ AKL",
+      "lat": -36.8428,
+      "lng": 174.774,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 924,
+        "containerCalls": 567,
+        "tankerCalls": 18,
+        "tradeMt": 4.6
+      }
+    },
+    "nz-tauranga": {
+      "portid": "port1278",
+      "portwatchName": "Tauranga",
+      "locode": "NZ TRG",
+      "lat": -37.6605,
+      "lng": 176.1846,
+      "topIndustries": [
+        "Wood & Wood Products",
+        "Mineral Products",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1322,
+        "containerCalls": 740,
+        "tankerCalls": 127,
+        "tradeMt": 14.1
+      }
+    },
+    "om-salalah": {
+      "portid": "port746",
+      "portwatchName": "Salalah",
+      "locode": "OM SLL",
+      "lat": 16.9423,
+      "lng": 54.0083,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1565,
+        "containerCalls": 884,
+        "tankerCalls": 188,
+        "tradeMt": 65.6
+      }
+    },
+    "om-sohar": {
+      "portid": "port988",
+      "portwatchName": "Port of Sohar",
+      "locode": null,
+      "lat": 24.5117,
+      "lng": 56.6127,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2391,
+        "containerCalls": 571,
+        "tankerCalls": 826,
+        "tradeMt": 56.6
+      }
+    },
+    "pa-balboa": {
+      "portid": "port101",
+      "portwatchName": "Balboa",
+      "locode": "PA BLB",
+      "lat": 8.9553,
+      "lng": -79.5655,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2525,
+        "containerCalls": 1751,
+        "tankerCalls": 653,
+        "tradeMt": 37.2
+      }
+    },
+    "pa-colon": {
+      "portid": "port1035",
+      "portwatchName": "Colon",
+      "locode": "PA ONX",
+      "lat": 9.3733,
+      "lng": -79.8788,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1107,
+        "containerCalls": 895,
+        "tankerCalls": 191,
+        "tradeMt": 7.5
+      }
+    },
+    "pe-callao": {
+      "portid": "port1045",
+      "portwatchName": "Callao",
+      "locode": "PE CLL",
+      "lat": -12.0473,
+      "lng": -77.1402,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2284,
+        "containerCalls": 1364,
+        "tankerCalls": 254,
+        "tradeMt": 51.2
+      }
+    },
+    "ph-manila": {
+      "portid": "port694",
+      "portwatchName": "Manila",
+      "locode": "PH MNL",
+      "lat": 14.5916,
+      "lng": 120.8724,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 8065,
+        "containerCalls": 2858,
+        "tankerCalls": 2062,
+        "tradeMt": 37.1
+      }
+    },
+    "pk-gwadar": {
+      "portid": "port431",
+      "portwatchName": "Gwadar",
+      "locode": "PK GWD",
+      "lat": 25.109,
+      "lng": 62.3386,
+      "topIndustries": [
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages",
+        "Animal & Animal Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1,
+        "containerCalls": 0,
+        "tankerCalls": 0,
+        "tradeMt": 0
+      }
+    },
+    "pk-karachi": {
+      "portid": "port543",
+      "portwatchName": "Karachi",
+      "locode": "PK KHI",
+      "lat": 24.8233,
+      "lng": 66.9832,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1137,
+        "containerCalls": 625,
+        "tankerCalls": 212,
+        "tradeMt": 20
+      }
+    },
+    "pl-gdansk": {
+      "portid": "port380",
+      "portwatchName": "Gdansk",
+      "locode": "PL GDN",
+      "lat": 54.3758,
+      "lng": 18.6936,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3458,
+        "containerCalls": 949,
+        "tankerCalls": 863,
+        "tradeMt": 82.6
+      }
+    },
+    "pt-sines": {
+      "portid": "port1200",
+      "portwatchName": "Sines",
+      "locode": "PT SIE",
+      "lat": 37.9568,
+      "lng": -8.8304,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1680,
+        "containerCalls": 748,
+        "tankerCalls": 830,
+        "tradeMt": 36.5
+      }
+    },
+    "qa-hamad": {
+      "portid": "port2026",
+      "portwatchName": "Hamad Port",
+      "locode": "QA HMD",
+      "lat": 25.0199,
+      "lng": 51.6189,
+      "topIndustries": [],
+      "activity": {
+        "days": 365,
+        "portCalls": 1198,
+        "containerCalls": 833,
+        "tankerCalls": 6,
+        "tradeMt": 6.4
+      }
+    },
+    "qa-raslaffan": {
+      "portid": "port1090",
+      "portwatchName": "Ras Laffan",
+      "locode": "QA RLF",
+      "lat": 25.9085,
+      "lng": 51.5905,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Plastics, Rubber, Leather"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1734,
+        "containerCalls": 8,
+        "tankerCalls": 1481,
+        "tradeMt": 61.2
+      }
+    },
+    "ro-constanta": {
+      "portid": "port260",
+      "portwatchName": "Constantza",
+      "locode": "RO CND",
+      "lat": 44.1317,
+      "lng": 28.6484,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3382,
+        "containerCalls": 487,
+        "tankerCalls": 416,
+        "tradeMt": 36.3
+      }
+    },
+    "ru-novorossiysk": {
+      "portid": "port833",
+      "portwatchName": "Novorossiysk",
+      "locode": "RU NVS",
+      "lat": 44.7235,
+      "lng": 37.8087,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4105,
+        "containerCalls": 708,
+        "tankerCalls": 1539,
+        "tradeMt": 79.7
+      }
+    },
+    "ru-primorsk": {
+      "portid": "port1020",
+      "portwatchName": "Primorsk",
+      "locode": "RU PRI",
+      "lat": 60.3369,
+      "lng": 28.7312,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 960,
+        "containerCalls": 1,
+        "tankerCalls": 930,
+        "tradeMt": 51
+      }
+    },
+    "ru-stpetersburg": {
+      "portid": "port1150",
+      "portwatchName": "Saint Petersburg",
+      "locode": "RU LED",
+      "lat": 59.8997,
+      "lng": 30.1122,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4301,
+        "containerCalls": 744,
+        "tankerCalls": 1421,
+        "tradeMt": 45.9
+      }
+    },
+    "ru-ustluga": {
+      "portid": "port1095",
+      "portwatchName": "Ust-Luga",
+      "locode": null,
+      "lat": 59.6827,
+      "lng": 28.4057,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2492,
+        "containerCalls": 51,
+        "tankerCalls": 919,
+        "tradeMt": 81
+      }
+    },
+    "ru-vladivostok": {
+      "portid": "port1369",
+      "portwatchName": "Vladivostok",
+      "locode": "RU VVO",
+      "lat": 43.0909,
+      "lng": 131.8968,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4152,
+        "containerCalls": 994,
+        "tankerCalls": 801,
+        "tradeMt": 14.2
+      }
+    },
+    "sa-dammam": {
+      "portid": "port275",
+      "portwatchName": "Dammam",
+      "locode": "SA DMM",
+      "lat": 26.4763,
+      "lng": 50.1944,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2021,
+        "containerCalls": 776,
+        "tankerCalls": 34,
+        "tradeMt": 30.7
+      }
+    },
+    "sa-jeddah": {
+      "portid": "port518",
+      "portwatchName": "Jeddah",
+      "locode": "SA JED",
+      "lat": 21.4608,
+      "lng": 39.1664,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3072,
+        "containerCalls": 1556,
+        "tankerCalls": 491,
+        "tradeMt": 67.2
+      }
+    },
+    "sa-ras": {
+      "portid": "port1091",
+      "portwatchName": "Ras Tanura",
+      "locode": "SA RTA",
+      "lat": 26.6717,
+      "lng": 50.1229,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Plastics, Rubber, Leather"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 556,
+        "containerCalls": 0,
+        "tankerCalls": 552,
+        "tradeMt": 51.6
+      }
+    },
+    "sa-yanbu": {
+      "portid": "port1408",
+      "portwatchName": "Yanbu (Yanbu city)",
+      "locode": null,
+      "lat": 24.0772,
+      "lng": 38.0703,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 230,
+        "containerCalls": 0,
+        "tankerCalls": 28,
+        "tradeMt": 5.9
+      }
+    },
+    "se-gothenburg": {
+      "portid": "port408",
+      "portwatchName": "Göteborg",
+      "locode": "SE GOT",
+      "lat": 57.7086,
+      "lng": 11.8896,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3636,
+        "containerCalls": 579,
+        "tankerCalls": 2016,
+        "tradeMt": 21.4
+      }
+    },
+    "sg-singapore": {
+      "portid": "port1201",
+      "portwatchName": "Singapore",
+      "locode": "SG SIN",
+      "lat": 1.272,
+      "lng": 103.7075,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 46210,
+        "containerCalls": 14529,
+        "tankerCalls": 27338,
+        "tradeMt": 862
+      }
+    },
+    "sn-dakar": {
+      "portid": "port272",
+      "portwatchName": "Dakar",
+      "locode": "SN DKR",
+      "lat": 14.6835,
+      "lng": -17.4261,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1616,
+        "containerCalls": 675,
+        "tankerCalls": 264,
+        "tradeMt": 16.3
+      }
+    },
+    "so-berbera": {
+      "portid": "port146",
+      "portwatchName": "Berbera",
+      "locode": "SO BBO",
+      "lat": 10.4329,
+      "lng": 44.997,
+      "topIndustries": [
+        "Vegetable Products",
+        "Mineral Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 377,
+        "containerCalls": 138,
+        "tankerCalls": 37,
+        "tradeMt": 1.7
+      }
+    },
+    "th-bangkok": {
+      "portid": "port111",
+      "portwatchName": "Bangkok",
+      "locode": "TH BKK",
+      "lat": 13.6835,
+      "lng": 100.5726,
+      "topIndustries": [
+        "Mineral Products",
+        "Machinery & Electrical Equipment",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 6904,
+        "containerCalls": 2336,
+        "tankerCalls": 3320,
+        "tradeMt": 20.2
+      }
+    },
+    "th-laemchabang": {
+      "portid": "port1197",
+      "portwatchName": "Laem Chabang",
+      "locode": "TH LCH",
+      "lat": 13.0887,
+      "lng": 100.9,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Plastics, Rubber, Leather"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 6925,
+        "containerCalls": 5011,
+        "tankerCalls": 423,
+        "tradeMt": 100.7
+      }
+    },
+    "tn-rades": {
+      "portid": "port2047",
+      "portwatchName": "Rades (La Goulette)",
+      "locode": null,
+      "lat": 36.8147,
+      "lng": 10.2985,
+      "topIndustries": [],
+      "activity": {
+        "days": 365,
+        "portCalls": 347,
+        "containerCalls": 2,
+        "tankerCalls": 83,
+        "tradeMt": 2
+      }
+    },
+    "tr-ambarli": {
+      "portid": "port2049",
+      "portwatchName": "Ambarli",
+      "locode": "TR AMR",
+      "lat": 40.9658,
+      "lng": 28.673,
+      "topIndustries": [],
+      "activity": {
+        "days": 365,
+        "portCalls": 3609,
+        "containerCalls": 2648,
+        "tankerCalls": 107,
+        "tradeMt": 42.3
+      }
+    },
+    "tr-ceyhan": {
+      "portid": "port162",
+      "portwatchName": "Botas",
+      "locode": "TR BOT",
+      "lat": 36.8767,
+      "lng": 35.9186,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Stone & Glass"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 673,
+        "containerCalls": 52,
+        "tankerCalls": 381,
+        "tradeMt": 33.2
+      }
+    },
+    "tr-izmir": {
+      "portid": "port510",
+      "portwatchName": "Izmir",
+      "locode": "TR IZM",
+      "lat": 38.4432,
+      "lng": 27.1561,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1219,
+        "containerCalls": 359,
+        "tankerCalls": 84,
+        "tradeMt": 4.8
+      }
+    },
+    "tr-mersin": {
+      "portid": "port735",
+      "portwatchName": "Mersin",
+      "locode": "TR MER",
+      "lat": 36.8092,
+      "lng": 34.6535,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3149,
+        "containerCalls": 1421,
+        "tankerCalls": 332,
+        "tradeMt": 30.2
+      }
+    },
+    "tt-pointlisas": {
+      "portid": "port917",
+      "portwatchName": "Point Lisas",
+      "locode": null,
+      "lat": 10.3971,
+      "lng": -61.4812,
+      "topIndustries": [
+        "Chemical & Allied Industries",
+        "Mineral Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1227,
+        "containerCalls": 345,
+        "tankerCalls": 446,
+        "tradeMt": 12.4
+      }
+    },
+    "tw-kaohsiung": {
+      "portid": "port541",
+      "portwatchName": "Kaohsiung",
+      "locode": "TW KHH",
+      "lat": 22.5615,
+      "lng": 120.3227,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 11372,
+        "containerCalls": 6765,
+        "tankerCalls": 1582,
+        "tradeMt": 164
+      }
+    },
+    "tw-taipei": {
+      "portid": "port238",
+      "portwatchName": "Keelung",
+      "locode": "TW KEL",
+      "lat": 25.1472,
+      "lng": 121.752,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3371,
+        "containerCalls": 2410,
+        "tankerCalls": 188,
+        "tradeMt": 24.7
+      }
+    },
+    "tz-darsalaam": {
+      "portid": "port278",
+      "portwatchName": "Dar Es Salaam",
+      "locode": "TZ DAR",
+      "lat": -6.8435,
+      "lng": 39.2962,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1083,
+        "containerCalls": 446,
+        "tankerCalls": 176,
+        "tradeMt": 12.8
+      }
+    },
+    "ua-odesa": {
+      "portid": "port843",
+      "portwatchName": "Odessa",
+      "locode": "UA ODS",
+      "lat": 46.5013,
+      "lng": 30.7381,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 4,
+        "containerCalls": 0,
+        "tankerCalls": 0,
+        "tradeMt": 0.1
+      }
+    },
+    "us-charleston": {
+      "portid": "port231",
+      "portwatchName": "Charleston",
+      "locode": "US CHS",
+      "lat": 32.8993,
+      "lng": -79.9212,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1771,
+        "containerCalls": 1267,
+        "tankerCalls": 126,
+        "tradeMt": 27.8
+      }
+    },
+    "us-corpuschristi": {
+      "portid": "port264",
+      "portwatchName": "Corpus Christi",
+      "locode": "US CRP",
+      "lat": 27.8412,
+      "lng": -97.3799,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1675,
+        "containerCalls": 8,
+        "tankerCalls": 1410,
+        "tradeMt": 59.9
+      }
+    },
+    "us-houston": {
+      "portid": "port481",
+      "portwatchName": "Houston (US-TX)",
+      "locode": "US HOU",
+      "lat": 29.7202,
+      "lng": -95.1398,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 7320,
+        "containerCalls": 932,
+        "tankerCalls": 5091,
+        "tradeMt": 221.8
+      }
+    },
+    "us-losangeles": {
+      "portid": "port664",
+      "portwatchName": "Los Angeles-Long Beach",
+      "locode": "US LAX",
+      "lat": 33.7557,
+      "lng": -118.2438,
+      "topIndustries": [
+        "Mineral Products",
+        "Machinery & Electrical Equipment",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3704,
+        "containerCalls": 1934,
+        "tankerCalls": 905,
+        "tradeMt": 202.9
+      }
+    },
+    "us-neworleans": {
+      "portid": "port1214",
+      "portwatchName": "South Louisiana",
+      "locode": "US LU8",
+      "lat": 30.1238,
+      "lng": -90.8678,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2396,
+        "containerCalls": 2,
+        "tankerCalls": 1106,
+        "tradeMt": 77.2
+      }
+    },
+    "us-newyork": {
+      "portid": "port815",
+      "portwatchName": "New York-New Jersey",
+      "locode": null,
+      "lat": 40.633,
+      "lng": -74.1794,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 3841,
+        "containerCalls": 2330,
+        "tankerCalls": 932,
+        "tradeMt": 104.8
+      }
+    },
+    "us-norfolk": {
+      "portid": "port826",
+      "portwatchName": "Norfolk",
+      "locode": "US ORF",
+      "lat": 36.8496,
+      "lng": -76.3305,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1247,
+        "containerCalls": 732,
+        "tankerCalls": 66,
+        "tradeMt": 20.5
+      }
+    },
+    "us-savannah": {
+      "portid": "port1170",
+      "portwatchName": "Savannah",
+      "locode": "US SAV",
+      "lat": 32.104,
+      "lng": -81.1005,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2131,
+        "containerCalls": 1643,
+        "tankerCalls": 224,
+        "tradeMt": 58.3
+      }
+    },
+    "us-seattle": {
+      "portid": "port1175",
+      "portwatchName": "Seattle",
+      "locode": "US SEA",
+      "lat": 47.5719,
+      "lng": -122.3458,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 510,
+        "containerCalls": 356,
+        "tankerCalls": 7,
+        "tradeMt": 13.5
+      }
+    },
+    "vn-haiphong": {
+      "portid": "port434",
+      "portwatchName": "Hai Phong",
+      "locode": null,
+      "lat": 20.8441,
+      "lng": 106.7475,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 8140,
+        "containerCalls": 3854,
+        "tankerCalls": 1606,
+        "tradeMt": 18.5
+      }
+    },
+    "vn-hochiminh": {
+      "portid": "port2085",
+      "portwatchName": "Cat Lai (Saigon New Port)",
+      "locode": null,
+      "lat": 10.7684,
+      "lng": 106.8023,
+      "topIndustries": [],
+      "activity": {
+        "days": 365,
+        "portCalls": 4713,
+        "containerCalls": 4166,
+        "tankerCalls": 161,
+        "tradeMt": 20
+      }
+    },
+    "ye-aden": {
+      "portid": "port9",
+      "portwatchName": "Aden",
+      "locode": "YE ADE",
+      "lat": 12.7819,
+      "lng": 44.9549,
+      "topIndustries": [
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages",
+        "Mineral Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 506,
+        "containerCalls": 246,
+        "tankerCalls": 34,
+        "tradeMt": 4.2
+      }
+    },
+    "za-capetown": {
+      "portid": "port215",
+      "portwatchName": "Cape Town",
+      "locode": "ZA CPT",
+      "lat": -33.9154,
+      "lng": 18.4482,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1118,
+        "containerCalls": 403,
+        "tankerCalls": 268,
+        "tradeMt": 9
+      }
+    },
+    "za-durban": {
+      "portid": "port311",
+      "portwatchName": "Durban",
+      "locode": "ZA DUR",
+      "lat": -29.8821,
+      "lng": 31.023,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 2561,
+        "containerCalls": 733,
+        "tankerCalls": 733,
+        "tradeMt": 62.9
+      }
+    },
+    "za-richards": {
+      "portid": "port1099",
+      "portwatchName": "Richards Bay",
+      "locode": "ZA RCB",
+      "lat": -28.7924,
+      "lng": 32.0394,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Wood & Wood Products"
+      ],
+      "activity": {
+        "days": 365,
+        "portCalls": 1403,
+        "containerCalls": 1,
+        "tankerCalls": 219,
+        "tradeMt": 73.2
+      }
+    }
+  }
+}
