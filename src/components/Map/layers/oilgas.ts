@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
-import { OIL_GAS_DATA, getMaxValue, formatValue, getRegionTotals, METRIC_COLORS, METRIC_LABELS, type OilGasMetric } from '../../../services/oilgas'
+import { OIL_GAS_DATA, OIL_GAS_SOURCE, getMaxValue, formatValue, getRegionTotals, METRIC_COLORS, METRIC_LABELS, type OilGasMetric } from '../../../services/oilgas'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
@@ -64,7 +64,7 @@ export function addOilGasLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
         <div style="margin:3px 0;">
           <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:1px;">
             <span style="color:${METRIC_COLORS[m]};font-weight:700;">${METRIC_LABELS[m]}</span>
-            <span style="color:#9ca3af;">#${rank} of ${OIL_GAS_DATA.filter(c => c[m] > 0).length}</span>
+            <span style="color:#9ca3af;">${country.years[m] ? `${country.years[m]} · #${rank} of ${OIL_GAS_DATA.filter(c => c[m] > 0).length}` : 'not reported'}</span>
           </div>
           <div style="background:#fafbfc;height:10px;position:relative;border:1px solid #e5e7eb;">
             <div style="position:absolute;top:0;left:0;height:100%;width:${pct}%;background:${METRIC_COLORS[m]};opacity:0.7;"></div>
@@ -83,7 +83,7 @@ export function addOilGasLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       </div>
       <div style="font-size:10px;color:#9ca3af;letter-spacing:.12em;margin-bottom:6px;">${country.region.toUpperCase()} · REGION RANK #${regionRank}</div>
       ${bars}
-      <div style="margin-top:6px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: EIA / OPEC / BP STATISTICAL REVIEW 2023</div>
+      <div style="margin-top:6px;font-size:9px;color:#9ca3af;letter-spacing:.08em;">SOURCE: ${OIL_GAS_SOURCE.name.toUpperCase()} · YEAR SHOWN PER VALUE · RANKS AMONG MAPPED COUNTRIES</div>
     </div>`
 
     if (popupRef.current) popupRef.current.remove()

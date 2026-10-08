@@ -216,7 +216,15 @@ describe('oil & gas', () => {
       expect(c.iso2, c.name).toMatch(/^[A-Z]{2}$/)
       for (const k of ['oilReserves', 'gasReserves', 'oilProduction', 'gasProduction'] as const) {
         expect(Number.isFinite(c[k]) && c[k] >= 0, `${c.name}.${k}=${c[k]}`).toBe(true)
+        // every shown figure carries the Factbook reference year; a missing one is 0, not a guess
+        if (c[k] > 0) expect(c.years[k], `${c.name}.${k} has no year`).toBeGreaterThanOrEqual(2015)
+        else expect(c.years[k], `${c.name}.${k}`).toBeUndefined()
       }
+      // unit slips (e.g. million vs billion) would blow far past the world's largest holders
+      expect(c.oilReserves, c.name).toBeLessThan(400)
+      expect(c.gasReserves, c.name).toBeLessThan(60)
+      expect(c.oilProduction, c.name).toBeLessThan(30)
+      expect(c.gasProduction, c.name).toBeLessThan(1500)
     }
   })
 })
