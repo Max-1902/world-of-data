@@ -74,15 +74,15 @@ export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSe
 
       <div className="hud-sep" />
 
-      {/* center: stats */}
+      {/* center: stats — ordered most → least important; each stat sheds with its own breakpoint (see index.css) so the box reflows instead of clipping text */}
       <div className="tb-center">
-        <span title={`${market.up} of ${market.tracked} tracked global market-hub ETFs (SPY, QQQ, EWU, EWG, EWJ, EWH, FXI, EWZ, EWA, EWC) trading up today`}>
+        <span className="tb-stat tb-stat-hubs" title={`${market.up} of ${market.tracked} tracked global market-hub ETFs (SPY, QQQ, EWU, EWG, EWJ, EWH, FXI, EWZ, EWA, EWC) trading up today`}>
           <HudStat label="HUBS UP" value={market.tracked ? `${market.up}/${market.tracked}` : '—'} />
         </span>
 
-        <div className="hud-sep" />
+        <div className="hud-sep tb-stat-hubs" />
 
-        <span title={market.topMover ? `Largest move among tracked market hubs: ${market.topMover.symbol} ${market.topMover.changePercent > 0 ? '+' : ''}${market.topMover.changePercent.toFixed(1)}%` : 'No market data loaded yet'}>
+        <span className="tb-stat tb-stat-mover" title={market.topMover ? `Largest move among tracked market hubs: ${market.topMover.symbol} ${market.topMover.changePercent > 0 ? '+' : ''}${market.topMover.changePercent.toFixed(1)}%` : 'No market data loaded yet'}>
           <HudStat
             label="TOP MOVER"
             value={market.topMover ? market.topMover.symbol : '—'}
@@ -91,25 +91,25 @@ export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSe
           />
         </span>
 
-        <div className="hud-sep" />
+        <div className="hud-sep tb-stat-mover" />
 
-        <span title="Countries under active economic sanctions (OFAC/EU/UN/UK and other regimes) — curated, sourced dataset">
+        <span className="tb-stat tb-stat-sanctioned" title="Countries under active economic sanctions (OFAC/EU/UN/UK and other regimes) — curated, sourced dataset">
           <HudStat label="SANCTIONED" value={sanctions.sanctioned} />
         </span>
 
-        <div className="hud-sep" />
+        <div className="hud-sep tb-stat-sanctioned" />
 
-        <span title="Countries at the critical/comprehensive sanctions tier (e.g. Iran, North Korea, Russia, Syria)">
+        <span className="tb-stat tb-stat-critical" title="Countries at the critical/comprehensive sanctions tier (e.g. Iran, North Korea, Russia, Syria)">
           <HudStat label="CRITICAL" value={sanctions.critical} />
         </span>
 
-        <div className="hud-sep" />
+        <div className="hud-sep tb-stat-critical" />
 
-        <span title={`${feedsOk} of ${sources.length} contacted data sources currently healthy this session`}>
+        <span className="tb-stat tb-stat-feeds" title={`${feedsOk} of ${sources.length} contacted data sources currently healthy this session`}>
           <HudStat label="FEEDS OK" value={sources.length ? `${feedsOk}/${sources.length}` : '—'} />
         </span>
 
-        <div className="hud-sep tb-clock-sep" />
+        <div className="hud-sep tb-stat-feeds tb-clock-sep" />
 
         <UtcClock />
       </div>

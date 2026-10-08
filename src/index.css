@@ -233,14 +233,20 @@ html, body, #root {
 
 .topbar > div:first-child { gap: 12px !important; }
 .tb-center { overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 18px; flex: 1 1 0; min-width: 0; white-space: nowrap; }
+.tb-stat { flex-shrink: 0; }
 .tb-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .tb-clock { display: flex; align-items: baseline; gap: 6px; font: 500 12px 'Inter', -apple-system, sans-serif; color: var(--text2); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
 .tb-clock-tz { color: var(--text3); font-size: 10px; font-weight: 600; letter-spacing: .08em; }
 .tb-clock-time { color: var(--text1); font-weight: 600; }
 
-/* Shed the least important top-bar content as width shrinks, so nothing wraps or is clipped. */
+/* Shed the least important top-bar content as width shrinks, so nothing wraps or is clipped.
+   HUD stats drop one at a time (least important first) rather than all at once, so the box
+   never ends up too narrow for the stats still showing. */
 @media (max-width: 1800px) { .tb-clock-date { display: none; } }
+@media (max-width: 1700px) { .tb-stat-feeds { display: none; } }
 @media (max-width: 1620px) { .tb-clock, .tb-clock-sep { display: none; } }
+@media (max-width: 1600px) { .tb-stat-critical { display: none; } }
+@media (max-width: 1500px) { .tb-stat-sanctioned { display: none; } }
 @media (max-width: 1480px) { .tb-btn-label { display: none; } .topbar .tb-right .cy-btn:has(.tb-btn-label) { padding: 5px 7px; } }
 @media (max-width: 1400px) { .tb-center { gap: 12px; } }
 @media (max-width: 1300px) { .tb-center > span, .tb-center > .hud-sep { display: none; } }
