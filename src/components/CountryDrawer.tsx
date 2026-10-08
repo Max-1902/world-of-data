@@ -874,7 +874,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
                   {nearbyChokepoints.map(cp => (
                     <div key={cp.id} style={{ fontSize: 11, color: 'var(--text2)', padding: '1px 0', display: 'flex', gap: 4 }}>
                       <span style={{ color: soft('var(--red)', 53), fontSize: 9 }}>▸</span>
-                      <span style={{ flex: 1 }}>{cp.name} ({cp.pctWorldTrade}% world trade)</span>
+                      <span style={{ flex: 1 }}>{cp.name}{cp.transits ? ` (${cp.transits.avgDaily} ships/day, ${cp.transits.year})` : ''}</span>
                     </div>
                   ))}
                 </>

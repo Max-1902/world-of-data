@@ -1,0 +1,412 @@
+{
+  "source": "IMF PortWatch — Daily Chokepoint Transit Calls and Trade Volume Estimates",
+  "url": "https://portwatch.imf.org/pages/chokepoints",
+  "year": 2025,
+  "retrieved": "2026-10-08",
+  "chokepoints": {
+    "chokepoint1": {
+      "name": "Suez Canal",
+      "lat": 30.5933,
+      "lng": 32.4369,
+      "days": 365,
+      "avgDailyTransits": 38.5,
+      "avgDailyTankers": 14.6,
+      "avgDailyContainerShips": 9.2,
+      "avgDailyCapacityDwt": 1385773,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint2": {
+      "name": "Panama Canal",
+      "lat": 9.1205,
+      "lng": -79.7672,
+      "days": 365,
+      "avgDailyTransits": 31.1,
+      "avgDailyTankers": 12.7,
+      "avgDailyContainerShips": 7.9,
+      "avgDailyCapacityDwt": 894276,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint3": {
+      "name": "Bosporus Strait",
+      "lat": 41.1693,
+      "lng": 29.0915,
+      "days": 365,
+      "avgDailyTransits": 92.4,
+      "avgDailyTankers": 23.8,
+      "avgDailyContainerShips": 9.8,
+      "avgDailyCapacityDwt": 1160098,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint4": {
+      "name": "Bab el-Mandeb Strait",
+      "lat": 12.7886,
+      "lng": 43.3495,
+      "days": 365,
+      "avgDailyTransits": 33.5,
+      "avgDailyTankers": 11.5,
+      "avgDailyContainerShips": 6.7,
+      "avgDailyCapacityDwt": 1204138,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ]
+    },
+    "chokepoint5": {
+      "name": "Malacca Strait",
+      "lat": 1.517,
+      "lng": 102.6651,
+      "days": 365,
+      "avgDailyTransits": 234.5,
+      "avgDailyTankers": 82.4,
+      "avgDailyContainerShips": 61.4,
+      "avgDailyCapacityDwt": 9065115,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ]
+    },
+    "chokepoint6": {
+      "name": "Strait of Hormuz",
+      "lat": 26.2969,
+      "lng": 56.8598,
+      "days": 365,
+      "avgDailyTransits": 85.5,
+      "avgDailyTankers": 48.2,
+      "avgDailyContainerShips": 16.5,
+      "avgDailyCapacityDwt": 3218243,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ]
+    },
+    "chokepoint7": {
+      "name": "Cape of Good Hope",
+      "lat": -34.9273,
+      "lng": 20.8827,
+      "days": 365,
+      "avgDailyTransits": 89.5,
+      "avgDailyTankers": 16.9,
+      "avgDailyContainerShips": 20.2,
+      "avgDailyCapacityDwt": 5680101,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ]
+    },
+    "chokepoint8": {
+      "name": "Gibraltar Strait",
+      "lat": 35.9423,
+      "lng": -5.7549,
+      "days": 365,
+      "avgDailyTransits": 135.4,
+      "avgDailyTankers": 46.6,
+      "avgDailyContainerShips": 32.8,
+      "avgDailyCapacityDwt": 3540081,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint9": {
+      "name": "Dover Strait",
+      "lat": 51.0302,
+      "lng": 1.5058,
+      "days": 365,
+      "avgDailyTransits": 174.7,
+      "avgDailyTankers": 61.8,
+      "avgDailyContainerShips": 36.3,
+      "avgDailyCapacityDwt": 3566020,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Vegetable Products"
+      ]
+    },
+    "chokepoint10": {
+      "name": "Oresund Strait",
+      "lat": 55.5078,
+      "lng": 12.8508,
+      "days": 365,
+      "avgDailyTransits": 47.1,
+      "avgDailyTankers": 12,
+      "avgDailyContainerShips": 5.5,
+      "avgDailyCapacityDwt": 109804,
+      "topIndustries": [
+        "Mineral Products",
+        "Wood & Wood Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint11": {
+      "name": "Taiwan Strait",
+      "lat": 24.7235,
+      "lng": 119.8314,
+      "days": 365,
+      "avgDailyTransits": 238.8,
+      "avgDailyTankers": 51.6,
+      "avgDailyContainerShips": 89.6,
+      "avgDailyCapacityDwt": 5940033,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint12": {
+      "name": "Korea Strait",
+      "lat": 34.1308,
+      "lng": 129.2092,
+      "days": 365,
+      "avgDailyTransits": 219.4,
+      "avgDailyTankers": 59.6,
+      "avgDailyContainerShips": 56.1,
+      "avgDailyCapacityDwt": 3142362,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ]
+    },
+    "chokepoint13": {
+      "name": "Tsugaru Strait",
+      "lat": 41.328,
+      "lng": 140.3533,
+      "days": 365,
+      "avgDailyTransits": 45.7,
+      "avgDailyTankers": 12.9,
+      "avgDailyContainerShips": 10.6,
+      "avgDailyCapacityDwt": 1013944,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Metals"
+      ]
+    },
+    "chokepoint14": {
+      "name": "Luzon Strait",
+      "lat": 20.4889,
+      "lng": 121.3523,
+      "days": 365,
+      "avgDailyTransits": 66.4,
+      "avgDailyTankers": 21.6,
+      "avgDailyContainerShips": 8.3,
+      "avgDailyCapacityDwt": 4124951,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ]
+    },
+    "chokepoint15": {
+      "name": "Lombok Strait",
+      "lat": -8.4191,
+      "lng": 115.8014,
+      "days": 365,
+      "avgDailyTransits": 35.8,
+      "avgDailyTankers": 7.6,
+      "avgDailyContainerShips": 0.2,
+      "avgDailyCapacityDwt": 2960890,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint16": {
+      "name": "Ombai Strait",
+      "lat": -8.3985,
+      "lng": 125.091,
+      "days": 365,
+      "avgDailyTransits": 10.5,
+      "avgDailyTankers": 3.7,
+      "avgDailyContainerShips": 1.2,
+      "avgDailyCapacityDwt": 804732,
+      "topIndustries": [
+        "Mineral Products",
+        "Chemical & Allied Industries",
+        "Prepared Foodstuffs & Beverages"
+      ]
+    },
+    "chokepoint17": {
+      "name": "Bohai Strait",
+      "lat": 38.373,
+      "lng": 120.9,
+      "days": 365,
+      "avgDailyTransits": 170.4,
+      "avgDailyTankers": 36.1,
+      "avgDailyContainerShips": 21,
+      "avgDailyCapacityDwt": 6214204,
+      "topIndustries": [
+        "Mineral Products",
+        "Metals",
+        "Vegetable Products"
+      ]
+    },
+    "chokepoint18": {
+      "name": "Torres Strait",
+      "lat": -9.8625,
+      "lng": 142.2475,
+      "days": 365,
+      "avgDailyTransits": 9.5,
+      "avgDailyTankers": 2.1,
+      "avgDailyContainerShips": 1.2,
+      "avgDailyCapacityDwt": 201496,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint19": {
+      "name": "Sunda Strait",
+      "lat": -5.9668,
+      "lng": 105.7752,
+      "days": 365,
+      "avgDailyTransits": 31.9,
+      "avgDailyTankers": 12,
+      "avgDailyContainerShips": 3.3,
+      "avgDailyCapacityDwt": 1272025,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ]
+    },
+    "chokepoint20": {
+      "name": "Makassar Strait",
+      "lat": 0.3523,
+      "lng": 119.2571,
+      "days": 365,
+      "avgDailyTransits": 46.4,
+      "avgDailyTankers": 4.9,
+      "avgDailyContainerShips": 1.7,
+      "avgDailyCapacityDwt": 2867273,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ]
+    },
+    "chokepoint21": {
+      "name": "Magellan Strait",
+      "lat": -52.6403,
+      "lng": -69.5948,
+      "days": 365,
+      "avgDailyTransits": 4,
+      "avgDailyTankers": 1.1,
+      "avgDailyContainerShips": 0.3,
+      "avgDailyCapacityDwt": 137888,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Prepared Foodstuffs & Beverages"
+      ]
+    },
+    "chokepoint22": {
+      "name": "Yucatan Channel",
+      "lat": 21.8153,
+      "lng": -85.6473,
+      "days": 365,
+      "avgDailyTransits": 47.9,
+      "avgDailyTankers": 25.3,
+      "avgDailyContainerShips": 10,
+      "avgDailyCapacityDwt": 1173089,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint23": {
+      "name": "Windward Passage",
+      "lat": 19.9862,
+      "lng": -73.6975,
+      "days": 365,
+      "avgDailyTransits": 15.7,
+      "avgDailyTankers": 1.7,
+      "avgDailyContainerShips": 7.9,
+      "avgDailyCapacityDwt": 275494,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Wood & Wood Products"
+      ]
+    },
+    "chokepoint24": {
+      "name": "Mona Passage",
+      "lat": 18.4487,
+      "lng": -67.7114,
+      "days": 365,
+      "avgDailyTransits": 11,
+      "avgDailyTankers": 2.5,
+      "avgDailyContainerShips": 3.4,
+      "avgDailyCapacityDwt": 287011,
+      "topIndustries": [
+        "Mineral Products",
+        "Vegetable Products",
+        "Chemical & Allied Industries"
+      ]
+    },
+    "chokepoint25": {
+      "name": "Balabac Strait",
+      "lat": 7.4136,
+      "lng": 117.1146,
+      "days": 365,
+      "avgDailyTransits": 9.3,
+      "avgDailyTankers": 2.9,
+      "avgDailyContainerShips": 0.7,
+      "avgDailyCapacityDwt": 219525,
+      "topIndustries": []
+    },
+    "chokepoint26": {
+      "name": "Bering Strait",
+      "lat": 65.9665,
+      "lng": -165.5498,
+      "days": 365,
+      "avgDailyTransits": 1,
+      "avgDailyTankers": 0.4,
+      "avgDailyContainerShips": 0.1,
+      "avgDailyCapacityDwt": 19192,
+      "topIndustries": []
+    },
+    "chokepoint27": {
+      "name": "Mindoro Strait",
+      "lat": 12.4683,
+      "lng": 120.4034,
+      "days": 365,
+      "avgDailyTransits": 33.5,
+      "avgDailyTankers": 2.7,
+      "avgDailyContainerShips": 1.7,
+      "avgDailyCapacityDwt": 1871522,
+      "topIndustries": []
+    },
+    "chokepoint28": {
+      "name": "Kerch Strait",
+      "lat": 45.2668,
+      "lng": 36.5439,
+      "days": 365,
+      "avgDailyTransits": 13.8,
+      "avgDailyTankers": 4,
+      "avgDailyContainerShips": 0.1,
+      "avgDailyCapacityDwt": 68084,
+      "topIndustries": []
+    }
+  }
+}
