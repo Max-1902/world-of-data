@@ -76,13 +76,8 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
           }}>
             <Globe2 size={15} color="#111820" />
           </div>
-          <div>
-            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.02em', color: 'var(--text1)', lineHeight: 1.1, fontFamily: 'Inter, -apple-system, sans-serif' }}>
-              MUNDUS DATORUM
-            </div>
-            <div style={{ fontSize: 8.5, letterSpacing: '.06em', color: 'var(--text3)', lineHeight: 1.3, fontFamily: 'Inter, -apple-system, sans-serif' }}>
-              LIVE WORLD MONITOR
-            </div>
+          <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.02em', color: 'var(--text1)', lineHeight: 1.1, fontFamily: 'Inter, -apple-system, sans-serif' }}>
+            MUNDUS DATORUM
           </div>
         </div>
 
