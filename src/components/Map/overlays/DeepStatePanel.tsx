@@ -23,7 +23,7 @@ export default function DeepStatePanel({ onClose }: { onClose?: () => void }) {
         ◆ DEEPSTATE · UKRAINE BATTLEFIELD MONITOR
       </span>
       <a
-        href="https://deepstatemap.live/en#7/48.8/32.4"
+        href="https://deepstatemap.live/en#6/49.4383200/32.0526800"
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -45,10 +45,10 @@ export default function DeepStatePanel({ onClose }: { onClose?: () => void }) {
     {/* Embedded DeepState map — may be blocked by CSP on some browsers */}
     <iframe
       key="deepstate-iframe"
-      src="https://deepstatemap.live/en#7/48.8/32.4"
+      src="https://deepstatemap.live/en#6/49.4383200/32.0526800"
       title="DeepState Ukraine Battlefield Map"
       allow="fullscreen"
-      style={{ flex: 1, border: 'none', width: '100%', display: 'block' }}
+      style={{ flex: 1, border: 'none', width: '100%', display: 'block', position: 'relative', zIndex: 1 }}
     />
 
     {/* Fallback overlay shown on top — dim unless iframe loads */}

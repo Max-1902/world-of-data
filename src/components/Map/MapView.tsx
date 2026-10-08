@@ -54,7 +54,7 @@ export default function MapView({
   viewMode, flights, crises, newsPins, stocks, earthquakes,
   showFlights, showCrises, showNews, showStocks,
   deepstateMode,
-  onCloseDeepstate,
+  onCloseDeepstate, onToggleDeepstate,
   onFlightClick, onCrisisClick,
   fires, showWildfires,
   showMilitary, showNuclear, showSanctions,
@@ -241,8 +241,8 @@ export default function MapView({
           filterTypes={filterTypes} setFilterTypes={setFilterTypes}
         />
       )}
-      {!deepstateMode && panelState && onToggleLayer && (
-        <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} top={showFlights ? 82 : 52} />
+      {panelState && onToggleLayer && (
+        <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} top={showFlights && !deepstateMode ? 82 : 52} />
       )}
       {!deepstateMode && <Reticle color={reticleColor} />}
       </div>

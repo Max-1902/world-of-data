@@ -25,6 +25,8 @@ export interface MapViewProps {
   deepstateMode: boolean
   /** Closes the DeepState split panel (shown in its header). */
   onCloseDeepstate?: () => void
+  /** Toggles the DeepState split panel from the overlay menu. */
+  onToggleDeepstate?: () => void
   onFlightClick: (f: Flight) => void
   onCrisisClick: (c: CrisisEvent) => void
   fires:         FirePoint[]

@@ -40,11 +40,16 @@ interface Props {
   onToggleLayer: (id: keyof PanelState) => void
   /** turns every overlay off at once; the "deselect all" button is hidden when omitted */
   onClearLayers?: () => void
+  /** DeepState split view (a mirror of deepstatemap.live beside the map); the row is hidden when the toggle is omitted */
+  deepstateMode?: boolean
+  onToggleDeepstate?: () => void
   /** distance from the top of the map; the menu sits below the flight filter when that is showing */
   top: number
 }
 
-export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, top }: Props) {
+const DEEPSTATE_COLOR = '#ff1a3e'
+
+export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, deepstateMode = false, onToggleDeepstate, top }: Props) {
   const [showOverlays, setShowOverlays] = useState(false)
   const activeCount = Object.values(panelState).filter(Boolean).length
   return (
@@ -98,6 +103,36 @@ export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, 
           </button>
         )}
         <div style={{ maxHeight: 340, overflowY: 'auto' }}>
+        {onToggleDeepstate && (
+          <div>
+            <div style={{ padding:'5px 8px 3px', fontSize:7, fontWeight:700, letterSpacing:'.16em', color:'#647883', background:'rgba(255,255,255,.03)', borderBottom:'1px solid #1c2b35', position:'sticky', top:0, zIndex:1 }}>
+              WAR MONITOR
+            </div>
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleDeepstate() }}
+              aria-pressed={deepstateMode}
+              title="Split the map and mirror deepstatemap.live beside it"
+              style={{
+                display:'flex', alignItems:'center', gap:6, width:'100%',
+                padding:'5px 8px', fontSize:8, fontWeight:600,
+                letterSpacing:'.08em', textAlign:'left',
+                border:'none', borderBottom:'1px solid #1c2b35',
+                background: deepstateMode ? DEEPSTATE_COLOR + '0c' : 'transparent',
+                color: deepstateMode ? DEEPSTATE_COLOR : '#98aab4',
+                cursor:'pointer', transition:'all .12s', fontFamily:'monospace',
+              }}
+            >
+              <span style={{ width:14, textAlign:'center', fontSize:9 }}>◆</span>
+              <span style={{ flex:1 }}>DEEPSTATE UKRAINE</span>
+              <span style={{
+                width:6, height:6, borderRadius:'50%',
+                background: deepstateMode ? DEEPSTATE_COLOR : '#263843',
+                border: `1px solid ${deepstateMode ? DEEPSTATE_COLOR + '88' : '#31434d'}`,
+                transition:'all .15s',
+              }} />
+            </button>
+          </div>
+        )}
         {LAYER_SECTIONS.map(section => (
           <div key={section.title}>
             <div style={{ padding:'5px 8px 3px', fontSize:7, fontWeight:700, letterSpacing:'.16em', color:'#647883', background:'rgba(255,255,255,.03)', borderBottom:'1px solid #1c2b35', position:'sticky', top:0, zIndex:1 }}>
