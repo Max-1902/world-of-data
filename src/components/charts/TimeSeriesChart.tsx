@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useElementWidth } from './useElementWidth'
 import { Tooltip } from './ChartFrame'
-import { compact, niceMax } from './format'
+import { crisp, niceAxis, tickLabel, textWidth, TICK } from './format'
+import { topRounded } from './marks'
 
 export interface TimePoint {
   t: number
@@ -14,6 +15,29 @@ export interface TimePoint {
 
 const H = 150
 const M = { l: 34, r: 10, t: 8, b: 20 }
+
+const DAY = 86_400_000
+
+/**
+ * X ticks. Sub-daily buckets spanning 2+ days tick at UTC midnights (thinned to fit), so labels read "2 Oct 00:00"
+ * rather than an arbitrary middle hour; otherwise first / middle / last.
+ */
+function timeTicks(points: TimePoint[], band: number, fmt: (t: number) => string): { i: number; anchor: 'start' | 'middle' | 'end' }[] {
+  const n = points.length
+  if (n === 0) return []
+  const edge = (i: number) => (i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle') as 'start' | 'middle' | 'end'
+  const step = n > 1 ? points[1].t - points[0].t : DAY
+  if (step < DAY && points[n - 1].t - points[0].t >= 2 * DAY) {
+    const room = textWidth(fmt(points[0].t), 10) + 16
+    const every = Math.max(1, Math.ceil(room / (band * (DAY / step))))
+    const mids = points.map((p, i) => (p.t % DAY === 0 ? i : -1)).filter(i => i >= 0).filter((_, k) => k % every === 0)
+    // keep labels clear of the plot edges, where a centred label would hang outside the svg
+    const cx = (i: number) => band * i + band / 2
+    const fit = mids.filter(i => cx(i) >= room / 2 && cx(i) <= n * band - room / 2)
+    if (fit.length >= 2) return fit.map(i => ({ i, anchor: 'middle' as const }))
+  }
+  return [...new Set([0, Math.floor((n - 1) / 2), n - 1])].map(i => ({ i, anchor: edge(i) }))
+}
 
 /** Columns for a per-bucket count with an optional trailing-mean line. Hover or arrow keys read any bucket. */
 export function TimeSeriesChart({ points, valueLabel, avgLabel, fmtTick, fmtTitle, ariaLabel }: {
@@ -29,14 +53,15 @@ export function TimeSeriesChart({ points, valueLabel, avgLabel, fmtTick, fmtTitl
   const n = points.length
   const innerW = Math.max(10, width - M.l - M.r)
   const innerH = H - M.t - M.b
-  const max = niceMax(Math.max(1, ...points.map(p => p.value), ...points.map(p => p.avg ?? 0)))
+  const { max, ticks } = niceAxis(Math.max(1, ...points.map(p => p.value), ...points.map(p => p.avg ?? 0)))
   const band = innerW / Math.max(1, n)
-  const barW = Math.max(1, Math.min(24, band - 1))
+  const barW = band >= 4 ? Math.min(24, band - 2) : Math.max(1, band - 1)   // 2px surface gap once there is room
   const x = (i: number) => M.l + band * i + band / 2
   const y = (v: number) => M.t + innerH - (v / max) * innerH
   const avgPts = points.map((p, i) => p.avg === null ? null : [x(i), y(p.avg)] as const).filter((p): p is readonly [number, number] => p !== null)
   const last = avgPts[avgPts.length - 1]
   const ap = active === null ? null : points[active]
+  const xTicks = timeTicks(points, band, fmtTick)
 
   function onMove(e: React.PointerEvent<SVGRectElement>) {
     const r = e.currentTarget.getBoundingClientRect()
@@ -60,20 +85,23 @@ export function TimeSeriesChart({ points, valueLabel, avgLabel, fmtTick, fmtTitl
       )}
       <svg width={width} height={H} role="img" tabIndex={0} onKeyDown={onKey} onBlur={() => setActive(null)}
         aria-label={`${ariaLabel} Use left and right arrow keys to read each bar.`}>
-        {[0, max / 2, max].map(t => (
+        {ticks.map(t => (
           <g key={t}>
-            <line x1={M.l} x2={width - M.r} y1={y(t)} y2={y(t)} stroke="var(--border)" strokeWidth={1} />
-            <text x={M.l - 6} y={y(t) + 3} textAnchor="end" fontSize={9} fill="var(--text3)">{compact(t)}</text>
+            <line x1={M.l} x2={width - M.r} y1={crisp(y(t))} y2={crisp(y(t))} stroke={t === 0 ? 'var(--border-strong)' : 'var(--border)'} strokeWidth={1} />
+            <text x={M.l - 6} y={y(t) + 3.5} textAnchor="end" {...TICK}>{tickLabel(t)}</text>
           </g>
         ))}
         {points.map((p, i) => p.value > 0 && (
-          <rect key={p.t} x={x(i) - barW / 2} y={y(p.value)} width={barW} height={Math.max(0, y(0) - y(p.value))}
-            rx={barW > 5 ? 2 : 0} fill="var(--series-1)" opacity={active === null || active === i ? 0.9 : 0.45} />
+          <path key={p.t} d={topRounded(x(i) - barW / 2, y(p.value), barW, y(0) - y(p.value), 4)}
+            fill="var(--series-1)" opacity={active === null || active === i ? 1 : 0.45} />
         ))}
         {avgPts.length > 1 && <polyline points={avgPts.map(([px, py]) => `${px.toFixed(1)},${py.toFixed(1)}`).join(' ')} fill="none" stroke="var(--series-2)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />}
         {last && <circle cx={last[0]} cy={last[1]} r={4} fill="var(--series-2)" stroke="var(--surface)" strokeWidth={2} />}
-        {[0, Math.floor((n - 1) / 2), n - 1].map(i => (
-          <text key={i} x={x(i)} y={H - 5} textAnchor={i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'} fontSize={9} fill="var(--text3)">{fmtTick(points[i].t)}</text>
+        {xTicks.map(({ i, anchor }) => (
+          <g key={i}>
+            <line x1={crisp(x(i))} x2={crisp(x(i))} y1={M.t + innerH} y2={M.t + innerH + 3} stroke="var(--border-strong)" strokeWidth={1} />
+            <text x={anchor === 'start' ? x(i) - band / 2 : anchor === 'end' ? x(i) + band / 2 : x(i)} y={H - 5} textAnchor={anchor} {...TICK}>{fmtTick(points[i].t)}</text>
+          </g>
         ))}
         {active !== null && <line x1={x(active)} x2={x(active)} y1={M.t} y2={M.t + innerH} stroke="var(--text3)" strokeWidth={1} />}
         {active !== null && ap?.avg != null && <circle cx={x(active)} cy={y(ap.avg)} r={4} fill="var(--series-2)" stroke="var(--surface)" strokeWidth={2} />}

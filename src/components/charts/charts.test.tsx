@@ -47,7 +47,8 @@ describe('BarsChart', () => {
     expect(container.querySelectorAll('svg path')).toHaveLength(2)
     // few bars → the value sits on each cap, and every x label is shown
     expect(screen.getAllByText('Mon').length).toBeGreaterThan(0)
-    expect(screen.getByText('12')).toBeTruthy()
+    // the cap label (bold) — the axis may also end on a '12' tick now that it hugs the data
+    expect(screen.getAllByText('12').some(t => t.getAttribute('font-weight') === '600')).toBe(true)
   })
 
   it('shows a hover readout with the value, unit and detail', () => {
@@ -88,7 +89,7 @@ describe('RankChart', () => {
     expect(screen.getByRole('img', { name: 'Top countries' })).toBeTruthy()
     fireEvent.click(screen.getByText('Japan'))
     expect(onSelect).toHaveBeenCalledWith('a')
-    expect(screen.getByText('A very long coun…')).toBeTruthy()
+    expect(screen.getByText(/^A very long .*…$/)).toBeTruthy()
   })
 
   it('shows the detail line on hover', () => {

@@ -28,3 +28,14 @@ export const ABOVE = '#e66767'
 export const NEUTRAL = '#2a3d49'
 /** v in −1..1: negative → blue, positive → red, 0 → neutral. */
 export const divergingColor = (v: number) => v >= 0 ? rampColor([NEUTRAL, ABOVE], v) : rampColor([NEUTRAL, BELOW], -v)
+
+const lum = (hex: string) => {
+  const [r, g, b] = rgb(hex).map(v => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+const contrast = (a: number, b: number) => (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05)
+/** Ink for text set inside a filled cell: white or near-black, whichever contrasts more with the fill. */
+export function inkOn(fill: string): string {
+  const L = lum(fill)
+  return contrast(L, 1) >= contrast(L, lum('#0d161d')) ? '#ffffff' : '#0d161d'
+}
