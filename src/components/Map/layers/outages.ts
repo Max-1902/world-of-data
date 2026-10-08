@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { getCountryCentroid } from '../../../services/outages'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addOutageLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -38,7 +39,7 @@ export function addOutageLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     popupRef.current = new mapboxgl.Popup({ maxWidth: '300px', className: 'cy-popup' })
       .setLngLat((e.features[0].geometry as GeoJSON.Point).coordinates as [number, number])
       .setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'outages-circles', () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', 'outages-circles', () => { map.getCanvas().style.cursor = '' })

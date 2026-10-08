@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from '../../../services/supplychain'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addSupplyChainLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -63,7 +64,7 @@ export function addSupplyChainLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     popupRef.current = new mapboxgl.Popup({ maxWidth: '330px', className: 'cy-popup' })
       .setLngLat((e.features[0].geometry as GeoJSON.Point).coordinates as [number, number])
       .setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'supplychain-circles', () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', 'supplychain-circles', () => { map.getCanvas().style.cursor = '' })

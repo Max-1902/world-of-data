@@ -4,6 +4,7 @@ import { UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS,
 import { destinationPoint } from '../flightLayer'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -327,7 +328,7 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '240px', className: 'cy-popup' })
       .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'humanitarian-flows', () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', 'humanitarian-flows', () => { map.getCanvas().style.cursor = '' })
@@ -348,7 +349,7 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '220px', className: 'cy-popup' })
       .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'humanitarian-choropleth', () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', 'humanitarian-choropleth', () => { map.getCanvas().style.cursor = '' })
@@ -387,7 +388,7 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '280px', className: 'cy-popup' })
       .setLngLat(coords).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'humanitarian-offices',   () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'humanitarian-offices',   () => { map.getCanvas().style.cursor = '' })
@@ -411,7 +412,7 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '280px', className: 'cy-popup' })
       .setLngLat(coords).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'humanitarian-crossings', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'humanitarian-crossings', () => { map.getCanvas().style.cursor = '' })
@@ -435,7 +436,7 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '280px', className: 'cy-popup' })
       .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'humanitarian-crossing-path', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'humanitarian-crossing-path', () => { map.getCanvas().style.cursor = '' })
@@ -462,7 +463,7 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '290px', className: 'cy-popup' })
       .setLngLat(coords).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'humanitarian-camps', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'humanitarian-camps', () => { map.getCanvas().style.cursor = '' })

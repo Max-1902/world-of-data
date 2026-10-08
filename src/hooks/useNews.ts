@@ -47,7 +47,7 @@ export function useNews() {
     loadHeadlines()
     const timer = window.setInterval(loadHeadlines, HEADLINES_REFRESH_MS)
     return () => clearInterval(timer)
-  }, [query]) // eslint-disable-line
+  }, [query, loadHeadlines])
 
   return { articles, loading, query, error, search, loadHeadlines }
 }

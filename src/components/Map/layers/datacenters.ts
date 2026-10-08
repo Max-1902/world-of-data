@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { fetchDataCenters, type DataCenterPoint } from '../../../services/datacenters'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addDatacenterLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -58,7 +59,7 @@ export function addDatacenterLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '300px', className: 'cy-popup' })
       .setLngLat(coords).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'datacenter-circles', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'datacenter-circles', () => { map.getCanvas().style.cursor = '' })

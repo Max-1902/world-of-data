@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MapViewMode, PanelState } from '../types'
 import type { PanelGroup } from '../panels/types'
 import { GROUP_ORDER, panelsForGroup } from '../panels/registry'
-import { LAYER_IDS, VIEW_MODES } from './SettingsModal'
+import { LAYER_IDS, VIEW_MODES } from './layerCatalogue'
 import { CHOKEPOINTS } from '../services/chokepoints'
 import { rankItems, type PaletteItem } from '../utils/paletteSearch'
 

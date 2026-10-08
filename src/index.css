@@ -609,6 +609,8 @@ input::placeholder { color: #647883; opacity: 1; }
 .cb-news-meta { display: flex; align-items: center; gap: 5px; margin-top: 3px; overflow: hidden; color: var(--text3); font-size: 9px; white-space: nowrap; }
 .cb-tag { flex: 0 0 auto; padding: 1px 4px; border-radius: 3px; font-size: 7px; font-weight: 700; letter-spacing: .05em; color: var(--accent); background: var(--accent-soft); }
 .cb-tag.humanitarian, .cb-tag.other { color: var(--red); background: var(--red-soft); }
+/* Ownership label after a state-owned/-directed outlet's name (services/stateMedia.ts). */
+.state-media-tag { flex: 0 0 auto; padding: 0 3px; border: 1px solid var(--amber); border-radius: 3px; font-size: 8.5px; font-weight: 700; letter-spacing: .06em; line-height: 1.4; color: var(--amber); background: var(--amber-soft); cursor: help; white-space: nowrap; }
 .cb-line { color: var(--text2); font-size: 10px; line-height: 1.4; }
 .cb-dim, .cb-empty { color: var(--text3); }
 .cb-empty { padding: 4px 0; font-size: 10px; }

@@ -5,6 +5,7 @@ import { formatEconValue, type EconIndicator, type IndicatorId } from '../servic
 import { linkedCrisisEvents, pickCountryHeadlines } from '../utils/countryBrief'
 import type { TrajectoryEntry } from '../utils/trajectory'
 import type { CrisisEvent, NewsArticle } from '../types'
+import { StateMediaBadge } from './StateMediaBadge'
 
 interface Props {
   country: string
@@ -59,6 +60,7 @@ export default function CountryBrief({ country, crises, articles, trend }: Props
             <span className="cb-news-meta">
               {category && <b className={`cb-tag ${category}`}>{CATEGORY_LABEL[category]}</b>}
               <span>{article.source}</span>
+              <StateMediaBadge source={article.source} />
               {ageLabel(article.publishedAt) && <span>· {ageLabel(article.publishedAt)}</span>}
             </span>
           </a>

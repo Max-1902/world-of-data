@@ -5,6 +5,7 @@ import { useCountryAnalytics } from '../../../hooks/useCountryAnalytics'
 import { countryColors } from '../../../utils/countryStats'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addCountryAnalyticsLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef, countryAnalyticsRef } = ctx
@@ -45,7 +46,7 @@ export function addCountryAnalyticsLayers(map: mapboxgl.Map, ctx: LayerCtx): voi
     </div>`
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' }).setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'country-analytics-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'country-analytics-fill', () => { map.getCanvas().style.cursor = '' })

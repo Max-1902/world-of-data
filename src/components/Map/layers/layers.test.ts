@@ -8,6 +8,7 @@ vi.mock('../flightLayer', async (orig) => ({ ...(await orig<typeof import('../fl
 vi.mock('../vesselImages', () => ({ addVesselImages: vi.fn() }))
 
 import { addAllLayers, type LayerCtx } from './index'
+import { hasFeatureClickMarker } from './countryClick'
 
 interface Recorded {
   sources: string[]
@@ -80,6 +81,6 @@ describe('addAllLayers', () => {
 
   it('installs the generic country click last, and every popup path can mark a feature click', () => {
     expect(rec.handlers.filter(h => h.event === 'click' && h.layer === null)).toHaveLength(1)
-    expect((map as unknown as { __markFeatureClick?: () => void }).__markFeatureClick).toBeTypeOf('function')
+    expect(hasFeatureClickMarker(map as unknown as Parameters<typeof hasFeatureClickMarker>[0])).toBe(true)
   })
 })

@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchAllPowerPlants, type InfraPoint } from '../../../services/infrastructure'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -67,7 +68,7 @@ export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void 
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
       .setLngLat(coords).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'infra-circles', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'infra-circles', () => { map.getCanvas().style.cursor = '' })

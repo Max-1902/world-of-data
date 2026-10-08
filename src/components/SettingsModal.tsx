@@ -2,6 +2,7 @@ import { sortByLayerSections } from '../utils/layerSections'
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import type { MapViewMode, PanelState } from '../types'
+import { LAYER_IDS, VIEW_MODES } from './layerCatalogue'
 
 const TABS = ['GENERAL', 'LAYERS', 'DATA SOURCES', 'API KEYS', 'DISPLAY', 'ABOUT'] as const
 type Tab = typeof TABS[number]
@@ -83,50 +84,9 @@ const DATA_SOURCES: { category: string; items: { label: string; source: string; 
   },
 ]
 
-export const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
-  { id: 'flights', label: 'FLIGHTS', desc: 'ADS-B aircraft positions' },
-  { id: 'crises', label: 'CRISES', desc: 'ACLED conflict events' },
-  { id: 'news', label: 'NEWS', desc: 'GDELT article markers' },
-  { id: 'stocks', label: 'MARKETS', desc: 'Financial hub markers' },
-  { id: 'wildfires', label: 'WILDFIRES', desc: 'NASA FIRMS hotspots' },
-  { id: 'military', label: 'MILITARY', desc: 'Known military bases' },
-  { id: 'militaryPersonnel', label: 'FORCE SIZE', desc: 'Armed forces personnel by country (World Bank)' },
-  { id: 'nuclear', label: 'NUCLEAR', desc: 'Nuclear facilities' },
-  { id: 'sanctions', label: 'SANCTIONS', desc: 'Sanctioned countries' },
-  { id: 'cameras', label: 'CAMERAS', desc: 'Live webcam feeds' },
-  { id: 'infrastructure', label: 'INFRA', desc: 'Energy infrastructure' },
-  { id: 'airspace', label: 'AIRSPACE', desc: 'FIR/NOTAM regions' },
-  { id: 'humanitarian', label: 'HUMANITARIAN', desc: 'UNHCR displacement data' },
-  { id: 'vessels', label: 'VESSELS', desc: 'AIS ship tracking' },
-  { id: 'oil', label: 'OIL', desc: 'Oil reserves and production' },
-  { id: 'gas', label: 'GAS', desc: 'Gas reserves and production' },
-  { id: 'ports', label: 'PORTS', desc: 'Global commercial & naval ports' },
-  { id: 'pipelines', label: 'PIPELINES', desc: 'Oil & gas pipelines (OpenStreetMap)' },
-  { id: 'chokepoints', label: 'CHOKEPOINTS', desc: 'Strategic maritime chokepoints' },
-  { id: 'supplychain', label: 'SUPPLY CHAIN', desc: 'Semiconductor fabs, rare earth, lithium, cobalt' },
-  { id: 'shippingDensity', label: 'SHIPPING', desc: 'Global shipping-lane density, 2004–05 (NOAA/NCEAS/ICOADS via Resource Watch)' },
-  { id: 'gpsjam', label: 'GPS JAM', desc: 'Interference (daily, ADS-B)' },
-  { id: 'countryAnalytics', label: 'COUNTRY DATA', desc: 'Countries shaded by the indicators compared in Country Analytics (World Bank)' },
-  { id: 'analyticsHex', label: 'HAZARD HEX', desc: 'Wildfire detections or earthquakes binned into 3D hexagons (Hazard Analytics panel)' },
-  { id: 'outages', label: 'OUTAGES', desc: 'Internet/power outages (IODA)' },
-  { id: 'resources', label: 'RESOURCES', desc: 'Critical mineral producers' },
-  { id: 'infraIndicators', label: 'INFRA ACCESS', desc: 'Electricity, internet, water/sanitation access by country (World Bank)' },
-  { id: 'tradeStats', label: 'TRADE', desc: 'Trade partners & balance' },
-  { id: 'datacenters', label: 'DATA CENTERS', desc: 'Data center facilities worldwide (OpenStreetMap)' },
-]
-
-export const VIEW_MODES: { id: MapViewMode; label: string }[] = [
-  { id: 'earth', label: 'Globe' },
-  { id: 'dark', label: 'Dark' },
-  { id: 'satellite', label: 'Satellite' },
-  { id: 'standard', label: 'Standard' },
-  { id: 'city3d', label: '3D City' },
-  { id: 'nightvision', label: 'Night Vision' },
-  { id: 'bw', label: 'Black & White' },
-  { id: 'infrared', label: 'Infrared' },
-  { id: 'snow', label: 'Snow' },
-  { id: 'thermal', label: 'Thermal' },
-]
+// Layer and view-mode catalogues live in layerCatalogue.ts so CommandPalette can use them without pulling
+// this (lazy-loaded) modal into the main bundle.
+export { LAYER_IDS, VIEW_MODES }
 
 // Client-visible keys — Vite bundles these, so their status can be read directly.
 // NOTE: each `isSet` is a static `import.meta.env.VITE_X` reference (not a dynamic

@@ -11,6 +11,7 @@ import { onGlobalReload } from '../../utils/reloadBus'
 import { useAutoTranslate, useTranslatedArticle } from '../../hooks/useTranslation'
 import { SEV_COLORS } from './OverviewPanels'
 import { outageScoreColor } from './OutagesPanel'
+import { StateMediaBadge } from '../StateMediaBadge'
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 function safeTimeAgo(d: string) {
@@ -47,6 +48,7 @@ export function ArticleRow({ a }: { a: NewsArticle }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' }}>
             <span style={{ fontSize: '10px', color: 'var(--text2)', fontWeight: 600, letterSpacing: '.05em' }}>{a.source}</span>
+            <StateMediaBadge source={a.source} />
             {t.from && (
               <button
                 title={showOriginal ? 'Showing the original — click to translate' : 'Machine-translated to English — click to show the original'}
@@ -383,6 +385,7 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
                     <div style={{ fontSize: '12px', color: 'var(--text1)', lineHeight: 1.4, marginBottom: 2, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{a.title}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <span style={{ fontSize: '10px', color: 'var(--text3)' }}>{a.source}</span>
+                      <StateMediaBadge source={a.source} />
                       <span style={{ fontSize: '10px', color: 'var(--text3)' }}>{safeTimeAgo(a.publishedAt)}</span>
                       <ExternalLink size={7} style={{ color: 'var(--text3)' }} />
                     </div>

@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { OIL_GAS_DATA, getMaxValue, formatValue, getRegionTotals, METRIC_COLORS, METRIC_LABELS, type OilGasMetric } from '../../../services/oilgas'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addOilGasLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -88,7 +89,7 @@ export function addOilGasLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' })
       .setLngLat([country.lng, country.lat]).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   }
   map.on('click', 'oil-extrusion', oilgasClickHandler)
   map.on('click', 'gas-extrusion', oilgasClickHandler)

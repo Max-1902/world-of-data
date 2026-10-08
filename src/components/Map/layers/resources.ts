@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { RESOURCE_PROFILES, fetchResourceRents } from '../../../services/resources'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addResourcesLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -73,7 +74,7 @@ export function addResourcesLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       .setLngLat(e.lngLat)
       .setHTML(renderHtml('<div style="font-size:11px;color:#9ca3af;">Loading live data…</div>'))
       .addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
 
     const clickedPopup = popupRef.current
     fetchResourceRents(iso2).then(rents => {

@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { EARTHCAM_CAMERAS, type LiveCamera } from '../../../services/earthcam'
 import { registerUSWebcams } from '../../../services/usWebcams'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 /** EarthCam CCTV camera markers */
 export function useCameraMarkers({ mapRef, mapReady, popupRef }: MapHandle, { showCameras }: Pick<MapViewProps, 'showCameras'>) {
@@ -45,7 +46,7 @@ export function useCameraMarkers({ mapRef, mapReady, popupRef }: MapHandle, { sh
 
         el.addEventListener('click', (e) => {
           e.stopPropagation()
-          ;(map as any).__markFeatureClick?.()
+          markFeatureClick(map)
           // Fly to camera location
           map.flyTo({ center: [cam.lng, cam.lat], zoom: 14, pitch: 45, duration: 1500 })
 

@@ -4,6 +4,7 @@ import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS }
 import { addVesselImages } from '../vesselImages'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addVesselLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -96,7 +97,7 @@ export function addVesselLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '290px', className: 'cy-popup' })
       .setLngLat(coords).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'vessel-icons', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'vessel-icons', () => { map.getCanvas().style.cursor = '' })

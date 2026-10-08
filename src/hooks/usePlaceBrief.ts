@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { fetchPlaceHeadlines } from '../services/news'
 import { fetchCivilFacilitiesAround, type CivilFacility } from '../services/civilFacilities'
 import { fetchPowerPlantsNear, type InfraPoint } from '../services/infrastructure'
@@ -25,8 +25,12 @@ const EMPTY: PlaceBriefData = { headlines: [], civil: [], powerPlants: [], loadi
 export function usePlaceBrief(place: SelectedPlace | null): PlaceBriefData {
   const [data, setData] = useState<PlaceBriefData>(EMPTY)
   const key = place ? `${place.name}|${place.region ?? ''}|${place.lat}|${place.lng}` : ''
+  // The place object is a new reference on every click; the effect is keyed on `key` and reads the place via a ref.
+  const placeRef = useRef(place)
+  placeRef.current = place
 
   useEffect(() => {
+    const place = placeRef.current
     if (!place) { setData(EMPTY); return }
     let cancelled = false
     let pending = 3
@@ -43,8 +47,7 @@ export function usePlaceBrief(place: SelectedPlace | null): PlaceBriefData {
       .catch(() => {}).finally(settle)
     fetchPowerPlantsNear(place.lat, place.lng, RADIUS_KM.assets).then(apply('powerPlants')).catch(() => {}).finally(settle)
     return () => { cancelled = true }
-    // `key` stands in for the place object, which is a new reference on every click
-  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [key])
 
   return data
 }

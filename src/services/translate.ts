@@ -75,8 +75,7 @@ export function parseTranslation(json: unknown): Translation | null {
 export function mayNeedTranslation(text: string, lang?: string): boolean {
   if (!text.trim()) return false
   if (lang) return lang !== 'en'
-  // eslint-disable-next-line no-control-regex
-  return /[^\x00-\x7F]/.test(text)
+  return /[\u0080-\uFFFF]/.test(text)
 }
 
 /** Translates `text` to English. Resolves to null when the service is unavailable (callers show the original). Never throws. */

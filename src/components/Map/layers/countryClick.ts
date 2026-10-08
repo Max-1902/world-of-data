@@ -3,6 +3,20 @@ import { PLACE_MIN_ZOOM, pickClickedPlace } from '../../../utils/placePick'
 import { MAPBOX_TOKEN as TOKEN } from '../token'
 import type { LayerCtx } from './types'
 
+// Feature layers with their own popup call markFeatureClick() from their click handler, so the generic
+// country click (which fires for the same event) knows to skip reverse-geocoding. One marker per map.
+const featureClickMarkers = new WeakMap<mapboxgl.Map, () => void>()
+
+/** Tell the generic country click that this click landed on a feature that opened its own popup. */
+export function markFeatureClick(map: mapboxgl.Map): void {
+  featureClickMarkers.get(map)?.()
+}
+
+/** True once installCountryClick has run on this map (test hook). */
+export function hasFeatureClickMarker(map: mapboxgl.Map): boolean {
+  return featureClickMarkers.has(map)
+}
+
 export function installCountryClick(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { onCountryClickRef, onPlaceClickRef } = ctx
   // ── Country click — reverse geocode any click on the map ─────────
@@ -37,5 +51,5 @@ export function installCountryClick(map: mapboxgl.Map, ctx: LayerCtx): void {
         .catch(() => {})
     }, 150)
   })
-  ;(map as any).__markFeatureClick = () => { featureClickedFlag = true }
+  featureClickMarkers.set(map, () => { featureClickedFlag = true })
 }
