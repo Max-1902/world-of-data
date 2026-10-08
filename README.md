@@ -22,6 +22,10 @@
 
 Split view: the satellite map beside the embedded DeepState Ukraine battlefield monitor, with a live news feed in the dock.
 
+![Infrastructure workspace on the United States: country panel listing dams, LNG terminals, refineries and the largest power plants, a hover card with electricity output against the trend, and the Power Output ranking in the dock](docs/screenshots/infrastructure-us.jpg)
+
+Infrastructure workspace on the United States: the country panel lists its dams, LNG terminals, refineries and largest power plants, and the dock ranks countries by electricity generated (Ember via Our World in Data).
+
 ## Analytics
 
 Pick any two of **50 country indicators** (World Bank, Our World in Data, Ember) and get the trend, Spearman correlation with a 95% interval, the biggest outliers, and a globe shaded by the result. Charts have a table view; all maths is unit-tested.
