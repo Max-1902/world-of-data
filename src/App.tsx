@@ -46,7 +46,7 @@ const DEFAULT_PANEL_STATE: PanelState = {
   infrastructure: false, airspace: false, humanitarian: false, vessels: false,
   oil: false, gas: false, gpsjam: false, ports: false, pipelines: false,
   chokepoints: false, supplychain: false, shippingDensity: false,
-  outages: false, resources: false, tradeStats: false,
+  outages: false, disasters: true, resources: false, tradeStats: false,
   militaryPersonnel: false, datacenters: false, infraIndicators: false,
   analyticsHex: false, countryAnalytics: false,
 }
@@ -323,6 +323,8 @@ export default function App() {
             showShippingDensity={panelState.shippingDensity}
             outages={outages}
             showOutages={panelState.outages}
+            disasterAlerts={disasterAlerts}
+            showDisasters={panelState.disasters}
             showResources={panelState.resources}
             showTradeStats={panelState.tradeStats}
             showMilitaryPersonnel={panelState.militaryPersonnel}

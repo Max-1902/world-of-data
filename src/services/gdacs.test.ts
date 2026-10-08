@@ -29,6 +29,15 @@ describe('parseDisasterAlerts', () => {
     ] })
     expect(out.map(a => a.id)).toEqual(['DR-2-7', 'DR-1-7', 'DR-3-7'])
   })
+  it('keeps GDACS\'s severity text, source, affected countries and current flag', () => {
+    const [a] = parseDisasterAlerts({ features: [feat({
+      severitydata: { severitytext: ' Tropical Storm (maximum wind speed of 204 km/h) ' }, source: 'NOAA', iscurrent: 'false',
+      affectedcountries: [{ countryname: 'Mexico' }, { countryname: '' }, {}, null],
+    })] })
+    expect(a).toMatchObject({ severityText: 'Tropical Storm (maximum wind speed of 204 km/h)', source: 'NOAA', affectedCountries: ['Mexico'], isCurrent: false })
+    const [b] = parseDisasterAlerts({ features: [feat()] })
+    expect(b).toMatchObject({ severityText: '', source: '', affectedCountries: [], isCurrent: true })
+  })
   it('only keeps report links that point at gdacs.org', () => {
     const out = parseDisasterAlerts({ features: [feat({ eventid: 1, url: { report: 'https://evil.example/x' } }), feat({ eventid: 2, url: {} })] })
     expect(out.map(a => a.reportUrl)).toEqual(['', ''])

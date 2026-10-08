@@ -5,6 +5,7 @@ import type { PanelState } from '../../../types'
 
 const OVERLAY_ITEMS: Record<keyof PanelState, { label: string; icon: string; color: string }> = {
   outages: { label: 'OUTAGES', icon: '◐', color: '#f59e0b' },
+  disasters: { label: 'DISASTERS', icon: '⚑', color: '#f97316' },
   resources: { label: 'RESOURCES', icon: '◭', color: '#d97706' },
   tradeStats: { label: 'TRADE', icon: '⇄', color: '#22d3ee' },
   flights: { label: 'FLIGHTS', icon: '✈', color: '#00ff88' },
