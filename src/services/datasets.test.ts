@@ -150,7 +150,11 @@ describe('ports & supply chain', () => {
     for (const p of PORTS) {
       expect(PORT_TYPE_COLORS[p.type], p.id).toMatch(HEX)
       expect(PORT_TYPE_LABELS[p.type], p.id).toBeTruthy()
-      if (p.annualTEU !== undefined) expect(p.annualTEU, p.id).toBeGreaterThan(0)
+      expect(p.portwatchName.trim(), `${p.id} has no PortWatch match`).not.toBe('')
+      if (p.activity) {
+        expect(p.activity.portCalls, p.id).toBeGreaterThan(0)
+        expect(p.activity.year, p.id).toBeGreaterThanOrEqual(2024)
+      }
     }
   })
 

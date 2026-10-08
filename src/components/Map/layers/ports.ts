@@ -45,7 +45,7 @@ export function addPortLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     const p = e.features[0].properties as Record<string, unknown>
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
     const color = String(p.color || '#00ccff')
-    const teu = p.annualTEU ? `<span style="color:#6b7280;">▣ <b style="color:#2563eb">${Number(p.annualTEU).toLocaleString()}K TEU/yr</b></span>` : ''
+    const calls = p.portCalls != null ? `<span style="color:#6b7280;">⚓ <b style="color:#2563eb">${Number(p.portCalls).toLocaleString()} calls</b> · ${p.tradeMt} Mt (${p.activityYear})</span>` : ''
     const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:290px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;gap:6px;">
         <span style="font-size:12px;font-weight:800;color:#14161a;line-height:1.3;">⎈ ${p.name}</span>
@@ -53,10 +53,11 @@ export function addPortLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       </div>
       <div style="display:flex;gap:8px;margin-bottom:6px;font-size:10px;flex-wrap:wrap;">
         <span style="color:#6b7280;">⚑ <b style="color:#14161a">${p.country}</b></span>
-        ${teu}
+        ${calls}
       </div>
       <div style="font-size:11px;color:#14161a;margin-bottom:4px;">▣ <b>${p.topIndustry}</b></div>
       ${p.notes ? `<div style="font-size:10px;color:#6b7280;margin-top:4px;">${p.notes}</div>` : ''}
+      <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: IMF PORTWATCH (${p.portwatchName}${p.locode ? ` · ${p.locode}` : ''}) · CALLS & TONNES ESTIMATED FROM AIS</div>
     </div>`
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
@@ -91,7 +92,11 @@ export function usePortData({ mapRef, layersReadyRef, mapReady }: MapHandle, { s
         typeLabel:   PORT_TYPE_LABELS[p.type],
         color:       PORT_TYPE_COLORS[p.type],
         topIndustry: p.topIndustry,
-        annualTEU:   p.annualTEU ?? null,
+        portCalls:   p.activity?.portCalls ?? null,
+        tradeMt:     p.activity?.tradeMt ?? null,
+        activityYear: p.activity?.year ?? null,
+        portwatchName: p.portwatchName,
+        locode:      p.locode ?? '',
         notes:       p.notes ?? '',
       },
     }))
