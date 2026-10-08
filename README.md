@@ -8,6 +8,8 @@
 
 ## 29 overlays in 5 categories
 
+![Satellite view of Europe with many overlays switched on at once, the Germany country brief open at bottom left and the Economy workspace with Germany's trade profile on the right](docs/screenshots/overlays-europe.jpg)
+
 ![The globe with crises, wildfires, humanitarian data, military and nuclear sites, chokepoints, ports and pipelines switched on, and the overlay menu open](docs/screenshots/overlay-categories.jpg)
 
 | Category | Overlays |
