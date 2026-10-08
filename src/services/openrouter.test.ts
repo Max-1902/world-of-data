@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { streamAI, buildDashboardContext, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, streamAIWithFallback, groupModels, formatModelPrice } from './openrouter'
+import { streamAI, buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, streamAIWithFallback, groupModels, formatModelPrice } from './openrouter'
 import { mockFetch, streamResponse, textResponse, jsonResponse } from '../test/helpers'
 import type { CrisisEvent, Flight } from '../types'
 import type { TrajectoryEntry } from '../utils/trajectory'
@@ -117,6 +117,30 @@ describe('model catalogue and prompts', () => {
   })
 })
 
+describe('buildSystemPrompt', () => {
+  it('wraps the context and carries the not-measured and number-citation rules', () => {
+    const p = buildSystemPrompt('CTX-MARKER')
+    expect(p.endsWith('CTX-MARKER')).toBe(true)
+    expect(p).toMatch(/NOT MEASURED is unknown, not zero/)
+    expect(p).toMatch(/Only cite numbers that appear in the data below/)
+  })
+})
+
+describe('visibleText', () => {
+  it('hides dashboard command lines and model-native tool-call blocks', () => {
+    expect(visibleText("[FLY:Kyiv]\n<|tool_call_start|>[COUNTRY(name='Ukraine')]<|tool_call_end|>\nBriefing.")).toBe('\nBriefing.')
+    expect(visibleText("<|tool_call_start|>[COUNTRY(name='Ukraine')]<|tool_call_end|>").trim()).toBe('')
+    expect(visibleText('Plain answer [FLY:x] inline stays')).toBe('Plain answer [FLY:x] inline stays')
+  })
+})
+
+describe('notMeasured', () => {
+  it('is empty when both feeds delivered data', () => {
+    const ev = { id: 'x', source: 'ACLED' } as CrisisEvent
+    expect(notMeasured([ev], [{}] as Flight[])).toEqual([])
+  })
+})
+
 describe('buildDashboardContext country analytics', () => {
   it('adds the analytics block only when a summary is given', () => {
     expect(buildDashboardContext([], [])).not.toContain('COUNTRY ANALYTICS')
@@ -177,12 +201,53 @@ describe('buildDashboardContext', () => {
     expect(ctx).not.toContain('x'.repeat(81))
   })
 
-  it('handles an empty dashboard gracefully', () => {
+  it('handles an empty dashboard gracefully — as not measured, never as zero', () => {
     const ctx = buildDashboardContext([], [])
-    expect(ctx).toContain('Total events: 0')
-    expect(ctx).toContain('Most affected countries: none')
+    expect(ctx).not.toContain('Total events: 0')
+    expect(ctx).toContain('Live events: NOT MEASURED')
     expect(ctx).not.toContain('Top critical events')
     expect(ctx).not.toContain('TRAJECTORY SIGNALS')
+  })
+
+  it('reports zero live events only when the feed actually delivered events (never from the baseline)', () => {
+    const ctx = buildDashboardContext([crisis({ country: 'B' })], [{ icao24: 'a' }] as unknown as Flight[])
+    expect(ctx).toContain('Total events: 1')
+    expect(ctx).toContain('Most affected countries: B (1)')
+    expect(ctx).not.toContain('NOT MEASURED')
+  })
+
+  it('never counts hand-entered baseline markers as live events', () => {
+    const base = crisis({ id: 'baseline-ukraine', source: 'Baseline', country: 'Ukraine', title: 'Russia–Ukraine War', severity: 'critical' })
+    const onlyBaseline = buildDashboardContext([base], [])
+    expect(onlyBaseline).toContain('Live conflict events: no events received from ACLED')
+    expect(onlyBaseline).toContain('KNOWN ONGOING CONFLICTS')
+    expect(onlyBaseline).toContain('Ukraine — Russia–Ukraine War')
+    expect(onlyBaseline).not.toMatch(/Critical: \d/)
+    const mixed = buildDashboardContext([base, crisis({ country: 'Sudan', severity: 'critical' })], [])
+    expect(mixed).toContain('Total events: 1')
+    expect(mixed).toContain('Critical: 1 |')
+  })
+
+  it('marks a switched-off or empty flights feed as NOT MEASURED instead of 0 flights', () => {
+    const off = buildDashboardContext([], [], [], '', '', '', { flightsLayer: false })
+    expect(off).toContain('Air traffic: flights layer switched off')
+    expect(off).toContain('AIR TRAFFIC\n  NOT MEASURED')
+    expect(off).not.toMatch(/Airborne flights tracked: 0/)
+    expect(buildDashboardContext([], [])).toContain('Air traffic: no flight data received from OpenSky')
+    // layer switched off wins over stale flights still held in state
+    const stale = buildDashboardContext([], [{ icao24: 'a' }] as unknown as Flight[], [], '', '', '', { flightsLayer: false })
+    expect(stale).not.toContain('Airborne flights tracked')
+  })
+
+  it('marks a switched-off crises layer as not measured even when stale events are still loaded', () => {
+    const ctx = buildDashboardContext([crisis({})], [], [], '', '', '', { crisesLayer: false })
+    expect(ctx).toContain('Live conflict events: crises layer switched off')
+    expect(ctx).not.toContain('Total events')
+  })
+
+  it('prints the given as-of time, so frozen research contexts are reproducible', () => {
+    const ctx = buildDashboardContext([], [], [], '', '', '', { now: new Date(Date.UTC(2026, 9, 7, 12)) })
+    expect(ctx).toContain('Timestamp (UTC): Wed, 07 Oct 2026 12:00:00 GMT')
   })
 
   it('includes locally computed trajectory signals when provided', () => {

@@ -4,11 +4,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight } from '../../types'
-import { buildDashboardContext, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
+import { buildDashboardContext, buildSystemPrompt, notMeasured, CHAT_PARAMS, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
+import { runLog, downloadRuns } from '../../services/aiRuns'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
-import { computeTrajectories, type TrajectoryEntry } from '../../utils/trajectory'
+import { computeTrajectories, isBaseline, type TrajectoryEntry } from '../../utils/trajectory'
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
 import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
 import { summarizeForAI } from '../../utils/countryStats'
@@ -98,6 +99,10 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   // Rule-based trajectory scoring — recomputes automatically as crises/flights refresh.
   // No prompt required; this is what makes the panel proactive rather than ask-only.
   const trajectories = useMemo(() => computeTrajectories(crises, flights), [crises, flights])
+  // Same rule as the AI context: an unmeasured feed reads "not measured", never 0 (and baseline markers aren't incidents).
+  const missing = notMeasured(crises, flights, { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises })
+  const incidentsLabel = missing.some(m => m.what === 'Live conflict events') ? 'not measured' : crises.filter(c => !isBaseline(c)).length.toLocaleString()
+  const flightsLabel = missing.some(m => m.what === 'Air traffic') ? 'not measured' : flights.length.toLocaleString()
   // whatever comparison is open in Country Analytics (null until its data has loaded) — computed locally, so the model can cite it
   const ca = useCountryAnalytics(false)
   const countryAnalyticsSummary = ca.analysis ? summarizeForAI(ca.analysis, ca.xMeta, ca.yMeta, ca.xs, ca.ys) : ''
@@ -203,34 +208,21 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
         marketSnapshot = quotes.map(q => `  • ${q.name} (${q.symbol}): ${q.price.toFixed(2)} ${q.currency}, ${q.changePercent >= 0 ? '+' : ''}${q.changePercent.toFixed(2)}% today`).join('\n')
       } catch { /* answer without it */ }
     }
-    const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot, countryAnalyticsSummary)
-    const sysMsg: DSMessage = {
-      role: 'system',
-      content: `You are the analyst in Mundus Datorum, a live world monitoring dashboard. You have access to current crisis and flight data, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
-
-NEVER refuse, defer, or open with a disclaimer because some data source is down or some data is missing — the dashboard has many redundant sources and outages are routine. Never mention source outages unless the user asks about them. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For data questions about countries, ground the answer in a COUNTRY ANALYTICS block when one is present, quoting its numbers and naming the countries it lists, then add context from your own knowledge clearly marked as such. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
-
-IMPORTANT: You can execute dashboard commands by including them in your response. Commands are on their own line:
-
-[FLY:location] — Fly the map to a location (city, country, coordinates). Example: [FLY:Tehran, Iran]
-[COUNTRY:name] — Open the country intelligence drawer. Example: [COUNTRY:Iran]
-[LAYER:id:on] or [LAYER:id:off] — Toggle a map layer. Layer IDs: flights, crises, wildfires, military, nuclear, sanctions, cameras, infrastructure, airspace, humanitarian, vessels, oil, gas, ports, pipelines, gpsjam
-[DEEPSTATE:on] or [DEEPSTATE:off] — Toggle Ukraine frontline overlay
-
-When a user asks about a specific country or region, ALWAYS include the FLY and COUNTRY commands to show it on the map. (If the user's message names a country, the dashboard has already flown there and opened its overview — repeating those commands is harmless.) When relevant, enable related layers. For example if asked about Iran, fly there, open the country drawer, and enable relevant layers like military, crises, airspace.
-
-Execute commands BEFORE your analysis text — put them at the very start of your response.
-
-${context}`,
-    }
+    const layers   = { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises }
+    const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot, countryAnalyticsSummary, layers)
+    const sysMsg: DSMessage = { role: 'system', content: buildSystemPrompt(context) }
     const userMsg: DSMessage = { role: 'user', content: prompt }
     const messages: DSMessage[] = [sysMsg, ...history, userMsg]
 
     let full = ''
+    const startedAt = Date.now()
+    let answeredBy: string | null = null
+    let outcome: 'ok' | 'empty' | 'error' | 'aborted' = 'ok'
+    let runError: string | undefined
     const executedCmds = new Set<string>()
     const loggedActions: ActionLogEntry[] = [...opened]
     try {
-      await streamAIWithFallback(
+      answeredBy = await streamAIWithFallback(
         messages,
         token => {
           full += token
@@ -286,7 +278,7 @@ ${context}`,
             }
           }
           // Display response without command lines
-          const display = full.split('\n').filter(l => !l.trim().match(/^\[(FLY|COUNTRY|LAYER|DEEPSTATE):.+\]$/)).join('\n')
+          const display = visibleText(full)
           setResponse(display)
         },
         abortRef.current.signal,
@@ -294,8 +286,9 @@ ${context}`,
         undefined,
         (from, to) => setNotice(`${modelName(from)} is rate-limited — switched to ${modelName(to)}.`),
       )
-      const cleanResponse = full.split('\n').filter(l => !l.trim().match(/^\[(FLY|COUNTRY|LAYER|DEEPSTATE):.+\]$/)).join('\n')
+      const cleanResponse = visibleText(full)
       if (!cleanResponse.trim()) {
+        outcome = 'empty'
         setError('The selected model did not return a briefing. Try a different model.')
       } else {
         setHistory(prev => [
@@ -307,10 +300,19 @@ ${context}`,
       }
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        setError(describeAIError(err))
-      }
+        outcome = 'error'
+        runError = describeAIError(err)
+        setError(runError)
+      } else outcome = 'aborted'
     } finally {
       setStreaming(false)
+      // Research log: freeze exactly what was sent and what came back (see services/aiRuns.ts).
+      void runLog.record({
+        v: 1, id: `${startedAt}-${Math.random().toString(36).slice(2, 8)}`, startedAt, finishedAt: Date.now(),
+        modelRequested: model, modelAnswered: answeredBy, params: { ...CHAT_PARAMS },
+        messages, response: full, outcome, error: runError,
+        notMeasured: notMeasured(crises, flights, layers),
+      })
     }
   }
 
@@ -405,6 +407,13 @@ ${context}`,
           }}>
             <div style={{ padding: '8px 11px', fontSize: 11, color: 'var(--text2)', letterSpacing: '.06em', borderBottom: '1px solid var(--border)' }}>
               Past conversations · {pastSessions.length}
+              <button
+                onClick={() => { void downloadRuns().then(n => setNotice(n ? `Exported ${n} logged AI run${n === 1 ? '' : 's'} (JSONL).` : 'No AI runs logged yet.')) }}
+                title="Download every logged AI run — exact context sent, model, settings and answer — as JSONL"
+                style={{ float: 'right', background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 11, padding: 0, fontFamily: 'inherit' }}
+              >
+                Export runs
+              </button>
             </div>
             {pastSessions.length === 0 && (
               <div style={{ padding: '12px 11px', fontSize: 12.5, color: 'var(--text3)' }}>No saved conversations yet</div>
@@ -523,8 +532,8 @@ ${context}`,
               Ask about the current situation, compare regional activity, or explore what a developing event could mean.
             </div>
             <div className="ai-welcome-context">
-              <span><b>{crises.length.toLocaleString()}</b> incidents</span>
-              <span><b>{flights.length.toLocaleString()}</b> flights tracked</span>
+              <span><b>{incidentsLabel}</b> incidents</span>
+              <span><b>{flightsLabel}</b> flights tracked</span>
               <span><b>{trajectories.length}</b> regional trends</span>
             </div>
           </div>
@@ -606,8 +615,8 @@ ${context}`,
 
       <div className="ai-context-bar">
         <div className="ai-context-items">
-          <span><i className="incidents" />{crises.length.toLocaleString()} incidents</span>
-          <span><i className="flights" />{flights.length.toLocaleString()} flights</span>
+          <span><i className="incidents" />incidents {incidentsLabel}</span>
+          <span><i className="flights" />flights {flightsLabel}</span>
           <span className="ai-live-status"><i />Live data</span>
         </div>
         {history.length > 0 && (

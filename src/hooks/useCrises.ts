@@ -8,7 +8,7 @@ const mk = (id: string, title: string, type: CrisisEvent['type'], sev: CrisisEve
   id: `baseline-${id}`, title, type, severity: sev, latitude: lat, longitude: lng, country, date: today, description: desc, source: 'Baseline',
 })
 
-const BASELINE: CrisisEvent[] = [
+export const BASELINE: CrisisEvent[] = [
   mk('ukraine',    'Russia–Ukraine War',               'war',      'critical', 48.8,   32.4,   'Ukraine',       'Full-scale invasion since Feb 2022'),
   mk('gaza',       'Gaza Conflict',                    'war',      'critical', 31.5,   34.4,   'Palestine',     'Ongoing conflict in the Gaza Strip'),
   mk('sudan',      'Sudan Civil War (SAF vs RSF)',      'war',      'critical', 15.5,   32.5,   'Sudan',         'Armed conflict since April 2023'),
@@ -27,6 +27,19 @@ const BASELINE: CrisisEvent[] = [
   mk('taiwan-str', 'Taiwan Strait Tensions',           'political','medium',   24.0,  120.0,   'Taiwan',        'PRC military exercises & threats'),
 ]
 
+/** Baseline first, then live events, dropping any event within 0.5° of an earlier one of the same type. */
+export function mergeWithBaseline(live: CrisisEvent[]): CrisisEvent[] {
+  const merged = [...BASELINE, ...live]
+  return merged.filter((ev, i) =>
+    !merged.slice(0, i).some(
+      (prev) =>
+        Math.abs(prev.latitude  - ev.latitude)  < 0.5 &&
+        Math.abs(prev.longitude - ev.longitude) < 0.5 &&
+        prev.type === ev.type
+    )
+  )
+}
+
 export function useCrises(enabled: boolean) {
   const [crises, setCrises] = useState<CrisisEvent[]>(BASELINE)
   const [loading, setLoading] = useState(false)
@@ -43,16 +56,7 @@ export function useCrises(enabled: boolean) {
       // dropped — its GEO API is gone and its raw event codes are too noisy to plot (see services/crises.ts).
       const live   = await fetchACLEDEvents(14)
       setLiveCount(live.length)
-      const merged = [...BASELINE, ...live]
-      const deduped = merged.filter((ev, i) =>
-        !merged.slice(0, i).some(
-          (prev) =>
-            Math.abs(prev.latitude  - ev.latitude)  < 0.5 &&
-            Math.abs(prev.longitude - ev.longitude) < 0.5 &&
-            prev.type === ev.type
-        )
-      )
-      setCrises(deduped)
+      setCrises(mergeWithBaseline(live))
     } catch (e) {
       setError(String(e))
       // keep existing data (baseline or previously loaded)

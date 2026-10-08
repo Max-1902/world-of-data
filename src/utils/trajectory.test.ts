@@ -78,6 +78,21 @@ describe('computeTrajectories', () => {
     expect(result.find(e => e.country === 'Sylvania')).toBeUndefined()
   })
 
+  it('reads perfectly steady activity (one event a day for two weeks) as flat, with a 7-day prior bucket', () => {
+    // Regression: the cutoff used to be 13 days, so a 10-day prior bucket was scaled as 7 days and every
+    // steady country came out "falling — 3 events in 72h, down from 10 in the prior week".
+    const asOf = Date.UTC(2026, 9, 7, 15)
+    const crises = Array.from({ length: 14 }, (_, d) =>
+      crisis({ country: 'Steady', severity: 'high', date: new Date(asOf - d * 86_400_000).toISOString().slice(0, 10) }))
+    const [entry] = computeTrajectories(crises, [], 6, [], null, asOf)
+    expect(entry).toMatchObject({ trend: 'flat', recentCount: 3, priorCount: 7, delta: 0 })
+  })
+
+  it('drops events older than 10 days', () => {
+    const crises = [crisis({ country: 'Edge', severity: 'critical', date: daysAgo(11) })]
+    expect(computeTrajectories(crises, [], 6).find(e => e.country === 'Edge')).toBeUndefined()
+  })
+
   it('ignores events outside the tracked 10-day window', () => {
     const crises = [
       crisis({ country: 'OldNews', severity: 'critical', date: daysAgo(30) }),

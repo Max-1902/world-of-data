@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p tests/tsconfig.json",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p api/tsconfig.json && tsc --noEmit -p tests/tsconfig.json && tsc --noEmit -p scripts/research/tsconfig.json",
+    "research:record": "tsx scripts/research/record.ts",
+    "research:eval": "tsx scripts/research/eval.ts",
+    "research:backtest": "tsx scripts/research/backtest.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:visual": "playwright test",
@@ -35,6 +38,7 @@
     "jsdom": "^29.1.1",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
+    "tsx": "4.21.0",
     "typescript": "^5.7.2",
     "vite": "^6.4.3",
     "vitest": "^5.0.2"
