@@ -157,6 +157,8 @@ describe('ports & supply chain', () => {
   it('supply chain facilities have valid coordinates, a known type and sane global share', () => {
     expectPoints('SUPPLY_CHAIN_FACILITIES', SUPPLY_CHAIN_FACILITIES, 'lat', 'lng', 'name', 'id')
     for (const f of SUPPLY_CHAIN_FACILITIES) {
+      expect(f.source.trim().length, `${f.id} has no source`).toBeGreaterThan(10)
+      expect(f.asOf, `${f.id} asOf`).toMatch(/^\d{4}-\d{2}$/)
       expect(FACILITY_TYPE_COLORS[f.type], f.id).toMatch(HEX)
       expect(FACILITY_TYPE_LABELS[f.type], f.id).toBeTruthy()
       if (f.globalShare !== undefined) {
