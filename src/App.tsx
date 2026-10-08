@@ -26,7 +26,6 @@ import OutlookCard from './components/OutlookCard'
 import { triggerGlobalReload } from './utils/reloadBus'
 import { clearNewsCaches } from './services/news'
 import { summarizeKeyEvents } from './utils/keyEvents'
-import { summarizeIncidents } from './utils/incidents'
 import { useDisasterAlerts } from './hooks/useDisasterAlerts'
 import { GROUP_ORDER } from './panels/registry'
 import { decodeHash, encodeHash, enabledLayers, layersToPanelState, type DecodedState } from './utils/urlState'
@@ -141,7 +140,7 @@ export default function App() {
   }, [])
 
   const { flights, refresh: refreshFlights }         = useFlights(panelState.flights)
-  const { crises, liveCount: liveCrisisCount, refresh: refreshCrises } = useCrises(panelState.crises)
+  const { crises, refresh: refreshCrises } = useCrises(panelState.crises)
   const { articles, loadHeadlines: refreshNews }     = useNews()
   const { stocks, refresh: refreshStocks }           = useStocks(panelState.stocks)
   const { earthquakes, refresh: refreshEarthquakes } = useEarthquakes(panelState.crises)
@@ -151,10 +150,6 @@ export default function App() {
   const { outages, refresh: refreshOutages }         = useOutages(panelState.outages)
   const { alerts: disasterAlerts, refresh: refreshDisasterAlerts } = useDisasterAlerts()
   const keyEvents = useMemo(() => summarizeKeyEvents(articles), [articles])
-  const incidents = useMemo(
-    () => summarizeIncidents({ liveConflictCount: liveCrisisCount, alerts: disasterAlerts, earthquakes, outages }),
-    [liveCrisisCount, disasterAlerts, earthquakes, outages],
-  )
 
   const newsPins = useGeoNews(keyEvents.events, panelState.news)
 
@@ -266,8 +261,7 @@ export default function App() {
       <TopBar
         viewMode={viewMode}
         onViewMode={setViewMode}
-        keyEvents={keyEvents}
-        incidents={incidents}
+        stocks={stocks}
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
         onSettingsOpen={() => setSettingsOpen(true)}
