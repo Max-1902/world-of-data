@@ -58,7 +58,7 @@ export function addSupplyChainLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       <div style="font-size:11px;color:#14161a;margin-bottom:4px;">⚙ <b>${p.product}</b></div>
       ${share ? `<div style="font-size:11px;margin-bottom:4px;">${share}</div>` : ''}
       ${p.notes ? `<div style="font-size:10px;color:#6b7280;margin-top:4px;">${p.notes}</div>` : ''}
-      <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: SEMICONDUCTOR INDUSTRY ASSOCIATION · USGS</div>
+      <div style="margin-top:5px;font-size:9px;color:#9ca3af;word-break:break-word;">SOURCE: ${p.source} · checked ${p.asOf}</div>
     </div>`
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '330px', className: 'cy-popup' })
@@ -91,7 +91,7 @@ export function useSupplyChainData({ mapRef, layersReadyRef, mapReady }: MapHand
         color: FACILITY_TYPE_COLORS[f.type],
         operator: f.operator, country: f.country,
         product: f.product, globalShare: f.globalShare ?? null,
-        notes: f.notes ?? '',
+        notes: f.notes ?? '', source: f.source, asOf: f.asOf,
       },
     }))
     src.setData({ type: 'FeatureCollection', features })

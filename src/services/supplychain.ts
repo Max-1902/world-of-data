@@ -1,9 +1,18 @@
 /**
- * Critical supply chain infrastructure — semiconductor fabs, rare earth mines,
- * lithium/cobalt deposits, and key manufacturing clusters.
+ * Critical supply-chain sites — semiconductor fabs and lithography, rare-earth,
+ * lithium, cobalt and nickel operations, and electronics assembly.
+ *
+ * Curated, not exhaustive: each entry is a named, physically identifiable site
+ * with a `source` (operator disclosure, Wikidata item or USGS report) and an
+ * `asOf` date for when it was last checked. Coordinates were cross-checked in
+ * 2026-10 against the cited Wikidata item or the site as mapped in
+ * OpenStreetMap. Country-level production shares in `notes` come from USGS
+ * Mineral Commodity Summaries 2026 (2025 estimates). No facility-level
+ * "global share" is shown unless a source states one — none currently does.
+ * See DATA_PROVENANCE.md.
  */
 
-export type FacilityType = 'fab' | 'rare_earth' | 'lithium' | 'cobalt' | 'refinery' | 'assembly'
+export type FacilityType = 'fab' | 'equipment' | 'rare_earth' | 'lithium' | 'cobalt' | 'refinery' | 'assembly'
 
 export interface SupplyChainFacility {
   id: string
@@ -14,12 +23,18 @@ export interface SupplyChainFacility {
   operator: string
   country: string
   product: string
-  globalShare?: number   // % of global production
+  /** % of global production — only when a source states it for this facility. */
+  globalShare?: number
   notes?: string
+  /** Where the entry (existence, operator, location, status) can be checked. */
+  source: string
+  /** When the entry was last checked against its source (YYYY-MM). */
+  asOf: string
 }
 
 export const FACILITY_TYPE_COLORS: Record<FacilityType, string> = {
   fab:        '#00ccff',
+  equipment:  '#66aaff',
   rare_earth: '#ff8800',
   lithium:    '#44ff88',
   cobalt:     '#aa44ff',
@@ -29,6 +44,7 @@ export const FACILITY_TYPE_COLORS: Record<FacilityType, string> = {
 
 export const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
   fab:        'Semiconductor Fab',
+  equipment:  'Chip-Making Equipment',
   rare_earth: 'Rare Earth Mine',
   lithium:    'Lithium Deposit',
   cobalt:     'Cobalt Mine',
@@ -36,53 +52,49 @@ export const FACILITY_TYPE_LABELS: Record<FacilityType, string> = {
   assembly:   'Assembly/Packaging',
 }
 
+const USGS_MCS_2026 = 'USGS Mineral Commodity Summaries 2026 — https://pubs.usgs.gov/periodicals/mcs2026/'
+const TSMC_FABS = 'https://www.tsmc.com/english/aboutTSMC/TSMC_Fabs'
+
 export const SUPPLY_CHAIN_FACILITIES: SupplyChainFacility[] = [
-  // ── Semiconductor Fabs ────────────────────────────────────────────────────
-  { id: 'tsmc-3',   name: 'TSMC Fab 18', type: 'fab', lat: 23.12, lng: 120.27, operator: 'TSMC', country: 'Taiwan', product: '3nm / 5nm chips', globalShare: 54, notes: 'World\'s most advanced logic fab. 54% global foundry market share.' },
-  { id: 'tsmc-5a',  name: 'TSMC Fab 15', type: 'fab', lat: 24.78, lng: 121.00, operator: 'TSMC', country: 'Taiwan', product: '7nm / 16nm chips', notes: 'Major production facility, Hsinchu Science Park.' },
-  { id: 'tsmc-az',  name: 'TSMC Arizona', type: 'fab', lat: 33.67, lng: -112.01, operator: 'TSMC', country: 'USA', product: '4nm chips', notes: '$40B investment. First US advanced node fab. Production from 2025.' },
-  { id: 'samsung-pyeongtaek', name: 'Samsung Pyeongtaek', type: 'fab', lat: 36.99, lng: 127.11, operator: 'Samsung', country: 'South Korea', product: '3nm GAA / DRAM', globalShare: 17, notes: 'World\'s largest semiconductor complex. $230B total investment.' },
-  { id: 'samsung-taylor', name: 'Samsung Taylor', type: 'fab', lat: 30.57, lng: -97.41, operator: 'Samsung', country: 'USA', product: '5nm chips', notes: '$17B investment, Texas.' },
-  { id: 'intel-d1x', name: 'Intel D1X', type: 'fab', lat: 45.54, lng: -122.96, operator: 'Intel', country: 'USA', product: 'Intel 4 / Intel 3', notes: 'Hillsboro, OR. Intel\'s most advanced US fab.' },
-  { id: 'intel-ohio', name: 'Intel Ohio', type: 'fab', lat: 40.08, lng: -82.67, operator: 'Intel', country: 'USA', product: 'Intel 18A', notes: '$20B mega-site. Production expected 2025-2026.' },
-  { id: 'intel-magdeburg', name: 'Intel Magdeburg', type: 'fab', lat: 52.13, lng: 11.64, operator: 'Intel', country: 'Germany', product: 'Ångström-era chips', notes: '€30B EU Chips Act investment. Under construction.' },
-  { id: 'sk-icheon', name: 'SK Hynix Icheon', type: 'fab', lat: 37.27, lng: 127.44, operator: 'SK Hynix', country: 'South Korea', product: 'HBM / DRAM', globalShare: 28, notes: '28% global DRAM share. HBM3E leader for AI chips.' },
-  { id: 'micron-hiroshima', name: 'Micron Hiroshima', type: 'fab', lat: 34.40, lng: 132.45, operator: 'Micron', country: 'Japan', product: 'DRAM (1-beta)', notes: 'Most advanced DRAM node. Japanese government subsidy.' },
-  { id: 'globalfoundries-malta', name: 'GlobalFoundries Malta', type: 'fab', lat: 42.98, lng: -73.86, operator: 'GlobalFoundries', country: 'USA', product: '12nm / 14nm', notes: 'Largest US-owned foundry. Defense/auto chips.' },
-  { id: 'smic-shanghai', name: 'SMIC Shanghai', type: 'fab', lat: 31.12, lng: 121.60, operator: 'SMIC', country: 'China', product: '7nm (N+2)', globalShare: 6, notes: 'China\'s most advanced fab. US export controls limit EUV access.' },
-  { id: 'rapidus-chitose', name: 'Rapidus Chitose', type: 'fab', lat: 42.79, lng: 141.66, operator: 'Rapidus', country: 'Japan', product: '2nm (planned)', notes: 'IBM partnership. Japan\'s attempt to re-enter leading-edge. 2027 target.' },
+  // ── Semiconductor fabs ────────────────────────────────────────────────────
+  { id: 'tsmc-18', name: 'TSMC Fab 18', type: 'fab', lat: 23.116, lng: 120.262, operator: 'TSMC', country: 'Taiwan', product: '5nm / 3nm logic', notes: 'Southern Taiwan Science Park, Tainan. TSMC\'s GIGAFAB for 5nm and 3nm; 3nm volume production announced Dec 2022.', source: `TSMC fab list ${TSMC_FABS}; TSMC press release 2022-12-29 https://pr.tsmc.com/english/news/2986`, asOf: '2026-10' },
+  { id: 'tsmc-15', name: 'TSMC Fab 15', type: 'fab', lat: 24.210, lng: 120.618, operator: 'TSMC', country: 'Taiwan', product: '12-inch logic wafers', notes: 'Central Taiwan Science Park, Taichung. Marker at the science park (Wikidata Q10876715).', source: `TSMC fab list ${TSMC_FABS}`, asOf: '2026-10' },
+  { id: 'tsmc-az', name: 'TSMC Arizona (Fab 21)', type: 'fab', lat: 33.778, lng: -112.162, operator: 'TSMC', country: 'USA', product: '4nm logic', notes: 'North Phoenix. High-volume N4 production began Q4 2024.', source: `TSMC fab list ${TSMC_FABS}; Wikidata Q135913497`, asOf: '2026-10' },
+  { id: 'samsung-pyeongtaek', name: 'Samsung Pyeongtaek Campus', type: 'fab', lat: 37.036, lng: 127.060, operator: 'Samsung Electronics', country: 'South Korea', product: 'Memory and foundry', source: 'Samsung Semiconductor locations https://semiconductor.samsung.com/about-us/locations/', asOf: '2026-10' },
+  { id: 'samsung-taylor', name: 'Samsung Taylor Fab', type: 'fab', lat: 30.537, lng: -97.453, operator: 'Samsung Electronics', country: 'USA', product: 'Foundry (2nm planned)', notes: 'Under construction; operations reported as targeted for late 2026.', source: 'U.S. Dept. of Commerce CHIPS award to Samsung (2024); site as mapped in OpenStreetMap', asOf: '2026-10' },
+  { id: 'intel-ronler', name: 'Intel Ronler Acres (D1X)', type: 'fab', lat: 45.546, lng: -122.912, operator: 'Intel', country: 'USA', product: 'Process development and logic', notes: 'Hillsboro, Oregon — Intel\'s main technology-development site.', source: 'Intel newsroom https://newsroom.intel.com/corporate/oregon-investments-fuel-us-silicon-innovation-leadership; site as mapped in OpenStreetMap', asOf: '2026-10' },
+  { id: 'intel-ohio', name: 'Intel Ohio One', type: 'fab', lat: 40.117, lng: -82.711, operator: 'Intel', country: 'USA', product: 'Logic (planned)', notes: 'Licking County, Ohio. Under construction; in Feb 2025 Intel moved completion of the first fab to 2030, with operations by 2031.', source: 'Intel newsroom https://newsroom.intel.com/corporate/ohio-one-construction-timeline-update; site as mapped in OpenStreetMap', asOf: '2026-10' },
+  { id: 'sk-icheon', name: 'SK hynix Icheon Campus', type: 'fab', lat: 37.250, lng: 127.482, operator: 'SK hynix', country: 'South Korea', product: 'DRAM', notes: 'SK hynix headquarters and main DRAM campus.', source: 'SK hynix https://www.skhynix.com/', asOf: '2026-10' },
+  { id: 'micron-hiroshima', name: 'Micron Hiroshima', type: 'fab', lat: 34.387, lng: 132.683, operator: 'Micron', country: 'Japan', product: 'DRAM', notes: 'Yoshikawa industrial park, Higashihiroshima (former Elpida fab).', source: 'Micron Japan https://www.micron.com/about/locations; site as mapped in OpenStreetMap', asOf: '2026-10' },
+  { id: 'gf-malta', name: 'GlobalFoundries Fab 8', type: 'fab', lat: 42.971, lng: -73.757, operator: 'GlobalFoundries', country: 'USA', product: 'Logic wafers', notes: 'Luther Forest Technology Campus, Malta, New York. GlobalFoundries\' headquarters since 2021, which it describes as its most advanced fab.', source: 'GlobalFoundries press release, Apr 2021 (HQ moves to Fab 8); Wikidata Q14706848', asOf: '2026-10' },
+  { id: 'smic-shanghai', name: 'SMIC Shanghai (Zhangjiang)', type: 'fab', lat: 31.217, lng: 121.603, operator: 'SMIC', country: 'China', product: 'Logic wafers', notes: 'SMIC headquarters fab cluster, Zhangjiang, Pudong. SMIC was added to the US Entity List in Dec 2020.', source: 'SMIC https://www.smics.com/en/; site as mapped in OpenStreetMap', asOf: '2026-10' },
+  { id: 'rapidus-chitose', name: 'Rapidus IIM-1', type: 'fab', lat: 42.787, lng: 141.707, operator: 'Rapidus', country: 'Japan', product: '2nm (pilot line)', notes: 'Chitose, Hokkaido. Pilot line running 2nm test wafers since 2025 (process developed with IBM); mass production targeted for 2027.', source: 'Rapidus https://www.rapidus.inc/en/', asOf: '2026-10' },
 
-  // ── ASML (lithography monopoly) ───────────────────────────────────────────
-  { id: 'asml-veldhoven', name: 'ASML Veldhoven', type: 'fab', lat: 51.41, lng: 5.46, operator: 'ASML', country: 'Netherlands', product: 'EUV lithography systems', globalShare: 100, notes: 'Only EUV manufacturer globally. Single point of failure for advanced chips.' },
+  // ── Lithography ───────────────────────────────────────────────────────────
+  { id: 'asml-veldhoven', name: 'ASML Veldhoven', type: 'equipment', lat: 51.403, lng: 5.414, operator: 'ASML', country: 'Netherlands', product: 'EUV and DUV lithography systems', notes: 'ASML headquarters; ASML is the only supplier of EUV lithography systems.', source: 'ASML annual report https://investor.asml.com/annual-reports', asOf: '2026-10' },
 
-  // ── Rare Earth Mines ──────────────────────────────────────────────────────
-  { id: 're-bayan-obo', name: 'Bayan Obo Mine', type: 'rare_earth', lat: 41.80, lng: 109.97, operator: 'Baotou Steel', country: 'China', product: 'Neodymium, Cerium, Lanthanum', globalShare: 45, notes: 'World\'s largest rare earth deposit. Inner Mongolia.' },
-  { id: 're-sichuan', name: 'Sichuan RE Mines', type: 'rare_earth', lat: 29.50, lng: 102.50, operator: 'Various (state)', country: 'China', product: 'Heavy rare earths', notes: 'Ion-adsorption clays. Key source of heavy REEs (Dy, Tb).' },
-  { id: 're-mount-weld', name: 'Mount Weld', type: 'rare_earth', lat: -28.77, lng: 122.55, operator: 'Lynas', country: 'Australia', product: 'Neodymium, Praseodymium', globalShare: 7, notes: 'Richest known RE deposit. Processed in Malaysia (Kuantan).' },
-  { id: 're-mountain-pass', name: 'Mountain Pass', type: 'rare_earth', lat: 35.48, lng: -115.53, operator: 'MP Materials', country: 'USA', product: 'Cerium, Lanthanum, NdPr', globalShare: 12, notes: 'Only active US rare earth mine. Concentrate still sent to China for processing.' },
-  { id: 're-lynas-kuantan', name: 'Lynas LAMP', type: 'refinery', lat: 3.97, lng: 103.42, operator: 'Lynas', country: 'Malaysia', product: 'NdPr oxide, La, Ce', notes: 'Only major RE processing outside China. Political controversy.' },
-  { id: 're-nechalacho', name: 'Nechalacho', type: 'rare_earth', lat: 62.15, lng: -112.57, operator: 'Vital Metals', country: 'Canada', product: 'Bastnäsite concentrate', notes: 'Canada\'s first RE mine. Small-scale production since 2021.' },
+  // ── Rare earths ───────────────────────────────────────────────────────────
+  { id: 're-bayan-obo', name: 'Bayan Obo', type: 'rare_earth', lat: 41.768, lng: 109.966, operator: 'Baotou Steel / China Northern Rare Earth', country: 'China', product: 'Light rare earths (with iron ore)', notes: 'China produced about 69% of world rare-earth mine output in 2025 (USGS).', source: `Wikidata Q8895769; ${USGS_MCS_2026}`, asOf: '2026-10' },
+  { id: 're-mount-weld', name: 'Mount Weld', type: 'rare_earth', lat: -28.860, lng: 122.548, operator: 'Lynas Rare Earths', country: 'Australia', product: 'Rare-earth concentrate (NdPr)', notes: 'Concentrate is processed at Lynas\'s plant in Kuantan, Malaysia.', source: 'Wikidata Q1950809; Lynas https://lynasrareearths.com/', asOf: '2026-10' },
+  { id: 're-mountain-pass', name: 'Mountain Pass', type: 'rare_earth', lat: 35.479, lng: -115.533, operator: 'MP Materials', country: 'USA', product: 'Bastnaesite concentrate, NdPr', notes: 'The only US mine producing bastnaesite as a primary product in 2025 (USGS); US output was about 13% of world mine production.', source: `Wikidata Q4285560; ${USGS_MCS_2026}`, asOf: '2026-10' },
+  { id: 're-lynas-kuantan', name: 'Lynas Advanced Materials Plant', type: 'refinery', lat: 3.970, lng: 103.430, operator: 'Lynas Rare Earths', country: 'Malaysia', product: 'Separated rare-earth oxides', notes: 'Gebeng, Kuantan. Processes Mount Weld concentrate.', source: 'Wikidata Q137942208; Lynas https://lynasrareearths.com/', asOf: '2026-10' },
 
-  // ── Lithium Triangle ──────────────────────────────────────────────────────
-  { id: 'li-atacama', name: 'Salar de Atacama', type: 'lithium', lat: -23.50, lng: -68.20, operator: 'SQM / Albemarle', country: 'Chile', product: 'Lithium carbonate', globalShare: 26, notes: 'Highest concentration lithium brine. Chile has 36% of global reserves.' },
-  { id: 'li-uyuni', name: 'Salar de Uyuni', type: 'lithium', lat: -20.13, lng: -67.49, operator: 'YLB (state)', country: 'Bolivia', product: 'Lithium (undeveloped)', notes: 'World\'s largest lithium resource (~21M tonnes). Largely undeveloped due to altitude/politics.' },
-  { id: 'li-hombre-muerto', name: 'Salar del Hombre Muerto', type: 'lithium', lat: -25.35, lng: -67.08, operator: 'Livent / Galaxy', country: 'Argentina', product: 'Lithium carbonate', globalShare: 6, notes: 'Part of Argentina\'s "lithium triangle" push.' },
-  { id: 'li-greenbushes', name: 'Greenbushes', type: 'lithium', lat: -33.85, lng: 116.06, operator: 'Talison (Tianqi/Albemarle)', country: 'Australia', product: 'Spodumene concentrate', globalShare: 30, notes: 'World\'s largest hard-rock lithium mine. 46% owned by Tianqi (China).' },
-  { id: 'li-ganfeng-xinyu', name: 'Ganfeng Xinyu', type: 'refinery', lat: 27.80, lng: 114.93, operator: 'Ganfeng Lithium', country: 'China', product: 'Battery-grade lithium hydroxide', notes: 'China processes 65% of global lithium.' },
-  { id: 'li-thacker-pass', name: 'Thacker Pass', type: 'lithium', lat: 41.34, lng: -117.35, operator: 'Lithium Americas', country: 'USA', product: 'Lithium (clay)', notes: 'Largest known US lithium deposit. Controversial permitting. GM $650M investment.' },
+  // ── Lithium ───────────────────────────────────────────────────────────────
+  { id: 'li-atacama', name: 'Salar de Atacama', type: 'lithium', lat: -23.417, lng: -68.267, operator: 'SQM / Albemarle', country: 'Chile', product: 'Lithium brine (carbonate)', notes: 'Chile produced about 19% of world lithium in 2025 (USGS).', source: `Wikidata Q1142015; ${USGS_MCS_2026}`, asOf: '2026-10' },
+  { id: 'li-uyuni', name: 'Salar de Uyuni', type: 'lithium', lat: -20.204, lng: -67.515, operator: 'YLB (state)', country: 'Bolivia', product: 'Lithium brine (largely undeveloped)', notes: 'USGS puts Bolivia\'s identified lithium resources at 23 million tons; it reports no Bolivian mine production.', source: `Wikidata Q76122; ${USGS_MCS_2026}`, asOf: '2026-10' },
+  { id: 'li-hombre-muerto', name: 'Fénix (Salar del Hombre Muerto)', type: 'lithium', lat: -25.350, lng: -67.070, operator: 'Rio Tinto (ex-Arcadium Lithium)', country: 'Argentina', product: 'Lithium carbonate', notes: 'Rio Tinto completed its acquisition of Arcadium Lithium in March 2025.', source: 'Wikidata Q1367981; Rio Tinto 2025 annual report https://www.sec.gov/Archives/edgar/data/863064/000162828026009503/a2025annualreport-glossy.pdf', asOf: '2026-10' },
+  { id: 'li-greenbushes', name: 'Greenbushes', type: 'lithium', lat: -33.866, lng: 116.065, operator: 'Talison Lithium (Tianqi/IGO JV 51%, Albemarle 49%)', country: 'Australia', product: 'Spodumene concentrate', notes: 'Australia produced about 32% of world lithium in 2025 (USGS).', source: `Wikidata Q16891876; IGO https://www.igo.com.au/; ${USGS_MCS_2026}`, asOf: '2026-10' },
+  { id: 'li-thacker-pass', name: 'Thacker Pass', type: 'lithium', lat: 41.703, lng: -118.070, operator: 'Lithium Americas', country: 'USA', product: 'Lithium carbonate (under construction)', notes: 'Humboldt County, Nevada. Phase 1 mechanical completion targeted for 2027.', source: 'Wikidata Q137843953; Lithium Americas project updates (2025)', asOf: '2026-10' },
 
-  // ── Cobalt Belt ───────────────────────────────────────────────────────────
-  { id: 'co-kolwezi', name: 'Kolwezi', type: 'cobalt', lat: -10.72, lng: 25.47, operator: 'Glencore / CMOC', country: 'DRC', product: 'Cobalt / Copper', globalShare: 45, notes: 'DRC produces 73% of global cobalt. Artisanal mining + child labor concerns.' },
-  { id: 'co-tenke', name: 'Tenke Fungurume', type: 'cobalt', lat: -10.60, lng: 26.13, operator: 'CMOC (China Moly)', country: 'DRC', product: 'Cobalt / Copper', globalShare: 15, notes: 'Chinese-owned since 2016. Second largest cobalt mine globally.' },
-  { id: 'co-mutanda', name: 'Mutanda Mine', type: 'cobalt', lat: -10.80, lng: 25.75, operator: 'Glencore', country: 'DRC', product: 'Cobalt / Copper', notes: 'Was world\'s largest cobalt mine. Care & maintenance 2019-2023.' },
-  { id: 'co-huayou', name: 'Huayou Cobalt Refinery', type: 'refinery', lat: 28.95, lng: 120.08, operator: 'Huayou Cobalt', country: 'China', product: 'Battery-grade cobalt', notes: 'China refines 80% of global cobalt. Key EV battery supply chain node.' },
+  // ── Cobalt (Central African Copperbelt) ───────────────────────────────────
+  { id: 'co-kcc', name: 'Kamoto Copper Company (KCC)', type: 'cobalt', lat: -10.715, lng: 25.467, operator: 'Glencore (75%) / Gécamines', country: 'DRC', product: 'Copper / cobalt', notes: 'Kolwezi. Marker at Kolwezi town (Wikidata Q271404); KCC\'s pits lie around the town. The DRC produced about 74% of world cobalt in 2025 (USGS).', source: `Glencore https://www.glencore.com/; ${USGS_MCS_2026}`, asOf: '2026-10' },
+  { id: 'co-tenke', name: 'Tenke Fungurume', type: 'cobalt', lat: -10.571, lng: 26.181, operator: 'CMOC (80%) / Gécamines', country: 'DRC', product: 'Copper / cobalt', source: 'Wikidata Q7699914; CMOC https://en.cmoc.com/', asOf: '2026-10' },
+  { id: 'co-mutanda', name: 'Mutanda', type: 'cobalt', lat: -10.786, lng: 25.808, operator: 'Glencore', country: 'DRC', product: 'Copper / cobalt', notes: 'Placed on care and maintenance in 2019; restarted in 2022.', source: 'Wikidata Q6943664; Glencore https://www.glencore.com/', asOf: '2026-10' },
 
-  // ── Key Assembly / Packaging ──────────────────────────────────────────────
-  { id: 'asm-shenzhen', name: 'Shenzhen Electronics Hub', type: 'assembly', lat: 22.54, lng: 114.06, operator: 'Foxconn / BYD / Huawei', country: 'China', product: 'Electronics assembly', notes: 'World\'s largest electronics manufacturing cluster. 90% of global electronics.' },
-  { id: 'asm-zhengzhou', name: 'Foxconn Zhengzhou', type: 'assembly', lat: 34.75, lng: 113.65, operator: 'Foxconn', country: 'China', product: 'iPhone assembly', globalShare: 50, notes: 'Produces ~50% of all iPhones. 200,000+ workers.' },
-  { id: 'asm-penang', name: 'Penang Semiconductor', type: 'assembly', lat: 5.35, lng: 100.47, operator: 'Intel / Broadcom / AMD', country: 'Malaysia', product: 'Chip packaging & testing', globalShare: 13, notes: 'Malaysia = 13% global OSAT. Intel\'s largest offshore test facility.' },
-  { id: 'asm-batam', name: 'Batam Electronics', type: 'assembly', lat: 1.05, lng: 104.03, operator: 'Various', country: 'Indonesia', product: 'Electronics / PCB assembly', notes: 'Growing alternative to Chinese assembly. Singapore-adjacent.' },
+  // ── Nickel ────────────────────────────────────────────────────────────────
+  { id: 'ni-morowali', name: 'Indonesia Morowali Industrial Park (IMIP)', type: 'refinery', lat: -2.830, lng: 122.160, operator: 'PT IMIP (Tsingshan joint venture)', country: 'Indonesia', product: 'Nickel pig iron, nickel matte, stainless steel', notes: 'Bahodopi, Central Sulawesi. Indonesia produced about 67% of world nickel in 2025 (USGS).', source: `Wikidata Q108673012; ${USGS_MCS_2026}`, asOf: '2026-10' },
 
-  // ── Nickel (battery supply chain) ─────────────────────────────────────────
-  { id: 'ni-sulawesi', name: 'Morowali IMIP', type: 'refinery', lat: -2.25, lng: 121.65, operator: 'Tsingshan / CATL', country: 'Indonesia', product: 'Battery-grade nickel', globalShare: 35, notes: 'Indonesia = 50%+ global nickel. Chinese-built smelter complex. Controversial deforestation.' },
+  // ── Assembly / test ───────────────────────────────────────────────────────
+  { id: 'asm-zhengzhou', name: 'Foxconn Zhengzhou Science Park', type: 'assembly', lat: 34.554, lng: 113.842, operator: 'Foxconn (Hon Hai)', country: 'China', product: 'Smartphone assembly', notes: 'Zhengzhou Airport Economy Zone.', source: 'Site as mapped in OpenStreetMap; Hon Hai annual report https://www.honhai.com/en-us/investor-relations', asOf: '2026-10' },
+  { id: 'asm-penang', name: 'Intel Penang', type: 'assembly', lat: 5.327, lng: 100.304, operator: 'Intel', country: 'Malaysia', product: 'Chip assembly and test', notes: 'Bayan Lepas Free Industrial Zone. Intel\'s first production site outside the US (1972).', source: 'Intel https://www.intel.com/content/www/us/en/history/virtual-vault/articles/intel-penang.html; site as mapped in OpenStreetMap', asOf: '2026-10' },
 ]
