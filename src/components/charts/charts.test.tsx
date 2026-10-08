@@ -99,6 +99,23 @@ describe('RankChart', () => {
   })
 })
 
+describe('RankChart sizeWith', () => {
+  const above = [{ key: 'a', label: 'Japan', value: 3, text: '+3.0 σ' }]
+  const below = [{ key: 'b', label: 'Central African Republic', value: 1.5, text: '−1.5 σ' }]
+  const bar = (c: HTMLElement) => c.querySelector('svg path')!.getAttribute('d')!
+  const startX = (d: string) => Number(d.slice(1).split(',')[0])
+  const endX = (d: string) => Math.max(...[...d.matchAll(/H([\d.]+)/g)].map(m => Number(m[1])))
+
+  it('stacked charts share one label column and one bar scale', () => {
+    const all = [...above, ...below]
+    const a = render(<RankChart items={above} sizeWith={all} ariaLabel="above" />).container
+    const b = render(<RankChart items={below} sizeWith={all} ariaLabel="below" />).container
+    expect(startX(bar(a))).toBe(startX(bar(b)))                 // bars start at the same x
+    const lenA = endX(bar(a)) - startX(bar(a)), lenB = endX(bar(b)) - startX(bar(b))
+    expect(lenB / lenA).toBeCloseTo(0.5, 1)                     // 1.5σ draws half as long as 3σ
+  })
+})
+
 describe('CorrMatrixChart', () => {
   const matrix: CorrMatrix = {
     ids: ['gdp', 'life'],
