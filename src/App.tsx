@@ -110,7 +110,10 @@ export default function App() {
   const [dismissedCard, setDismissedCard] = useState<string | null>(null)
   // A picked city (map click) and a picked country are mutually exclusive; the city takes over the outlook card.
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null)
-  const cardKey = selectedPlace ? `\u0000place:${selectedPlace.name}:${selectedPlace.lat}:${selectedPlace.lng}` : selectedCountry ?? '\u0000outlook'
+  // The card keeps showing the last picked country's brief after the drawer closes; only its own ✕ (or picking a city) takes it away.
+  const [briefCountry, setBriefCountry] = useState<string | null>(selectedCountry)
+  useEffect(() => { if (selectedCountry) setBriefCountry(selectedCountry) }, [selectedCountry])
+  const cardKey = selectedPlace ? `\u0000place:${selectedPlace.name}:${selectedPlace.lat}:${selectedPlace.lng}` : briefCountry ?? '\u0000outlook'
   // Any explicit pick (map click, search, toast) re-opens the outlook box, even for a country whose brief was closed earlier.
   const selectCountry = useCallback((country: string | null) => {
     if (country) setDismissedCard(null)
@@ -120,6 +123,7 @@ export default function App() {
   const selectPlace = useCallback((place: SelectedPlace) => {
     setDismissedCard(null)
     setSelectedCountry(null)
+    setBriefCountry(null)
     setSelectedPlace(place)
   }, [])
   const [reticleColor, setReticleColor] = useState(() => {
@@ -353,7 +357,7 @@ export default function App() {
           </Suspense>
           <AlertToasts onSelectCountry={selectCountry} />
           {dismissedCard !== cardKey && (
-            <OutlookCard crises={crises} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={selectedCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />
+            <OutlookCard crises={crises} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={briefCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />
           )}
           <Suspense fallback={null}>
           <SettingsModal
