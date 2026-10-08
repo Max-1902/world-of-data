@@ -117,11 +117,6 @@ export default function App() {
     setSelectedPlace(null)
     setSelectedCountry(country)
   }, [])
-  // Closing the country drawer closes the whole country view: the brief card goes too, rather than falling back to the regional outlook.
-  const closeCountry = useCallback(() => {
-    setDismissedCard('\u0000outlook')
-    setSelectedCountry(null)
-  }, [])
   const selectPlace = useCallback((place: SelectedPlace) => {
     setDismissedCard(null)
     setSelectedCountry(null)
@@ -226,7 +221,7 @@ export default function App() {
     onViewMode: setViewMode,
     onToggleLayer: toggleLayer,
     onSettingsOpen: () => setSettingsOpen(true),
-    onCloseDrawer: () => { if (selectedCountry) closeCountry(); setSelectedPlace(null); setSettingsOpen(false) },
+    onCloseDrawer: () => { setSelectedCountry(null); setSelectedPlace(null); setSettingsOpen(false) },
   })
 
   const handleFlightSelect = useCallback((_f: Flight) => {}, [])
@@ -346,7 +341,7 @@ export default function App() {
                 flights={flights}
                 earthquakes={earthquakes}
                 fires={fires}
-                onClose={closeCountry}
+                onClose={() => setSelectedCountry(null)}
                 onFlyTo={handleGeoSearch}
               />
             )}
