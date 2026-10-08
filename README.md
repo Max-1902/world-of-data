@@ -4,9 +4,11 @@
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6) ![React](https://img.shields.io/badge/React-18-61dafb) ![Mapbox](https://img.shields.io/badge/Mapbox_GL-v3-000000) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
 
-![The globe with crises, wildfires, humanitarian data, military and nuclear sites, chokepoints, ports and pipelines switched on, and the overlay menu open](docs/screenshots/overlay-categories.jpg)
+![Mundus Datorum on Ukraine: satellite globe with the country brief, country panel with military and nuclear sites, and the AI analyst's answer on the economic impact of the war](docs/screenshots/main.jpg)
 
 ## 29 overlays in 5 categories
+
+![The globe with crises, wildfires, humanitarian data, military and nuclear sites, chokepoints, ports and pipelines switched on, and the overlay menu open](docs/screenshots/overlay-categories.jpg)
 
 | Category | Overlays |
 |---|---|
