@@ -18,6 +18,10 @@
 | **Economy** | markets, trade, resources, oil, gas, supply chain, country data |
 | **Infrastructure** | energy sites, data centres, pipelines, ports, chokepoints, shipping density |
 
+![Split view over Donbas: Mapbox satellite map on the left, the embedded DeepState Ukraine battlefield monitor on the right, and a live news feed in the dock](docs/screenshots/deepstate-split.jpg)
+
+Split view: the satellite map beside the embedded DeepState Ukraine battlefield monitor, with a live news feed in the dock.
+
 ## Analytics
 
 Pick any two of **50 country indicators** (World Bank, Our World in Data, Ember) and get the trend, Spearman correlation with a 95% interval, the biggest outliers, and a globe shaded by the result. Charts have a table view; all maths is unit-tested.
