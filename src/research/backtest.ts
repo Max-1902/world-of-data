@@ -59,6 +59,21 @@ export interface Observation {
   next: number
   /** shown on the Watchlist that day: among the 6 highest deltas */
   shown: boolean
+  /** extra, non-rule features — same lookback window, for the ML comparison (mlTrend.ts). Not used by classifyTrend. */
+  features: ObservationFeatures
+}
+
+export interface ObservationFeatures {
+  /** severity score, days D-5..D-3 (the 3 days just before "recent") */
+  mid: number
+  /** event count, days D-2..D */
+  recentCount: number
+  /** event count, days D-9..D-3 */
+  priorCount: number
+  /** recent − mid: is the short-term score itself still climbing day over day */
+  shortMomentum: number
+  /** days since the most recent event as of D (10 = none in the whole lookback) */
+  daysSinceLast: number
 }
 
 const WATCHLIST_SIZE = 6
@@ -69,7 +84,9 @@ const WATCHLIST_SIZE = 6
  */
 export function replay(agg: DailyAgg, from: string, to: string): Observation[] {
   const score = (d: string, c: string) => agg[d]?.[c]?.score ?? 0
-  const sum = (c: string, start: string, days: number) => dateRange(start, addDays(start, days - 1)).reduce((s, d) => s + score(d, c), 0)
+  const count = (d: string, c: string) => agg[d]?.[c]?.n ?? 0
+  const sum = (c: string, start: string, days: number, by: (d: string, c: string) => number = score) =>
+    dateRange(start, addDays(start, days - 1)).reduce((s, d) => s + by(d, c), 0)
   const out: Observation[] = []
   for (const asOf of dateRange(addDays(from, 9), addDays(to, -3))) {
     const countries = new Set<string>()
@@ -79,7 +96,17 @@ export function replay(agg: DailyAgg, from: string, to: string): Observation[] {
       const recent = sum(country, addDays(asOf, -2), 3)
       const prior = sum(country, addDays(asOf, -9), 7)
       const { delta, priorPace, trend } = classifyTrend(recent, prior)
-      day.push({ asOf, country, trend, delta, recent, priorPace, next: sum(country, addDays(asOf, 1), 3), shown: false })
+
+      const mid = sum(country, addDays(asOf, -5), 3)
+      const recentCount = sum(country, addDays(asOf, -2), 3, count)
+      const priorCount = sum(country, addDays(asOf, -9), 7, count)
+      let daysSinceLast = 10
+      for (let back = 0; back <= 9; back++) { if (count(addDays(asOf, -back), country) > 0) { daysSinceLast = back; break } }
+
+      day.push({
+        asOf, country, trend, delta, recent, priorPace, next: sum(country, addDays(asOf, 1), 3), shown: false,
+        features: { mid, recentCount, priorCount, shortMomentum: recent - mid, daysSinceLast },
+      })
     }
     day.sort((a, b) => b.delta - a.delta).slice(0, WATCHLIST_SIZE).forEach(o => { o.shown = true })
     out.push(...day)

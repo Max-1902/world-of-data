@@ -64,7 +64,10 @@ describe('replay', () => {
 })
 
 describe('rates and report', () => {
-  const o = (p: Partial<Observation>): Observation => ({ asOf: 'd', country: 'c', trend: 'flat', delta: 0, recent: 0, priorPace: 0, next: 0, shown: false, ...p })
+  const o = (p: Partial<Observation>): Observation => ({
+    asOf: 'd', country: 'c', trend: 'flat', delta: 0, recent: 0, priorPace: 0, next: 0, shown: false,
+    features: { mid: 0, recentCount: 0, priorCount: 0, shortMomentum: 0, daysSinceLast: 10 }, ...p,
+  })
 
   it('computes elevated, escalated and mean change; null on no observations', () => {
     expect(rates([o({ recent: 10, priorPace: 2, next: 12 }), o({ recent: 10, priorPace: 2, next: 3 })]))

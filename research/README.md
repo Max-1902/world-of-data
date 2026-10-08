@@ -49,3 +49,28 @@ The backtest replays `classifyTrend`, the same function the Watchlist uses (a te
 The backtest also reports the flags the Watchlist would actually have shown (top 6 per day) and a naive comparison flag.
 
 Limits: the replay uses ACLED data as reported at fetch time, which includes events added after the day in question. That makes it optimistic about what the live flag could have known. The recorder's vintages are there to measure that gap. Flight and news boosts are left out because no history exists for them, and they don't change the flag itself.
+
+## 5. ML comparison: does a learned model beat the hand-written rule?
+
+```bash
+npm run research:backtest -- --input research/data/acled-daily/<day>.json --ml
+npm run research:backtest -- --input research/data/acled-daily/<day>.json --ml --train-fraction 0.7
+```
+
+`classifyTrend` (`src/utils/trajectory.ts`) is one hand-written rule: last-72h severity score against the
+prior week's pace. `--ml` trains a small logistic regression (`src/research/mlTrend.ts`, no framework, plain
+gradient descent) on seven features per (as-of day, country) observation — the same two the rule uses, plus
+a mid-window score, raw event counts, short-term momentum and days-since-last-event — and reports its lift
+against the rule's, **on the same held-out days**.
+
+The split is time-based, not random: the model trains only on the earlier `--train-fraction` of as-of days
+(default 70%) and is scored only on the later days, so it cannot have seen the outcomes it's being graded
+on. The rule's lift is recomputed on that same held-out slice (not the whole range) so the two numbers
+answer the same question.
+
+This is a comparison, not a migration path. `classifyTrend` ships in the app unchanged; nothing here is
+wired into the Watchlist. The question it answers is narrow: given the real ACLED history collected so far,
+does a model with more features than one scalar delta actually separate "goes on to look busier" from
+"doesn't" better than the rule — and the honest answer may well be no, especially while the recorder has
+only a few months of real data. A model that *matches* the rule on scarce data is itself a finding, not a
+failed experiment, and should be written up as one in `FINDINGS.md` the same way the rule's own bugs were.
