@@ -10,7 +10,7 @@ src/
   components/
     Map/MapView.tsx             # Mapbox GL composition root — see Map/layers, Map/overlays below
     Sidebar.tsx                 # left nav — one entry per panel group (INTEL/GEO/MIL/FIN/AI)
-    TopBar.tsx                  # live counters, DEFCON-style threat badge, view switcher, search
+    TopBar.tsx                  # live counters, view switcher, search
     NewsTicker.tsx               # scrolling headline strip
     CountryDrawer.tsx            # click-a-country intel aggregation (crises, bases, trade, econ, refugees...)
     OutlookCard.tsx              # bottom-left card: regional outlook, or the brief for a picked country (CountryBrief)
@@ -68,7 +68,7 @@ Every live data source follows the same three-layer shape:
 
 Refresh rates are chosen per-provider to stay under free-tier rate limits, not for UX reasons: flights 15s (OpenSky's polite ceiling), crises 5min, markets 60s, wildfires/earthquakes 5-10min, news on-demand.
 
-`useCrises` also seeds a hardcoded `BASELINE` array of major ongoing conflicts (Ukraine, Gaza, Sudan, etc.), each stamped with **today's date** so they always render when ACLED is unconfigured, rate-limited or down (GDELT was dropped — see the note in `services/crises.ts`). Their coordinates are region centres, not event locations, and the date is the load date, not an event date; `useCrises` therefore also reports `liveCount` so the UI (the top-bar threat badge reads **NO LIVE FEED**) can say when nothing live is loaded. This matters for anything doing time-series analysis over `crises` — see the Watchlist note below.
+`useCrises` also seeds a hardcoded `BASELINE` array of major ongoing conflicts (Ukraine, Gaza, Sudan, etc.), each stamped with **today's date** so they always render when ACLED is unconfigured, rate-limited or down (GDELT was dropped — see the note in `services/crises.ts`). Their coordinates are region centres, not event locations, and the date is the load date, not an event date; `useCrises` therefore also reports `liveCount` so the UI can tell when nothing live is loaded. This matters for anything doing time-series analysis over `crises` — see the Watchlist note below.
 
 ## Map layer system (`components/Map/`)
 
