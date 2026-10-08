@@ -16,7 +16,7 @@ export interface PanelProps {
   onCountryClick?: (country: string) => void
 }
 
-export type PanelGroup = 'overview' | 'news' | 'geo' | 'security' | 'markets' | 'analysis'
+export type PanelGroup = 'overview' | 'news' | 'geo' | 'security' | 'markets' | 'analysis' | 'country'
 
 export interface PanelDef {
   id: string
@@ -24,6 +24,8 @@ export interface PanelDef {
   group: PanelGroup
   dotColor?: string
   desc: string
+  /** dock height for long, research-style panels (default 700px) */
+  minHeight?: number
   /** Render function — receives all props, panel uses what it needs */
   render: (props: PanelProps) => React.ReactNode
 }
