@@ -66,6 +66,7 @@ export interface MapViewProps {
   reticleColor?:      string
   panelState?:        import('../../types').PanelState
   onToggleLayer?:     (id: keyof import('../../types').PanelState) => void
+  onClearLayers?:     () => void
 }
 
 /**

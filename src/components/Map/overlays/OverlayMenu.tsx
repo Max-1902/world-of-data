@@ -38,12 +38,15 @@ const OVERLAY_ITEMS: Record<keyof PanelState, { label: string; icon: string; col
 interface Props {
   panelState: PanelState
   onToggleLayer: (id: keyof PanelState) => void
+  /** turns every overlay off at once; the "deselect all" button is hidden when omitted */
+  onClearLayers?: () => void
   /** distance from the top of the map; the menu sits below the flight filter when that is showing */
   top: number
 }
 
-export default function OverlayMenu({ panelState, onToggleLayer, top }: Props) {
+export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, top }: Props) {
   const [showOverlays, setShowOverlays] = useState(false)
+  const activeCount = Object.values(panelState).filter(Boolean).length
   return (
   <div style={{ position:'absolute', top, left:10, zIndex:29 }}
     onMouseDown={e => e.stopPropagation()}
@@ -64,7 +67,7 @@ export default function OverlayMenu({ panelState, onToggleLayer, top }: Props) {
     >
       ◈ OVERLAYS
       <span style={{ fontSize:7, color: showOverlays ? '#e5c997' : '#7c909a' }}>
-        {Object.values(panelState).filter(Boolean).length}
+        {activeCount}
       </span>
     </button>
 
@@ -76,8 +79,25 @@ export default function OverlayMenu({ panelState, onToggleLayer, top }: Props) {
         backdropFilter:'blur(10px)',
         width:200,
         boxShadow:'0 4px 20px rgba(0,0,0,0.7)',
-        maxHeight: 360, overflowY: 'auto',
       }}>
+        {onClearLayers && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onClearLayers() }}
+            disabled={activeCount === 0}
+            style={{
+              display:'block', width:'100%', padding:'6px 8px', fontSize:8, fontWeight:700,
+              letterSpacing:'.12em', textAlign:'center',
+              border:'none', borderBottom:'1px solid #263843',
+              background:'rgba(213,168,95,.08)',
+              color: activeCount === 0 ? '#647883' : '#d5a85f',
+              cursor: activeCount === 0 ? 'default' : 'pointer',
+              fontFamily:'monospace',
+            }}
+          >
+            ✕ DESELECT ALL
+          </button>
+        )}
+        <div style={{ maxHeight: 340, overflowY: 'auto' }}>
         {LAYER_SECTIONS.map(section => (
           <div key={section.title}>
             <div style={{ padding:'5px 8px 3px', fontSize:7, fontWeight:700, letterSpacing:'.16em', color:'#647883', background:'rgba(255,255,255,.03)', borderBottom:'1px solid #1c2b35', position:'sticky', top:0, zIndex:1 }}>
@@ -115,6 +135,7 @@ export default function OverlayMenu({ panelState, onToggleLayer, top }: Props) {
             })}
           </div>
         ))}
+        </div>
       </div>
     )}
   </div>

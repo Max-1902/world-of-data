@@ -64,6 +64,19 @@ describe('OverlayMenu', () => {
     expect(onToggleLayer).toHaveBeenCalledWith('sanctions')
   })
 
+  it('deselects every overlay with one button, disabled when none are on', () => {
+    const onClearLayers = vi.fn()
+    const { unmount } = render(<OverlayMenu panelState={state} onToggleLayer={() => {}} onClearLayers={onClearLayers} top={52} />)
+    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
+    fireEvent.click(screen.getByRole('button', { name: /DESELECT ALL/ }))
+    expect(onClearLayers).toHaveBeenCalledTimes(1)
+    unmount()
+
+    render(<OverlayMenu panelState={{ flights: false } as unknown as PanelState} onToggleLayer={() => {}} onClearLayers={onClearLayers} top={52} />)
+    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
+    expect((screen.getByRole('button', { name: /DESELECT ALL/ }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
   it('has a button for every layer key the sections list, so none can be un-toggleable', async () => {
     const { LAYER_SECTIONS } = await import('../../../utils/layerSections')
     render(<OverlayMenu panelState={{} as PanelState} onToggleLayer={() => {}} top={52} />)

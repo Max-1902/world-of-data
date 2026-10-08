@@ -217,6 +217,10 @@ export default function App() {
     })
   }, [])
 
+  const clearLayers = useCallback(() => {
+    setPanelState((prev) => Object.fromEntries(Object.keys(prev).map(k => [k, false])) as unknown as PanelState)
+  }, [])
+
   useKeyboardShortcuts({
     onViewMode: setViewMode,
     onToggleLayer: toggleLayer,
@@ -331,6 +335,7 @@ export default function App() {
             reticleColor={reticleColor}
             panelState={panelState}
             onToggleLayer={toggleLayer}
+            onClearLayers={clearLayers}
           />
           </div>
           <Suspense fallback={null}>
