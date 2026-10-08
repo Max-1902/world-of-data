@@ -262,6 +262,8 @@ describe('describeAIError', () => {
   it.each([
     [402, '{"error":{"message":"Insufficient credits"}}', /no credits.*free model/],
     [401, 'nope', /rejected the API key/],
+    [403, 'nope', /rejected the API key/],
+    [403, '{"error":{"message":"Model not allowed on this deployment: only free (:free) models are enabled."}}', /only allows free models/],
     [429, '{}', /rate-limited/],
     [404, '', /no longer offers/],
     [500, 'OPENROUTER_KEY not configured', /OPENROUTER_KEY is not set/],

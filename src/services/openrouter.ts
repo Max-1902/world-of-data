@@ -117,7 +117,9 @@ export function describeAIError(err: unknown): string {
   if (err instanceof OpenRouterError) {
     switch (err.status) {
       case 402: return 'Your OpenRouter account has no credits for this model. Add credits at openrouter.ai/settings/credits, or pick a free model.'
-      case 401: case 403: return 'OpenRouter rejected the API key. Check OPENROUTER_KEY in .env and restart the dev server.'
+      case 401: case 403:
+        if (/not allowed on this deployment/i.test(err.body)) return 'This deployment only allows free models. Pick one from "Free models" in the model list.'
+        return 'OpenRouter rejected the API key. Check OPENROUTER_KEY in .env and restart the dev server.'
       case 404: return 'OpenRouter no longer offers this model. Pick another one.'
       case 429: return 'This model is rate-limited right now. Retry in a moment or pick another model.'
       case 500: if (/not configured/i.test(err.body)) return 'OPENROUTER_KEY is not set. Add it to .env and restart the dev server.'
