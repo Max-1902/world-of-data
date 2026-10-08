@@ -17,9 +17,31 @@ export const SEV_WEIGHT: Record<CrisisEvent['severity'], number> = {
   critical: 10, high: 6, medium: 3, low: 1,
 }
 
-const RECENT_WINDOW_MS = 3 * 24 * 60 * 60 * 1000   // last 3 days
-const PRIOR_WINDOW_MS  = 10 * 24 * 60 * 60 * 1000  // outer cutoff: events up to 10 days old count; 3–10 days old is the "prior" bucket
-const FLAT_DEADZONE    = 2                          // |delta| below this reads as "flat"
+export const RECENT_WINDOW_MS = 3 * 24 * 60 * 60 * 1000   // last 3 days
+export const PRIOR_WINDOW_MS  = 10 * 24 * 60 * 60 * 1000  // outer cutoff: events up to 10 days old count; 3–10 days old is the "prior" bucket
+export const FLAT_DEADZONE    = 2                          // |delta| below this reads as "flat"
+
+/**
+ * Baseline entries (src/hooks/useCrises.ts) are synthetic "always ongoing" markers stamped with
+ * today's date, not real events — they must never be counted as live activity.
+ */
+export function isBaseline(c: CrisisEvent): boolean {
+  return c.source === 'Baseline' || c.id.startsWith('baseline-')
+}
+
+/**
+ * The trend rule itself: the last 72h's severity score against what the prior week's pace predicts
+ * for 72h. Shared by computeTrajectories and the research backtest (src/research/backtest.ts) so the
+ * flag that is tested is exactly the flag that is shown.
+ */
+export function classifyTrend(recentScore: number, priorScore: number): { delta: number; priorPace: number; trend: TrajectoryEntry['trend'] } {
+  // The windows differ in length (3 days vs 7), so comparing raw sums would read steady activity as a ~57%
+  // drop. `delta` stays in "score points per 72h", so the flat band and the +2 boosts keep their meaning.
+  const priorPace = priorScore * (RECENT_WINDOW_MS / (PRIOR_WINDOW_MS - RECENT_WINDOW_MS))
+  const delta = Math.round((recentScore - priorPace) * 10) / 10
+  const trend: TrajectoryEntry['trend'] = delta > FLAT_DEADZONE ? 'rising' : delta < -FLAT_DEADZONE ? 'falling' : 'flat'
+  return { delta, priorPace, trend }
+}
 
 function parseDate(d: string): number {
   const t = Date.parse(d)
@@ -62,20 +84,21 @@ function findNewsHit(country: string, articles: NewsArticle[], now: number): New
  * ranking the fastest-rising regions. Pure function, no network calls.
  *
  * `now` is the "as of" instant; it defaults to the present and exists so the same rule can be replayed
- * on past days (see utils/analytics.ts backtest) without any look-ahead.
+ * on past days without any look-ahead.
  */
 export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], limit = 6, articles: NewsArticle[] = [], focusCountry?: string | null, now: number = Date.now()): TrajectoryEntry[] {
   const byCountry: Record<string, { recent: CrisisEvent[]; prior: CrisisEvent[] }> = {}
 
-  // Baseline entries (src/hooks/useCrises.ts) are synthetic "always ongoing" markers
-  // stamped with today's date, not real event dates — including them would make every
-  // long-running conflict misread as "rising, no prior activity" on every load.
-  const dated = crises.filter(c => c.source !== 'Baseline' && !c.id.startsWith('baseline-'))
+  // Including baseline markers would make every long-running conflict misread as "rising, no prior activity".
+  const dated = crises.filter(c => !isBaseline(c))
 
   for (const c of dated) {
     if (!c.country) continue
     const age = now - parseDate(c.date)
-    if (age < 0 || age > RECENT_WINDOW_MS + PRIOR_WINDOW_MS) continue
+    // PRIOR_WINDOW_MS is the outer cutoff, so the prior bucket spans 7 days — the length classifyTrend
+    // normalises by. (It used to be RECENT + PRIOR = 13 days, a 10-day bucket scaled as 7, which read every
+    // steady country as "falling"; found while building the research backtest.)
+    if (age < 0 || age > PRIOR_WINDOW_MS) continue
     if (!byCountry[c.country]) byCountry[c.country] = { recent: [], prior: [] }
     if (age <= RECENT_WINDOW_MS) byCountry[c.country].recent.push(c)
     else byCountry[c.country].prior.push(c)
@@ -86,12 +109,7 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
   const entries: TrajectoryEntry[] = Object.entries(byCountry).map(([country, { recent, prior }]) => {
     const recentScore = score(recent)
     const priorScore   = score(prior)
-    // The windows differ in length (3 days vs 7), so comparing raw sums would read steady activity as a ~57%
-    // drop. Compare the last 72h against what the prior week's pace predicts for 72h instead; `delta` stays in
-    // "score points per 72h", so the flat band and the +2 boosts below keep their meaning.
-    const priorPace = priorScore * (RECENT_WINDOW_MS / (PRIOR_WINDOW_MS - RECENT_WINDOW_MS))
-    const delta = Math.round((recentScore - priorPace) * 10) / 10
-    const trend: TrajectoryEntry['trend'] = delta > FLAT_DEADZONE ? 'rising' : delta < -FLAT_DEADZONE ? 'falling' : 'flat'
+    const { delta, priorPace, trend } = classifyTrend(recentScore, priorScore)
 
     // Cross-check: flight density near this country's crisis coordinates
     const points = [...recent, ...prior].map(e => ({ lat: e.latitude, lng: e.longitude }))

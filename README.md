@@ -53,8 +53,9 @@ It also drove the map (flew to Ukraine, switched layers on). One question, one r
 ## Research notes
 
 - **Controls:** real data only, nothing fabricated; numbers are computed locally and the model explains them; evidence is kept separate from inference; free sources only ([`CLAUDE.md`](CLAUDE.md), [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md)).
-- **Found along the way:** a World Bank query silently dropped most countries (42 of 245 for internet use); the system's own trend heuristic flagged steady countries as "falling" until a different plot exposed it; zero-filled rows look like data until a log axis refuses them.
-- **Not yet done:** the AI has not been systematically evaluated; its context does not mark a switched-off layer as "not measured" (a small free model read "0 flights" as "no aircraft"); the "rising" flag is an unvalidated heuristic.
+- **Found along the way:** a World Bank query silently dropped most countries (42 of 245 for internet use); the trend heuristic flagged steady countries as "falling", first through a 3-vs-7-day scaling error and then, after that fix, through a 10-day prior window still scaled as 7 days (found by the backtest work, fixed Oct 2026); with ACLED down, the AI was told "Total events: 16" (the hand-entered baseline) and "Airborne flights tracked: 0"; the default free model answers with tool-call markup only and never writes a briefing. Details: [`research/FINDINGS.md`](research/FINDINGS.md).
+- **Apparatus:** every AI run is logged with its exact context and can be exported, there's an offline eval harness (number fidelity, NOT MEASURED violations), a daily recorder, and a backtest of the trend flag ([`research/`](research/README.md)).
+- **Not yet done:** the trend flag has not been backtested on real data, because the ACLED account was locked when the code was ready. The eval covers one recorded state and two free models, with a pattern-based scorer.
 - Not a decision tool: correlation is not causation, and many series are years old for some countries.
 
 ## Run it

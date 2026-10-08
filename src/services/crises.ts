@@ -85,23 +85,52 @@ const SEVERITY_MAP: Record<CrisisEvent['type'], CrisisEvent['severity']> = {
   disaster: 'high',
 }
 
+/** Fields the dashboard requests from ACLED's read API. */
+export const ACLED_FIELDS = 'event_id_cnty|event_date|event_type|country|admin1|location|latitude|longitude|notes|fatalities'
+/** The dashboard caps each poll at this many events (see the research notes: the cap can truncate the window). */
+export const ACLED_LIMIT = 500
+
+/** The exact query the dashboard sends — exported so the research recorder replays it verbatim. */
+export function acledDashboardQuery(days: number, now: number = Date.now()): URLSearchParams {
+  const since = new Date(now - days * 86400000).toISOString().split('T')[0]
+  const today = new Date(now).toISOString().split('T')[0]
+  return new URLSearchParams({
+    _format: 'json',
+    event_date: `${since}|${today}`,
+    event_date_where: 'BETWEEN',
+    limit: String(ACLED_LIMIT),
+    fields: ACLED_FIELDS,
+  })
+}
+
+/** Severity the dashboard assigns to an ACLED event type. */
+export function acledSeverity(eventType: string): CrisisEvent['severity'] {
+  return SEVERITY_MAP[TYPE_MAP[eventType] ?? 'conflict'] ?? 'medium'
+}
+
+export function acledToCrisisEvent(e: Record<string, string>): CrisisEvent {
+  const type = TYPE_MAP[e.event_type] ?? 'conflict'
+  return {
+    id: e.event_id_cnty,
+    title: `${e.event_type} in ${e.location}, ${e.admin1}`,
+    type,
+    severity: SEVERITY_MAP[type] ?? 'medium',
+    latitude: parseFloat(e.latitude),
+    longitude: parseFloat(e.longitude),
+    country: e.country,
+    date: e.event_date,
+    description: e.notes?.slice(0, 300) ?? '',
+    source: 'ACLED',
+    fatalities: parseInt(e.fatalities) || 0,
+  }
+}
+
 export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
   const token = await getACLEDToken()
   if (!token) return []
 
-  const since = new Date(Date.now() - days * 86400000).toISOString().split('T')[0]
-  const today = new Date().toISOString().split('T')[0]
-
   try {
-    const params = new URLSearchParams({
-      _format: 'json',
-      event_date: `${since}|${today}`,
-      event_date_where: 'BETWEEN',
-      limit: '500',
-      fields: 'event_id_cnty|event_date|event_type|country|admin1|location|latitude|longitude|notes|fatalities',
-    })
-
-    const res = await fetch(`${ACLED_API}?${params}`, {
+    const res = await fetch(`${ACLED_API}?${acledDashboardQuery(days)}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -116,22 +145,7 @@ export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
       return []
     }
 
-    return (json.data || []).map((e: Record<string, string>) => {
-      const type = TYPE_MAP[e.event_type] ?? 'conflict'
-      return {
-        id: e.event_id_cnty,
-        title: `${e.event_type} in ${e.location}, ${e.admin1}`,
-        type,
-        severity: SEVERITY_MAP[type] ?? 'medium',
-        latitude: parseFloat(e.latitude),
-        longitude: parseFloat(e.longitude),
-        country: e.country,
-        date: e.event_date,
-        description: e.notes?.slice(0, 300) ?? '',
-        source: 'ACLED',
-        fatalities: parseInt(e.fatalities) || 0,
-      } satisfies CrisisEvent
-    })
+    return (json.data || []).map(acledToCrisisEvent)
   } catch (err) {
     console.warn('[ACLED] fetch error:', err)
     return []

@@ -1,0 +1,157 @@
+{
+  "model": "liquid/lfm-2.5-2.6b:free",
+  "contexts": [
+    "2026-10-08_A_pre-fix",
+    "2026-10-08_B_fixed"
+  ],
+  "repeats": 2,
+  "ranAt": "2026-10-08T03:54:49.736Z",
+  "rescoredAt": "2026-10-08T03:56:20.575Z",
+  "overall": {
+    "calls": 40,
+    "answered": 40,
+    "briefings": 0,
+    "withNumbers": 0,
+    "meanFidelity": null,
+    "answersWithUnsupported": 0,
+    "unsupportedNumbers": 0,
+    "checkedNumbers": 0,
+    "briefingsWithViolations": 0
+  },
+  "byContext": {
+    "2026-10-08_A_pre-fix": {
+      "calls": 20,
+      "answered": 20,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "2026-10-08_B_fixed": {
+      "calls": 20,
+      "answered": 20,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    }
+  },
+  "byQuestion": {
+    "probe-flights": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "probe-top-country": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "probe-trend": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "probe-figures": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "quick-threat-brief": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "quick-conflict-map": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "quick-air-traffic": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "quick-geo-risk": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "quick-markets": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "quick-cyber": {
+      "calls": 4,
+      "answered": 4,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    }
+  }
+}

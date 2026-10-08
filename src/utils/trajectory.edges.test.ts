@@ -41,9 +41,9 @@ describe('window boundaries', () => {
     expect(one([crisis({ ageMs: 3 * DAY + 1 })])).toMatchObject({ recentCount: 0, priorCount: 1 })
   })
 
-  it('includes events up to exactly 13 days old and excludes anything older', () => {
-    expect(one([crisis({ ageMs: 13 * DAY })])).toMatchObject({ priorCount: 1 })
-    expect(computeTrajectories([crisis({ ageMs: 13 * DAY + 1 })], [], 6)).toEqual([])
+  it('includes events up to exactly 10 days old and excludes anything older (7-day prior bucket)', () => {
+    expect(one([crisis({ ageMs: 10 * DAY })])).toMatchObject({ priorCount: 1 })
+    expect(computeTrajectories([crisis({ ageMs: 10 * DAY + 1 })], [], 6)).toEqual([])
   })
 
   it('ignores events dated in the future', () => {

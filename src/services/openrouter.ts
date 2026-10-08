@@ -1,5 +1,5 @@
 import type { CrisisEvent, Flight } from '../types'
-import type { TrajectoryEntry } from '../utils/trajectory'
+import { isBaseline, type TrajectoryEntry } from '../utils/trajectory'
 import { resourceCapabilitySummary } from './resources'
 
 const BASE = '/api/openrouter'
@@ -19,7 +19,6 @@ export const FREE_MODELS: { id: string; label: string; ctx: string }[] = [
   { id: 'nvidia/nemotron-3-super-120b-a12b:free',             label: 'Nemotron Super 120B', ctx: '32k' },
   { id: 'google/gemma-4-26b-a4b-it:free',                     label: 'Gemma 4 26B',       ctx: '32k' },
   { id: 'google/gemma-4-31b-it:free',                         label: 'Gemma 4 31B',       ctx: '32k' },
-  { id: 'qwen/qwen3.8-27b:free',                              label: 'Qwen 3.8 27B',      ctx: '32k' },
 ]
 export const DEFAULT_MODEL = FREE_MODELS[0].id
 
@@ -135,6 +134,9 @@ export function describeAIError(err: unknown): string {
   return 'The analysis request could not be completed. Check your connection and try again.'
 }
 
+/** Sampling settings for every analyst call — exported so run logs and the eval harness record what was actually sent. */
+export const CHAT_PARAMS = { max_tokens: 4000, temperature: 0.65 } as const
+
 // ── Streaming call ─────────────────────────────────────────────────────────
 // Some free models are "reasoning" variants that stream their internal
 // chain-of-thought via delta.reasoning before any delta.content appears —
@@ -158,8 +160,7 @@ export async function streamAI(
       model,
       messages,
       stream:      true,
-      max_tokens:  4000,
-      temperature: 0.65,
+      ...CHAT_PARAMS,
     }),
     signal,
   })
@@ -252,17 +253,52 @@ export async function streamAIWithFallback(
 }
 
 // ── Context builder ────────────────────────────────────────────────────────
-export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = [], dataHealth = '', marketSnapshot = '', countryAnalytics = ''): string {
-  const now      = new Date().toUTCString()
-  const critical = crises.filter(c => c.severity === 'critical')
-  const high     = crises.filter(c => c.severity === 'high')
+export interface ContextOptions {
+  /** "As of" time printed in the context; fixed in tests and frozen research contexts. */
+  now?: Date
+  /** Whether the flights / crises layers are switched on. Omitted = on. */
+  flightsLayer?: boolean
+  crisesLayer?: boolean
+  /** Set when flights are not measured for another reason (e.g. the research recorder does not poll OpenSky). */
+  flightsUnmeasuredReason?: string
+}
+
+/** One input the model must treat as absent, not as zero. */
+export interface NotMeasured { what: string; why: string }
+
+/**
+ * Which inputs this context does not actually measure. An empty array is never a zero count: a flights
+ * layer that is off (or an OpenSky poll that returned nothing) means "unknown", and a crisis list that
+ * holds only the hand-entered baseline means the live conflict feed contributed nothing.
+ */
+export function notMeasured(crises: CrisisEvent[], flights: Flight[], opts: ContextOptions = {}): NotMeasured[] {
+  const out: NotMeasured[] = []
+  if (opts.flightsUnmeasuredReason) out.push({ what: 'Air traffic', why: opts.flightsUnmeasuredReason })
+  else if (opts.flightsLayer === false) out.push({ what: 'Air traffic', why: 'flights layer switched off' })
+  else if (flights.length === 0) out.push({ what: 'Air traffic', why: 'no flight data received from OpenSky' })
+  if (opts.crisesLayer === false) out.push({ what: 'Live conflict events', why: 'crises layer switched off' })
+  else if (!crises.some(c => !isBaseline(c))) out.push({ what: 'Live conflict events', why: 'no events received from ACLED' })
+  return out
+}
+
+export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = [], dataHealth = '', marketSnapshot = '', countryAnalytics = '', opts: ContextOptions = {}): string {
+  const now      = (opts.now ?? new Date()).toUTCString()
+  const missing  = notMeasured(crises, flights, opts)
+  const flightsMeasured = !missing.some(m => m.what === 'Air traffic')
+  const crisesMeasured  = !missing.some(m => m.what === 'Live conflict events')
+  // The hand-entered baseline is a reference list, not events: counting it as "events" made an ACLED outage
+  // look like 16 live incidents.
+  const live     = crisesMeasured ? crises.filter(c => !isBaseline(c)) : []
+  const baseline = crises.filter(isBaseline)
+  const critical = live.filter(c => c.severity === 'critical')
+  const high     = live.filter(c => c.severity === 'high')
 
   const topCrises = critical.slice(0, 8).map(c =>
     `  • [${c.type.toUpperCase()}] ${c.country} — ${c.title.slice(0, 80)}`
   ).join('\n')
 
   const countryCounts: Record<string, number> = {}
-  for (const c of crises) {
+  for (const c of live) {
     countryCounts[c.country] = (countryCounts[c.country] ?? 0) + 1
   }
   const topCountries = Object.entries(countryCounts)
@@ -276,16 +312,30 @@ export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], 
     `  • ${t.country}: ${t.trend.toUpperCase()} (velocity ${t.velocity}/100) — ${t.reason}`
   ).join('\n')
 
+  const conflicts = crisesMeasured ? `\
+ACTIVE CONFLICTS & CRISES (live events, ACLED)
+  Total events: ${live.length}
+  Critical: ${critical.length} | High: ${high.length} | Other: ${live.length - critical.length - high.length}
+  Most affected countries: ${topCountries || 'none'}
+${topCrises ? '\nTop critical events:\n' + topCrises : ''}` : `\
+ACTIVE CONFLICTS & CRISES
+  Live events: NOT MEASURED — no event counts, totals or trends are available.`
+  const reference = baseline.length ? `
+KNOWN ONGOING CONFLICTS (hand-entered reference list — not live events, not counts, not evidence of current activity)
+${baseline.map(c => `  • ${c.country} — ${c.title}`).join('\n')}
+` : ''
+
+  const notMeasuredBlock = missing.length ? `
+NOT MEASURED (absent from this context — this is unknown, NOT zero; never state a count, absence, decline or anomaly for these)
+${missing.map(m => `  • ${m.what}: ${m.why}`).join('\n')}
+` : ''
+
   return `\
 === WORLD SURVEILLANCE DASHBOARD — LIVE CONTEXT ===
 Timestamp (UTC): ${now}
-
-ACTIVE CONFLICTS & CRISES
-  Total events: ${crises.length}
-  Critical: ${critical.length} | High: ${high.length} | Other: ${crises.length - critical.length - high.length}
-  Most affected countries: ${topCountries || 'none'}
-${topCrises ? '\nTop critical events:\n' + topCrises : ''}
-${trajectories.length > 0 ? `
+${notMeasuredBlock}
+${conflicts}
+${reference}${trajectories.length > 0 ? `
 TRAJECTORY SIGNALS (rule-based, last 3d vs prior 7d — computed locally, not model-generated)
   ${risingTrend.length} of ${trajectories.length} tracked regions trending upward
 ${trajectoryLines}` : ''}
@@ -301,9 +351,9 @@ MARKET SNAPSHOT (live quotes just pulled; these are the only prices you may cite
 ${marketSnapshot}
 ` : ''}
 AIR TRAFFIC
-  Airborne flights tracked: ${flights.length.toLocaleString()}
+  ${flightsMeasured ? `Airborne flights tracked: ${flights.length.toLocaleString('en-US')}` : 'NOT MEASURED — no flight count is available.'}
 
-DASHBOARD CAPABILITIES
+DASHBOARD LAYERS (what the map can show — their data is NOT in this context unless it appears in a block above)
   Live flight positions (OpenSky ADS-B, ~10s latency)
   Conflict events (ACLED — 230+ countries)
   Internet outage detection (IODA — BGP + probing)
@@ -316,6 +366,46 @@ DASHBOARD CAPABILITIES
   EarthCam live CCTV cameras (45 locations worldwide)
   ${resourceCapabilitySummary()}
 ===================================================`
+}
+
+/**
+ * The analyst's system prompt around a context from buildDashboardContext. Lives here (not in the panel)
+ * so the offline eval harness sends exactly what the app sends.
+ */
+export function buildSystemPrompt(context: string): string {
+  return `You are the analyst in Mundus Datorum, a live world monitoring dashboard. You receive the dashboard's current data below, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
+
+Anything listed under NOT MEASURED is unknown, not zero or absent: never state or imply a count, an absence, a decline or an anomaly for it. If the question depends on it, say in one sentence that the dashboard did not measure it, then answer the rest. Only cite numbers that appear in the data below; anything from your own knowledge must be marked as such and must not be presented as a live reading.
+
+NEVER refuse, defer, or open with a disclaimer because some data source is down or some data is missing — the dashboard has many redundant sources and outages are routine. Never mention source outages unless the user asks about them. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For data questions about countries, ground the answer in a COUNTRY ANALYTICS block when one is present, quoting its numbers and naming the countries it lists, then add context from your own knowledge clearly marked as such. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
+
+IMPORTANT: You can execute dashboard commands by including them in your response. Commands are on their own line:
+
+[FLY:location] — Fly the map to a location (city, country, coordinates). Example: [FLY:Tehran, Iran]
+[COUNTRY:name] — Open the country intelligence drawer. Example: [COUNTRY:Iran]
+[LAYER:id:on] or [LAYER:id:off] — Toggle a map layer. Layer IDs: flights, crises, wildfires, military, nuclear, sanctions, cameras, infrastructure, airspace, humanitarian, vessels, oil, gas, ports, pipelines, gpsjam
+[DEEPSTATE:on] or [DEEPSTATE:off] — Toggle Ukraine frontline overlay
+
+When a user asks about a specific country or region, ALWAYS include the FLY and COUNTRY commands to show it on the map. (If the user's message names a country, the dashboard has already flown there and opened its overview — repeating those commands is harmless.) When relevant, enable related layers. For example if asked about Iran, fly there, open the country drawer, and enable relevant layers like military, crises, airspace.
+
+Execute commands BEFORE your analysis text — put them at the very start of your response.
+
+${context}`
+}
+
+/** Dashboard command lines ([FLY:…], [LAYER:…], …) the panel strips from what the user sees. */
+export const COMMAND_LINE = /^\[(FLY|COUNTRY|LAYER|DEEPSTATE):.+\]$/
+
+/**
+ * What the user should read: the model output without dashboard command lines and without model-native
+ * tool-call blocks. Some small models emit `<|tool_call_start|>[COUNTRY(name='Ukraine')]<|tool_call_end|>`
+ * instead of the `[COUNTRY:…]` syntax and then stop (observed with the default free model, 2026-10-08) —
+ * shown raw, that looked like an answer.
+ */
+export function visibleText(full: string): string {
+  return full
+    .replace(/<\|tool_call_start\|>[\s\S]*?(?:<\|tool_call_end\|>|$)/g, '')
+    .split('\n').filter(l => !COMMAND_LINE.test(l.trim())).join('\n')
 }
 
 // ── Preset quick-prompts ───────────────────────────────────────────────────
