@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
-import { CHOKEPOINTS, CHOKEPOINT_COLORS } from '../../../services/chokepoints'
+import { CHOKEPOINTS, CHOKEPOINT_COLORS, EIA_CHOKEPOINTS_SOURCE, oilSharePct } from '../../../services/chokepoints'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addChokepointLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -55,20 +56,20 @@ export function addChokepointLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:250px;max-width:320px;">
       <div style="font-size:12px;font-weight:800;color:#dc2626;margin-bottom:6px;border-bottom:1px solid #e5e7eb;padding-bottom:5px;">${p.name}</div>
       <div style="display:grid;grid-template-columns:90px 1fr;gap:3px 8px;font-size:11px;">
-        <span style="color:#9ca3af;">Daily Transits</span><span style="color:#ea580c;font-weight:700;">${p.dailyTransits} vessels</span>
-        <span style="color:#9ca3af;">World Trade</span><span style="color:#d97706;font-weight:700;">${p.pctWorldTrade}%</span>
-        ${p.pctOilTrade ? `<span style="color:#9ca3af;">Oil Trade</span><span style="color:#ea580c;font-weight:700;">${p.pctOilTrade}%</span>` : ''}
+        ${p.avgDaily != null ? `<span style="color:#9ca3af;">Daily Transits</span><span style="color:#ea580c;font-weight:700;">${p.avgDaily} vessels <span style="color:#9ca3af;font-weight:400;">(${p.transitYear} avg${p.transitScope ? `, ${p.transitScope}` : ''})</span></span>` : ''}
+        ${p.avgDailyTankers != null ? `<span style="color:#9ca3af;">of which tankers</span><span style="color:#14161a;">${p.avgDailyTankers}/day</span>` : ''}
+        ${p.oilFlowMbd != null ? `<span style="color:#9ca3af;">Oil Flow</span><span style="color:#ea580c;font-weight:700;">${p.oilFlowMbd} M b/d <span style="color:#9ca3af;font-weight:400;">(${p.oilShare}% of seaborne oil, ${p.oilYear})</span></span>` : ''}
         <span style="color:#9ca3af;">Controlled By</span><span style="color:#14161a;">${p.controlledBy}</span>
       </div>
-      <div style="margin-top:6px;font-size:11px;color:#6b7280;"><b>Key goods:</b> ${p.keyGoods}</div>
-      <div style="margin-top:4px;font-size:11px;color:#dc2626;"><b>Risks:</b> ${p.risks}</div>
+      ${p.topIndustries ? `<div style="margin-top:6px;font-size:11px;color:#6b7280;"><b>Top cargo (PortWatch):</b> ${p.topIndustries}</div>` : ''}
+      <div style="margin-top:4px;font-size:11px;color:#dc2626;"><b>Risk factors:</b> ${p.risks}</div>
       ${p.notes ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
-      <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: IMF PORTWATCH · UNCTAD</div>
+      <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCES: ${p.sources}</div>
     </div>`
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '340px', className: 'cy-popup' })
       .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'chokepoint-zones', () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', 'chokepoint-zones', () => { map.getCanvas().style.cursor = '' })
@@ -96,9 +97,13 @@ export function useChokepointData({ mapRef, layersReadyRef, mapReady }: MapHandl
       type: 'Feature',
       geometry: { type: 'Polygon', coordinates: [c.zone] },
       properties: {
-        name: c.name, dailyTransits: c.dailyTransits,
-        pctWorldTrade: c.pctWorldTrade, pctOilTrade: c.pctOilTrade ?? null,
-        keyGoods: c.keyGoods.join(', '), risks: c.risks.join(', '),
+        name: c.name,
+        avgDaily: c.transits?.avgDaily ?? null, avgDailyTankers: c.transits?.avgDailyTankers ?? null,
+        transitYear: c.transits?.year ?? null, transitScope: c.transits?.scope ?? '',
+        topIndustries: c.transits?.topIndustries.join(', ') ?? '',
+        oilFlowMbd: c.oilFlowMbd ?? null, oilShare: oilSharePct(c), oilYear: EIA_CHOKEPOINTS_SOURCE.year,
+        sources: [c.transits && `IMF PortWatch ${c.transits.year}`, c.oilFlowMbd != null && `EIA ${EIA_CHOKEPOINTS_SOURCE.year}`].filter(Boolean).join(' · '),
+        risks: c.risks.join(', '),
         controlledBy: c.controlledBy, notes: c.notes ?? '',
       },
     }))

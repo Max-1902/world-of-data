@@ -9,7 +9,8 @@
 import { describe, it, expect } from 'vitest'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from './military'
 import { MAJOR_DAMS, LNG_TERMINALS, MAJOR_REFINERIES, ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS } from './infrastructure'
-import { CHOKEPOINTS } from './chokepoints'
+import { CHOKEPOINTS, oilSharePct } from './chokepoints'
+import portwatch from '../data/chokepoints-portwatch.json'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from './ports'
 import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } from './supplychain'
 import { EARTHCAM_CAMERAS } from './earthcam'
@@ -105,18 +106,28 @@ describe('infrastructure', () => {
 })
 
 describe('chokepoints', () => {
-  it('have valid coordinates, unique ids and plausible shares', () => {
+  it('have valid coordinates, unique ids, and a cited figure for every chokepoint', () => {
     expectPoints('CHOKEPOINTS', CHOKEPOINTS, 'lat', 'lng', 'name', 'id')
     for (const c of CHOKEPOINTS) {
-      expect(c.pctWorldTrade, c.id).toBeGreaterThan(0)
-      expect(c.pctWorldTrade, c.id).toBeLessThanOrEqual(100)
-      if (c.pctOilTrade !== undefined) {
-        expect(c.pctOilTrade, c.id).toBeGreaterThanOrEqual(0)
-        expect(c.pctOilTrade, c.id).toBeLessThanOrEqual(100)
+      expect(c.transits ?? c.oilFlowMbd, `${c.id} has no cited figure`).toBeDefined()
+      if (c.oilFlowMbd !== undefined) {
+        expect(c.oilFlowMbd, c.id).toBeGreaterThan(0)
+        expect(oilSharePct(c)!, c.id).toBeLessThanOrEqual(100)
       }
-      expect(c.dailyTransits, c.id).toBeGreaterThan(0)
-      expect(c.keyGoods.length, c.id).toBeGreaterThan(0)
+      if (c.transits) {
+        expect(c.transits.avgDaily, c.id).toBeGreaterThan(0)
+        expect(c.transits.year, c.id).toBeGreaterThanOrEqual(2024)
+      }
       expect(c.controlledBy.trim(), c.id).not.toBe('')
+    }
+  })
+
+  it('each marker sits near the PortWatch measurement point it takes transits from', () => {
+    const rows = Object.values(portwatch.chokepoints)
+    for (const c of CHOKEPOINTS) {
+      if (!c.transits) continue
+      const nearest = Math.min(...rows.map(r => Math.hypot(r.lat - c.lat, r.lng - c.lng)))
+      expect(nearest, `${c.id} is ${nearest.toFixed(1)}° from any PortWatch chokepoint`).toBeLessThan(3)
     }
   })
 
