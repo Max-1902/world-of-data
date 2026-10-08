@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useSyncExternalStore } from 'react'
 import { Search, X, RefreshCw, Globe2 } from 'lucide-react'
-import type { MapViewMode } from '../types'
+import type { MapViewMode, Stock } from '../types'
 import OSINTSearch from './OSINTSearch'
 import SourceHealth from './SourceHealth'
-import type { KeyEventSummary } from '../utils/keyEvents'
-import type { IncidentSummary } from '../utils/incidents'
+import { healthTracker } from '../services/sourceHealth'
+import { summarizeMarketHud, summarizeSanctionsHud } from '../utils/marketHud'
 
 const VIEW_MODES: { id: MapViewMode; label: string }[] = [
   { id: 'earth',       label: 'EARTH' },
@@ -22,10 +22,8 @@ const VIEW_MODES: { id: MapViewMode; label: string }[] = [
 interface Props {
   viewMode: MapViewMode
   onViewMode: (m: MapViewMode) => void
-  /** High-importance political / economic / humanitarian / other events detected in recent headlines. */
-  keyEvents: KeyEventSummary
-  /** Live incidents from the free disaster, quake, outage and conflict feeds. */
-  incidents: IncidentSummary
+  /** Global market-hub quotes (10 tracked index ETFs) — may be a subset while still loading. */
+  stocks: Stock[]
   searchQuery: string
   onSearch: (q: string) => void
   onSettingsOpen?: () => void
@@ -33,7 +31,11 @@ interface Props {
   reloading?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
+export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
+  const sources = useSyncExternalStore(healthTracker.subscribe, healthTracker.getAll)
+  const market = summarizeMarketHud(stocks)
+  const sanctions = summarizeSanctionsHud()
+  const feedsOk = sources.filter(s => s.status === 'ok').length
   const [expanded, setExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -74,14 +76,37 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, sea
 
       {/* center: stats */}
       <div className="tb-center">
-        <span title={`High-importance events in the last 48 h of headlines — political ${keyEvents.byCategory.political}, economic ${keyEvents.byCategory.economic}, humanitarian ${keyEvents.byCategory.humanitarian}, other ${keyEvents.byCategory.other}`}>
-          <HudStat label="TRACKED" value={keyEvents.total} />
+        <span title={`${market.up} of ${market.tracked} tracked global market-hub ETFs (SPY, QQQ, EWU, EWG, EWJ, EWH, FXI, EWZ, EWA, EWC) trading up today`}>
+          <HudStat label="HUBS UP" value={market.tracked ? `${market.up}/${market.tracked}` : '—'} />
         </span>
 
         <div className="hud-sep" />
 
-        <span title={`Live incidents — conflict ${incidents.conflict}, disaster alerts ${incidents.disasters}, M5.5+ earthquakes ${incidents.earthquakes}, critical internet outages ${incidents.outages}`}>
-          <HudStat label="INCIDENTS" value={incidents.total} />
+        <span title={market.topMover ? `Largest move among tracked market hubs: ${market.topMover.symbol} ${market.topMover.changePercent > 0 ? '+' : ''}${market.topMover.changePercent.toFixed(1)}%` : 'No market data loaded yet'}>
+          <HudStat
+            label="TOP MOVER"
+            value={market.topMover ? market.topMover.symbol : '—'}
+            sub={market.topMover ? `${market.topMover.changePercent > 0 ? '+' : ''}${market.topMover.changePercent.toFixed(1)}%` : undefined}
+            subColor={market.topMover ? (market.topMover.changePercent >= 0 ? 'var(--green)' : 'var(--red)') : undefined}
+          />
+        </span>
+
+        <div className="hud-sep" />
+
+        <span title="Countries under active economic sanctions (OFAC/EU/UN/UK and other regimes) — curated, sourced dataset">
+          <HudStat label="SANCTIONED" value={sanctions.sanctioned} />
+        </span>
+
+        <div className="hud-sep" />
+
+        <span title="Countries at the critical/comprehensive sanctions tier (e.g. Iran, North Korea, Russia, Syria)">
+          <HudStat label="CRITICAL" value={sanctions.critical} />
+        </span>
+
+        <div className="hud-sep" />
+
+        <span title={`${feedsOk} of ${sources.length} contacted data sources currently healthy this session`}>
+          <HudStat label="FEEDS OK" value={sources.length ? `${feedsOk}/${sources.length}` : '—'} />
         </span>
 
         <div className="hud-sep tb-clock-sep" />
@@ -188,11 +213,18 @@ function UtcClock() {
   )
 }
 
-function HudStat({ label, value }: { label: string; value: number }) {
+function HudStat({ label, value, sub, subColor }: { label: string; value: number | string; sub?: string; subColor?: string }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-      <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
-        {value.toLocaleString()}
+      <span style={{ display: 'flex', alignItems: 'baseline', gap: 5 }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text1)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
+          {typeof value === 'number' ? value.toLocaleString() : value}
+        </span>
+        {sub && (
+          <span style={{ fontSize: 11, fontWeight: 600, color: subColor ?? 'var(--text2)', fontVariantNumeric: 'tabular-nums', fontFamily: 'Inter, -apple-system, sans-serif' }}>
+            {sub}
+          </span>
+        )}
       </span>
       <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '.08em', color: 'var(--text3)', fontFamily: 'Inter, -apple-system, sans-serif' }}>
         {label}
