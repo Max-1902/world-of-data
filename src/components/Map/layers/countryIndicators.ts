@@ -4,6 +4,7 @@ import { fetchMilitaryPersonnelRanking } from '../../../services/militaryPersonn
 import { fetchInfraIndicatorRanking } from '../../../services/infraIndicators'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addCountryIndicatorLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef, militaryPersonnelRef, infraIndicatorsRef } = ctx
@@ -46,7 +47,7 @@ export function addCountryIndicatorLayers(map: mapboxgl.Map, ctx: LayerCtx): voi
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '300px', className: 'cy-popup' })
       .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'military-personnel-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'military-personnel-fill', () => { map.getCanvas().style.cursor = '' })
@@ -88,7 +89,7 @@ export function addCountryIndicatorLayers(map: mapboxgl.Map, ctx: LayerCtx): voi
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' })
       .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'infra-indicators-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'infra-indicators-fill', () => { map.getCanvas().style.cursor = '' })

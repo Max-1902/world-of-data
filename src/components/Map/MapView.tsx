@@ -74,6 +74,9 @@ export default function MapView({
   const [mapReady, setMapReady] = useState(false)
   const popupRef       = useRef<mapboxgl.Popup | null>(null)
   const flightDataRef  = useRef<Flight[]>([])
+  // Handlers are read through refs so the once-only map init below always calls the latest prop.
+  const onFlightClickRef = useRef(onFlightClick)
+  onFlightClickRef.current = onFlightClick
   const onCountryClickRef = useRef(onCountryClick)
   onCountryClickRef.current = onCountryClick
   const onPlaceClickRef = useRef(onPlaceClick)
@@ -150,7 +153,7 @@ export default function MapView({
     map.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-right')
 
     map.on('load', () => {
-      addAllLayers(map, { popupRef, flightDataRef, militaryPersonnelRef, infraIndicatorsRef, countryAnalyticsRef, onFlightClick, onCountryClickRef, onPlaceClickRef })
+      addAllLayers(map, { popupRef, flightDataRef, militaryPersonnelRef, infraIndicatorsRef, countryAnalyticsRef, onFlightClick: f => onFlightClickRef.current(f), onCountryClickRef, onPlaceClickRef })
 
       // Mark layers ready AFTER all sources/layers are added
       layersReadyRef.current = true
@@ -164,7 +167,7 @@ export default function MapView({
       map.remove()
       layersReadyRef.current = false
     }
-  }, []) // eslint-disable-line
+  }, [])
 
   const handle: MapHandle = { mapRef, containerRef, layersReadyRef, mapReady, flightDataRef, popupRef, markersRef, militaryPersonnelRef, infraIndicatorsRef, countryAnalyticsRef }
 

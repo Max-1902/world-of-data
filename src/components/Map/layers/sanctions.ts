@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2 } from '../../../services/sanctions'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addSanctionsLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -67,7 +68,7 @@ export function addSanctionsLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       .setLngLat(e.lngLat)
       .setHTML(html)
       .addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'sanctions-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'sanctions-fill', () => { map.getCanvas().style.cursor = '' })

@@ -6,6 +6,7 @@ import { HEIGHT_SCALE } from '../../../utils/hexbin'
 import { sequentialColor } from '../../../utils/vizPalette'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addHazardHexLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -46,7 +47,7 @@ export function addHazardHexLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     </div>`
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' }).setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'analytics-hex-extrusion', () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', 'analytics-hex-extrusion', () => { map.getCanvas().style.cursor = '' })

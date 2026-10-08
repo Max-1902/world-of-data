@@ -4,6 +4,7 @@ import { esc } from '../geoPopups'
 import { PIPELINE_COLORS, PIPELINE_LABELS, PIPELINE_ATTRIBUTION, PIPELINE_DETAIL_MIN_ZOOM, fetchTrunkPipelines, fetchPipelineCell, cellsForBounds, type PipelineFeature } from '../../../services/pipelines'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addPipelineLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -98,7 +99,7 @@ export function addPipelineLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       .setLngLat(e.lngLat)
       .setHTML(html)
       .addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', PIPE_HIT, () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', PIPE_HIT, () => { map.getCanvas().style.cursor = '' })

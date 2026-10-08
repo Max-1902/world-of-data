@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { TRADE_PROFILES } from '../../../services/tradeStats'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addTradeStatsLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -58,7 +59,7 @@ export function addTradeStatsLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' })
       .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'tradestats-fill', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'tradestats-fill', () => { map.getCanvas().style.cursor = '' })

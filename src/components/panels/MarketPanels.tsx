@@ -37,12 +37,13 @@ function StockList({ symbols }: { symbols: string[] }) {
   const key = symbols.join(',')
 
   useEffect(() => {
-    const load = () => { setLoading(true); fetchMultipleQuotes(symbols).then(setStocks).finally(() => setLoading(false)) }
+    const list = key.split(',')
+    const load = () => { setLoading(true); fetchMultipleQuotes(list).then(setStocks).finally(() => setLoading(false)) }
     load()
     const timer = window.setInterval(load, 60_000)
     const unsub = onGlobalReload(load)
     return () => { clearInterval(timer); unsub() }
-  }, [key, retryCount]) // eslint-disable-line
+  }, [key, retryCount])
 
   const noData = !loading && stocks.length === 0
   if (noData) return (
@@ -211,11 +212,13 @@ function ExchangesPanel() {
 function useStockQuotes(symbols: string[]) {
   const [stocks, setStocks] = useState<Stock[]>([])
   const [loading, setLoading] = useState(false)
+  // Keyed on the joined symbols so a new array with the same tickers doesn't refetch.
+  const key = symbols.join(',')
   useEffect(() => {
-    if (!symbols.length) return
+    if (!key) return
     setLoading(true)
-    fetchMultipleQuotes(symbols).then(s => { setStocks(s); setLoading(false) }).catch(() => setLoading(false))
-  }, []) // eslint-disable-line
+    fetchMultipleQuotes(key.split(',')).then(s => { setStocks(s); setLoading(false) }).catch(() => setLoading(false))
+  }, [key])
   return { stocks, loading }
 }
 

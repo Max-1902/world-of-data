@@ -8,6 +8,14 @@
 
 const WB_BASE = 'https://api.worldbank.org/v2'
 
+/** One row of a World Bank v2 indicator response (`[meta, rows]`). Any field can be null or missing in practice. */
+export interface WorldBankObservation {
+  country?: { id?: string; value?: string }
+  countryiso3code?: string
+  date?: string
+  value?: number | null
+}
+
 // Indicators we fetch (most recent year available)
 const INDICATORS = {
   'NY.GDP.MKTP.CD':       'GDP (current US$)',
@@ -195,7 +203,7 @@ async function loadCountryEcon(countryName: string, iso2: string): Promise<Count
       const data = Array.isArray(json) && json.length === 2 ? json[1] : null
       if (!data || !Array.isArray(data) || data.length === 0) return null
       // Find most recent non-null value
-      const entry = data.find((d: any) => d.value != null)
+      const entry = (data as WorldBankObservation[]).find(d => d.value != null)
       if (!entry) return null
       return {
         id,

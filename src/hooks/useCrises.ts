@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { fetchACLEDEvents } from '../services/crises'
 import type { CrisisEvent } from '../types'
 
@@ -35,7 +35,7 @@ export function useCrises(enabled: boolean) {
   // only the long-running-conflict baseline — callers should say so rather than imply live coverage.
   const [liveCount, setLiveCount] = useState(0)
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
@@ -59,14 +59,14 @@ export function useCrises(enabled: boolean) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     if (!enabled) return
     load()
     const timer = window.setInterval(load, 5 * 60 * 1000)
     return () => clearInterval(timer)
-  }, [enabled]) // eslint-disable-line
+  }, [enabled, load])
 
   return { crises, loading, error, liveCount, refresh: load }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { fetchTopHeadlines } from '../services/news'
 import type { NewsArticle } from '../types'
 import CloseButton from './CloseButton'
+import { StateMediaBadge } from './StateMediaBadge'
 
 const REFRESH_MS = 3 * 60 * 1000 // refresh headlines every 3 min
 
@@ -90,6 +91,7 @@ export default function NewsTicker({ onClose }: { onClose: () => void }) {
               <span style={{ color: 'var(--text3)', fontSize: 9, fontWeight: 700, flexShrink: 0, letterSpacing: '.04em' }}>
                 {a.source?.toUpperCase() || 'NEWS'}
               </span>
+              <StateMediaBadge source={a.source} />
               <span>{a.title}</span>
             </a>
           ))}

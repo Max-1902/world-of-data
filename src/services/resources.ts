@@ -1,3 +1,4 @@
+import type { WorldBankObservation } from './worldbank'
 /**
  * Natural resources & critical minerals — per-country production, reserves,
  * and strategic dependencies.
@@ -314,7 +315,7 @@ export async function fetchResourceRents(iso2: string): Promise<ResourceRent[]> 
       const json = await res.json()
       const data = Array.isArray(json) && json.length === 2 ? json[1] : null
       if (!data || !Array.isArray(data)) return null
-      const entry = data.find((d: any) => d.value != null)
+      const entry = (data as WorldBankObservation[]).find(d => d.value != null)
       if (!entry) return null
       return { label: RENT_INDICATORS[id] as string, value: entry.value as number, year: entry.date as string }
     } catch {

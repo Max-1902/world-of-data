@@ -46,6 +46,14 @@ export function resetRateLimit() { hits.clear() }
 const reject = (status: number, error: string) =>
   new Response(JSON.stringify({ error: { message: error } }), { status, headers: { 'Content-Type': 'application/json' } })
 
+interface ChatMessage { role: string; content: string }
+
+function isChatMessage(m: unknown): m is ChatMessage {
+  if (!m || typeof m !== 'object') return false
+  const { role, content } = m as Record<string, unknown>
+  return typeof role === 'string' && ROLES.has(role) && typeof content === 'string'
+}
+
 export default async function handler(req: Request): Promise<Response> {
   const key = process.env.OPENROUTER_KEY
   if (!key) return new Response('OPENROUTER_KEY not configured', { status: 500 })
@@ -65,10 +73,8 @@ export default async function handler(req: Request): Promise<Response> {
   if (typeof model !== 'string' || !model) return reject(400, 'model is required')
   if (!isModelAllowed(model)) return reject(403, `Model not allowed on this deployment: only free (:free) models are enabled.`)
   if (!Array.isArray(messages) || messages.length === 0 || messages.length > MAX_MESSAGES) return reject(400, 'messages must be a non-empty array')
-  for (const m of messages) {
-    if (!m || typeof m !== 'object' || !ROLES.has((m as any).role) || typeof (m as any).content !== 'string') {
-      return reject(400, 'Each message needs a role (system/user/assistant) and string content')
-    }
+  if (!messages.every(isChatMessage)) {
+    return reject(400, 'Each message needs a role (system/user/assistant) and string content')
   }
 
   const body: Record<string, unknown> = {

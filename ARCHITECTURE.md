@@ -22,7 +22,7 @@ src/
       FloatingPanel.tsx           # legacy single floating panel (pre-registry)
     charts/                       # SVG chart primitives (TimeSeries, Bars, Magnitude, Heatmap, Scatter, Rank, CorrMatrix, ChartFrame)
     panels/                       # panel implementations, grouped by theme (NewsPanels, SecurityPanels,
-                                  #   MarketPanels, CountryDataPanels, AIAnalystPanel, HumanitarianPanel, ...)
+                                  #   MarketPanels, EconomyPanels, CountryBrowserPanels, RankingPanels, AIAnalystPanel, HumanitarianPanel, ...)
     PanelHost.tsx                 # per-panel ErrorBoundary + Suspense (panels are lazy-loaded)
     Map/MapView.tsx               # composition root (~220 lines): owns the map + refs, calls addAllLayers() once and each layer's use*() hook
     Map/layers/<name>.ts          # one module per map layer: add<Name>Layers(map, ctx) = sources/layers/handlers (once, on style load),

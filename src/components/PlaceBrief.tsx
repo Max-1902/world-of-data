@@ -9,6 +9,7 @@ import { distanceKm } from '../utils/geo'
 import type { Earthquake } from '../services/earthquakes'
 import type { FirePoint } from '../services/wildfires'
 import type { CrisisEvent, Flight, NewsArticle, SelectedPlace } from '../types'
+import { StateMediaBadge } from './StateMediaBadge'
 
 interface Props {
   place: SelectedPlace
@@ -68,6 +69,7 @@ export default function PlaceBrief({ place, crises, flights, earthquakes, fires,
             <span className="cb-news-meta">
               {category && <b className={`cb-tag ${category}`}>{CATEGORY_LABEL[category]}</b>}
               <span>{article.source}</span>
+              <StateMediaBadge source={article.source} />
               {ageLabel(article.publishedAt) && <span>· {ageLabel(article.publishedAt)}</span>}
             </span>
           </a>

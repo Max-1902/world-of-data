@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from '../../../services/ports'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addPortLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -62,7 +63,7 @@ export function addPortLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       .setLngLat(coords)
       .setHTML(html)
       .addTo(map)
-    ;(map as any).__markFeatureClick?.()
+    markFeatureClick(map)
   })
   map.on('mouseenter', 'port-circles', () => { map.getCanvas().style.cursor = 'pointer' })
   map.on('mouseleave', 'port-circles', () => { map.getCanvas().style.cursor = '' })

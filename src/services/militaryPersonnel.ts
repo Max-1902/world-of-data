@@ -1,3 +1,4 @@
+import type { WorldBankObservation } from './worldbank'
 /**
  * Armed forces personnel by country — World Bank Open Data (free, no key
  * required). Indicator MS.MIL.TOTL.P1, sourced by World Bank from IISS
@@ -45,9 +46,9 @@ export async function fetchMilitaryPersonnelRanking(): Promise<MilitaryPersonnel
     const data = Array.isArray(json) && json.length === 2 ? json[1] : null
     if (!data || !Array.isArray(data)) throw new Error('Unexpected World Bank response shape')
 
-    const entries: MilitaryPersonnelEntry[] = data
-      .filter((d: any) => d.value != null && d.countryiso3code && !NON_COUNTRY_ISO3.has(d.countryiso3code))
-      .map((d: any) => ({
+    const entries: MilitaryPersonnelEntry[] = (data as WorldBankObservation[])
+      .filter(d => d.value != null && d.countryiso3code && !NON_COUNTRY_ISO3.has(d.countryiso3code))
+      .map(d => ({
         iso2: d.country?.id as string,
         iso3: d.countryiso3code as string,
         country: d.country?.value as string,

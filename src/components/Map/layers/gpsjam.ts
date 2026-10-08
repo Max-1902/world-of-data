@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl'
 import { SEVERITY_COLORS, SEVERITY_LABELS, GPSJAM_ATTRIBUTION, type GPSJamData } from '../../../services/gpsjam'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
+import { markFeatureClick } from './countryClick'
 
 export function addGpsJamLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -124,7 +125,7 @@ export function addGpsJamLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       popupRef.current = new mapboxgl.Popup({ maxWidth: '310px', className: 'cy-popup' })
         .setLngLat(layerId === 'gpsjam-circles' ? (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number] : e.lngLat)
         .setHTML(html).addTo(map)
-      ;(map as any).__markFeatureClick?.()
+      markFeatureClick(map)
     })
     map.on('mouseenter', layerId, () => { map.getCanvas().style.cursor = 'pointer' })
     map.on('mouseleave', layerId, () => { map.getCanvas().style.cursor = '' })

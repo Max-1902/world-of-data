@@ -3,6 +3,8 @@ import { jsonResponse, mockFetch } from '../test/helpers'
 import snapshotRaw from '../../public/data/pipelines-trunk.geojson?raw'
 
 type Mod = typeof import('./pipelines')
+/** Raw Overpass element as wayToFeature receives it; the tests deliberately feed it malformed shapes. */
+type RawWay = Parameters<Mod['wayToFeature']>[0]
 async function load(): Promise<Mod> {
   vi.resetModules()
   return import('./pipelines')
@@ -23,7 +25,7 @@ describe('committed world snapshot (public/data/pipelines-trunk.geojson)', () =>
   })
 
   it('has unique OSM ids, oil|gas substance and in-range coordinates', () => {
-    const ids = fc.features.map((f: any) => f.properties.osm)
+    const ids = fc.features.map((f: { properties: { osm: string } }) => f.properties.osm)
     expect(new Set(ids).size).toBe(ids.length)
     expect(ids.length).toBeGreaterThan(100)
     for (const f of fc.features) {
@@ -44,18 +46,18 @@ describe('committed world snapshot (public/data/pipelines-trunk.geojson)', () =>
 describe('wayToFeature', () => {
   it('maps a tagged way to a coloured LineString', async () => {
     const { wayToFeature, PIPELINE_COLORS } = await load()
-    const f = wayToFeature(way(7) as any)!
+    const f = wayToFeature(way(7) as unknown as RawWay)!
     expect(f.geometry).toEqual({ type: 'LineString', coordinates: [[8, 50], [8.1, 50.1]] })
     expect(f.properties).toMatchObject({ osm: 'way/7', name: 'Test Line', substance: 'gas', color: PIPELINE_COLORS.gas, operator: 'Op' })
   })
 
   it('rejects non-oil/gas, non-way, short and malformed geometry', async () => {
     const { wayToFeature } = await load()
-    expect(wayToFeature(way(1, { tags: { substance: 'water' } }) as any)).toBeNull()
-    expect(wayToFeature({ ...way(2), type: 'node' } as any)).toBeNull()
-    expect(wayToFeature(way(3, { geometry: [{ lat: 1, lon: 1 }] }) as any)).toBeNull()
-    expect(wayToFeature(way(4, { geometry: undefined }) as any)).toBeNull()
-    expect(wayToFeature(way(5, { geometry: [{ lat: 'x', lon: 1 }, { lat: 2 }] }) as any)).toBeNull()
+    expect(wayToFeature(way(1, { tags: { substance: 'water' } }) as unknown as RawWay)).toBeNull()
+    expect(wayToFeature({ ...way(2), type: 'node' } as unknown as RawWay)).toBeNull()
+    expect(wayToFeature(way(3, { geometry: [{ lat: 1, lon: 1 }] }) as unknown as RawWay)).toBeNull()
+    expect(wayToFeature(way(4, { geometry: undefined }) as unknown as RawWay)).toBeNull()
+    expect(wayToFeature(way(5, { geometry: [{ lat: 'x', lon: 1 }, { lat: 2 }] }) as unknown as RawWay)).toBeNull()
   })
 })
 
@@ -132,7 +134,7 @@ describe('fetchTrunkPipelines', () => {
     ] }))
     const fc = await fetchTrunkPipelines()
     expect(fc.features).toHaveLength(1)
-    expect((fc.features[0].properties as any).color).toBe(PIPELINE_COLORS.oil)
+    expect(fc.features[0].properties?.color).toBe(PIPELINE_COLORS.oil)
     await fetchTrunkPipelines()
     expect(f).toHaveBeenCalledTimes(1)
   })
