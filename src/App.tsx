@@ -268,8 +268,6 @@ export default function App() {
         onViewMode={setViewMode}
         keyEvents={keyEvents}
         incidents={incidents}
-        liveCrisisCount={liveCrisisCount}
-        crises={crises}
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
         onSettingsOpen={() => setSettingsOpen(true)}

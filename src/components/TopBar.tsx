@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Search, X, RefreshCw, Globe2 } from 'lucide-react'
-import type { MapViewMode, CrisisEvent } from '../types'
+import type { MapViewMode } from '../types'
 import OSINTSearch from './OSINTSearch'
 import SourceHealth from './SourceHealth'
 import type { KeyEventSummary } from '../utils/keyEvents'
@@ -19,17 +19,6 @@ const VIEW_MODES: { id: MapViewMode; label: string }[] = [
   { id: 'thermal',     label: 'HEAT' },
 ]
 
-function computeThreatLevel(crises: CrisisEvent[]): { level: number; label: string; color: string; soft: string } {
-  const critical = crises.filter((c) => c.severity === 'critical').length
-  const high     = crises.filter((c) => c.severity === 'high').length
-  const score    = critical * 4 + high * 2 + crises.length
-  if (score > 500) return { level: 1, label: 'CRITICAL', color: 'var(--red)',   soft: 'var(--red-soft)' }
-  if (score > 250) return { level: 2, label: 'ELEVATED', color: 'var(--red)',   soft: 'var(--red-soft)' }
-  if (score > 100) return { level: 3, label: 'HIGH',     color: 'var(--amber)', soft: 'var(--amber-soft)' }
-  if (score > 40)  return { level: 4, label: 'MODERATE', color: 'var(--amber)', soft: 'var(--amber-soft)' }
-  return               { level: 5, label: 'NORMAL',   color: 'var(--green)', soft: 'var(--green-soft)' }
-}
-
 interface Props {
   viewMode: MapViewMode
   onViewMode: (m: MapViewMode) => void
@@ -37,9 +26,6 @@ interface Props {
   keyEvents: KeyEventSummary
   /** Live incidents from the free disaster, quake, outage and conflict feeds. */
   incidents: IncidentSummary
-  crises: CrisisEvent[]
-  /** Events from a live feed, excluding the hand-entered baseline list. */
-  liveCrisisCount: number
   searchQuery: string
   onSearch: (q: string) => void
   onSettingsOpen?: () => void
@@ -47,11 +33,9 @@ interface Props {
   reloading?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, crises, liveCrisisCount, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
+export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
   const [expanded, setExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
-  const threat = computeThreatLevel(crises)
-  const hasLiveCrises = liveCrisisCount > 0
   useEffect(() => {
     if (expanded) inputRef.current?.focus()
   }, [expanded])
@@ -99,23 +83,6 @@ export default function TopBar({ viewMode, onViewMode, keyEvents, incidents, cri
         <span title={`Live incidents — conflict ${incidents.conflict}, disaster alerts ${incidents.disasters}, M5.5+ earthquakes ${incidents.earthquakes}, critical internet outages ${incidents.outages}`}>
           <HudStat label="INCIDENTS" value={incidents.total} />
         </span>
-
-        <div className="hud-sep" />
-
-        {/* threat level — only meaningful when computed from live events, not the fixed baseline list */}
-        {hasLiveCrises ? (
-          <div className="defcon-badge" style={{ color: threat.color, borderColor: threat.color, background: threat.soft }}>
-            <span className="defcon-label" style={{ color: 'var(--text3)' }}>DEFCON</span>
-            <span>{threat.level}</span>
-            <span>{threat.label}</span>
-          </div>
-        ) : (
-          <div className="defcon-badge" title="Threat level needs a live conflict feed (ACLED). Only the fixed baseline list is loaded."
-            style={{ color: 'var(--text3)', borderColor: 'var(--border)', background: 'transparent' }}>
-            <span className="defcon-label">DEFCON</span>
-            <span>NO LIVE FEED</span>
-          </div>
-        )}
 
         <div className="hud-sep tb-clock-sep" />
 

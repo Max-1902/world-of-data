@@ -54,7 +54,7 @@ It also drove the map (flew to Ukraine, switched layers on). One question, one r
 
 - **Controls:** real data only, nothing fabricated; numbers are computed locally and the model explains them; evidence is kept separate from inference; free sources only ([`CLAUDE.md`](CLAUDE.md), [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md)).
 - **Found along the way:** a World Bank query silently dropped most countries (42 of 245 for internet use); the system's own trend heuristic flagged steady countries as "falling" until a different plot exposed it; zero-filled rows look like data until a log axis refuses them.
-- **Not yet done:** the AI has not been systematically evaluated; its context does not mark a switched-off layer as "not measured" (a small free model read "0 flights" as "no aircraft"); the ACLED login is failing, so the crisis layer shows only a hand-kept baseline and the threat index reads NO LIVE FEED; the "rising" flag is an unvalidated heuristic.
+- **Not yet done:** the AI has not been systematically evaluated; its context does not mark a switched-off layer as "not measured" (a small free model read "0 flights" as "no aircraft"); the "rising" flag is an unvalidated heuristic.
 - Not a decision tool: correlation is not causation, and many series are years old for some countries.
 
 ## Run it
