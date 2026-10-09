@@ -42,6 +42,7 @@ const DisasterAlertsPanel = lazy(() => import('../components/panels/DisasterAler
 const CountryAnalyticsPanel = lazy(() => import('../components/panels/CountryAnalyticsPanel').then(m => ({ default: m.CountryAnalyticsPanel })))
 const AnalyticsPanel = lazy(() => import('../components/panels/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })))
 const CountryLookupPanel = lazy(() => import('../components/panels/CountryLookupPanel').then(m => ({ default: m.CountryLookupPanel })))
+const PredictionsPanel = lazy(() => import('../components/panels/PredictionsPanel').then(m => ({ default: m.PredictionsPanel })))
 const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
@@ -227,6 +228,11 @@ const PANELS: PanelDef[] = [
     id: 'brief', title: 'Briefing', group: 'analysis',
     dotColor: 'red', desc: 'Correlated intel for active query',
     render: (p) => <IntelBriefPanel query={p.searchQuery ?? ''} crises={p.crises} flights={p.flights} />,
+  },
+  {
+    id: 'predictions', title: 'Predictions', group: 'analysis', minHeight: 900,
+    dotColor: 'green', desc: 'GDP growth, inflation and unemployment forecast from a country’s own history — AR model vs. a naive baseline, backtested out of sample (World Bank)',
+    render: () => <PredictionsPanel />,
   },
 
   // ── COUNTRY LOOKUP (single-country research tool) ───────────────────────────

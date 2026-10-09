@@ -537,6 +537,134 @@ export function anomalyScan(series: { id: string; points: Pt[]; mode: 'diff' | '
   return { flags: flags.sort((a, b) => Math.abs(b.z) - Math.abs(a.z)), tested, expectedByChance: tested * pTail }
 }
 
+// ── Forecast ─────────────────────────────────────────────────────────────────
+//
+// A univariate projection of a single annual series (e.g. GDP growth) from its own history, in the same
+// spirit as trendTest/hpFilter above: a named, textbook method with n and a documented assumption, not a
+// black box. With ~60 annual points per country this is deliberately a low-order AR model, not anything
+// more flexible — there isn't enough data to justify more parameters, and macro forecasting research itself
+// finds that simple univariate models are hard to beat at a 1–2 year horizon for GDP growth specifically.
+// Two baselines are reported alongside every forecast for exactly that reason: if the AR model can't beat
+// "repeat last year's value" or "the historical mean" out of sample (backtestForecast below), that is the
+// honest result to show, not a reason to hide the baseline.
+
+export interface Forecast {
+  method: string
+  n: number
+  /** one point per step ahead, years 1..horizon beyond the last observed year */
+  points: { year: number; value: number; lo: number; hi: number }[]
+}
+
+/** Repeats the last value: the standard "no change" baseline for a growth-rate-like series. */
+export function naiveForecast(pts: Pt[], horizon: number): Forecast | null {
+  const s = lastRun(pts)
+  if (s.length < 2) return null
+  const last = s[s.length - 1]
+  const resid = diffs(s).map(d => d.y)
+  const se = sd(resid)
+  return {
+    method: 'naive (random walk)', n: s.length,
+    points: Array.from({ length: horizon }, (_, i) => {
+      const h = i + 1
+      const spread = Number.isFinite(se) ? tCrit95(s.length - 2) * se * Math.sqrt(h) : NaN
+      return { year: last.x + h, value: last.y, lo: last.y - spread, hi: last.y + spread }
+    }),
+  }
+}
+
+/** The series' own historical mean, flat into the future: the baseline for a level that reverts rather than drifts. */
+export function meanForecast(pts: Pt[], horizon: number): Forecast | null {
+  const s = lastRun(pts)
+  if (s.length < 5) return null
+  const m = mean(s.map(p => p.y))
+  const se = sd(s.map(p => p.y))
+  const lastYear = s[s.length - 1].x
+  const spread = Number.isFinite(se) ? tCrit95(s.length - 1) * se : NaN
+  return {
+    method: 'historical mean', n: s.length,
+    points: Array.from({ length: horizon }, (_, i) => ({ year: lastYear + i + 1, value: m, lo: m - spread, hi: m + spread })),
+  }
+}
+
+/** OLS fit of an AR(p) model by the normal equations (p small, solved directly — no iteration). */
+function fitAr(y: number[], p: number): { coef: number[]; intercept: number; resid: number[] } | null {
+  const n = y.length - p
+  if (n < p + 3) return null
+  const X: number[][] = [], Y: number[] = []
+  for (let t = p; t < y.length; t++) { X.push([1, ...Array.from({ length: p }, (_, k) => y[t - 1 - k])]); Y.push(y[t]) }
+  const d = p + 1
+  const XtX = Array.from({ length: d }, (_, i) => Array.from({ length: d }, (_, j) => X.reduce((s, row) => s + row[i] * row[j], 0)))
+  const XtY = Array.from({ length: d }, (_, i) => X.reduce((s, row, t) => s + row[i] * Y[t], 0))
+  const beta = solve(XtX, XtY)
+  if (beta.some(b => !Number.isFinite(b))) return null
+  const resid = X.map((row, t) => Y[t] - row.reduce((s, x, i) => s + x * beta[i], 0))
+  return { intercept: beta[0], coef: beta.slice(1), resid }
+}
+
+/**
+ * Forecasts `horizon` years ahead with an AR(p) model fit by OLS on the most recent unbroken run of years.
+ * Each step is iterated using the model's own prior forecasts (no look-ahead). The interval widens with the
+ * horizon (variance accumulates roughly linearly in the number of steps for an AR process) and is built
+ * from the in-sample residual spread, so it is only as good as that history — short or unstable series give
+ * wide, honest intervals rather than confident ones. Null below `p`×4 + 3 points, matching regress()'s
+ * "don't report a method past the data's ability to support it" convention.
+ */
+export function arForecast(pts: Pt[], p = 2, horizon = 3): Forecast | null {
+  const s = lastRun(pts)
+  const y = s.map(v => v.y)
+  const fit = fitAr(y, p)
+  if (!fit) return null
+  const { intercept, coef, resid } = fit
+  const se = sd(resid)
+  const lastYear = s[s.length - 1].x
+  const history = [...y]
+  const out: Forecast['points'] = []
+  for (let h = 1; h <= horizon; h++) {
+    const lags = Array.from({ length: p }, (_, k) => history[history.length - 1 - k])
+    const value = intercept + coef.reduce((sum, c, i) => sum + c * lags[i], 0)
+    history.push(value)
+    const spread = Number.isFinite(se) ? tCrit95(fit.resid.length - p - 1) * se * Math.sqrt(h) : NaN
+    out.push({ year: lastYear + h, value, lo: value - spread, hi: value + spread })
+  }
+  return { method: `AR(${p})`, n: s.length, points: out }
+}
+
+export interface ForecastBacktest {
+  model: string
+  /** rolling-origin folds: fit on data up to each cutoff year, score the 1-year-ahead forecast only */
+  folds: number
+  mae: number | null
+  /** the same folds' naive-baseline MAE, for the same question put to both */
+  baselineMae: number | null
+}
+
+/**
+ * Pseudo-out-of-sample backtest: for every possible cutoff year with enough history before it and at least
+ * one real value after it, refits the model using only data up to that year and scores its 1-year-ahead
+ * forecast against what the series actually did next. This is the only honest way to claim a forecast
+ * method "works" on a series this short — an in-sample fit error is not a forecast error. Mirrors
+ * research/src/backtest.ts's replay-and-score shape for the trend flag.
+ */
+export function backtestForecast(pts: Pt[], makeForecast: (train: Pt[]) => Forecast | null, minHistory: number): ForecastBacktest | null {
+  const s = lastRun(pts)
+  const errors: number[] = []
+  const baselineErrors: number[] = []
+  for (let cut = minHistory; cut < s.length; cut++) {
+    const train = s.slice(0, cut)
+    const actual = s[cut]
+    const f = makeForecast(train)
+    const base = naiveForecast(train, 1)
+    if (f?.points[0]) errors.push(Math.abs(f.points[0].value - actual.y))
+    if (base?.points[0]) baselineErrors.push(Math.abs(base.points[0].value - actual.y))
+  }
+  if (!errors.length) return null
+  return {
+    model: 'model', folds: errors.length,
+    mae: mean(errors),
+    baselineMae: baselineErrors.length ? mean(baselineErrors) : null,
+  }
+}
+
 // ── Monthly helpers (Europe) ─────────────────────────────────────────────────
 
 export interface PeriodPt { period: string; t: number; value: number }

@@ -3,6 +3,7 @@ import {
   normalCdf, tPValue, tCrit95, regress, senSlope, mannKendall, trendTest, hpFilter, outputGap, recessions, byDecade,
   cagr, growthDecomposition, okun, phillips, persistence, sectoralBalances, debtDynamics, anomalyScan, meanBreak,
   benjaminiHochberg, diffs, lastRun, spreadSeries, annualAverage, SUPF_CRIT_5, type Pt,
+  naiveForecast, meanForecast, arForecast, backtestForecast,
 } from './econAnalysis'
 
 const series = (ys: number[], x0 = 2000): Pt[] => ys.map((y, i) => ({ x: x0 + i, y }))
@@ -289,5 +290,58 @@ describe('anomalyScan', () => {
   it('skips short series and constant changes', () => {
     const r = anomalyScan([{ id: 'short', points: series([1, 2, 3]), mode: 'diff' }, { id: 'const', points: series(Array.from({ length: 15 }, (_, i) => i)), mode: 'diff' }])
     expect(r.tested).toBe(0)
+  })
+})
+
+describe('forecast', () => {
+  it('naiveForecast repeats the last value with a widening interval', () => {
+    const y = Array.from({ length: 10 }, (_, i) => 5 + 0.1 * noise(i))
+    const f = naiveForecast(series(y), 3)!
+    expect(f.points.map(p => p.value)).toEqual([y[9], y[9], y[9]])
+    expect(f.points.map(p => p.year)).toEqual([2010, 2011, 2012])
+    expect(f.points[0].hi - f.points[0].lo).toBeLessThan(f.points[2].hi - f.points[2].lo)
+  })
+  it('naiveForecast is null below 2 points', () => {
+    expect(naiveForecast(series([1]), 1)).toBeNull()
+  })
+
+  it('meanForecast is flat at the historical mean', () => {
+    const f = meanForecast(series([2, 4, 6, 4, 4]), 2)!
+    expect(f.points.every(p => p.value === 4)).toBe(true)
+  })
+  it('meanForecast is null below 5 points', () => {
+    expect(meanForecast(series([1, 2, 3]), 1)).toBeNull()
+  })
+
+  it('arForecast recovers an exact AR(1) recurrence with zero residual spread', () => {
+    // y_t = 10 + 0.5 y_{t-1}, started away from the fixed point so it's still moving
+    const y = [0]
+    for (let i = 1; i < 20; i++) y.push(10 + 0.5 * y[i - 1])
+    const f = arForecast(series(y), 1, 2)!
+    const next = 10 + 0.5 * y[y.length - 1]
+    expect(f.points[0].value).toBeCloseTo(next, 6)
+    expect(f.points[0].hi - f.points[0].lo).toBeCloseTo(0, 6) // exact recurrence: no residual, no spread
+    expect(f.n).toBe(20)
+  })
+  it('arForecast widens its interval with the horizon on a noisy series', () => {
+    const y = Array.from({ length: 30 }, (_, i) => 5 + 0.2 * i + noise(i))
+    const f = arForecast(series(y), 2, 3)!
+    expect(f.points[0].hi - f.points[0].lo).toBeLessThan(f.points[2].hi - f.points[2].lo)
+  })
+  it('arForecast is null when there is not enough history for the requested order', () => {
+    expect(arForecast(series([1, 2, 3, 4]), 2, 1)).toBeNull()
+  })
+
+  it('backtestForecast scores only 1-year-ahead folds with no look-ahead, and compares against the naive baseline', () => {
+    // Perfectly linear: an AR(1) (or anything fit on the trend) should have ~zero error, clearly beating "repeat last value".
+    const y = Array.from({ length: 25 }, (_, i) => 10 + 2 * i)
+    const bt = backtestForecast(series(y), s => arForecast(s, 1, 1), 10)!
+    expect(bt.folds).toBeGreaterThan(0)
+    expect(bt.mae).toBeLessThan(0.01)
+    expect(bt.baselineMae).toBeCloseTo(2, 6) // naive always misses a steady +2/year trend by exactly 2
+    expect(bt.mae!).toBeLessThan(bt.baselineMae!)
+  })
+  it('backtestForecast returns null with no eligible folds', () => {
+    expect(backtestForecast(series([1, 2, 3]), s => arForecast(s, 1, 1), 10)).toBeNull()
   })
 })
