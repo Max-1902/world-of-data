@@ -1,0 +1,21 @@
+{
+  "v": 1,
+  "recordedAt": "2026-10-12T13:11:26.672Z",
+  "acled": {
+    "ok": false,
+    "error": "ACLED_EMAIL / ACLED_PASSWORD not set"
+  },
+  "trajectories": [],
+  "liveScoreByCountry": {},
+  "notMeasured": [
+    {
+      "what": "Air traffic",
+      "why": "the research recorder does not poll OpenSky"
+    },
+    {
+      "what": "Live conflict events",
+      "why": "no events received from ACLED"
+    }
+  ],
+  "context": "=== WORLD SURVEILLANCE DASHBOARD — LIVE CONTEXT ===\nTimestamp (UTC): Mon, 12 Oct 2026 13:11:26 GMT\n\nNOT MEASURED (absent from this context — this is unknown, NOT zero; never state a count, absence, decline or anomaly for these)\n  • Air traffic: the research recorder does not poll OpenSky\n  • Live conflict events: no events received from ACLED\n\nACTIVE CONFLICTS & CRISES\n  Live events: NOT MEASURED — no event counts, totals or trends are available.\n\nKNOWN ONGOING CONFLICTS (hand-entered reference list — not live events, not counts, not evidence of current activity)\n  • Ukraine — Russia–Ukraine War\n  • Palestine — Gaza Conflict\n  • Sudan — Sudan Civil War (SAF vs RSF)\n  • DR Congo — DRC–M23 Conflict\n  • Myanmar — Myanmar Civil War\n  • Haiti — Haiti Gang Crisis\n  • Burkina Faso — Sahel Insurgency (Burkina Faso)\n  • Mali — Sahel Insurgency (Mali)\n  • Somalia — Somalia – al-Shabaab\n  • Syria — Syrian Conflict\n  • Yemen — Yemen Civil War\n  • Ethiopia — Ethiopia – Amhara Conflict\n  • Nigeria — Nigeria – Boko Haram / ISWAP\n  • Palestine — West Bank Violence\n  • Niger — Niger Coup Instability\n  • Taiwan — Taiwan Strait Tensions\n\n\n\nAIR TRAFFIC\n  NOT MEASURED — no flight count is available.\n\nDASHBOARD LAYERS (what the map can show — their data is NOT in this context unless it appears in a block above)\n  Live flight positions (OpenSky ADS-B, ~10s latency)\n  Conflict events (ACLED — 230+ countries)\n  Internet outage detection (IODA — BGP + probing)\n  News feeds (GDELT, BBC, Reuters, Guardian, NYT)\n  Market data (equities, ETFs, crypto, forex, bonds — Finnhub/CoinGecko)\n  Wildfire hotspots (NASA FIRMS)\n  Military bases & nuclear facilities\n  Energy infrastructure (dams, LNG, pipelines, refineries)\n  Airspace closure overlays (FIR regions)\n  EarthCam live CCTV cameras (45 locations worldwide)\n  Critical minerals & resource data available for 29 major producer countries (China, Australia, Russia, Saudi Arabia, United States, DR Congo, Chile, Peru, +more) — production rank, world share, strategic notes. Live World Bank resource-rent data (mineral/oil/gas/coal % of GDP) available on-demand for any country.\n==================================================="
+}
