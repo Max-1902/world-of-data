@@ -553,6 +553,8 @@ export interface Forecast {
   n: number
   /** one point per step ahead, years 1..horizon beyond the last observed year */
   points: { year: number; value: number; lo: number; hi: number }[]
+  /** AR only: the level the iterated forecast converges to, c / (1 − Σφ); null when the fit isn't stationary */
+  longRun?: number | null
 }
 
 /** Repeats the last value: the standard "no change" baseline for a growth-rate-like series. */
@@ -603,11 +605,11 @@ function fitAr(y: number[], p: number): { coef: number[]; intercept: number; res
 
 /**
  * Forecasts `horizon` years ahead with an AR(p) model fit by OLS on the most recent unbroken run of years.
- * Each step is iterated using the model's own prior forecasts (no look-ahead). The interval widens with the
- * horizon (variance accumulates roughly linearly in the number of steps for an AR process) and is built
- * from the in-sample residual spread, so it is only as good as that history — short or unstable series give
- * wide, honest intervals rather than confident ones. Null below `p`×4 + 3 points, matching regress()'s
- * "don't report a method past the data's ability to support it" convention.
+ * Each step is iterated using the model's own prior forecasts (no look-ahead). The interval is the standard
+ * h-step AR forecast interval (Hamilton, Time Series Analysis, 1994, ch. 4; Hyndman & Athanasopoulos, FPP3 §9.8):
+ *   ŷ ± t(0.975, n−p−1) · σ̂ · √(ψ₀² + … + ψ²₍h−1₎),  σ̂² = Σe² / (n−p−1),  ψ₀ = 1, ψⱼ = Σᵢ φᵢ ψⱼ₋ᵢ
+ * It ignores parameter-estimation uncertainty and assumes the past error spread holds, so real coverage can
+ * fall short of 95% (measured in research/FINDINGS.md). Null below 2p + 3 points.
  */
 export function arForecast(pts: Pt[], p = 2, horizon = 3): Forecast | null {
   const s = lastRun(pts)
@@ -615,18 +617,30 @@ export function arForecast(pts: Pt[], p = 2, horizon = 3): Forecast | null {
   const fit = fitAr(y, p)
   if (!fit) return null
   const { intercept, coef, resid } = fit
-  const se = sd(resid)
+  const df = resid.length - p - 1
+  const se = df > 0 ? Math.sqrt(resid.reduce((sum, e) => sum + e * e, 0) / df) : NaN
+  const psi = [1]
+  for (let j = 1; j < horizon; j++) psi.push(coef.reduce((sum, c, i) => sum + (j - 1 - i >= 0 ? c * psi[j - 1 - i] : 0), 0))
   const lastYear = s[s.length - 1].x
   const history = [...y]
   const out: Forecast['points'] = []
+  let psiSq = 0
   for (let h = 1; h <= horizon; h++) {
     const lags = Array.from({ length: p }, (_, k) => history[history.length - 1 - k])
     const value = intercept + coef.reduce((sum, c, i) => sum + c * lags[i], 0)
     history.push(value)
-    const spread = Number.isFinite(se) ? tCrit95(fit.resid.length - p - 1) * se * Math.sqrt(h) : NaN
+    psiSq += psi[h - 1] ** 2
+    const spread = Number.isFinite(se) ? tCrit95(df) * se * Math.sqrt(psiSq) : NaN
     out.push({ year: lastYear + h, value, lo: value - spread, hi: value + spread })
   }
-  return { method: `AR(${p})`, n: s.length, points: out }
+  return { method: `AR(${p})`, n: s.length, points: out, longRun: arStationary(coef) ? intercept / (1 - coef.reduce((a, b) => a + b, 0)) : null }
+}
+
+/** Stationarity of an AR(1)/AR(2) fit (the stationarity triangle for p = 2); higher orders aren't checked and return false. */
+function arStationary(phi: number[]): boolean {
+  if (phi.length === 1) return Math.abs(phi[0]) < 1
+  if (phi.length === 2) return phi[0] + phi[1] < 1 && phi[1] - phi[0] < 1 && Math.abs(phi[1]) < 1
+  return false
 }
 
 export interface ForecastBacktest {
