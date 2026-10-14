@@ -28,7 +28,7 @@ Reading, provisional:
 
 ## GDP-growth forecast (Predictions panel), 2026-10-14
 
-Measured with `npx tsx scripts/research/forecastEval.ts --input research/data/worldbank-gdp/2026-10-14.json`. Data: World Bank real GDP growth (`NY.GDP.MKTP.KD.ZG`, free and keyless), 52 European and Asian economies, latest year 2025. Design: rolling origin, forecast origins 1990–2025 with at least 30 years of history before each, all methods scored on the same folds (1,388 one-year-ahead folds; fewer at three years). Origins are split at 2005, so a choice made on 1990–2004 can be checked on 2005–2025. Full output: [`backtest/forecast_2026-10-14.json`](backtest/forecast_2026-10-14.json).
+Measured with `npm run research:forecast -- --input research/data/worldbank-gdp/2026-10-14.json`. Data: World Bank real GDP growth (`NY.GDP.MKTP.KD.ZG`, free and keyless), 52 European and Asian economies, latest year 2025. Design: rolling origin, forecast origins 1990–2025 with at least 30 years of history before each, all methods scored on the same folds (1,388 one-year-ahead folds; fewer at three years). Origins are split at 2005, so a choice made on 1990–2004 can be checked on 2005–2025. Full output: [`backtest/forecast_gdp_2026-10-14.json`](backtest/forecast_gdp_2026-10-14.json).
 
 **Bugs found in the forecast itself (verified in code, fixed):**
 
@@ -68,7 +68,59 @@ The shipped AR(2) beats the naive forecast in 42 of 52 countries.
 
 Decision: the estimation window is unchanged. The panel now prints the long-run level each forecast converges to and the years it comes from, and says that this pull is an assumption of the model, not evidence. A window or break-detection rule should only ship if it wins on a pre-registered split. This run's 2005 split is now used up for that purpose.
 
-**Not measured:** no comparison against official forecasts (IMF WEO, European Commission, central banks). The project holds none, and none were quoted. Only GDP growth was evaluated; the panel's inflation and unemployment forecasts use the same code but have not been backtested at this scale. The World Bank revises past figures, so this vintage is stored and later runs may differ slightly.
+The World Bank revises past figures, so each vintage is stored and later runs may differ slightly.
+
+### Inflation and unemployment (the panel's other two targets)
+
+Same script and code, each indicator's design fixed before running: inflation (`FP.CPI.TOTL.ZG`) uses the GDP design; unemployment (`SL.UEM.TOTL.ZS`, World Bank/ILO modelled estimates from 1991 only) uses the panel's own 15-year minimum and a split at 2015, so its forecasts start in 2006. Outputs: [`forecast_cpi_2026-10-14.json`](backtest/forecast_cpi_2026-10-14.json), [`forecast_unemployment_2026-10-14.json`](backtest/forecast_unemployment_2026-10-14.json).
+
+| target | method | 1y MAE early / late | 1y median AE early / late | 3y MAE early / late | beats naive (countries) |
+|---|---|---|---|---|---|
+| inflation | naive | 2.035 / 2.247 | 0.823 / 1.105 | 3.011 / 3.224 | — |
+| inflation | AR(2) full (shipped) | 4.118 / 6.166 | 1.465 / 1.616 | 7.217 / 9.344 | **13 of 50** |
+| unemployment | naive | 0.845 / 0.595 | 0.460 / 0.429 | 1.827 / 1.215 | — |
+| unemployment | AR(2) full (shipped) | 0.874 / 0.678 | 0.468 / 0.442 | **3.787 / 2.352** | 20 of 52 |
+
+(early/late = before/after the split year: 2005 for inflation, 2015 for unemployment.)
+
+- **Inflation: the shipped forecast is worse than "same as last year"**, on the mean and the median, in both periods, in 37 of 50 countries. No fit was non-stationary, so this is the mean-reversion pull again: the full history includes the high-inflation 1970s–90s (Turkey, Iran, transition economies), and the model pulls forecasts toward it. Shorter windows help (last 20 years, late period: 2.72) but still lose to naive.
+- **Unemployment: the three-year forecast has double the naive error, and most of it comes from non-stationary fits.** 44 of 1,040 folds produced an AR(2) whose iterated forecast diverges rather than settling (e.g. Greece, origin 2015: forecast −1.2% for a realised 21.4%). On those folds the 3-year MAE was about 32 pp; on stationary fits it was 1.69. GDP and inflation had none.
+- A rule "use naive when the fit is non-stationary" brings unemployment's 3-year MAE to 1.719 / 1.643. That beats naive before 2015 but not after (1.215). The rule was found on this data, so it is recorded, **not shipped**. What did ship: the panel now flags a non-stationary fit as an unstable forecast and does not report a long-run level for it.
+
+### Against the IMF's own forecasts
+
+`npx tsx scripts/research/imfCompare.ts --imf research/data/imf-weo/mfpd-oct2025.json --gdp research/data/worldbank-gdp/2026-10-14.json --cpi research/data/worldbank-cpi/2026-10-14.json` → [`imf_compare_2026-10-14.json`](backtest/imf_compare_2026-10-14.json).
+
+IMF data: the IMF Historical WEO Forecasts Database as republished in the IMF WEO Macroeconomic Forecasts Panel Dataset (MFPD), Mendeley Data, [doi:10.17632/8dt6xpp6x4.9](https://doi.org/10.17632/8dt6xpp6x4.9), CC BY 4.0, file `WEO_MacroForecasts_Oct_2025.xlsx` (sha256 verified against the publisher's listing). imf.org refuses scripted downloads of the original (HTTP 403), so the republication was used. Changes made: subset to the 52 economies, h ≤ 3, GDP growth and CPI inflation only, keyed by ISO2 (`scripts/research/mfpd_extract.py`; values unchanged). The MFPD has no unemployment forecasts, so unemployment has no IMF comparison.
+
+Question: the October WEO's forecast for next year (made in October of year W for W+1) vs the AR, on the same folds. The AR runs under two information sets, chosen so the comparison can't be rigged against the AR:
+- **fair**: annual data to W−1, two steps ahead. This is less than the IMF had in October, when about three quarters of year W were known.
+- **oracle**: data including the full year W. That is more than the IMF had, an upper bound that flatters the AR.
+
+Outcomes: the World Bank series the panel uses, with the IMF's own realised values as a robustness check.
+
+| variable | IMF Oct WEO | AR(2) fair | AR(2) oracle | naive (year W repeated) | folds |
+|---|---|---|---|---|---|
+| GDP growth, MAE (median) | **1.891** (1.180) | 2.392 (1.649) | 2.256 (1.524) | 2.455 (1.399) | 1,330 |
+| CPI inflation, MAE (median) | **2.084** (0.971) | 7.506 (2.498) | 5.220 (1.527) | 2.120 (0.989) | 1,258 |
+
+- **GDP:** the IMF beats the AR in 44 of 52 countries, even when the AR is given the oracle information. The IMF beats naive in 48 of 52.
+- **Inflation:** the IMF and naive are level (2.08 vs 2.12; naive better before 2005, the IMF after), and the AR is far behind both.
+- Scored against the IMF's own realised values instead, every ranking above holds (GDP: 1.973 / 2.470 / 2.354 / 2.571).
+
+Not measured: European Commission and central-bank forecasts (no free archive of past vintages was wired in), April WEO vintages, and horizons beyond next year.
+
+### Panel changes from this round
+
+The panel's charts now show:
+- a marker on every year;
+- the 95% interval as a shaded band;
+- a shaded forecast period;
+- the recent trend line, drawn only when the Mann–Kendall test is significant;
+- a time-range switch (the model still uses the full history);
+- a table with every actual and forecast value.
+
+The text states the forecast direction with its start and end values, and whether "no change" lies inside the final-year interval. Each target shows the evidence above. Reading the result for China: recent trend significantly downward (−0.25 pp/yr since 2011, p < 0.001), AR forecast rising to 9.2%. The chart now shows that contradiction rather than hiding it.
 
 ## Not done
 
