@@ -78,8 +78,17 @@ failed experiment, and should be written up as one in `FINDINGS.md` the same way
 ## 6. GDP-growth forecast evaluation (Predictions panel)
 
 ```bash
-npm run research:forecast -- --fetch                                              # World Bank, free and keyless; stores a vintage
+npm run research:forecast -- --indicator gdp --fetch                              # gdp | cpi | unemployment; World Bank, free and keyless; stores a vintage
 npm run research:forecast -- --input research/data/worldbank-gdp/2026-10-14.json  # offline, reproducible
 ```
 
-Scores `arForecast` (`src/utils/econAnalysis.ts`), the function the Predictions panel ships, on real GDP growth for 52 European and Asian economies. It uses a rolling origin (origins from 1990, at least 30 years of history each, the same folds for every method) and reports the 1- and 3-year mean absolute error and the real coverage of the 95% interval, split before and after 2005. It compares the naive and historical-mean baselines and shorter estimation windows, plus the pre-fix interval, which is derived exactly from the shipped output. Output: `backtest/forecast_<day>.json`. Results and decisions are in `FINDINGS.md`.
+Scores `arForecast` (`src/utils/econAnalysis.ts`), the function the Predictions panel ships, on each of the panel's targets (real GDP growth, CPI inflation, unemployment) for 52 European and Asian economies. It uses a rolling origin (origins from 1990, at least 30 years of history each, the same folds for every method) and reports the 1- and 3-year mean absolute error and the real coverage of the 95% interval, split before and after 2005. It compares the naive and historical-mean baselines and shorter estimation windows, plus the pre-fix interval (derived exactly from the shipped output) and a post-hoc "naive if non-stationary" variant. Output: `backtest/forecast_<indicator>_<day>.json`. Results and decisions are in `FINDINGS.md`.
+
+## 7. Against the IMF's own forecasts
+
+```bash
+npx tsx scripts/research/imfCompare.ts --imf research/data/imf-weo/mfpd-oct2025.json \
+  --gdp research/data/worldbank-gdp/2026-10-14.json --cpi research/data/worldbank-cpi/2026-10-14.json
+```
+
+Compares the October WEO's next-year forecast with the AR, run on less information than the IMF had (fair) and on more (oracle), plus the naive forecast, on the same folds. Outcomes are the World Bank series and, as a robustness check, the IMF's realised values. The IMF data is a CC BY 4.0 republication of the IMF Historical WEO Forecasts Database (MFPD, doi:10.17632/8dt6xpp6x4.9), subset by `scripts/research/mfpd_extract.py`, which verifies the source file's sha256.

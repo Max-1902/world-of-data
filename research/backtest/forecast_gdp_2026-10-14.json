@@ -16,6 +16,10 @@
       20
     ]
   },
+  "nonStationaryFits": {
+    "count": 0,
+    "total": 1388
+  },
   "summary": [
     {
       "method": "naive",
@@ -26,6 +30,14 @@
       "mae3": {
         "early": 2.649,
         "late": 3.224
+      },
+      "medae1": {
+        "early": 1.349,
+        "late": 1.46
+      },
+      "medae3": {
+        "early": 1.848,
+        "late": 2.292
       },
       "coverage95_1": {
         "early": 95.8,
@@ -50,6 +62,14 @@
         "early": 2.024,
         "late": 2.624
       },
+      "medae1": {
+        "early": 1.433,
+        "late": 1.627
+      },
+      "medae3": {
+        "early": 1.447,
+        "late": 1.929
+      },
       "coverage95_1": {
         "early": 96.6,
         "late": 89.9
@@ -73,6 +93,14 @@
         "early": 2.024,
         "late": 2.624
       },
+      "medae1": {
+        "early": 1.433,
+        "late": 1.627
+      },
+      "medae3": {
+        "early": 1.447,
+        "late": 1.929
+      },
       "coverage95_1": {
         "early": 96.4,
         "late": 89.7
@@ -80,6 +108,37 @@
       "coverage95_3": {
         "early": 98.8,
         "late": 96
+      },
+      "folds1": {
+        "early": 503,
+        "late": 885
+      }
+    },
+    {
+      "method": "AR(2) full, naive if non-stationary",
+      "mae1": {
+        "early": 1.967,
+        "late": 2.493
+      },
+      "mae3": {
+        "early": 2.024,
+        "late": 2.624
+      },
+      "medae1": {
+        "early": 1.433,
+        "late": 1.627
+      },
+      "medae3": {
+        "early": 1.447,
+        "late": 1.929
+      },
+      "coverage95_1": {
+        "early": 96.6,
+        "late": 89.9
+      },
+      "coverage95_3": {
+        "early": 96.4,
+        "late": 92.2
       },
       "folds1": {
         "early": 503,
@@ -95,6 +154,14 @@
       "mae3": {
         "early": 2.136,
         "late": 2.73
+      },
+      "medae1": {
+        "early": 1.654,
+        "late": 1.924
+      },
+      "medae3": {
+        "early": 1.576,
+        "late": 2.065
       },
       "coverage95_1": {
         "early": 95.4,
@@ -119,6 +186,14 @@
         "early": 2.033,
         "late": 2.489
       },
+      "medae1": {
+        "early": 1.43,
+        "late": 1.567
+      },
+      "medae3": {
+        "early": 1.454,
+        "late": 1.74
+      },
       "coverage95_1": {
         "early": 96.6,
         "late": 88.5
@@ -141,6 +216,14 @@
       "mae3": {
         "early": 2.128,
         "late": 2.529
+      },
+      "medae1": {
+        "early": 1.632,
+        "late": 1.668
+      },
+      "medae3": {
+        "early": 1.564,
+        "late": 1.762
       },
       "coverage95_1": {
         "early": 95.4,
@@ -165,6 +248,14 @@
         "early": 2.072,
         "late": 2.422
       },
+      "medae1": {
+        "early": 1.408,
+        "late": 1.543
+      },
+      "medae3": {
+        "early": 1.468,
+        "late": 1.592
+      },
       "coverage95_1": {
         "early": 96,
         "late": 87
@@ -187,6 +278,14 @@
       "mae3": {
         "early": 2.106,
         "late": 2.412
+      },
+      "medae1": {
+        "early": 1.619,
+        "late": 1.53
+      },
+      "medae3": {
+        "early": 1.549,
+        "late": 1.639
       },
       "coverage95_1": {
         "early": 95.8,
@@ -211,6 +310,14 @@
         "early": 2.147,
         "late": 2.43
       },
+      "medae1": {
+        "early": 1.443,
+        "late": 1.546
+      },
+      "medae3": {
+        "early": 1.451,
+        "late": 1.561
+      },
       "coverage95_1": {
         "early": 95.2,
         "late": 85.4
@@ -233,6 +340,14 @@
       "mae3": {
         "early": 2.025,
         "late": 2.384
+      },
+      "medae1": {
+        "early": 1.472,
+        "late": 1.459
+      },
+      "medae3": {
+        "early": 1.415,
+        "late": 1.578
       },
       "coverage95_1": {
         "early": 95.8,
@@ -257,6 +372,14 @@
         "early": 2.158,
         "late": 2.462
       },
+      "medae1": {
+        "early": 1.318,
+        "late": 1.546
+      },
+      "medae3": {
+        "early": 1.551,
+        "late": 1.625
+      },
       "coverage95_1": {
         "early": 93.8,
         "late": 86.1
@@ -279,6 +402,14 @@
       "mae3": {
         "early": 1.999,
         "late": 2.322
+      },
+      "medae1": {
+        "early": 1.497,
+        "late": 1.449
+      },
+      "medae3": {
+        "early": 1.385,
+        "late": 1.488
       },
       "coverage95_1": {
         "early": 95,

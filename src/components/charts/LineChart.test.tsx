@@ -31,6 +31,19 @@ describe('LineChart', () => {
     expect(tip.textContent).toContain('3%')
     expect(tip.textContent).toContain('—')
   })
+  it('marks every observation when asked, and reads a shaded interval in the tooltip', () => {
+    const { container } = render(<LineChart ariaLabel="Fc." xKind="year" fmtY={v => `${v}%`}
+      areas={[{ key: 'ci', label: '95% interval', color: 'red', points: [{ t: 2002, lo: 3, hi: 3 }, { t: 2003, lo: 1, hi: 7 }] }]}
+      series={[{ key: 'a', label: 'Actual', color: 'blue', points: pts([1, 2, 3]), markers: true }, { key: 'f', label: 'Forecast', color: 'red', points: [{ t: 2002, v: 3 }, { t: 2003, v: 4 }], dashed: true }]} />)
+    expect(container.querySelectorAll('circle[r="4"]')).toHaveLength(3)
+    expect(container.querySelectorAll('polygon')).toHaveLength(1)
+    expect(screen.getByText('95% interval')).toBeTruthy()
+    const svg = screen.getByRole('img', { name: /Fc/ })
+    for (let i = 0; i < 4; i++) fireEvent.keyDown(svg, { key: 'ArrowRight' })
+    const tip = screen.getByRole('status')
+    expect(tip.textContent).toContain('2003')
+    expect(tip.textContent).toContain('1% to 7%')
+  })
   it('says so when there is nothing to draw', () => {
     render(<LineChart ariaLabel="x." xKind="year" fmtY={String} series={[{ key: 'a', label: 'A', color: 'red', points: [] }]} />)
     expect(screen.getByText('No data for this period.')).toBeTruthy()

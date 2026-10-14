@@ -12,7 +12,11 @@ export interface LineSeries {
   color: string
   points: LinePoint[]
   dashed?: boolean
+  /** a dot on every observation, so single values can be picked out (the crosshair tooltip reads them) */
+  markers?: boolean
 }
+/** A shaded range between two lines (e.g. a forecast interval), drawn as a ~12% wash of `color`. */
+export interface LineArea { key: string; label: string; color: string; points: { t: number; lo: number; hi: number }[] }
 export interface RefLine { v: number; label: string }
 export interface Band { from: number; to: number; label: string }
 
@@ -51,8 +55,9 @@ function yearTicks(t0: number, t1: number, width: number, isYear: boolean): numb
  * Optional reference lines (a target, zero) and shaded bands (e.g. recessions). Hover or arrow keys move a crosshair
  * that reads every series at that date. `x` is either a calendar year or a UTC timestamp (`xKind`).
  */
-export function LineChart({ series, xKind, fmtY, fmtX, refLines = [], bands = [], height = 170, ariaLabel }: {
+export function LineChart({ series, areas = [], xKind, fmtY, fmtX, refLines = [], bands = [], height = 170, ariaLabel }: {
   series: LineSeries[]
+  areas?: LineArea[]
   xKind: 'year' | 'time'
   fmtY: (v: number) => string
   fmtX?: (t: number) => string
@@ -63,7 +68,7 @@ export function LineChart({ series, xKind, fmtY, fmtX, refLines = [], bands = []
 }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [active, setActive] = useState<number | null>(null)
-  const all = series.flatMap(s => s.points)
+  const all = [...series.flatMap(s => s.points), ...areas.flatMap(a => a.points.flatMap(p => [{ t: p.t, v: p.lo }, { t: p.t, v: p.hi }]))]
   const xs = [...new Set(all.map(p => p.t))].sort((a, b) => a - b)
   if (!xs.length) return <div ref={ref} className="viz-note">No data for this period.</div>
 
@@ -112,6 +117,7 @@ export function LineChart({ series, xKind, fmtY, fmtX, refLines = [], bands = []
       {series.length > 1 && (
         <div className="viz-legend">
           {series.map(s => <span key={s.key}><i className="sw line" style={{ background: s.color, opacity: s.dashed ? 0.7 : 1 }} />{s.label}</span>)}
+          {areas.map(a => <span key={a.key}><i className="sw bar" style={{ background: a.color, opacity: 0.3 }} />{a.label}</span>)}
         </div>
       )}
       <svg width={width} height={height} role="img" tabIndex={0} onKeyDown={onKey} onBlur={() => setActive(null)}
@@ -139,14 +145,22 @@ export function LineChart({ series, xKind, fmtY, fmtX, refLines = [], bands = []
             <text x={x(t)} y={height - 6} textAnchor="middle" {...TICK}>{xKind === 'year' ? t : new Date(t).getUTCFullYear()}</text>
           </g>
         ))}
+        {areas.map(a => a.points.length > 1 && (
+          <polygon key={a.key} fill={a.color} opacity={0.12} stroke="none"
+            points={[...a.points.map(p => `${x(p.t).toFixed(1)},${y(p.hi).toFixed(1)}`), ...[...a.points].reverse().map(p => `${x(p.t).toFixed(1)},${y(p.lo).toFixed(1)}`)].join(' ')} />
+        ))}
         {series.map(s => segments(s.points).map((seg, i) => seg.length === 1
           ? <circle key={`${s.key}-${i}`} cx={x(seg[0].t)} cy={y(seg[0].v)} r={2.5} fill={s.color} />
           : <polyline key={`${s.key}-${i}`} points={seg.map(p => `${x(p.t).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ')}
               fill="none" stroke={s.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={s.dashed ? '5 4' : undefined} />))}
-        {series.map(s => {
-          const last = s.points[s.points.length - 1]
-          return last && !s.dashed && <circle key={`${s.key}-end`} cx={x(last.t)} cy={y(last.v)} r={3.5} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
-        })}
+        {series.map(s => s.markers
+          ? s.points.map(p => (
+              <circle key={`${s.key}-m-${p.t}`} cx={x(p.t)} cy={y(p.v)} r={4} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
+            ))
+          : (() => {
+              const last = s.points[s.points.length - 1]
+              return last && !s.dashed && <circle key={`${s.key}-end`} cx={x(last.t)} cy={y(last.v)} r={3.5} fill={s.color} stroke="var(--surface)" strokeWidth={2} />
+            })())}
         {at !== null && <line x1={x(at)} x2={x(at)} y1={M.t} y2={M.t + innerH} stroke="var(--text3)" strokeWidth={1} />}
         {at !== null && series.map(s => { const p = nearest(s, at); return p && <circle key={`${s.key}-hover`} cx={x(p.t)} cy={y(p.v)} r={4} fill={s.color} stroke="var(--surface)" strokeWidth={2} /> })}
         <rect x={left} y={M.t} width={innerW} height={innerH} fill="transparent" onPointerMove={onMove} onPointerLeave={() => setActive(null)} />
@@ -157,6 +171,10 @@ export function LineChart({ series, xKind, fmtY, fmtX, refLines = [], bands = []
           {series.map(s => {
             const p = nearest(s, at)
             return <div key={s.key} className="viz-tip-r"><i className="sw line" style={{ background: s.color }} /><b>{p ? fmtY(p.v) : '—'}</b> {series.length > 1 ? s.label : ''}</div>
+          })}
+          {areas.map(a => {
+            const p = a.points.find(q => Math.abs(q.t - at) <= (xKind === 'year' ? 0.5 : YEAR_MS / 24))
+            return p && <div key={a.key} className="viz-tip-r"><i className="sw bar" style={{ background: a.color, opacity: 0.35 }} /><b>{fmtY(p.lo)} to {fmtY(p.hi)}</b> {a.label}</div>
           })}
           {bands.filter(b => at >= b.from && at <= b.to).map(b => <div key={b.label} className="viz-tip-m">{b.label}</div>)}
         </Tooltip>
