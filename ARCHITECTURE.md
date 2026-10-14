@@ -52,11 +52,11 @@ src/
 Every panel in the right-hand dock is one entry in `src/panels/registry.tsx`:
 
 ```ts
-{ id: 'crisiswatch', title: 'Crisis Monitor', group: 'intel', dotColor: 'orange',
+{ id: 'crisiswatch', title: 'Crisis Monitor', group: 'overview', section: 'events', dotColor: 'orange',
   desc: 'ICG conflict tracking — 70+ states', render: () => <CrisisWatchPanel /> }
 ```
 
-`group` is one of `intel | geo | mil | fin | ai`, driving the left `Sidebar` nav. Adding a panel means adding one entry here — `PanelDock`, `ObserveTray`, and `SettingsModal`'s layer list all read from this registry, so nothing else needs to change. Panels receive a shared `PanelProps` bag (`crises`, `flights`, `panelState`, `onToggleLayer`, `onGeoSearch`, `onCountryClick`, ...) and destructure only what they use.
+`group` is the workspace (`overview | markets | analysis | country | security | geo | news`). `GROUP_ORDER` sets the order of workspaces in the left `Sidebar`, and `SIDEBAR_SECTIONS` sets the headings that group them: Start, Economy & forecasting, Context, Sources. `section` names a banner from `GROUP_SECTIONS[group]`. The dock shows panels section by section, each section under a numbered banner with a header and a one-line explanation, ordered from the most immediate or aggregated view to the detail behind it. `src/panels/registry.test.ts` checks that every panel's section exists and that no section is empty. Adding a panel means adding one entry here — `PanelDock`, `ObserveTray`, and `SettingsModal`'s layer list all read from this registry, so nothing else needs to change. Panels receive a shared `PanelProps` bag (`crises`, `flights`, `panelState`, `onToggleLayer`, `onGeoSearch`, `onCountryClick`, ...) and destructure only what they use.
 
 ## Data flow: service → hook → panel
 

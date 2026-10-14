@@ -89,6 +89,11 @@ html, body, #root {
   letter-spacing: .14em;
 }
 
+/* Sidebar sections: START / ECONOMY & FORECASTING / CONTEXT / SOURCES */
+.sidebar-section { display: flex; flex-direction: column; gap: 5px; }
+.sidebar-section + .sidebar-section { margin-top: 6px; padding-top: 8px; border-top: 1px solid var(--border); }
+.sidebar-subheading { padding: 0 13px 2px; font-size: 6.5px; line-height: 1.4; color: var(--text3); }
+
 .sidebar-item {
   display: flex;
   align-items: center;
@@ -108,8 +113,11 @@ html, body, #root {
 .sidebar-item .sidebar-label {
   white-space: normal;
   line-height: 1.25;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  min-width: 0;
 }
+.sidebar-item > svg { flex-shrink: 0; }
 .sidebar-item:hover { background: var(--surface2); color: var(--text1); }
 .sidebar-item.active { background: var(--accent-soft); color: var(--accent); }
 .sidebar-item .count {
@@ -169,6 +177,16 @@ html, body, #root {
   background: #080e13;
 }
 .dock-workspace-heading + .dock-panel { margin-top: 9px; }
+/* Section banners between panel groups in the dock: step number, header, one-line explanation */
+.dock-section {
+  display: flex; gap: 10px; align-items: flex-start;
+  margin: 14px 9px 9px; padding: 10px 12px;
+  border: 1px solid var(--border); border-left: 2px solid var(--accent); border-radius: var(--r-md);
+  background: var(--accent-soft);
+}
+.dock-section-step { flex-shrink: 0; padding-top: 1px; color: var(--accent); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+.dock-section-title { margin: 0; color: var(--text1); font-size: 12.5px; font-weight: 650; letter-spacing: .01em; }
+.dock-section-desc { margin: 3px 0 0; color: var(--text2); font-size: 11px; line-height: 1.5; }
 .dock-workspace-eyebrow { color: var(--text3); font-size: 9px; font-weight: 700; letter-spacing: .13em; }
 .dock-workspace-title { margin-top: 3px; color: var(--text1); font-size: 13px; font-weight: 650; letter-spacing: .01em; }
 .dock-workspace-heading > span { color: var(--text3); font-size: 11px; }
