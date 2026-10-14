@@ -24,8 +24,13 @@ export interface PanelDef {
   group: PanelGroup
   dotColor?: string
   desc: string
+  /** which banner section of its workspace it sits under (an id from GROUP_SECTIONS[group]) */
+  section: string
   /** dock height for long, research-style panels (default 700px) */
   minHeight?: number
   /** Render function — receives all props, panel uses what it needs */
   render: (props: PanelProps) => React.ReactNode
 }
+
+/** A banner in the right-hand dock: groups panels inside a workspace and says what they are for. */
+export interface PanelSection { id: string; title: string; desc: string }

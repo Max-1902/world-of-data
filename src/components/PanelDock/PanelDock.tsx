@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react'
+import { Fragment, useState, useRef, useEffect } from 'react'
 import type { CrisisEvent, PanelState, Flight } from '../../types'
-import { GROUP_ORDER, panelsForGroup } from '../../panels/registry'
+import { GROUP_ORDER, GROUP_SECTIONS, panelsForGroup } from '../../panels/registry'
 import type { PanelGroup, PanelProps } from '../../panels/types'
 import PanelHost from '../PanelHost'
 import CloseButton from '../CloseButton'
@@ -116,14 +116,27 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
             )}
           </span>
         </div>
-        {visibleDefs.map((def) => {
+        {visibleDefs.map((def, i) => {
+          // A banner wherever a new section starts (sections with every panel closed get none)
+          const sections = GROUP_SECTIONS[activeGroup]
+          const section = def.section !== visibleDefs[i - 1]?.section ? sections.find(s => s.id === def.section) : undefined
+          const step = section ? sections.indexOf(section) + 1 : 0
           // Give each panel a sensible min-height based on type
           const isAI = def.id === 'analyst'
           const isLarge = isAI || def.id === 'markets' || def.id === 'humanitarian'
           const minH = def.minHeight ?? (isAI ? 900 : isLarge ? 800 : 700)
           return (
+            <Fragment key={def.id}>
+            {section && (
+              <section className="dock-section" aria-labelledby={`dock-section-${activeGroup}-${section.id}`}>
+                <div className="dock-section-step" aria-hidden="true">{String(step).padStart(2, '0')}</div>
+                <div>
+                  <h2 className="dock-section-title" id={`dock-section-${activeGroup}-${section.id}`}>{section.title}</h2>
+                  <p className="dock-section-desc">{section.desc}</p>
+                </div>
+              </section>
+            )}
             <div
-              key={def.id}
               className="dock-panel"
               style={{
                 height: isAI ? minH : undefined,
@@ -146,6 +159,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
                 <PanelHost label={def.title}>{def.render(panelProps)}</PanelHost>
               </div>
             </div>
+            </Fragment>
           )
         })}
 
