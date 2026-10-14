@@ -127,7 +127,7 @@ describe('openrouter edge proxy', () => {
     const h = (i: number) => (fetchMock.mock.calls[i] as unknown as [string, RequestInit])[1].headers as Record<string, string>
     expect(h(0)['HTTP-Referer']).toBe('https://my.site')
     expect(h(1)['HTTP-Referer']).toMatch(/^https:\/\//)
-    expect(h(0)['X-Title']).toBe('Mundus Datorum')
+    expect(h(0)['X-Title']).toBe('Macroeconomic Forecasting System')
   })
 
   it('streams the upstream body straight through with its status', async () => {

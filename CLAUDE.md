@@ -4,7 +4,7 @@ This file exists so any agent (Claude or otherwise) picks up context fast and do
 
 ## Purpose — this is a research case, not a hobby project
 
-Mundus Datorum ("world of data") is a working apparatus for studying (1) what happens to data once it is visualised, and (2) what happens when an AI model is wired into a system that can evaluate all of it. The owner treats it as research. The README's "Purpose and research questions" section states the questions, the controls, what the build has shown and what has *not* been measured.
+The Macroeconomic Forecasting System is a working apparatus for studying (1) what happens to data once it is visualised, and (2) what happens when an AI model is wired into a system that can evaluate all of it. The owner treats it as research. The README's "Purpose and research questions" section states the questions, the controls, what the build has shown and what has *not* been measured.
 
 What this means for agents:
 - **Never overstate.** Do not present AI output, forecasts or correlations as validated; say what was and wasn't measured. The AI layer has not been systematically evaluated, and the README says so — keep it true.

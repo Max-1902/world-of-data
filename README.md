@@ -1,10 +1,10 @@
-# Mundus Datorum
+# Macroeconomic Forecasting System
 
-*Latin for "world of data".* A live world-monitoring dashboard: dozens of free data sources on one 3D globe, a statistics layer on top, and an AI analyst that can read the results. It is a research case around two questions: **what does data become when you visualise it, and what happens when an LLM is wired into a system that can evaluate all of it?**
+A statistical forecasting system for macroeconomic, political and industrial indicators — GDP growth, inflation, unemployment, trade, sanctions, debt dynamics — backtested against naive baselines, with a 3D globe used to visualise the underlying data. It is a research case around two questions: **what does data become when you visualise it, and what happens when an LLM is wired into a system that can evaluate all of it?**
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6) ![React](https://img.shields.io/badge/React-18-61dafb) ![Mapbox](https://img.shields.io/badge/Mapbox_GL-v3-000000) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
 
-![Mundus Datorum on Ukraine: satellite globe with the country brief, country panel with military and nuclear sites, and the AI analyst's answer on the economic impact of the war](docs/screenshots/main.jpg)
+![Macroeconomic Forecasting System on Ukraine: satellite globe with the country brief, country panel with military and nuclear sites, and the AI analyst's answer on the economic impact of the war](docs/screenshots/main.jpg)
 
 ## 29 overlays in 5 categories
 
