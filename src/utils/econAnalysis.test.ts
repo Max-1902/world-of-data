@@ -328,6 +328,32 @@ describe('forecast', () => {
     const f = arForecast(series(y), 2, 3)!
     expect(f.points[0].hi - f.points[0].lo).toBeLessThan(f.points[2].hi - f.points[2].lo)
   })
+  it('arForecast interval: σ̂² = SSR / (n − p − 1), widened by ψ-weights (h=2: √(1+φ²), h=3: √(1+φ²+φ⁴) for AR(1))', () => {
+    const y = [3]
+    for (let i = 1; i < 40; i++) y.push(1 + 0.6 * y[i - 1] + noise(i))
+    const f = arForecast(series(y), 1, 3)!
+    // independent closed-form simple regression of y_t on y_{t-1}
+    const xs = y.slice(0, -1), ys = y.slice(1), n = ys.length
+    const mx = xs.reduce((a, b) => a + b) / n, my = ys.reduce((a, b) => a + b) / n
+    const phi = xs.reduce((s, x, i) => s + (x - mx) * (ys[i] - my), 0) / xs.reduce((s, x) => s + (x - mx) ** 2, 0)
+    const c = my - phi * mx
+    const ssr = ys.reduce((s, v, i) => s + (v - c - phi * xs[i]) ** 2, 0)
+    const half1 = tCrit95(n - 2) * Math.sqrt(ssr / (n - 2))
+    const half = f.points.map(p => (p.hi - p.lo) / 2)
+    expect(f.points[0].value).toBeCloseTo(c + phi * y[y.length - 1], 8)
+    expect(half[0]).toBeCloseTo(half1, 8)
+    expect(half[1]).toBeCloseTo(half1 * Math.sqrt(1 + phi ** 2), 8)
+    expect(half[2]).toBeCloseTo(half1 * Math.sqrt(1 + phi ** 2 + phi ** 4), 8)
+    expect(f.longRun!).toBeCloseTo(c / (1 - phi), 8)
+  })
+  it('arForecast reports the long-run level c / (1 − Σφ), and null for a non-stationary fit', () => {
+    const conv = [0]
+    for (let i = 1; i < 20; i++) conv.push(10 + 0.5 * conv[i - 1])
+    expect(arForecast(series(conv), 1, 1)!.longRun).toBeCloseTo(20, 6)
+    const explosive = [0]
+    for (let i = 1; i < 20; i++) explosive.push(1 + 1.5 * explosive[i - 1])
+    expect(arForecast(series(explosive), 1, 1)!.longRun).toBeNull()
+  })
   it('arForecast is null when there is not enough history for the requested order', () => {
     expect(arForecast(series([1, 2, 3, 4]), 2, 1)).toBeNull()
   })

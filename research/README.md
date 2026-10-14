@@ -74,3 +74,12 @@ does a model with more features than one scalar delta actually separate "goes on
 "doesn't" better than the rule — and the honest answer may well be no, especially while the recorder has
 only a few months of real data. A model that *matches* the rule on scarce data is itself a finding, not a
 failed experiment, and should be written up as one in `FINDINGS.md` the same way the rule's own bugs were.
+
+## 6. GDP-growth forecast evaluation (Predictions panel)
+
+```bash
+npm run research:forecast -- --fetch                                              # World Bank, free and keyless; stores a vintage
+npm run research:forecast -- --input research/data/worldbank-gdp/2026-10-14.json  # offline, reproducible
+```
+
+Scores `arForecast` (`src/utils/econAnalysis.ts`), the function the Predictions panel ships, on real GDP growth for 52 European and Asian economies. It uses a rolling origin (origins from 1990, at least 30 years of history each, the same folds for every method) and reports the 1- and 3-year mean absolute error and the real coverage of the 95% interval, split before and after 2005. It compares the naive and historical-mean baselines and shorter estimation windows, plus the pre-fix interval, which is derived exactly from the shipped output. Output: `backtest/forecast_<day>.json`. Results and decisions are in `FINDINGS.md`.

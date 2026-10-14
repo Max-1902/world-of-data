@@ -10,6 +10,7 @@
     "research:record": "tsx scripts/research/record.ts",
     "research:eval": "tsx scripts/research/eval.ts",
     "research:backtest": "tsx scripts/research/backtest.ts",
+    "research:forecast": "tsx scripts/research/forecastEval.ts",
     "preview": "vite preview",
     "test": "vitest run",
     "test:visual": "playwright test",

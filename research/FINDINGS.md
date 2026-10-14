@@ -26,6 +26,50 @@ Reading, provisional:
 - In arm B, flags dropped from 11 to 1, and fewer answers cited numbers at all. The lower fidelity mean comes from only 8 answers and needs the manual review.
 - n = 20 per arm, one recorded state, one usable model. This is a first measurement, not a result. Gemma 4 was rate-limited throughout and isn't included.
 
+## GDP-growth forecast (Predictions panel), 2026-10-14
+
+Measured with `npx tsx scripts/research/forecastEval.ts --input research/data/worldbank-gdp/2026-10-14.json`. Data: World Bank real GDP growth (`NY.GDP.MKTP.KD.ZG`, free and keyless), 52 European and Asian economies, latest year 2025. Design: rolling origin, forecast origins 1990–2025 with at least 30 years of history before each, all methods scored on the same folds (1,388 one-year-ahead folds; fewer at three years). Origins are split at 2005, so a choice made on 1990–2004 can be checked on 2005–2025. Full output: [`backtest/forecast_2026-10-14.json`](backtest/forecast_2026-10-14.json).
+
+**Bugs found in the forecast itself (verified in code, fixed):**
+
+1. **The interval widened by √h, a random-walk rule, not the AR model's own error growth.** The correct h-step variance for an AR(p) is σ̂²·Σψⱼ² for j < h, where ψ₀ = 1 and ψⱼ = Σφᵢψⱼ₋ᵢ (Hamilton 1994, ch. 4; Hyndman & Athanasopoulos, FPP3 §9.8). These series revert to a mean, so √h made the 3-year interval too wide: in 1990–2004 it held the real value **98.8%** of the time at three years ahead, against a nominal 95%. Fixed: 96.4%.
+2. **σ̂ divided by n − 1, not by the regression's degrees of freedom, n − p − 1.** This made intervals very slightly too narrow. Fixed. Effect on one-year coverage: 96.4% → 96.6% (1990–2004).
+3. **The docstring said `arForecast` returns null below p×4 + 3 points.** The code returns null below 2p + 3. Docstring corrected; behaviour unchanged.
+
+Point forecasts are unchanged by all three fixes. Tests check the interval against an independent closed-form AR(1) regression.
+
+**Interval coverage after the fix (nominal 95%):**
+
+| | 1990–2004 origins | 2005–2025 origins |
+|---|---|---|
+| 1 year ahead | 96.6% | **89.9%** |
+| 3 years ahead | 96.4% | **92.2%** |
+
+Since 2005 the textbook interval undercovers. It assumes the past error spread holds and ignores uncertainty in the fitted coefficients, and the period includes 2008–09 and 2020. The pre-fix √h rule happened to come closer at three years in this period (96.0%) because it was too wide everywhere, not because it modelled anything. The panel now states the measured 2005–2025 coverage rather than claiming 95%.
+
+**Point accuracy (mean absolute error, pp; lower is better):**
+
+| method | 1y, 1990–2004 | 1y, 2005–2025 | 3y, 1990–2004 | 3y, 2005–2025 |
+|---|---|---|---|---|
+| naive (repeat last year) | 2.149 | 2.717 | 2.649 | 3.224 |
+| AR(2), full history (shipped) | **1.967** | 2.493 | **2.024** | 2.624 |
+| AR(2), last 30 years | 2.021 | 2.431 | 2.072 | 2.422 |
+| AR(2), last 20 years | 2.042 | 2.502 | 2.158 | 2.462 |
+| mean, last 20 years | 2.066 | **2.230** | 1.999 | **2.322** |
+
+The shipped AR(2) beats the naive forecast in 42 of 52 countries.
+
+**Structural break: suspected, tested, not fixed.** Iterated forward, AR(2) converges to c / (1 − φ₁ − φ₂), a level set by the whole series. For economies that have slowed structurally, that pulls the forecast up: China 5.0% (2025) → 9.2% (2028), long-run level 8.5%; Korea 1.0% → 4.9%, long-run level 6.9%. For China and Korea the AR model loses to the naive forecast out of sample. Fitting on recent years only was tested as the fix:
+
+- Chosen on 1990–2004, the full history wins (1.967 vs 2.021–2.042), so the pre-planned rule keeps it.
+- On 2005–2025 the shorter windows do better (last 30: 2.431 vs 2.493), and a 20-year mean beats every AR variant. The ranking flips between periods.
+- Per country, a 30-year window beats the full history in 26 of 52 countries, no better than a coin flip.
+- In the countries suspected in advance (CN, KR, JP, TH), shorter windows do reduce error. China's AR error falls from 2.04 to 1.74 with 20 years, but the naive forecast (1.50) still wins. Those four were picked after looking at the forecasts, so this is not evidence for a general change.
+
+Decision: the estimation window is unchanged. The panel now prints the long-run level each forecast converges to and the years it comes from, and says that this pull is an assumption of the model, not evidence. A window or break-detection rule should only ship if it wins on a pre-registered split. This run's 2005 split is now used up for that purpose.
+
+**Not measured:** no comparison against official forecasts (IMF WEO, European Commission, central banks). The project holds none, and none were quoted. Only GDP growth was evaluated; the panel's inflation and unemployment forecasts use the same code but have not been backtested at this scale. The World Bank revises past figures, so this vintage is stored and later runs may differ slightly.
+
 ## Not done
 
 - **Trend-flag backtest:** the code is built and tested (it reproduces the dashboard's flag exactly), but it hasn't run on real data. The ACLED account returned `flood_user_blocked` (locked after failed logins) and was left alone so the lock wouldn't be extended. Run `npm run research:backtest -- --fetch-days 180` once access is back.
