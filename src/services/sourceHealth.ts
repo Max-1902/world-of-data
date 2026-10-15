@@ -31,6 +31,7 @@ export const SOURCE_RULES: SourceRule[] = [
   { id: 'newsapi',   label: 'NewsAPI',                   match: has('newsapi.org') },
   { id: 'geocode',   label: 'Place lookup (Open-Meteo)', match: has('geocoding-api.open-meteo.com') },
   { id: 'markets',   label: 'Markets (Finnhub)',         match: has('/api/finnhub') },
+  { id: 'eia',       label: 'Energy inventories (EIA)',  match: has('/api/eia') },
   { id: 'unhcr',     label: 'Displacement (UNHCR)',      match: has('api.unhcr.org') },
   { id: 'worldbank', label: 'Economy (World Bank)',      match: has('api.worldbank.org') },
   { id: 'owid',      label: 'Our World in Data',         match: has('ourworldindata.org') },
