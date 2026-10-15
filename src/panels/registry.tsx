@@ -43,6 +43,7 @@ const CountryAnalyticsPanel = lazy(() => import('../components/panels/CountryAna
 const AnalyticsPanel = lazy(() => import('../components/panels/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })))
 const CountryLookupPanel = lazy(() => import('../components/panels/CountryLookupPanel').then(m => ({ default: m.CountryLookupPanel })))
 const PredictionsPanel = lazy(() => import('../components/panels/PredictionsPanel').then(m => ({ default: m.PredictionsPanel })))
+const InventoriesPanel = lazy(() => import('../components/panels/InventoriesPanel').then(m => ({ default: m.InventoriesPanel })))
 const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
@@ -79,6 +80,11 @@ const PANELS: PanelDef[] = [
     id: 'markets', title: 'Markets', group: 'markets', section: 'live',
     dotColor: 'grn', desc: 'Consolidated financial data feed',
     render: () => <MarketsPanel />,
+  },
+  {
+    id: 'inventories', title: 'Energy Inventories', group: 'markets', section: 'inventories', minHeight: 900,
+    dotColor: 'amber', desc: 'Weekly US crude, gasoline, distillate and natural-gas stocks against the same week in the previous five years (EIA, free key)',
+    render: () => <InventoriesPanel />,
   },
   {
     id: 'economy', title: 'Economy', group: 'markets', section: 'macro',
@@ -255,6 +261,7 @@ export const GROUP_SECTIONS: Record<PanelGroup, PanelSection[]> = {
   ],
   markets: [
     { id: 'live', title: 'Markets today', desc: 'The fastest-moving signal: index and asset prices from the live feed.' },
+    { id: 'inventories', title: 'Inventories', desc: 'Weekly US stockpiles of crude oil, fuels and natural gas (EIA), against the same week in the previous five years.' },
     { id: 'macro', title: 'Macro indicators', desc: 'Slower, structural data per country: World Bank economic profiles and long-run global trends.' },
     { id: 'trade', title: 'Trade', desc: 'Who each country trades with, and what it exports and imports.' },
     { id: 'resources', title: 'Resources', desc: 'Critical minerals and commodities: reserves and production by country.' },

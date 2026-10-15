@@ -15,7 +15,7 @@ A statistical forecasting system for macroeconomic, political and industrial ind
 | **Live tracking** | flights (OpenSky), vessels (AIS), webcams |
 | **Events & hazards** | crises, news, wildfires (NASA FIRMS), humanitarian, GPS jamming, internet outages, hazard hexagons |
 | **Security & defence** | military sites, force size, nuclear, sanctions, airspace |
-| **Economy** | markets, trade, resources, oil, gas, supply chain, country data |
+| **Economy** | markets, weekly energy inventories (EIA), trade, resources, oil, gas, supply chain, country data |
 | **Infrastructure** | energy sites, data centres, pipelines, ports, chokepoints, shipping density |
 
 ![Split view over Donbas: Mapbox satellite map on the left, the embedded DeepState Ukraine battlefield monitor on the right, and a live news feed in the dock](docs/screenshots/deepstate-split.jpg)
@@ -66,7 +66,9 @@ It also drove the map (flew to Ukraine, switched layers on). One question, one r
 npm install
 cp .env.example .env   # only VITE_MAPBOX_TOKEN is required; every other key is optional
 npm run dev            # Vite + the small /api functions that keep secrets out of the bundle
-npm test               # ~900 tests, fully offline
+npm test               # ~1,100 tests, fully offline
 ```
+
+Keys that only the owner can register (EIA, GitHub Actions secrets for the research recorder) are tracked in [`TODO.md`](TODO.md).
 
 Stack: Vite, React 18, TypeScript (strict), Mapbox GL v3, plain SVG charts. No server or database; state lives in the browser. Architecture and conventions are in [`ARCHITECTURE.md`](ARCHITECTURE.md).
