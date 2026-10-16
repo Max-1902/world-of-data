@@ -27,7 +27,7 @@ import { triggerGlobalReload } from './utils/reloadBus'
 import { clearNewsCaches } from './services/news'
 import { summarizeKeyEvents } from './utils/keyEvents'
 import { useDisasterAlerts } from './hooks/useDisasterAlerts'
-import { GROUP_ORDER } from './panels/registry'
+import { GROUP_ORDER, PANEL_MAP } from './panels/registry'
 import { decodeHash, encodeHash, enabledLayers, layersToPanelState, type DecodedState } from './utils/urlState'
 
 // Rarely-open surfaces: keep their code (and the datasets CountryDrawer pulls in) out of the first load.
@@ -103,6 +103,14 @@ export default function App() {
   const [selectedCountry, setSelectedCountry] = useState<string | null>(() => readHash().country ?? null)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
+  const [focusPanel, setFocusPanel] = useState<{ id: string; n: number } | null>(null)
+  // Search bar / command palette picked a panel: switch to its workspace and scroll to it.
+  const openPanel = useCallback((id: string) => {
+    const group = PANEL_MAP.get(id)?.group
+    if (!group) return
+    setActiveGroup(group)
+    setFocusPanel({ id, n: Date.now() })
+  }, [])
   // Session-only: a closed ticker / outlook card returns on reload. The outlook card is dismissed per subject
   // (the regional outlook, or one country's brief), so picking another country shows it again.
   const [tickerHidden, setTickerHidden] = useState(false)
@@ -264,6 +272,8 @@ export default function App() {
         stocks={stocks}
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
+        onOpenPanel={openPanel}
+        onToggleLayer={toggleLayer}
         onSettingsOpen={() => setSettingsOpen(true)}
         onReloadAll={handleReloadAll}
         reloading={reloading}
@@ -372,7 +382,7 @@ export default function App() {
             open={paletteOpen}
             onClose={() => setPaletteOpen(false)}
             panelState={panelState}
-            onSelectGroup={setActiveGroup}
+            onOpenPanel={openPanel}
             onToggleLayer={toggleLayer}
             onViewMode={setViewMode}
             onGeoSearch={handleGeoSearch}
@@ -401,6 +411,7 @@ export default function App() {
           onPopOut={handlePopOut}
           onPopIn={handlePopIn}
           activeGroup={activeGroup}
+          focusPanel={focusPanel}
         />
       </div>
     </div>

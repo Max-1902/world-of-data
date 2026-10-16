@@ -20,6 +20,8 @@ interface Props {
   onPopOut: (id: string) => void
   onPopIn:  (id: string) => void
   activeGroup: PanelGroup
+  /** Scroll to (and re-show, if closed) this panel; `n` changes on every request so picking the same panel twice still scrolls. */
+  focusPanel?: { id: string; n: number } | null
 }
 
 const MIN_W = 320
@@ -41,7 +43,7 @@ function loadWidth(): number {
   return Math.round(window.innerWidth * 0.28)
 }
 
-export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, activeGroup }: Props) {
+export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, activeGroup, focusPanel }: Props) {
   const [panelW, setPanelW] = useState(loadWidth)
   const resizeRef = useRef<{ startX: number; startW: number } | null>(null)
   // Panels the user closed with ✕; remembered across reloads and restorable from the workspace heading.
@@ -78,6 +80,22 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
   useEffect(() => { try { localStorage.setItem(LS_KEY_WIDTH, String(panelW)) } catch {} }, [panelW])
   useEffect(() => { try { localStorage.setItem(LS_KEY_HIDDEN, JSON.stringify([...hidden])) } catch {} }, [hidden])
 
+  // Search / command palette picked a panel: un-hide it, then scroll it into view once it has rendered.
+  const scrollRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!focusPanel) return
+    setHidden(prev => { if (!prev.has(focusPanel.id)) return prev; const next = new Set(prev); next.delete(focusPanel.id); return next })
+    const raf = requestAnimationFrame(() => {
+      const el = scrollRef.current?.querySelector<HTMLElement>(`[data-panel-id="${focusPanel.id}"]`)
+      if (!el) return
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.classList.remove('dock-panel-focus')
+      void el.offsetWidth // restart the highlight animation
+      el.classList.add('dock-panel-focus')
+    })
+    return () => cancelAnimationFrame(raf)
+  }, [focusPanel])
+
   const closePanel = (id: string) => setHidden(prev => new Set(prev).add(id))
   const restoreGroup = () => setHidden(prev => {
     const next = new Set(prev)
@@ -102,7 +120,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
       }} />
 
       {/* panels — scrollable, each with proper min-height */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+      <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
         <div className="dock-workspace-heading">
           <div>
             <div className="dock-workspace-eyebrow">WORKSPACE</div>
@@ -139,6 +157,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
             )}
             <div
               className="dock-panel"
+              data-panel-id={def.id}
               style={{
                 height: isAI ? minH : undefined,
                 minHeight: minH,
