@@ -53,8 +53,21 @@ describe('detectFlightType', () => {
     ['BAW123'],
     ['UAL100'],
     ['EZY12A'],
-  ])('classifies airline callsign %s as passenger', (cs) => {
-    expect(detectFlightType(cs, '400000')).toBe('passenger')
+  ])('classifies airline callsign %s as airline (passenger vs cargo unknown)', (cs) => {
+    expect(detectFlightType(cs, '400000')).toBe('airline')
+  })
+
+  it.each([
+    ['BOX123'], // AeroLogic 777F in DHL livery: was badged PASSENGER
+    ['GEC8240'], ['DHK17'], ['CAO1043'], ['CKK221'], ['NCA8'], ['ABW102'], ['TAY4115'],
+  ])('classifies all-cargo operator %s as cargo', (cs) => {
+    expect(detectFlightType(cs, '400000')).toBe('cargo')
+  })
+
+  it('never claims a flight carries passengers: no type or label says so', () => {
+    const types = new Set(['DLH400', 'QTR8150', 'UAE9881', 'CPA2', 'XYZ123', 'BOX1', ''].map(cs => detectFlightType(cs, '400000')))
+    expect([...types].some(t => /pass/i.test(t))).toBe(false)
+    expect(Object.values(FLIGHT_TYPE_LABELS).some(l => /^passenger$/i.test(l))).toBe(false)
   })
 
   it('falls back to unknown for empty, garbage, or missing input', () => {
@@ -64,8 +77,8 @@ describe('detectFlightType', () => {
     expect(detectFlightType('A1', '400000')).toBe('unknown') // too short to be a flight number
   })
 
-  it('checks military before cargo/passenger when both could match', () => {
-    // "RCH1" would otherwise look like a passenger callsign
+  it('checks military before cargo/airline when both could match', () => {
+    // "RCH1" would otherwise look like an airline callsign
     expect(detectFlightType('RCH1', '400000')).toBe('military')
   })
 })
@@ -77,13 +90,13 @@ describe('countFlightTypes', () => {
   })
 
   it('returns all-zero counts for an empty list', () => {
-    expect(countFlightTypes([])).toEqual({ passenger: 0, cargo: 0, military: 0, private: 0, unknown: 0 })
+    expect(countFlightTypes([])).toEqual({ airline: 0, cargo: 0, military: 0, private: 0, unknown: 0 })
   })
 
   it('counts each type and the total matches the input length', () => {
     const flights = [f('DLH400'), f('BAW1234'), f('UPS12'), f('RCH1'), f('N123AB'), f('')]
     const counts = countFlightTypes(flights)
-    expect(counts).toEqual({ passenger: 2, cargo: 1, military: 1, private: 1, unknown: 1 })
+    expect(counts).toEqual({ airline: 2, cargo: 1, military: 1, private: 1, unknown: 1 })
     expect(Object.values(counts).reduce((a, b) => a + b, 0)).toBe(flights.length)
   })
 })
@@ -99,7 +112,7 @@ describe('headingToCompass', () => {
 
 describe('flight type lookup tables', () => {
   it('define a color and label for every flight type', () => {
-    const types = ['passenger', 'cargo', 'military', 'private', 'unknown'] as const
+    const types = ['airline', 'cargo', 'military', 'private', 'unknown'] as const
     for (const t of types) {
       expect(FLIGHT_TYPE_COLORS[t]).toMatch(/^#[0-9a-f]{6}$/i)
       expect(FLIGHT_TYPE_LABELS[t]).toBeTruthy()

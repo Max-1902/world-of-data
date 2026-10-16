@@ -15,7 +15,7 @@ interface Props {
 
 // Size shortcut groups (derived from type — OpenSky has no size data)
 const SIZE_GROUPS: { label: string; color: string; types: FlightType[] }[] = [
-  { label: 'LARGE',  color: '#00ff88', types: ['passenger', 'cargo'] },
+  { label: 'LARGE',  color: '#00ff88', types: ['airline', 'cargo'] },
   { label: 'MEDIUM', color: '#ffaa00', types: ['military'] },
   { label: 'SMALL',  color: '#8844ff', types: ['private', 'unknown'] },
 ]
@@ -92,8 +92,8 @@ export default function FlightFilter({ flights, filteredCount, filterQuery, setF
             {ALL_TYPES.map(type => {
               const on    = filterTypes.has(type)
               const color = FLIGHT_TYPE_COLORS[type]
-              const icon  = type === 'passenger' ? '✈' : type === 'cargo' ? '▣' : type === 'military' ? '⚔' : type === 'private' ? '◆' : '?'
-              const label = type === 'passenger' ? 'PAX' : type === 'cargo' ? 'CGO' : type === 'military' ? 'MIL' : type === 'private' ? 'PVT' : 'UNK'
+              const icon  = type === 'airline' ? '✈' : type === 'cargo' ? '▣' : type === 'military' ? '⚔' : type === 'private' ? '◆' : '?'
+              const label = type === 'airline' ? 'AIR' : type === 'cargo' ? 'CGO' : type === 'military' ? 'MIL' : type === 'private' ? 'PVT' : 'UNK'
               const count = typeCounts[type] || 0
               return (
                 <button key={type} onClick={() => toggleType(type)} style={{

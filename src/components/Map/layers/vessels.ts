@@ -83,7 +83,7 @@ export function addVesselLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
         <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></div>
         <span style="font-size:11px;font-weight:800;color:#14161a;">${p.name || 'UNKNOWN'}</span>
-        <span style="font-size:10px;color:#9ca3af;margin-left:auto;">${p.vesselType?.toUpperCase()}</span>
+        <span style="font-size:10px;color:#9ca3af;margin-left:auto;">${p.typeGuessed ? `${p.vesselType === 'other' ? 'TYPE UNKNOWN' : `${String(p.vesselType).toUpperCase()}? (from name)`}` : String(p.vesselType).toUpperCase()}</span>
       </div>
       <div style="font-size:11px;color:#6b7280;line-height:1.6;">
         <div><span style="color:#9ca3af;">MMSI:</span> ${p.mmsi}</div>
@@ -133,6 +133,8 @@ export function useVesselData({ mapRef, layersReadyRef, mapReady }: MapHandle, {
           heading: v.heading,
           navStatus: v.navStatus,
           vesselType: vt,
+          // no AIS ship-type code yet: the type is a guess from the name ("SPIRIT OF …", "OIL …"), and says so
+          typeGuessed: !v.shipType,
           color: VESSEL_TYPE_COLORS[vt],
           destination: v.destination || '',
         },
