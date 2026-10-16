@@ -1,14 +1,23 @@
 /** Shared building blocks for the country drawer and its section files. */
+import { resolveISO2 } from '../../services/worldbank'
+import { sameCountry } from '../../utils/countryBrief'
 
 export const fmt = (n: number) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(0) + 'K' : n.toString()
 
 // Soft translucent tint of a token color, for badge/chip backgrounds
 export const soft = (color: string, pct = 14) => `color-mix(in srgb, ${color} ${pct}%, transparent)`
 
-// Fuzzy country name match helper
+/**
+ * Does a dataset's country label refer to this country? Compares ISO codes when both resolve, so
+ * abbreviations work ("UK" ~ "United Kingdom") and prefixes don't ("UK" is not "Ukraine").
+ * Shared labels ("Zambia/Zimbabwe") match either side; unresolvable ones fall back to whole-word names.
+ */
 export function matchCountry(name: string, lc: string): boolean {
-  const nameLc = name.toLowerCase()
-  return nameLc.includes(lc) || lc.includes(nameLc)
+  const target = resolveISO2(lc)
+  return name.split('/').some(part => {
+    const code = resolveISO2(part)
+    return code && target ? code === target : sameCountry(part, lc)
+  })
 }
 
 // Defined at module scope (not inside the drawer) so React keeps their subtrees mounted across renders.
