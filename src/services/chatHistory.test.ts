@@ -80,4 +80,24 @@ describe('chatHistory', () => {
     expect(ids.size).toBe(200)
     for (const id of ids) expect(id).toMatch(/^\d+-[a-z0-9]+$/)
   })
+
+  it('keeps turns with their tool results so a reopened conversation still has its charts', () => {
+    const turns = [{ id: 't1', question: 'q', answer: 'a\n[CHART:R1]', notes: [], results: [{ id: 'R1', call: '[DATA:quakes]', tool: 'quakes', args: [], ok: true, at: 1, title: 'Quakes', source: 'USGS', text: 'x', chart: { kind: 'rank' as const, unit: 'n', items: [{ label: 'A', value: 1, text: '1' }] } }] }]
+    saveSession(session('a', 100, { turns }))
+    expect(listSessions()[0].turns).toEqual(turns)
+  })
+
+  it('drops the oldest conversations when storage is full instead of losing the save', () => {
+    let calls = 0
+    const setItem = ctx.storage.setItem
+    ctx.storage.setItem = (k: string, v: string) => {
+      calls++
+      if (JSON.parse(v).length > 2) throw new Error('QuotaExceededError')
+      setItem(k, v)
+    }
+    for (let i = 0; i < 2; i++) saveSession(session(`s${i}`, i))
+    saveSession(session('s2', 2))
+    expect(calls).toBeGreaterThan(3)
+    expect(listSessions().map(s => s.id)).toContain('s2')
+  })
 })

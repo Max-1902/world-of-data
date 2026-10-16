@@ -122,6 +122,23 @@ The panel's charts now show:
 
 The text states the forecast direction with its start and end values, and whether "no change" lies inside the final-year interval. Each target shows the evidence above. Reading the result for China: recent trend significantly downward (−0.25 pp/yr since 2011, p < 0.001), AR forecast rising to 9.2%. The chart now shows that contradiction rather than hiding it.
 
+## Analyst investigation tools, 2026-10-16
+
+The analyst can now request data (`services/aiTools.ts`, loop in `services/aiAgent.ts`). Each query runs in the browser against the dashboard's existing free sources. The result goes back to the model as text, and charts are drawn only from those results.
+
+**What was checked.** Unit tests cover the parser, every local tool, the not-measured paths and the loop: round cap, per-round cap, deduplication and model fallback. A smoke run of the keyless tools against the live APIs on 2026-10-16 (World Bank series, profile, rank and forecast; USGS; GDACS; Ember; trade) returned well-formed results.
+
+**Found by that smoke run:**
+
+1. **A World Bank aggregate ranked as a country.** "Fragility, Conflict, and Violence (FCV) situations" came 5th on military spending (6.8% of GDP). The aggregate-exclusion lists in `countryIndicators.ts`, `militaryPersonnel.ts` and `infraIndicators.ts` had the old code `FCS`, but the API now returns `FCV`. This affected Country Analytics and the rankings, not only the analyst. Fixed, with a regression test.
+2. **A forecast that loses to "no change".** For Türkiye CPI inflation, AR(2) over 54 one-year-ahead folds had a mean absolute error of 11.72 pp against 9.96 pp for the naive forecast (Diebold–Mariano p = 0.07). The tool passes this verdict to the model with the forecast. Whether models then present such a forecast with the right caution is not yet measured.
+
+**Not measured:**
+
+- Answer quality, grounding or usefulness compared with the single-shot analyst. No eval has been run.
+- Whether models follow the protocol. Small free models may ignore `[DATA:…]`, or mix requests and prose in one turn. The default free model's native tool-call markup is mapped onto the tools when it names one, but it hasn't been re-tested end to end.
+- Number fidelity of tool runs. `scripts/research/eval.ts` takes its context from the system message only, and tool results arrive as later user messages, so a re-score would wrongly count tool numbers as unsupported. The exported run log keeps every round in `messages` and lists the queries in `toolCalls`, so the scorer can be extended.
+
 ## Not done
 
 - **Trend-flag backtest:** the code is built and tested (it reproduces the dashboard's flag exactly), but it hasn't run on real data. The ACLED account returned `flood_user_blocked` (locked after failed logins) and was left alone so the lock wouldn't be extended. Run `npm run research:backtest -- --fetch-days 180` once access is back.

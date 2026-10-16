@@ -28,6 +28,14 @@ export interface AIRun {
   error?: string
   /** inputs the context marked as NOT MEASURED */
   notMeasured: NotMeasured[]
+  /**
+   * Data the analyst requested during the run (absent before tools existed). `messages` then holds every round:
+   * the model's request and the TOOL RESULTS sent back. The eval harness replays only the system context, so a
+   * tool run's grounding has to be scored against these messages, not against the system prompt alone.
+   */
+  toolCalls?: { id: string; call: string; ok: boolean; title: string; source: string }[]
+  /** model calls made for this answer (1 = answered without fetching data) */
+  steps?: number
 }
 
 export interface RunStore {

@@ -8,6 +8,8 @@ All external calls are free: ACLED (free non-commercial account) and OpenRouter 
 
 Every AI Analyst call is stored in the browser's IndexedDB (`src/services/aiRuns.ts`). Each record holds the full message list sent (system prompt with the live context, prior turns, question), the sampling settings, the model requested and the model that answered, the raw answer, the outcome and the inputs marked NOT MEASURED. **Export runs** (history menu in the AI panel) downloads them as JSONL. The log never leaves the browser unless you export it.
 
+Runs where the analyst fetched data (since 2026-10-16) also hold every round in `messages`: the model's `[DATA:…]` request, then the `TOOL RESULTS` message sent back. They also carry `toolCalls` (id, query, ok, source) and `steps`. The eval harness below replays only the system context, so it does not yet cover tool runs.
+
 ## 2. Eval harness
 
 ```bash

@@ -391,7 +391,7 @@ DASHBOARD LAYERS (what the map can show — their data is NOT in this context un
  * The analyst's system prompt around a context from buildDashboardContext. Lives here (not in the panel)
  * so the offline eval harness sends exactly what the app sends.
  */
-export function buildSystemPrompt(context: string): string {
+export function buildSystemPrompt(context: string, opts: { tools?: string } = {}): string {
   return `You are the analyst in the Macroeconomic Forecasting System, a live world monitoring dashboard. You receive the dashboard's current data below, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
 
 Anything listed under NOT MEASURED is unknown, not zero or absent: never state or imply a count, an absence, a decline or an anomaly for it. If the question depends on it, say in one sentence that the dashboard did not measure it, then answer the rest. Only cite numbers that appear in the data below; anything from your own knowledge must be marked as such and must not be presented as a live reading.
@@ -410,12 +410,33 @@ IMPORTANT: You can execute dashboard commands by including them in your response
 When a user asks about a specific country or region, ALWAYS include the FLY and COUNTRY commands to show it on the map. (If the user's message names a country, the dashboard has already flown there and opened its overview — repeating those commands is harmless.) When relevant, enable related layers. For example if asked about Iran, fly there, open the country drawer, and enable relevant layers like military, crises, airspace.
 
 Execute commands BEFORE your analysis text — put them at the very start of your response.
-
+${opts.tools ? `\n${toolInstructions(opts.tools)}\n` : ''}
 ${context}`
 }
 
-/** Dashboard command lines ([FLY:…], [LAYER:…], …) the panel strips from what the user sees. */
-export const COMMAND_LINE = /^\[(FLY|COUNTRY|LAYER|DEEPSTATE):.+\]$/
+/**
+ * The investigation half of the system prompt (panel only — the offline eval harness sends the plain prompt, so
+ * frozen contexts stay comparable). `catalogue` is services/aiTools.ts toolCatalogue(); passed in rather than
+ * imported so this module does not pull every data service into the eval script.
+ */
+export function toolInstructions(catalogue: string, rounds = 3, perRound = 6): string {
+  return `INVESTIGATING WITH DATA TOOLS
+The live context below is only a summary. You can query every dataset in the dashboard yourself. To request data, write one request per line in exactly this form, with nothing else in that turn:
+[DATA:tool|argument|argument]
+The dashboard runs the requests and replies with TOOL RESULTS, each with an id (R1, R2, …). Then either request more data or write the answer. You get at most ${rounds} rounds of requests and ${perRound} requests per round, so ask for everything a question needs in the same round.
+
+Investigate before you answer. When a question touches a country, a market, an economic indicator, a hazard or the future, fetch the relevant data first instead of answering from memory, and combine sources (for a crisis: conflict, outages, disasters, news, markets; for an economy: profile, series, forecast, trade). For a general briefing, scan several live feeds. TOOL RESULTS count as "the data below" for every rule above, including [dashboard] tags. An input listed under NOT MEASURED becomes measured once a tool result for it is in the conversation, but only for what that result contains. A result marked NOT AVAILABLE is unknown, not zero.
+
+Tools:
+${catalogue}
+
+Charts: to show a result as a chart, put [CHART:R2] on its own line where it belongs in the answer. Only results marked "chartable" can be charted, and the chart draws the result's own data. Use a chart when a trend, comparison or ranking is central to the answer, usually one or two per answer.
+
+Answer format: open with a one- or two-sentence bottom line. Then use short "## " headings, bullet points, and a markdown table when comparing several items. Refer to the result behind a key claim by its id, e.g. (R2). When the question is about what comes next, end with "## What to watch": two or three concrete signals that would confirm or overturn the assessment. Never present a forecast as certain; give the method and its backtest skill when a forecast result is used.`
+}
+
+/** Dashboard command and data-request lines ([FLY:…], [LAYER:…], [DATA:…], …) the panel strips from what the user sees. [CHART:…] stays: the panel draws it. */
+export const COMMAND_LINE = /^\[(FLY|COUNTRY|LAYER|DEEPSTATE|DATA):.+\]$/
 
 /**
  * What the user should read: the model output without dashboard command lines and without model-native
@@ -431,6 +452,14 @@ export function visibleText(full: string): string {
 
 // ── Preset quick-prompts ───────────────────────────────────────────────────
 export const QUICK_PROMPTS: { label: string; prompt: string }[] = [
+  {
+    label:  'Daily brief',
+    prompt: 'Investigate the current world situation on your own. Scan the live feeds (conflict events, disaster alerts, internet outages, earthquakes, markets, headlines), decide which three developments matter most for the coming days, and brief me with the evidence, at least one chart, and what to watch.',
+  },
+  {
+    label:  'Economy outlook',
+    prompt: 'Pick the two or three economies most exposed to the current conflict and trend signals, pull their key indicators and a growth forecast, and explain the outlook with charts. Say how reliable the forecasts are.',
+  },
   {
     label:  'Threat Brief',
     prompt: 'Give me a concise intelligence brief on the current global threat landscape based on the active data. Highlight the most critical situations and any notable patterns.',

@@ -138,7 +138,28 @@ describe('buildSystemPrompt', () => {
   })
 })
 
+describe('buildSystemPrompt with tools', () => {
+  it('is unchanged without tools, so frozen eval contexts stay comparable', () => {
+    expect(buildSystemPrompt('CTX')).not.toContain('INVESTIGATING')
+    expect(buildSystemPrompt('CTX', {})).toBe(buildSystemPrompt('CTX'))
+  })
+
+  it('adds the tool protocol, catalogue and chart rule before the context, which stays last', () => {
+    const p = buildSystemPrompt('CTX-MARKER', { tools: '[DATA:quakes] — earthquakes' })
+    expect(p.endsWith('CTX-MARKER')).toBe(true)
+    expect(p.indexOf('INVESTIGATING WITH DATA TOOLS')).toBeLessThan(p.indexOf('CTX-MARKER'))
+    expect(p).toContain('[DATA:quakes] — earthquakes')
+    expect(p).toMatch(/TOOL RESULTS count as "the data below"/)
+    expect(p).toMatch(/NOT AVAILABLE is unknown, not zero/)
+    expect(p).toContain('[CHART:R2]')
+  })
+})
+
 describe('visibleText', () => {
+  it('hides data requests but keeps chart placements for the panel to draw', () => {
+    expect(visibleText('[DATA:conflict|Sudan]\nText\n[CHART:R1]')).toBe('Text\n[CHART:R1]')
+  })
+
   it('hides dashboard command lines and model-native tool-call blocks', () => {
     expect(visibleText("[FLY:Kyiv]\n<|tool_call_start|>[COUNTRY(name='Ukraine')]<|tool_call_end|>\nBriefing.")).toBe('\nBriefing.')
     expect(visibleText("<|tool_call_start|>[COUNTRY(name='Ukraine')]<|tool_call_end|>").trim()).toBe('')
