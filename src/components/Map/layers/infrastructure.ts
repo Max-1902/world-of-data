@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { esc } from '../geoPopups'
 import mapboxgl from 'mapbox-gl'
 import { ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchAllPowerPlants, type InfraPoint } from '../../../services/infrastructure'
 import type { LayerCtx } from './types'
@@ -54,14 +55,14 @@ export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void 
     const color  = String(p.color || '#00ff88')
     const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:230px;max-width:290px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
-        <span style="font-size:12px;font-weight:800;color:#14161a;">${p.icon} ${p.name}</span>
-        <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;">${p.typeLabel}</span>
+        <span style="font-size:12px;font-weight:800;color:#14161a;">${p.icon} ${esc(String(p.name))}</span>
+        <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${color};border:1px solid ${color}55;padding:1px 5px;">${esc(String(p.typeLabel))}</span>
       </div>
       <div style="font-size:11px;color:#6b7280;line-height:1.5;">
-        <div><span style="color:#9ca3af;">Country:</span> ${p.country}</div>
-        ${p.capacity ? `<div><span style="color:#9ca3af;">Capacity:</span> <b style="color:${color};">${p.capacity}</b></div>` : ''}
-        ${p.river    ? `<div><span style="color:#9ca3af;">River:</span> ${p.river}</div>` : ''}
-        ${p.notes    ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
+        <div><span style="color:#9ca3af;">Country:</span> ${esc(String(p.country))}</div>
+        ${p.capacity ? `<div><span style="color:#9ca3af;">Capacity:</span> <b style="color:${color};">${esc(String(p.capacity))}</b></div>` : ''}
+        ${p.river    ? `<div><span style="color:#9ca3af;">River:</span> ${esc(String(p.river))}</div>` : ''}
+        ${p.notes    ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${esc(String(p.notes))}</div>` : ''}
         <div style="margin-top:4px;font-size:10px;color:#${p.status === 'operational' ? '16a34a' : p.status === 'under_construction' ? 'd97706' : p.status === 'unknown' ? '9ca3af' : 'dc2626'};">● ${p.status === 'unknown' ? 'OPERATING STATUS NOT IN SOURCE' : String(p.status).replace('_',' ').toUpperCase()}</div>
       </div>
     </div>`

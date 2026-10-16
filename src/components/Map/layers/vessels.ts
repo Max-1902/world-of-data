@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { esc } from '../geoPopups'
 import mapboxgl from 'mapbox-gl'
 import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../../services/aisstream'
 import { addVesselImages } from '../vesselImages'
@@ -82,15 +83,15 @@ export function addVesselLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;">
       <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
         <div style="width:8px;height:8px;border-radius:50%;background:${p.color};flex-shrink:0;"></div>
-        <span style="font-size:11px;font-weight:800;color:#14161a;">${p.name || 'UNKNOWN'}</span>
+        <span style="font-size:11px;font-weight:800;color:#14161a;">${esc(String(p.name || 'UNKNOWN'))}</span>
         <span style="font-size:10px;color:#9ca3af;margin-left:auto;">${p.typeGuessed ? `${p.vesselType === 'other' ? 'TYPE UNKNOWN' : `${String(p.vesselType).toUpperCase()}? (from name)`}` : String(p.vesselType).toUpperCase()}</span>
       </div>
       <div style="font-size:11px;color:#6b7280;line-height:1.6;">
-        <div><span style="color:#9ca3af;">MMSI:</span> ${p.mmsi}</div>
+        <div><span style="color:#9ca3af;">MMSI:</span> ${esc(String(p.mmsi))}</div>
         <div><span style="color:#9ca3af;">Speed:</span> <b style="color:#16a34a;">${sog} kn</b></div>
         <div><span style="color:#9ca3af;">Course:</span> ${cog}°</div>
-        <div><span style="color:#9ca3af;">Heading:</span> ${p.heading}°</div>
-        ${p.destination ? `<div><span style="color:#9ca3af;">Dest:</span> ${p.destination}</div>` : ''}
+        <div><span style="color:#9ca3af;">Heading:</span> ${esc(String(p.heading))}°</div>
+        ${p.destination ? `<div><span style="color:#9ca3af;">Dest:</span> ${esc(String(p.destination))}</div>` : ''}
       </div>
       <div style="margin-top:5px;font-size:9px;color:#9ca3af;">SOURCE: AIS VESSEL TRACKING</div>
     </div>`

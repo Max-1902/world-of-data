@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { esc } from '../geoPopups'
 import mapboxgl from 'mapbox-gl'
 import { fetchDataCenters, type DataCenterPoint } from '../../../services/datacenters'
 import type { LayerCtx } from './types'
@@ -46,13 +47,13 @@ export function addDatacenterLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     const coords = (e.features[0].geometry as GeoJSON.Point).coordinates as [number, number]
     const html = `<div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:280px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">
-        <span style="font-size:12px;font-weight:800;color:#14161a;">▤ ${p.name}</span>
+        <span style="font-size:12px;font-weight:800;color:#14161a;">▤ ${esc(String(p.name))}</span>
         <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#a855f7;border:1px solid #a855f755;padding:1px 5px;">DATA CENTER</span>
       </div>
       <div style="font-size:11px;color:#6b7280;line-height:1.5;">
-        ${p.operator ? `<div><span style="color:#9ca3af;">Operator:</span> ${p.operator}</div>` : ''}
-        ${p.country  ? `<div><span style="color:#9ca3af;">Country:</span> ${p.country}</div>` : ''}
-        ${p.notes    ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
+        ${p.operator ? `<div><span style="color:#9ca3af;">Operator:</span> ${esc(String(p.operator))}</div>` : ''}
+        ${p.country  ? `<div><span style="color:#9ca3af;">Country:</span> ${esc(String(p.country))}</div>` : ''}
+        ${p.notes    ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${esc(String(p.notes))}</div>` : ''}
         <div style="margin-top:4px;font-size:10px;color:#9ca3af;">Source: OpenStreetMap</div>
       </div>
     </div>`

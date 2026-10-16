@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { encodeHash, decodeHash, layersToPanelState, enabledLayers } from './urlState'
+import { encodeHash, decodeHash, layersToPanelState, enabledLayers, isDemoMode } from './urlState'
 import type { PanelState } from '../types'
 
 const LAYERS = ['flights', 'crises', 'military', 'vessels']
@@ -37,5 +37,15 @@ describe('urlState', () => {
     const next = layersToPanelState(base, ['military'])
     expect(next).toEqual({ flights: false, crises: false, military: true, vessels: false })
     expect(enabledLayers(next)).toEqual(['military'])
+  })
+})
+
+describe('isDemoMode', () => {
+  it('is on for ?demo=1 or ?screenshot, off otherwise', () => {
+    expect(isDemoMode('?demo=1')).toBe(true)
+    expect(isDemoMode('?screenshot')).toBe(true)
+    expect(isDemoMode('?demo=0')).toBe(false)
+    expect(isDemoMode('?demo=false')).toBe(false)
+    expect(isDemoMode('')).toBe(false)
   })
 })
