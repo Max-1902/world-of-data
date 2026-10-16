@@ -4,7 +4,7 @@ import type { MapViewMode, PanelState } from '../types'
 export const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] = [
   { id: 'flights', label: 'FLIGHTS', desc: 'ADS-B aircraft positions' },
   { id: 'crises', label: 'CRISES', desc: 'ACLED conflict events' },
-  { id: 'news', label: 'NEWS', desc: 'GDELT article markers' },
+  { id: 'news', label: 'NEWS', desc: 'Key headlines pinned at the place they name' },
   { id: 'stocks', label: 'MARKETS', desc: 'Financial hub markers' },
   { id: 'wildfires', label: 'WILDFIRES', desc: 'NASA FIRMS hotspots' },
   { id: 'military', label: 'MILITARY', desc: 'Known military bases' },

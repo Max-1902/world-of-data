@@ -143,3 +143,17 @@ describe('data provenance', () => {
     expect(header).not.toMatch(/\bcomplete\b|\bcomprehensive\b/i)
   })
 })
+
+describe('country filtering goes through services/economies.ts', () => {
+  // Three hand-copied World Bank aggregate lists drifted together (FCS → FCV ranked an aggregate 5th on military
+  // spending). The allowlist in economies.ts replaced them; this keeps a local copy from coming back.
+  const services = srcFiles.filter(f => /src\/services\/[^/]+\.tsx?$/.test(f) && !f.includes('.test.') && !f.endsWith('economies.ts'))
+
+  it.each(services.map(rel))('%s', f => {
+    const src = readFileSync(path.join(ROOT, f), 'utf8')
+    expect(src).not.toMatch(/'(?:WLD|EUU|FCV|FCS|SSF|HIC|LMY)'\s*,\s*'[A-Z]{3}'/)
+    expect(src).not.toMatch(/NON_COUNTRY/)
+    if (/country\/all\/indicator/.test(src)) expect(src, `${f} fetches country/all without isWbEconomy`).toMatch(/isWbEconomy/)
+  })
+})
+

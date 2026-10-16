@@ -7,6 +7,7 @@
  *   npx tsx scripts/research/eval.ts --contexts research/data/dashboard [--repeats 3] [--questions probe-flights,probe-trend]
  *   npx tsx scripts/research/eval.ts --contexts ai-runs-2026-10-08.jsonl     # contexts from the panel's "Export runs"
  *   npx tsx scripts/research/eval.ts --contexts research/data/dashboard --question-set v2   # 34-prompt grounding set
+ *   npx tsx scripts/research/eval.ts --contexts research/data/dashboard/2026-10-16.json --question-set v2 --needs any --repeats 2
  *
  * Cost guard: only `:free` models run unless --allow-paid is passed explicitly (DEFAULT_MODEL is free).
  * Writes research/eval/results/<stamp>_<model>.jsonl (every answer) and .summary.json.
@@ -32,7 +33,7 @@ interface Ctx {
   /** ground truth of what was not measured; default: parsed from the context's NOT MEASURED block */
   notMeasured?: NotMeasured[]
 }
-interface Question { id: string; kind: string; prompt: string }
+interface Question { id: string; kind: string; prompt: string; needs?: string }
 
 const CONTEXT_START = '=== WORLD SURVEILLANCE DASHBOARD'
 
@@ -123,7 +124,9 @@ async function main() {
   const contexts = loadContexts(contextsPath)
   const only = arg('questions')?.split(',')
   const { questions } = JSON.parse(readFileSync(resolve(ROOT, questionSetPath()), 'utf8')) as { questions: Question[] }
-  const qs = only ? questions.filter(q => only.includes(q.id)) : questions
+  // --needs any: only questions that make sense on any context (v2 marks the rest 'conflict': they need live ACLED events)
+  const needs = arg('needs')
+  const qs = questions.filter(q => (!only || only.includes(q.id)) && (!needs || q.needs === needs))
   const repeats = Number(arg('repeats') ?? 3)
   const total = contexts.length * qs.length * repeats
   console.log(`${contexts.length} context(s) × ${qs.length} question(s) × ${repeats} repeat(s) = ${total} calls to ${model}`)

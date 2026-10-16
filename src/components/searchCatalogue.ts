@@ -30,7 +30,7 @@ export const PANEL_ALIASES: Record<string, string> = {
   outages: 'internet ioda outages',
   humanitarian: 'refugees unhcr displacement',
   infraIndicators: 'electricity power energy',
-  news: 'news gdelt signals',
+  news: 'news headlines signals',
   brief: 'briefing summary news',
   livefeed: 'tv video broadcast live',
   webcams: 'cameras webcam',

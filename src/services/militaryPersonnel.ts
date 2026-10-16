@@ -1,4 +1,5 @@
 import type { WorldBankObservation } from './worldbank'
+import { isWbEconomy } from './economies'
 /**
  * Armed forces personnel by country — World Bank Open Data (free, no key
  * required). Indicator MS.MIL.TOTL.P1, sourced by World Bank from IISS
@@ -25,14 +26,6 @@ let cachePromise: Promise<MilitaryPersonnelEntry[]> | null = null
 let cachedAt = 0
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
-// World Bank aggregate/region codes to exclude — only real countries wanted
-const NON_COUNTRY_ISO3 = new Set([
-  'WLD','ARB','CSS','CEB','EAP','EAR','EAS','ECA','ECS','EMU','EUU','FCS','FCV',
-  'HIC','HPC','IBD','IBT','IDA','IDB','IDX','INX','LAC','LCN','LDC','LIC',
-  'LMC','LMY','LTE','MEA','MIC','MNA','NAC','OED','OSS','PRE','PSS','PST',
-  'SAS','SSA','SSF','SST','TEA','TEC','TLA','TMN','TSA','TSS','UMC','AFE','AFW',
-])
-
 /** Fetch armed-forces personnel for every country in one World Bank call, ranked descending (strongest military first). */
 export async function fetchMilitaryPersonnelRanking(): Promise<MilitaryPersonnelEntry[]> {
   if (cache && Date.now() - cachedAt < CACHE_TTL) return cache
@@ -47,7 +40,7 @@ export async function fetchMilitaryPersonnelRanking(): Promise<MilitaryPersonnel
     if (!data || !Array.isArray(data)) throw new Error('Unexpected World Bank response shape')
 
     const entries: MilitaryPersonnelEntry[] = (data as WorldBankObservation[])
-      .filter(d => d.value != null && d.countryiso3code && !NON_COUNTRY_ISO3.has(d.countryiso3code))
+      .filter(d => d.value != null && isWbEconomy(d.countryiso3code))
       .map(d => ({
         iso2: d.country?.id as string,
         iso3: d.countryiso3code as string,

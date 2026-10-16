@@ -7,8 +7,11 @@ Forecasts Database (imf.org blocks scripted downloads of the original).
   curl -L -o WEO_MacroForecasts_Oct_2025.xlsx \
     https://data.mendeley.com/public-files/datasets/8dt6xpp6x4/files/7edf8671-723b-4577-a651-dbaeda7da421/file_downloaded
   .venv/bin/python -I scripts/research/mfpd_extract.py WEO_MacroForecasts_Oct_2025.xlsx research/data/imf-weo/mfpd-oct2025.json
+  # every economy (195), with the reviewed IMF-code table:
+  .venv/bin/python -I scripts/research/mfpd_extract.py WEO_MacroForecasts_Oct_2025.xlsx research/data/imf-weo/mfpd-oct2025-all.json \
+    research/data/imf-weo/imf-codes.json
 
-Changes made (CC BY requires saying so): kept only the 52 economies below, horizons h = 1..3, and the GDP-growth and
+Changes made (CC BY requires saying so): kept only the 52 economies below (or, given a codes file, every economy in it), horizons h = 1..3, and the GDP-growth and
 CPI-inflation columns; keyed by ISO2; values unchanged.
 """
 import hashlib
@@ -29,15 +32,16 @@ IMF_CODE = {
 }
 
 
-def main(src: str, out: str) -> None:
+def main(src: str, out: str, codes: str | None = None) -> None:
+    table = {int(k): v for k, v in json.load(open(codes))['imfCodeToIso2'].items()} if codes else {v: k for k, v in IMF_CODE.items()}
     digest = hashlib.sha256(open(src, 'rb').read()).hexdigest()
     if digest != EXPECTED_SHA256:
         sys.exit(f'sha256 mismatch: {digest}')
-    by_code = {v: k for k, v in IMF_CODE.items()}
+    by_code = table
     ws = openpyxl.load_workbook(src, read_only=True)['dataset']
     rows = ws.iter_rows(values_only=True)
     col = {name: i for i, name in enumerate(next(rows))}
-    data: dict[str, list] = {k: [] for k in IMF_CODE}
+    data: dict[str, list] = {k: [] for k in by_code.values()}
     for r in rows:
         iso = by_code.get(r[col['CCode']])
         if iso is None or r[col['h']] > 3:
@@ -52,7 +56,7 @@ def main(src: str, out: str) -> None:
         'original': 'IMF Historical WEO Forecasts Database',
         'license': 'CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/)',
         'file': 'WEO_MacroForecasts_Oct_2025.xlsx', 'sha256': digest,
-        'changes': 'subset: 52 economies, h=1..3, GDP growth and CPI inflation only; keyed by ISO2; values unchanged',
+        'changes': f'subset: {len(data)} economies, h=1..3, GDP growth and CPI inflation only; keyed by ISO2; values unchanged',
         'columns': ['weo_year', 'exercise (1=April, 2=October)', 'target_year', 'forecast_gdp_growth',
                     'forecast_cpi_inflation', 'realised_gdp_growth', 'realised_cpi_inflation'],
         'rows': data,
@@ -61,4 +65,4 @@ def main(src: str, out: str) -> None:
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], sys.argv[2])
+    main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else None)

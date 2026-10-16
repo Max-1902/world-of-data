@@ -121,7 +121,8 @@ const NAME_TO_ISO2: Record<string, string> = {
   'american samoa':'AS','caribbean netherlands':'BQ','congo-brazzaville':'CG','congo (brazzaville)':'CG',
   'congo-kinshasa':'CD','congo (kinshasa)':'CD','drc':'CD','macedonia':'MK',
   // World Bank / UN spellings, so names coming back from those APIs resolve to themselves
-  'congo, rep.':'CG','congo, dem. rep.':'CD','korea, rep.':'KR',"korea, dem. people's rep.":'KP','republic of korea':'KR',
+  'congo, rep.':'CG','congo, dem. rep.':'CD','congo, republic of':'CG','congo, rep. of':'CG',
+  'congo, democratic republic of the':'CD','congo, the democratic republic of the':'CD','korea, rep.':'KR',"korea, dem. people's rep.":'KP','republic of korea':'KR',
   'egypt, arab rep.':'EG','iran, islamic rep.':'IR','yemen, rep.':'YE','venezuela, rb':'VE','gambia, the':'GM',
   'bahamas, the':'BS','lao pdr':'LA','viet nam':'VN','syrian arab republic':'SY','kyrgyz republic':'KG',
   'west bank and gaza':'PS','hong kong sar, china':'HK','macao sar, china':'MO','micronesia, fed. sts.':'FM',

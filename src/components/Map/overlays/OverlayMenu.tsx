@@ -52,6 +52,8 @@ const DEEPSTATE_COLOR = '#ff1a3e'
 
 export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, deepstateMode = false, onToggleDeepstate, top }: Props) {
   const [showOverlays, setShowOverlays] = useState(false)
+  // sections marked `collapsed` (layers that carry no analysis) stay folded until opened
+  const [openSections, setOpenSections] = useState<ReadonlySet<string>>(new Set())
   const activeCount = Object.values(panelState).filter(Boolean).length
   return (
   <div style={{ position:'absolute', top, left:10, zIndex:29 }}
@@ -134,12 +136,29 @@ export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, 
             </button>
           </div>
         )}
-        {LAYER_SECTIONS.map(section => (
+        {LAYER_SECTIONS.map(section => {
+          const foldable = 'collapsed' in section && section.collapsed
+          const open = !foldable || openSections.has(section.title)
+          const onHere = section.keys.filter(k => panelState[k]).length
+          const headStyle = { padding:'5px 8px 3px', fontSize:7, fontWeight:700, letterSpacing:'.16em', color:'#647883', background:'rgba(255,255,255,.03)', borderBottom:'1px solid #1c2b35', position:'sticky' as const, top:0, zIndex:1 }
+          return (
           <div key={section.title}>
-            <div style={{ padding:'5px 8px 3px', fontSize:7, fontWeight:700, letterSpacing:'.16em', color:'#647883', background:'rgba(255,255,255,.03)', borderBottom:'1px solid #1c2b35', position:'sticky', top:0, zIndex:1 }}>
-              {section.title}
-            </div>
-            {section.keys.map(key => {
+            {foldable ? (
+              <button
+                onClick={(e) => { e.stopPropagation(); setOpenSections(prev => { const n = new Set(prev); if (n.has(section.title)) n.delete(section.title); else n.add(section.title); return n }) }}
+                aria-expanded={open}
+                title={'note' in section ? section.note : undefined}
+                style={{ ...headStyle, display:'flex', width:'100%', border:'none', borderBottom:'1px solid #1c2b35', cursor:'pointer', fontFamily:'inherit', textAlign:'left' }}
+              >
+                <span style={{ flex:1 }}>{open ? '▾' : '▸'} {section.title} ({section.keys.length}){onHere ? ` · ${onHere} ON` : ''}</span>
+              </button>
+            ) : (
+              <div style={headStyle}>{section.title}</div>
+            )}
+            {open && 'note' in section && (
+              <div style={{ padding:'4px 8px', fontSize:7.5, lineHeight:1.4, color:'#647883', borderBottom:'1px solid #1c2b35' }}>{section.note}</div>
+            )}
+            {open && section.keys.map(key => {
               const item = { key, ...OVERLAY_ITEMS[key] }
               const on = panelState[item.key]
           return (
@@ -170,7 +189,8 @@ export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, 
           )
             })}
           </div>
-        ))}
+          )
+        })}
         </div>
       </div>
     )}

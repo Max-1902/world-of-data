@@ -79,12 +79,12 @@ describe('fetchInfraIndicatorRanking', () => {
 
   it('gives no index below 3 inputs and ranks those countries after indexed ones', async () => {
     mockFetch(url => url.includes('EG.ELC.ACCS.ZS')
-      ? jsonResponse([{}, [row('AA', 'AAA', 'Aland', 100), row('DE', 'DEU', 'Germany', 90)]])
+      ? jsonResponse([{}, [row('AD', 'AND', 'Andorra', 100), row('DE', 'DEU', 'Germany', 90)]])
       : url.includes('IT.NET.USER.ZS') ? jsonResponse([{}, [row('DE', 'DEU', 'Germany', 90)]])
       : url.includes('SH.H2O.BASW.ZS') ? jsonResponse([{}, [row('DE', 'DEU', 'Germany', 90)]])
       : jsonResponse([{}, []]))
     const list = await (await loadInfra()).fetchInfraIndicatorRanking()
-    expect(list.map(e => [e.iso2, e.accessIndex])).toEqual([['DE', 90], ['AA', null]])
+    expect(list.map(e => [e.iso2, e.accessIndex])).toEqual([['DE', 90], ['AD', null]])
   })
 
   it('tolerates individual indicator failures', async () => {

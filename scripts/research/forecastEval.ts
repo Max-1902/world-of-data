@@ -4,6 +4,7 @@
  *
  *   npx tsx scripts/research/forecastEval.ts --indicator gdp --fetch          # World Bank (free, keyless), stores a vintage
  *   npx tsx scripts/research/forecastEval.ts --input research/data/worldbank-gdp/<day>.json
+ *   npx tsx scripts/research/forecastEval.ts --indicator gdp --fetch --countries all # every World Bank economy (217)
  *
  * Rolling origin: for every country and every forecast origin year ≥ 1990 with ≥ MIN_TRAIN years before it, fit on data
  * up to the year before only, then score the 1- and 3-year-ahead forecast against what happened. Every method sees the
@@ -11,11 +12,16 @@
  * per indicator is fixed below, before results are looked at; unemployment (World Bank/ILO series from 1991 only) uses the
  * panel's own 15-year minimum and a later split.
  *
- * Writes research/backtest/forecast_<indicator>_<day>.json and prints a summary table.
+ * Per country, the shipped AR(2) is tested against naive with Diebold–Mariano (HLN, the panel's own `dieboldMariano`) at
+ * h = 1 and h = 3, with Benjamini–Hochberg at q = 0.05 across countries. Countries are tagged as the original 52 (used
+ * for every earlier decision) or new, so the earlier conclusions can be checked on economies never looked at.
+ *
+ * Writes research/backtest/forecast_<indicator>[_all]_<day>.json and prints a summary table.
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { arForecast, naiveForecast, meanForecast, lastRun, mean, type Forecast, type Pt } from '../../src/utils/econAnalysis'
+import { arForecast, naiveForecast, meanForecast, lastRun, mean, dieboldMariano, benjaminiHochberg, type Forecast, type Pt } from '../../src/utils/econAnalysis'
+import { WB_ECONOMY_ISO2, isWbEconomy } from '../../src/services/economies'
 import { ROOT, DATA_DIR, writeJson, arg, flag, isoDay } from './lib'
 
 const INDICATORS = {
@@ -47,14 +53,27 @@ async function load(): Promise<Vintage & { path: string; key: IndicatorKey }> {
   if (!flag('fetch')) throw new Error('pass --input <worldbank-* file> or --indicator <key> --fetch')
   const INDICATOR = INDICATORS[key].id
   const countries: Record<string, Pt[]> = {}
-  for (const c of COUNTRIES) {
+  const all = arg('countries') === 'all'
+  if (all) {
+    // one call for every row; aggregates dropped through the app's own filter (economies.ts)
+    const res = await fetch(`https://api.worldbank.org/v2/country/all/indicator/${INDICATOR}?format=json&per_page=20000&date=1960:2030`)
+    if (!res.ok) throw new Error(`World Bank: HTTP ${res.status}`)
+    const j = await res.json() as [{ pages: number }, { countryiso3code: string; country: { id: string }; date: string; value: number | null }[] | null]
+    if (j[0].pages !== 1) throw new Error(`World Bank returned ${j[0].pages} pages; raise per_page`)
+    for (const d of j[1] ?? []) {
+      if (d.value == null || !isWbEconomy(d.countryiso3code)) continue
+      ;(countries[d.country.id] ??= []).push({ x: Number(d.date), y: d.value })
+    }
+    for (const c of Object.keys(countries)) countries[c].sort((a, b) => a.x - b.x)
+  }
+  for (const c of all ? [] : COUNTRIES) {
     const res = await fetch(`https://api.worldbank.org/v2/country/${c}/indicator/${INDICATOR}?format=json&per_page=100`)
     if (!res.ok) throw new Error(`World Bank ${c}: HTTP ${res.status}`)
     const j = await res.json() as [unknown, { date: string; value: number | null }[] | null]
     countries[c] = (j[1] ?? []).filter(d => d.value != null).map(d => ({ x: Number(d.date), y: d.value! })).sort((a, b) => a.x - b.x)
   }
   const v: Vintage = { fetched: new Date().toISOString(), indicator: INDICATOR, source: 'World Bank WDI API', countries }
-  const path = resolve(DATA_DIR, INDICATORS[key].dir, `${isoDay(Date.now())}.json`)
+  const path = resolve(DATA_DIR, INDICATORS[key].dir, `${isoDay(Date.now())}${all ? '-all' : ''}.json`)
   writeJson(path, v, false)
   return { ...v, path, key }
 }
@@ -83,7 +102,9 @@ async function main() {
   const series = Object.fromEntries(Object.entries(data.countries).map(([c, pts]) => [c, lastRun(pts)]))
   const acc: Record<string, { early: Acc; late: Acc }> = {}
   const perCountry: Record<string, Record<string, number[]>> = {}
+  const perCountry3: Record<string, { ar: number[]; naive: number[] }> = {}
   const nonStationary = { count: 0, total: 0 }
+  const skippedFolds: string[] = []
 
   for (const [c, s] of Object.entries(series)) {
     for (let cut = MIN_TRAIN; cut < s.length; cut++) {
@@ -95,8 +116,12 @@ async function main() {
         A.e1.push(Math.abs(b[0].v - a1)); A.cov1.push(+(a1 >= b[0].lo && a1 <= b[0].hi))
         if (a3 !== undefined) { A.e3.push(Math.abs(b[H - 1].v - a3)); A.cov3.push(+(a3 >= b[H - 1].lo && a3 <= b[H - 1].hi)) }
         ;((perCountry[c] ??= {})[m] ??= []).push(Math.abs(b[0].v - a1))
+        if (a3 !== undefined && (m === 'naive' || m === 'AR(2) full')) (perCountry3[c] ??= { ar: [], naive: [] })[m === 'naive' ? 'naive' : 'ar'].push(Math.abs(b[H - 1].v - a3))
       }
       const train = s.slice(0, cut)
+      // a fold counts only if every method produced a forecast (AR is null on a degenerate, e.g. constant, window),
+      // so all methods are scored on the same folds
+      if (WINDOWS.some(W => !arForecast(W ? train.slice(-W) : train, P, H))) { skippedFolds.push(`${c} ${s[cut].x}`); continue }
       add('naive', bands(naiveForecast(train, H)!))
       for (const W of WINDOWS) {
         const tr = W ? train.slice(-W) : train, label = W ? `last ${W}` : 'full'
@@ -130,14 +155,41 @@ async function main() {
       beatsNaive: pcs.filter(pc => mean(pc[m]) < mean(pc.naive)).length,
       beatsFullAr: pcs.filter(pc => mean(pc[m]) < mean(pc['AR(2) full'])).length }
   })
+  // Diebold–Mariano per country, shipped AR(2) vs naive; BH across the countries that have a test
+  const ORIGINAL = new Set(COUNTRIES)
+  const dmAt = (h: 1 | 3) => {
+    const rows = Object.entries(perCountry).flatMap(([c, pc]) => {
+      const e = h === 1 ? { ar: pc['AR(2) full'], naive: pc.naive } : perCountry3[c]
+      const t = e && dieboldMariano(e.ar, e.naive, h)
+      return t && e ? [{ country: c, original: ORIGINAL.has(c), n: t.n, maeAr: +mean(e.ar).toFixed(3), maeNaive: +mean(e.naive).toFixed(3), stat: +t.stat.toFixed(3), p: +t.p.toFixed(4) }] : []
+    })
+    const bh = benjaminiHochberg(rows.map(r => r.p))
+    const tally = (rs: typeof rows, sig: boolean[]) => ({
+      countries: rs.length,
+      beatsNaive: rs.filter(r => r.maeAr < r.maeNaive).length,
+      sigBetter: rs.filter(r => r.stat < 0 && r.p < 0.05).length, sigWorse: rs.filter(r => r.stat > 0 && r.p < 0.05).length,
+      bhBetter: rs.filter((r, i) => r.stat < 0 && sig[i]).length, bhWorse: rs.filter((r, i) => r.stat > 0 && sig[i]).length,
+      medianP: rs.length ? +[...rs.map(r => r.p)].sort((a, b) => a - b)[rs.length >> 1].toFixed(3) : null,
+    })
+    const sub = (keep: (r: (typeof rows)[number]) => boolean) => { const i = rows.map(keep); return tally(rows.filter((_, k) => i[k]), bh.filter((_, k) => i[k])) }
+    return { h, all: tally(rows, bh), original52: sub(r => r.original), new: sub(r => !r.original), perCountry: rows }
+  }
+  const dm = [dmAt(1), dmAt(3)]
+  const pooled = (keep: (c: string) => boolean) => {
+    const cs = Object.keys(perCountry).filter(keep)
+    const ar = cs.flatMap(c => perCountry[c]['AR(2) full']), nv = cs.flatMap(c => perCountry[c].naive)
+    return { countries: cs.length, folds: ar.length, maeAr: +mean(ar).toFixed(3), maeNaive: +mean(nv).toFixed(3) }
+  }
+  const pooledH1 = { all: pooled(() => true), original52: pooled(c => ORIGINAL.has(c)), new: pooled(c => !ORIGINAL.has(c)) }
   const current = Object.fromEntries(Object.entries(series).map(([c, s]) => {
     const f = arForecast(s, P, H)
     return [c, f && { last: s[s.length - 1], n: f.n, longRun: f.longRun, points: f.points }]
   }))
 
-  const out = resolve(ROOT, 'research/backtest', `forecast_${data.key}_${isoDay(Date.now())}.json`)
+  const tag = Object.keys(series).length > COUNTRIES.length ? '_all' : ''
+  const out = resolve(ROOT, 'research/backtest', `forecast_${data.key}${tag}_${isoDay(Date.now())}.json`)
   writeJson(out, { input: data.path.replace(ROOT + '/', ''), fetched: data.fetched, indicator: data.indicator,
-    design: { FIRST_ORIGIN, MIN_TRAIN, SPLIT, H, P, WINDOWS }, nonStationaryFits: nonStationary, summary, wins, current })
+    design: { FIRST_ORIGIN, MIN_TRAIN, SPLIT, H, P, WINDOWS }, nonStationaryFits: nonStationary, skippedFolds, summary, wins, pooledH1, dm, current })
 
   const f = (v: number | null, s = '') => v == null ? '—' : `${v}${s}`
   console.log(`World Bank ${data.indicator}, fetched ${data.fetched}, ${Object.keys(series).length} countries`)
@@ -146,6 +198,9 @@ async function main() {
   for (const s of summary) console.log(`${s.method} | ${f(s.mae1.early)}/${f(s.mae1.late)} | ${f(s.mae3.early)}/${f(s.mae3.late)} | ${f(s.medae1.early)}/${f(s.medae1.late)} | ${f(s.coverage95_1.early, '%')}/${f(s.coverage95_1.late, '%')} | ${f(s.coverage95_3.early, '%')}/${f(s.coverage95_3.late, '%')} | ${s.folds1.early}/${s.folds1.late}`)
   console.log(`non-stationary AR(2) fits (full history): ${nonStationary.count}/${nonStationary.total} folds`)
   for (const w of wins) console.log(`${w.method}: beats naive in ${w.beatsNaive}/${w.countries}, beats full-history AR in ${w.beatsFullAr}/${w.countries}`)
+  console.log(`folds skipped (an AR fit failed): ${skippedFolds.length}`, skippedFolds.slice(0, 10))
+  console.log('pooled h=1 MAE, AR(2) full vs naive:', pooledH1)
+  for (const d of dm) for (const k of ['all', 'original52', 'new'] as const) console.log(`DM h=${d.h} ${k}:`, d[k])
   console.log(`→ ${out}`)
 }
 

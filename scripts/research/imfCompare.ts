@@ -14,11 +14,16 @@
  * Outcomes: the World Bank series the panel uses (primary) and the IMF's own realised values (robustness: country
  * definitions such as fiscal years differ slightly between the two). Only folds where every method has a value count.
  *
- * Writes research/backtest/imf_compare_<day>.json.
+ * Per country, Diebold–Mariano (the panel's `dieboldMariano`, h = 1 for the one-year-ahead target) of the IMF against the
+ * fair AR and against naive, with Benjamini–Hochberg across countries.
+ *
+ * All economies: pass --imf research/data/imf-weo/mfpd-oct2025-all.json and the `-all` World Bank vintages.
+ *
+ * Writes research/backtest/imf_compare[_all]_<day>.json.
  */
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { arForecast, lastRun, mean, type Pt } from '../../src/utils/econAnalysis'
+import { arForecast, lastRun, mean, dieboldMariano, benjaminiHochberg, type Pt } from '../../src/utils/econAnalysis'
 import { ROOT, writeJson, arg, isoDay } from './lib'
 
 const P = 2, MIN_TRAIN = 30, SPLIT = 2005
@@ -56,12 +61,20 @@ function compare(variable: 'gdp' | 'cpi', imf: Record<string, ImfRow[]>, wb: Rec
   const stat = (v: number[]) => v.length ? { mae: +mean(v).toFixed(3), median: +median(v).toFixed(3), n: v.length } : null
   const table = (a: { early: Err; late: Err }) => methods.map(m => ({ method: m, early: stat(a.early[m]), late: stat(a.late[m]), all: stat([...a.early[m], ...a.late[m]]) }))
   const pcs = Object.values(perCountry)
+  const dmVs = (other: 'arFair' | 'naive') => {
+    const rows = Object.entries(perCountry).flatMap(([c, p]) => { const t = dieboldMariano(p.imf, p[other], 1); return t ? [{ c, ...t }] : [] })
+    const bh = benjaminiHochberg(rows.map(r => r.p))
+    return { countries: rows.length, imfSigBetter: rows.filter(r => r.stat < 0 && r.p < 0.05).length, imfSigWorse: rows.filter(r => r.stat > 0 && r.p < 0.05).length,
+      bhImfBetter: rows.filter((r, i) => r.stat < 0 && bh[i]).length, bhImfWorse: rows.filter((r, i) => r.stat > 0 && bh[i]).length }
+  }
   return {
     variable, outcomes_worldbank: table(acc.wb), outcomes_imf_realised: table(acc.imf),
     countries: pcs.length,
     imfBeatsArFair: pcs.filter(p => mean(p.imf) < mean(p.arFair)).length,
     imfBeatsArOracle: pcs.filter(p => mean(p.imf) < mean(p.arOracle)).length,
     imfBeatsNaive: pcs.filter(p => mean(p.imf) < mean(p.naive)).length,
+    arFairBeatsNaive: pcs.filter(p => mean(p.arFair) < mean(p.naive)).length,
+    dmImfVsArFair: dmVs('arFair'), dmImfVsNaive: dmVs('naive'),
   }
 }
 
@@ -73,7 +86,8 @@ function main() {
     compare('gdp', imf.rows, read<{ countries: Record<string, Pt[]> }>(gdpPath).countries),
     compare('cpi', imf.rows, read<{ countries: Record<string, Pt[]> }>(cpiPath).countries),
   ]
-  const out = resolve(ROOT, 'research/backtest', `imf_compare_${isoDay(Date.now())}.json`)
+  const tag = Object.keys(imf.rows).length > 52 ? '_all' : ''
+  const out = resolve(ROOT, 'research/backtest', `imf_compare${tag}_${isoDay(Date.now())}.json`)
   writeJson(out, { imf: imfPath, imfSource: imf.source, imfSha256: imf.sha256, gdp: gdpPath, cpi: cpiPath, design: { P, MIN_TRAIN, SPLIT, horizon: 'October W → W+1' }, results })
   const f = (s: { mae: number; median: number; n: number } | null) => s ? `${s.mae} (med ${s.median}, n ${s.n})` : '—'
   for (const r of results) {
@@ -82,6 +96,7 @@ function main() {
       console.log(`-- ${label}  | before ${SPLIT} | ${SPLIT}+ | all`)
       for (const row of t) console.log(`${row.method} | ${f(row.early)} | ${f(row.late)} | ${f(row.all)}`)
     }
+    console.log('DM IMF vs AR fair:', r.dmImfVsArFair, 'DM IMF vs naive:', r.dmImfVsNaive, `AR fair beats naive in ${r.arFairBeatsNaive}/${r.countries}`)
     console.log(`IMF beats AR fair in ${r.imfBeatsArFair}/${r.countries} countries, AR oracle in ${r.imfBeatsArOracle}/${r.countries}, naive in ${r.imfBeatsNaive}/${r.countries}`)
   }
   console.log(`→ ${out}`)
