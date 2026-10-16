@@ -1,5 +1,7 @@
 import type { CrisisEvent, NewsArticle } from '../types'
 import { classifyKeyEvent, type KeyEventCategory } from './keyEvents'
+import { placeMentions } from './countryMatch'
+import { resolveISO2 } from '../services/worldbank'
 
 export interface BriefHeadline {
   article: NewsArticle
@@ -10,21 +12,27 @@ const HOUR = 60 * 60 * 1000
 const normTitle = (t: string) => t.toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim().slice(0, 60)
 // Match reports, transfers and fixtures swamp country searches ("USA 4-1 Peru"); they're rarely the news that matters.
 const SPORTS_RE = /\b(vs\.?|v\.?|match recap|highlights|friendly|fixture|full[- ]time|half[- ]time|world cup|league|goalkeeper|striker|midfielder|transfer window|olympic\w*|tennis|cricket|rugby|nba|nfl|fifa|uefa|grand prix|box score|\d+-\d+)\b/i
-const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-
-/** Whole-word mention of the country name (so "Niger" doesn't match "Nigeria"). */
+/**
+ * Whole-word mention of the country name that isn't part of another place's name: "Niger" is not in "Nigeria",
+ * "Sudan" is not in "South Sudan", "Guinea" is not in "Papua New Guinea" or "Guinea-Bissau".
+ */
 export function mentionsCountry(text: string, country: string): boolean {
   const name = country.trim()
   if (name.length < 3) return false
-  return new RegExp(`(^|[^a-z])${escapeRe(name)}([^a-z]|$)`, 'i').test(text)
+  return placeMentions(text, name).length > 0
 }
 
-/** Names agree if equal or one contains the other as whole words ("Congo" ~ "Democratic Republic of the Congo", not "Mali" ~ "Somalia"). */
+/**
+ * Do two labels name the same country? By ISO code when both resolve ("UK" ~ "United Kingdom", "Sudan" ≠
+ * "South Sudan"); otherwise equal, or one inside the other as unqualified whole words.
+ */
 export function sameCountry(a: string, b: string): boolean {
   const x = a.toLowerCase().trim()
   const y = b.toLowerCase().trim()
   if (!x || !y) return false
   if (x === y) return true
+  const cx = resolveISO2(a), cy = resolveISO2(b)
+  if (cx && cy) return cx === cy
   const [short, long] = x.length <= y.length ? [x, y] : [y, x]
   return short.length >= 4 && mentionsCountry(long, short)
 }

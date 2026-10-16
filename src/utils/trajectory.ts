@@ -1,4 +1,5 @@
 import type { CrisisEvent, Flight, NewsArticle } from '../types'
+import { mentionsCountry } from './countryBrief'
 
 export interface TrajectoryEntry {
   country: string
@@ -69,12 +70,11 @@ function reasonFor(country: string, recentCount: number, priorCount: number, del
 const RECENT_NEWS_WINDOW_MS = 48 * 60 * 60 * 1000  // last 48h
 
 function findNewsHit(country: string, articles: NewsArticle[], now: number): NewsArticle | undefined {
-  const lc = country.toLowerCase()
   return articles.find(a => {
     const t = Date.parse(a.publishedAt)
     if (!Number.isNaN(t) && now - t > RECENT_NEWS_WINDOW_MS) return false
-    const text = `${a.title} ${a.description}`.toLowerCase()
-    return text.includes(lc)
+    // whole words, unqualified: "Oman" must not hit a story about Romania, nor "Sudan" one about South Sudan
+    return mentionsCountry(`${a.title} ${a.description}`, country)
   })
 }
 
