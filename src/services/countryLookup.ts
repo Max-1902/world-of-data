@@ -364,5 +364,32 @@ export function fetchCountryDataset(iso2: string): Promise<CountryDataset> {
   return p
 }
 
+/**
+ * One catalogue series for several countries in a single request (the analyst's `series` tool). Keyed by ISO2; a
+ * country the World Bank has no values for is present with []. Throws on HTTP/network failure.
+ */
+export async function fetchSeriesForCountries(iso2s: string[], id: string, from = FIRST_YEAR): Promise<Record<string, SeriesData>> {
+  const meta = SERIES_BY_ID.get(id)
+  if (!meta) throw new Error(`Unknown series ${id}`)
+  const to = new Date().getUTCFullYear()
+  const url = `${WB_BASE}/country/${iso2s.join(';')}/indicator/${id}?source=${meta.source}&format=json&date=${from}:${to}&per_page=20000`
+  const res = await fetch(url, { signal: AbortSignal.timeout(20000) })
+  if (!res.ok) throw new Error(`World Bank HTTP ${res.status}`)
+  const json: unknown = await res.json()
+  if (!Array.isArray(json)) throw new Error('World Bank: unexpected response')
+  const msg = (json[0] as { message?: { value?: string }[] } | undefined)?.message
+  if (msg) throw new Error(`World Bank: ${msg[0]?.value ?? 'error'}`)
+  const out: Record<string, SeriesData> = Object.fromEntries(iso2s.map(c => [c, { name: meta.short, points: [] }]))
+  for (const r of (Array.isArray(json[1]) ? json[1] : []) as (WbRow & { countryiso3code?: string; country?: { id?: string; value?: string } })[]) {
+    const iso2 = r.country?.id
+    const year = Number(r.date)
+    if (!iso2 || !out[iso2] || typeof r.value !== 'number' || !Number.isFinite(r.value) || !Number.isInteger(year)) continue
+    out[iso2].name = r.indicator?.value ?? meta.short
+    out[iso2].points.push({ x: year, y: r.value })
+  }
+  for (const v of Object.values(out)) v.points = [...new Map(v.points.map(p => [p.x, p])).values()].sort((a, b) => a.x - b.x)
+  return out
+}
+
 /** Points for one series, or [] when the country does not report it. */
 export const pointsOf = (d: CountryDataset | null, id: string): Pt[] => d?.series[id]?.points ?? []

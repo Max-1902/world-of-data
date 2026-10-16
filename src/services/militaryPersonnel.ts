@@ -27,7 +27,7 @@ const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
 // World Bank aggregate/region codes to exclude — only real countries wanted
 const NON_COUNTRY_ISO3 = new Set([
-  'WLD','ARB','CSS','CEB','EAP','EAR','EAS','ECA','ECS','EMU','EUU','FCS',
+  'WLD','ARB','CSS','CEB','EAP','EAR','EAS','ECA','ECS','EMU','EUU','FCS','FCV',
   'HIC','HPC','IBD','IBT','IDA','IDB','IDX','INX','LAC','LCN','LDC','LIC',
   'LMC','LMY','LTE','MEA','MIC','MNA','NAC','OED','OSS','PRE','PSS','PST',
   'SAS','SSA','SSF','SST','TEA','TEC','TLA','TMN','TSA','TSS','UMC','AFE','AFW',

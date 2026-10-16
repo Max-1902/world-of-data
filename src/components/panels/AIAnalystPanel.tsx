@@ -3,10 +3,10 @@
  */
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { lastAcledPoll } from '../../services/crises'
-import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare, ChevronDown } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight } from '../../types'
-import { buildDashboardContext, buildSystemPrompt, notMeasured, CHAT_PARAMS, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
-import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession } from '../../services/chatHistory'
+import { buildDashboardContext, buildSystemPrompt, notMeasured, CHAT_PARAMS, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
+import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
 import { runLog, downloadRuns } from '../../services/aiRuns'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
@@ -14,6 +14,11 @@ import { computeTrajectories, isBaseline, type TrajectoryEntry } from '../../uti
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
 import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
 import { summarizeForAI } from '../../utils/countryStats'
+import { runAgent, MAX_DATA_ROUNDS } from '../../services/aiAgent'
+import { toolCatalogue, CHART_LINE, MAX_CALLS_PER_STEP, type ToolCall, type ToolResult } from '../../services/aiTools'
+import { AIMarkdown } from './aiAnalyst/AIMarkdown'
+import { AIChart } from './aiAnalyst/AIChart'
+import { InvestigationTrail } from './aiAnalyst/InvestigationTrail'
 
 // ── Watchlist card — rule-based trajectory forecast, rendered inside AIAnalystPanel ──
 function WatchlistCard({ entry, onExplain, disabled = false }: { entry: TrajectoryEntry; onExplain: () => void; disabled?: boolean }) {
@@ -43,7 +48,7 @@ function WatchlistCard({ entry, onExplain, disabled = false }: { entry: Trajecto
         onMouseEnter={e => { if (!disabled) (e.currentTarget as HTMLButtonElement).style.opacity = '0.7' }}
         onMouseLeave={e => { if (!disabled) (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
       >
-        {disabled ? 'Connect a model to ask about this trend' : 'Ask about this trend →'}
+        {disabled ? 'Connect a model to ask about this trend' : 'Investigate this trend →'}
       </button>
     </div>
   )
@@ -57,8 +62,41 @@ interface ActionLogEntry {
   at: number
 }
 
+/** The turn being worked on: everything the thread shows while the analyst is still investigating. */
+interface LiveTurn {
+  id: string
+  question: string
+  /** visible text of the current model call */
+  text: string
+  notes: string[]
+  results: ToolResult[]
+  pending: ToolCall[]
+  step: number
+}
+
+/** At most this many charts are added under an answer that placed none itself. */
+const AUTO_CHARTS = 2
+
 // ── AI Analyst Panel (OpenRouter) ─────────────────────────────────────────
 const MARKET_QUESTION = /\b(stocks?|markets?|equit(?:y|ies)|shares?|invest\w*|portfolio|sectors?|etfs?|oil|gold|crypto\w*|bitcoin|forex|currenc\w*|bonds?|prices?|trad(?:e|ing)|returns?)\b/i
+
+/** The model's view of earlier turns: question and visible answer only (tool data is re-fetched when needed). */
+function historyOf(turns: ChatTurn[]): DSMessage[] {
+  return turns.filter(t => t.answer).flatMap(t => [{ role: 'user' as const, content: t.question }, { role: 'assistant' as const, content: t.answer }]).slice(-10)
+}
+
+/** Sessions saved before the analyst could fetch data have messages only — rebuild their turns from those. */
+function turnsOf(s: ChatSession): ChatTurn[] {
+  if (s.turns) return s.turns
+  const out: ChatTurn[] = []
+  for (let i = 0; i < s.messages.length; i++) {
+    const m = s.messages[i]
+    if (m.role !== 'user') continue
+    const next = s.messages[i + 1]
+    out.push({ id: `${s.id}-${i}`, question: m.content, answer: next?.role === 'assistant' ? next.content : '', results: [], notes: [] })
+  }
+  return out
+}
 
 export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, onToggleLayer, panelState }: {
   crises: CrisisEvent[]; flights: Flight[]
@@ -69,8 +107,8 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
 }) {
   const [input, setInput]         = useState('')
   const [streaming, setStreaming] = useState(false)
-  const [response, setResponse]   = useState('')
-  const [history, setHistory]     = useState<DSMessage[]>([])
+  const [turns, setTurns]         = useState<ChatTurn[]>([])
+  const [live, setLive]           = useState<LiveTurn | null>(null)
   const [error, setError]         = useState('')
   const [model, setModel]         = useState(DEFAULT_MODEL)
   // Full OpenRouter catalogue (Claude, ChatGPT, …); falls back to the built-in free list if it can't load.
@@ -88,6 +126,9 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
   const [followUps, setFollowUps] = useState<string[]>([])
   const [notice, setNotice]     = useState('')
+  const [showOutlook, setShowOutlook] = useState(true)
+  /** expanded tool result per turn, opened from the trail or from a reference in the answer */
+  const [openRef, setOpenRef]   = useState<{ turn: string; id: string } | null>(null)
   const modelName = (id: string) => FREE_MODELS.find(m => m.id === id)?.label ?? allModels?.find(m => m.id === id)?.label ?? id
   const abortRef  = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -107,66 +148,73 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   // whatever comparison is open in Country Analytics (null until its data has loaded) — computed locally, so the model can cite it
   const ca = useCountryAnalytics(false)
   const countryAnalyticsSummary = ca.analysis ? summarizeForAI(ca.analysis, ca.xMeta, ca.yMeta, ca.xs, ca.ys) : ''
+  const empty = turns.length === 0 && !live
 
   // Follow the streaming text inside the conversation box only. (scrollIntoView on every token
   // scrolled every ancestor too — the whole right dock jumped down while the AI wrote.)
   useEffect(() => {
     const el = scrollRef.current
     if (el && stickRef.current) el.scrollTop = el.scrollHeight
-  }, [response, actionLog, streaming])
+  }, [live, turns, actionLog, streaming])
 
   // Persist the running conversation to localStorage after each turn
   useEffect(() => {
-    if (history.length === 0) return
+    if (turns.length === 0) return
     saveSession({
       id: sessionId,
       startedAt: Number(sessionId.split('-')[0]) || Date.now(),
       updatedAt: Date.now(),
       model,
-      messages: history,
+      messages: historyOf(turns),
+      turns,
     })
-  }, [history, sessionId, model])
+  }, [turns, sessionId, model])
 
   function openHistory() {
     setPastSessions(listSessions())
     setShowHistory(true)
   }
 
-  function loadSession(s: ChatSession) {
-    setHistory(s.messages)
-    setModel(s.model)
-    setSessionId(s.id)
-    const lastAssistant = [...s.messages].reverse().find(m => m.role === 'assistant')
-    setResponse(lastAssistant?.content ?? '')
-    setShowHistory(false)
+  function resetThread() {
+    setLive(null)
     setError('')
+    setShowHistory(false)
     setActionLog([])
     setFollowUps([])
+    setOpenRef(null)
+    setNotice('')
+  }
+
+  function loadSession(s: ChatSession) {
+    resetThread()
+    setTurns(turnsOf(s))
+    setModel(s.model)
+    setSessionId(s.id)
+    setShowOutlook(false)
   }
 
   function startNewSession() {
-    setHistory([])
-    setResponse('')
-    setError('')
+    abortRef.current?.abort()
+    resetThread()
+    setTurns([])
     setSessionId(newSessionId())
-    setShowHistory(false)
-    setActionLog([])
-    setFollowUps([])
+    setShowOutlook(true)
   }
 
-  // Contextual follow-up chips — derived client-side from the response text and
-  // live dashboard state, not another model call. Keeps the "next question" always
-  // one tap away instead of a blank input box.
-  function deriveFollowUps(text: string, cmds: ActionLogEntry[]): string[] {
+  // Contextual follow-up chips — derived client-side from the answer, the data used and live dashboard state,
+  // not another model call. Keeps the "next question" always one tap away instead of a blank input box.
+  function deriveFollowUps(text: string, cmds: ActionLogEntry[], results: ToolResult[]): string[] {
     const suggestions: string[] = []
-    const flown = cmds.find(c => c.kind === 'fly' || c.kind === 'country')
-    if (flown) suggestions.push(`What's the historical pattern for ${flown.label}?`)
-    if (/marke|price|oil|energy/i.test(text)) suggestions.push('How would this affect markets over the next 30 days?')
-    if (/escalat|risk|tension/i.test(text)) suggestions.push('What would de-escalation look like here?')
-    if (trajectories.length > 0 && suggestions.length < 2) {
-      suggestions.push(`Compare this to the ${trajectories[0].country} trajectory`)
-    }
-    if (suggestions.length < 2) suggestions.push('Summarize this in 3 bullet points')
+    const place = cmds.find(c => c.kind === 'fly' || c.kind === 'country')?.label
+      ?? results.find(r => r.ok && r.args[0] && ['profile', 'conflict', 'trade', 'series', 'energy'].includes(r.tool))?.args[0]?.split(',')[0]
+    const used = new Set(results.map(r => r.tool))
+    if (place && !used.has('forecast')) suggestions.push(`Forecast GDP growth for ${place} and show how reliable the model is`)
+    if (place && !used.has('conflict')) suggestions.push(`How has the security situation in ${place} developed over the last two weeks?`)
+    if (place && !used.has('trade')) suggestions.push(`Who would be most exposed economically if ${place} destabilised?`)
+    if (/marke|price|oil|energy/i.test(text) && !used.has('markets')) suggestions.push('Check the latest market moves and relate them to this')
+    if (/escalat|risk|tension/i.test(text)) suggestions.push('What would de-escalation look like, and what would signal it?')
+    if (trajectories.length > 0 && suggestions.length < 2) suggestions.push(`Compare this to the ${trajectories[0].country} trajectory`)
+    if (suggestions.length < 2) suggestions.push('Summarise this in 3 bullet points')
     return suggestions.slice(0, 3)
   }
 
@@ -177,27 +225,72 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     if (id === sessionId) startNewSession()
   }
 
+  // Map commands the model writes ([FLY:…], [COUNTRY:…], [LAYER:…], [DEEPSTATE:…]), run once each per question.
+  function runCommands(full: string, executed: Set<string>, logged: ActionLogEntry[]) {
+    for (const line of full.split('\n')) {
+      const trimmed = line.trim()
+      if (executed.has(trimmed)) continue
+      const push = (entry: ActionLogEntry) => { logged.push(entry); setActionLog(prev => [...prev, entry]) }
+
+      const flyMatch = trimmed.match(/^\[FLY:(.+)\]$/)
+      if (flyMatch) {
+        executed.add(trimmed)
+        const loc = flyMatch[1].trim()
+        onGeoSearch?.(loc)
+        push({ id: `${Date.now()}-fly-${loc}`, kind: 'fly', label: loc, at: Date.now() })
+        continue
+      }
+      const countryMatch = trimmed.match(/^\[COUNTRY:(.+)\]$/)
+      if (countryMatch) {
+        executed.add(trimmed)
+        const name = countryMatch[1].trim()
+        onCountryClick?.(name)
+        push({ id: `${Date.now()}-country-${name}`, kind: 'country', label: name, at: Date.now() })
+        continue
+      }
+      const layerMatch = trimmed.match(/^\[LAYER:(\w+):(on|off)\]$/)
+      if (layerMatch && onToggleLayer && panelState) {
+        const layerId = layerMatch[1] as keyof PanelState
+        const wantOn = layerMatch[2] === 'on'
+        if (layerId in panelState && panelState[layerId] !== wantOn) {
+          executed.add(trimmed)
+          onToggleLayer(layerId)
+          push({ id: `${Date.now()}-layer-${layerId}`, kind: 'layer', label: `${layerId} ${wantOn ? 'on' : 'off'}`, at: Date.now() })
+        }
+        continue
+      }
+      const dsMatch = trimmed.match(/^\[DEEPSTATE:(on|off)\]$/)
+      if (dsMatch) {
+        executed.add(trimmed)
+        push({ id: `${Date.now()}-deepstate`, kind: 'deepstate', label: `Ukraine frontline ${dsMatch[1]}`, at: Date.now() })
+      }
+    }
+  }
+
   async function ask(prompt: string) {
     if (!prompt.trim() || streaming) return
     setError('')
-    setResponse('')
     setActionLog([])
     setFollowUps([])
+    setOpenRef(null)
     stickRef.current = true
     setNotice('')
     setStreaming(true)
+    setShowOutlook(false)
     abortRef.current = new AbortController()
+    const turnId = `${Date.now()}`
+    setLive({ id: turnId, question: prompt, text: '', notes: [], results: [], pending: [], step: 0 })
 
     // A country named in the user's message always goes to the map and the country drawer —
     // done here, before the model runs, so it never depends on a small model emitting commands.
     const mentioned = findCountryInText(prompt)
-    const opened: ActionLogEntry[] = []
+    const loggedActions: ActionLogEntry[] = []
     if (mentioned) {
       onGeoSearch?.(mentioned)
       onCountryClick?.(mentioned)
       const at = Date.now()
-      opened.push({ id: `${at}-fly`, kind: 'fly', label: mentioned, at }, { id: `${at}-country`, kind: 'country', label: mentioned, at })
-      setActionLog(opened)
+      loggedActions.push({ id: `${at}-fly`, kind: 'fly', label: mentioned, at }, { id: `${at}-country`, kind: 'country', label: mentioned, at })
+      setActionLog([...loggedActions])
     }
 
     // Market questions get a fresh quote snapshot (same free feed the Markets panel uses); if it
@@ -212,108 +305,82 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     }
     const layers   = { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises, conflictCapped: lastAcledPoll()?.capped ?? false }
     const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot, countryAnalyticsSummary, layers)
-    const sysMsg: DSMessage = { role: 'system', content: buildSystemPrompt(context) }
-    const userMsg: DSMessage = { role: 'user', content: prompt }
-    const messages: DSMessage[] = [sysMsg, ...history, userMsg]
+    const sysMsg: DSMessage = { role: 'system', content: buildSystemPrompt(context, { tools: toolCatalogue() }) }
+    const messages: DSMessage[] = [sysMsg, ...historyOf(turns), { role: 'user', content: prompt }]
 
-    let full = ''
     const startedAt = Date.now()
+    let transcript = messages
+    let raw = ''
     let answeredBy: string | null = null
+    let results: ToolResult[] = []
+    let steps = 0
+    // what this question has gathered so far, kept here (not read back from state) so a stop or error can still save it
+    const notes: string[] = []
+    const gathered: ToolResult[] = []
+    let stepText = ''
     let outcome: 'ok' | 'empty' | 'error' | 'aborted' = 'ok'
     let runError: string | undefined
     const executedCmds = new Set<string>()
-    const loggedActions: ActionLogEntry[] = [...opened]
     try {
-      answeredBy = await streamAIWithFallback(
-        messages,
-        token => {
-          full += token
-          // Parse and execute commands as they stream in
-          const lines = full.split('\n')
-          for (const line of lines) {
-            const trimmed = line.trim()
-            if (executedCmds.has(trimmed)) continue
-
-            const flyMatch = trimmed.match(/^\[FLY:(.+)\]$/)
-            if (flyMatch) {
-              executedCmds.add(trimmed)
-              const loc = flyMatch[1].trim()
-              onGeoSearch?.(loc)
-              const entry: ActionLogEntry = { id: `${Date.now()}-fly`, kind: 'fly', label: loc, at: Date.now() }
-              loggedActions.push(entry)
-              setActionLog(prev => [...prev, entry])
-              continue
-            }
-
-            const countryMatch = trimmed.match(/^\[COUNTRY:(.+)\]$/)
-            if (countryMatch) {
-              executedCmds.add(trimmed)
-              const name = countryMatch[1].trim()
-              onCountryClick?.(name)
-              const entry: ActionLogEntry = { id: `${Date.now()}-country`, kind: 'country', label: name, at: Date.now() }
-              loggedActions.push(entry)
-              setActionLog(prev => [...prev, entry])
-              continue
-            }
-
-            const layerMatch = trimmed.match(/^\[LAYER:(\w+):(on|off)\]$/)
-            if (layerMatch && onToggleLayer && panelState) {
-              const layerId = layerMatch[1] as keyof PanelState
-              const wantOn = layerMatch[2] === 'on'
-              if (layerId in panelState && panelState[layerId] !== wantOn) {
-                executedCmds.add(trimmed)
-                onToggleLayer(layerId)
-                const entry: ActionLogEntry = { id: `${Date.now()}-layer-${layerId}`, kind: 'layer', label: `${layerId} ${wantOn ? 'on' : 'off'}`, at: Date.now() }
-                loggedActions.push(entry)
-                setActionLog(prev => [...prev, entry])
-              }
-              continue
-            }
-
-            const dsMatch = trimmed.match(/^\[DEEPSTATE:(on|off)\]$/)
-            if (dsMatch) {
-              executedCmds.add(trimmed)
-              const entry: ActionLogEntry = { id: `${Date.now()}-deepstate`, kind: 'deepstate', label: `Ukraine frontline ${dsMatch[1]}`, at: Date.now() }
-              loggedActions.push(entry)
-              setActionLog(prev => [...prev, entry])
-              continue
-            }
+      const run = await runAgent({
+        messages, model, signal: abortRef.current.signal,
+        ctx: { crises, flights, trajectories, flightsLayer: panelState?.flights, crisesLayer: panelState?.crises },
+        onEvent: e => {
+          if (e.type === 'step') { stepText = ''; setLive(l => l && { ...l, text: '', step: e.step }) }
+          else if (e.type === 'text') {
+            runCommands(e.raw, executedCmds, loggedActions)
+            stepText = visibleText(e.raw)
+            setLive(l => l && { ...l, text: stepText })
+          } else if (e.type === 'tools') {
+            // prose written next to data requests is the model thinking aloud: keep it in the trail, not the answer
+            if (stepText.trim()) notes.push(stepText.trim())
+            stepText = ''
+            const n = [...notes]
+            setLive(l => l && { ...l, text: '', notes: n, pending: e.calls })
+          } else if (e.type === 'result') {
+            gathered.push(e.result)
+            const r = e.result
+            setLive(l => l && { ...l, results: [...l.results, r], pending: l.pending.filter(c => c.raw !== r.call) })
+          } else if (e.type === 'fallback') {
+            setNotice(`${modelName(e.from)} is rate-limited — switched to ${modelName(e.to)}.`)
           }
-          // Display response without command lines
-          const display = visibleText(full)
-          setResponse(display)
         },
-        abortRef.current.signal,
-        model,
-        undefined,
-        (from, to) => setNotice(`${modelName(from)} is rate-limited — switched to ${modelName(to)}.`),
-      )
-      const cleanResponse = visibleText(full)
-      if (!cleanResponse.trim()) {
+      })
+      transcript = run.transcript
+      raw = run.answer
+      answeredBy = run.answeredBy
+      results = run.results
+      steps = run.steps
+      const answer = visibleText(raw).trim()
+      if (!answer) {
         outcome = 'empty'
         setError('The selected model did not return a briefing. Try a different model.')
       } else {
-        setHistory(prev => [
-          ...prev.slice(-10),
-          userMsg,
-          { role: 'assistant', content: cleanResponse },
-        ])
-        setFollowUps(deriveFollowUps(cleanResponse, loggedActions))
+        setFollowUps(deriveFollowUps(answer, loggedActions, results))
       }
+      setTurns(prev => [...prev, { id: turnId, question: prompt, answer, results, notes, model: answeredBy ?? model }])
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
         outcome = 'error'
         runError = describeAIError(err)
         setError(runError)
       } else outcome = 'aborted'
+      // keep what was gathered so the question and its data are not lost
+      results = gathered
+      if (gathered.length || stepText.trim()) {
+        setTurns(prev => [...prev, { id: turnId, question: prompt, answer: stepText.trim(), results: gathered, notes, error: runError ? undefined : 'Stopped before the answer was finished.' }])
+      }
     } finally {
+      setLive(null)
       setStreaming(false)
       // Research log: freeze exactly what was sent and what came back (see services/aiRuns.ts).
       void runLog.record({
         v: 1, id: `${startedAt}-${Math.random().toString(36).slice(2, 8)}`, startedAt, finishedAt: Date.now(),
         modelRequested: model, modelAnswered: answeredBy, params: { ...CHAT_PARAMS },
-        messages, response: full, outcome, error: runError,
+        messages: transcript, response: raw, outcome, error: runError,
         notMeasured: notMeasured(crises, flights, layers),
+        toolCalls: results.map(r => ({ id: r.id, call: r.call, ok: r.ok, title: r.title, source: r.source })),
+        steps,
       })
     }
   }
@@ -327,23 +394,70 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input); setInput('') }
   }
 
-  // Render markdown-ish text: bold **text**, bullet — text
-  function renderText(text: string) {
-    return text.split('\n').map((line, i) => {
-      const isHeader = /^#{1,3}\s/.test(line)
-      const isBullet = /^[\-\•\*]\s/.test(line)
-      const content = line.replace(/^#{1,3}\s/, '').replace(/^[\-\•\*]\s/, '')
-      const parts = content.split(/(\*\*[^*]+\*\*)/g)
-      return (
-        <div key={i} className={`ai-response-line${isHeader ? ' heading' : ''}${isBullet ? ' bullet' : ''}`}>
-          {isBullet && <span className="ai-bullet-mark" />}
-          {parts.map((part, index) => part.startsWith('**') && part.endsWith('**')
-            ? <strong key={index}>{part.slice(2, -2)}</strong>
-            : <span key={index}>{part}</span>)}
-        </div>
-      )
+  // A reference like (R2) in an answer opens that result in the turn's trail and scrolls to it.
+  function showRef(turn: string, id: string) {
+    setOpenRef({ turn, id })
+    requestAnimationFrame(() => {
+      const box = scrollRef.current
+      const el = document.getElementById(`ai-res-${turn}-${id}`)
+      if (box && el) { stickRef.current = false; box.scrollTop = el.offsetTop - 12 }
     })
   }
+
+  // Live action timeline — every dashboard command the AI has executed for the current question
+  function renderActions() {
+    if (!actionLog.length) return null
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+        {actionLog.map(a => {
+          const Icon = a.kind === 'fly' ? Navigation : a.kind === 'country' ? Info : a.kind === 'layer' ? Layers : Radio
+          return (
+            <div key={a.id} className="ai-action-row" style={{
+              display: 'flex', alignItems: 'center', gap: 7, fontSize: 12,
+              padding: '6px 10px', borderRadius: 'var(--r-sm)',
+              background: 'var(--accent-soft)', color: 'var(--accent)',
+              border: '1px solid rgba(213,168,95,0.22)',
+            }}>
+              <Icon size={12} style={{ flexShrink: 0 }} />
+              <span style={{ fontWeight: 600 }}>
+                {a.kind === 'fly' ? 'Map moved to' : a.kind === 'country' ? 'Opened country overview' : a.kind === 'layer' ? 'Map layer updated' : 'Frontline view updated'}
+              </span>
+              <span style={{ color: 'var(--text1)' }}>{a.label}</span>
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
+  function renderTurn(t: ChatTurn, isLast: boolean) {
+    const placed = new Set(t.answer.split('\n').map(l => l.trim().match(CHART_LINE)?.[1]?.toUpperCase()).filter(Boolean))
+    const extra = placed.size ? [] : t.results.filter(r => r.ok && r.chart).slice(0, AUTO_CHARTS)
+    return (
+      <div key={t.id} className="ai-turn">
+        <div className="ai-user-bubble"><span>{t.question}</span></div>
+        {isLast && renderActions()}
+        <InvestigationTrail
+          turnId={t.id} results={t.results} notes={t.notes}
+          open={openRef?.turn === t.id ? openRef.id : null}
+          onToggle={id => setOpenRef(id ? { turn: t.id, id } : null)}
+        />
+        {t.answer && <AIMarkdown text={t.answer} results={t.results} onRef={id => showRef(t.id, id)} />}
+        {extra.length > 0 && (
+          <div className="ai-auto-charts">
+            <div className="ai-auto-charts-h">Data behind this answer</div>
+            {extra.map(r => <div key={r.id} className="ai-chart"><AIChart result={r} /></div>)}
+          </div>
+        )}
+        {t.error && <div className="ai-turn-error">{t.error}</div>}
+        {t.model && t.answer && isLast && <div className="ai-turn-meta">{modelName(t.model)}{t.results.length ? ` · ${t.results.length} dataset${t.results.length === 1 ? '' : 's'} queried` : ''}</div>}
+      </div>
+    )
+  }
+
+  const liveStatus = !live ? '' : live.pending.length ? `Fetching ${live.pending.length} dataset${live.pending.length === 1 ? '' : 's'}…`
+    : live.step === 0 ? (live.text ? '' : 'Planning the investigation…')
+    : live.text ? '' : `Analysing ${live.results.length} result${live.results.length === 1 ? '' : 's'}…`
 
   return (
     <div className="ai-surface" style={{ display: 'flex', flexDirection: 'column', flex: 1, height: '100%', minHeight: 0 }}>
@@ -352,8 +466,8 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
       <div className="ai-header" style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, position: 'relative' }}>
         <div className="ai-brand-mark"><MessageSquare size={15} /></div>
         <div className="ai-brand-copy">
-          <div className="ai-brand-title">Analyst chat</div>
-          <div className="ai-brand-subtitle">Briefings grounded in live incidents and regional trends</div>
+          <div className="ai-brand-title">Analyst</div>
+          <div className="ai-brand-subtitle">Investigates the dashboard's live data, then briefs with evidence and charts</div>
         </div>
         <select
           className="ai-model-select"
@@ -411,7 +525,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
               Past conversations · {pastSessions.length}
               <button
                 onClick={() => { void downloadRuns().then(n => setNotice(n ? `Exported ${n} logged AI run${n === 1 ? '' : 's'} (JSONL).` : 'No AI runs logged yet.')) }}
-                title="Download every logged AI run — exact context sent, model, settings and answer — as JSONL"
+                title="Download every logged AI run — exact context sent, data fetched, model, settings and answer — as JSONL"
                 style={{ float: 'right', background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 11, padding: 0, fontFamily: 'inherit' }}
               >
                 Export runs
@@ -421,7 +535,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
               <div style={{ padding: '12px 11px', fontSize: 12.5, color: 'var(--text3)' }}>No saved conversations yet</div>
             )}
             {pastSessions.map(s => {
-              const firstUser = s.messages.find(m => m.role === 'user')
+              const firstUser = s.messages.find(m => m.role === 'user') ?? (s.turns?.[0] && { content: s.turns[0].question })
               return (
                 <div
                   key={s.id}
@@ -439,7 +553,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
                       {firstUser?.content || '(empty)'}
                     </div>
                     <div style={{ fontSize: 10.5, color: 'var(--text3)', marginTop: 2 }}>
-                      {new Date(s.updatedAt).toLocaleString()} · {s.messages.length} messages
+                      {new Date(s.updatedAt).toLocaleString()} · {s.turns ? `${s.turns.length} question${s.turns.length === 1 ? '' : 's'}` : `${s.messages.length} messages`}
                     </div>
                   </div>
                   <button
@@ -458,27 +572,30 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
         )}
       </div>
 
-      {/* Watchlist — proactive trajectory forecast, no prompt required */}
+      {/* Watchlist — proactive trajectory forecast, no prompt required. Folds away once a conversation is running. */}
       {trajectories.length > 0 && (
-        <div className="ai-watchlist" style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-          <div className="ai-section-heading">
-            <span>Regional outlook</span><span>72-hour activity trends</span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {trajectories.map(t => (
-              <WatchlistCard key={t.country} entry={t} disabled={!hasKey} onExplain={() => {
-                ask(`Explain the ${t.trend} trend for ${t.country}: ${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore}). What's driving this and what should I watch for next?`)
-              }} />
-            ))}
-          </div>
+        <div className="ai-watchlist" style={{ padding: showOutlook ? '12px 14px' : '7px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0, maxHeight: showOutlook ? '38%' : undefined, overflowY: 'auto' }}>
+          <button className="ai-section-heading ai-outlook-toggle" onClick={() => setShowOutlook(v => !v)} aria-expanded={showOutlook} style={{ marginBottom: showOutlook ? 9 : 0 }}>
+            <span>Regional outlook · {trajectories.filter(t => t.trend === 'rising').length} rising</span>
+            <span>72-hour activity trends <ChevronDown size={11} style={{ transform: showOutlook ? 'rotate(180deg)' : undefined, verticalAlign: -2 }} /></span>
+          </button>
+          {showOutlook && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {trajectories.map(t => (
+                <WatchlistCard key={t.country} entry={t} disabled={!hasKey} onExplain={() => {
+                  ask(`Investigate the ${t.trend} trend for ${t.country}: ${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore}). What's driving this, what does the wider data (outages, disasters, news, economy) say, and what should I watch for next?`)
+                }} />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
       {/* Quick prompts */}
-      {!response && !streaming && history.length === 0 && (
+      {empty && (
         <div className="ai-prompts" style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
           <div className="ai-section-heading">
-            <span>Suggested questions</span><span>Choose a starting point</span>
+            <span>Suggested questions</span><span>The analyst fetches the data it needs</span>
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
             {QUICK_PROMPTS.map(qp => (
@@ -503,35 +620,20 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
         </div>
       )}
 
-      {/* Conversation history */}
-      {history.length > 0 && (
-        <div className="ai-user-questions" style={{ padding: '12px 14px 0', flexShrink: 0 }}>
-          {history.filter(m => m.role === 'user').slice(-2).map((m, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-              <span style={{
-                background: 'var(--surface2)', color: 'var(--text1)', border: '1px solid var(--border-strong)',
-                borderRadius: '12px 12px 3px 12px', padding: '8px 12px', fontSize: 12,
-                maxWidth: '85%', lineHeight: 1.5,
-              }}>
-                {m.content.slice(0, 140)}{m.content.length > 140 ? '…' : ''}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Response area */}
+      {/* Conversation thread */}
       <div
         ref={scrollRef}
         className="ai-conversation"
         onScroll={e => { const el = e.currentTarget; stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 48 }}
-        style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', scrollbarGutter: 'stable', padding: '12px 16px', minHeight: 0 }}
+        style={{ flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', scrollbarGutter: 'stable', padding: '12px 16px', minHeight: 0, position: 'relative' }}
       >
-        {!response && !streaming && history.length === 0 && (
+        {empty && (
           <div className="ai-welcome">
             <div className="ai-welcome-title">What would you like to understand?</div>
             <div className="ai-welcome-copy">
-              Ask about the current situation, compare regional activity, or explore what a developing event could mean.
+              Ask about a country, a crisis, a market or an economic trend. The analyst queries the dashboard's data itself —
+              conflict events, outages, disasters, earthquakes, fires, news, markets, World Bank series, trade, energy, sanctions —
+              runs local statistics and forecasts, and answers with the evidence and charts it used.
             </div>
             <div className="ai-welcome-context">
               <span><b>{incidentsLabel}</b> incidents</span>
@@ -541,37 +643,15 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
           </div>
         )}
 
-        {streaming && !response && (
-          <div className="ai-loading"><span className="ai-loading-dot" />Preparing your briefing…</div>
-        )}
+        {turns.map((t, i) => renderTurn(t, i === turns.length - 1 && !live))}
 
-        {/* Live action timeline — every dashboard command the AI has executed this turn */}
-        {actionLog.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-            {actionLog.map(a => {
-              const Icon = a.kind === 'fly' ? Navigation : a.kind === 'country' ? Info : a.kind === 'layer' ? Layers : Radio
-              return (
-                <div key={a.id} className="ai-action-row" style={{
-                  display: 'flex', alignItems: 'center', gap: 7, fontSize: 12,
-                  padding: '6px 10px', borderRadius: 'var(--r-sm)',
-                  background: 'var(--accent-soft)', color: 'var(--accent)',
-                  border: '1px solid rgba(213,168,95,0.22)',
-                }}>
-                  <Icon size={12} style={{ flexShrink: 0 }} />
-                  <span style={{ fontWeight: 600 }}>
-                    {a.kind === 'fly' ? 'Map moved to' : a.kind === 'country' ? 'Opened country overview' : a.kind === 'layer' ? 'Map layer updated' : 'Frontline view updated'}
-                  </span>
-                  <span style={{ color: 'var(--text1)' }}>{a.label}</span>
-                </div>
-              )
-            })}
-          </div>
-        )}
-
-        {(response || streaming) && (
-          <div style={{ padding: '2px 0' }}>
-            {renderText(response)}
-            {streaming && <span className="ai-cursor" />}
+        {live && (
+          <div className="ai-turn">
+            <div className="ai-user-bubble"><span>{live.question}</span></div>
+            {renderActions()}
+            <InvestigationTrail turnId={live.id} results={live.results} pending={live.pending} notes={live.notes} />
+            {liveStatus && <div className="ai-loading"><span className="ai-loading-dot" />{liveStatus}{live.step > 0 && <span className="ai-step">round {live.step + 1} of up to {MAX_DATA_ROUNDS + 1}</span>}</div>}
+            {live.text && <AIMarkdown text={live.text} results={live.results} streaming />}
           </div>
         )}
 
@@ -579,21 +659,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
         {!streaming && hasKey && followUps.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>
             {followUps.map(fu => (
-              <button
-                key={fu}
-                onClick={() => ask(fu)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  background: 'var(--surface)', border: '1px solid var(--border-strong)',
-                  borderRadius: 'var(--r-pill)', color: 'var(--text2)', fontSize: 12,
-                  padding: '6px 12px', cursor: 'pointer', fontFamily: 'inherit',
-                  transition: 'all .12s',
-                }}
-                onMouseEnter={e => { const el = e.currentTarget; el.style.borderColor = 'var(--accent)'; el.style.color = 'var(--accent)' }}
-                onMouseLeave={e => { const el = e.currentTarget; el.style.borderColor = 'var(--border-strong)'; el.style.color = 'var(--text2)' }}
-              >
-                {fu}
-              </button>
+              <button key={fu} onClick={() => ask(fu)} className="ai-followup">{fu}</button>
             ))}
           </div>
         )}
@@ -619,9 +685,9 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
         <div className="ai-context-items">
           <span><i className="incidents" />incidents {incidentsLabel}</span>
           <span><i className="flights" />flights {flightsLabel}</span>
-          <span className="ai-live-status"><i />Live data</span>
+          <span className="ai-live-status" title={`Up to ${MAX_DATA_ROUNDS} data rounds × ${MAX_CALLS_PER_STEP} queries per question`}><i />Live data + tools</span>
         </div>
-        {history.length > 0 && (
+        {turns.length > 0 && (
           <button
             onClick={startNewSession}
             className="ai-new-thread"
@@ -637,7 +703,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}
           disabled={!hasKey}
-          placeholder={hasKey ? 'Ask about a country, event, or emerging trend…' : 'Connect an analysis model to start a conversation'}
+          placeholder={hasKey ? 'Ask anything — e.g. "Compare inflation in Turkey and Argentina since 2010"' : 'Connect an analysis model to start a conversation'}
           rows={3}
           style={{
             flex: 1, background: 'var(--surface)', border: '1px solid var(--border-strong)',
@@ -651,13 +717,14 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
           onBlur={e   => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = 'var(--border-strong)' }}
         />
         {streaming ? (
-          <button onClick={stop} style={{ background: 'var(--red-soft)', border: '1px solid rgba(220,38,38,0.4)', borderRadius: 'var(--r-md)', color: 'var(--red)', cursor: 'pointer', padding: '9px 11px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <button onClick={stop} aria-label="Stop" style={{ background: 'var(--red-soft)', border: '1px solid rgba(220,38,38,0.4)', borderRadius: 'var(--r-md)', color: 'var(--red)', cursor: 'pointer', padding: '9px 11px', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             <Square size={14} />
           </button>
         ) : (
           <button
             onClick={() => { ask(input); setInput('') }}
             disabled={!hasKey || !input.trim()}
+            aria-label="Send"
             style={{ background: input.trim() && hasKey ? 'var(--accent)' : 'var(--surface2)', border: `1px solid ${input.trim() && hasKey ? 'var(--accent)' : 'var(--border-strong)'}`, borderRadius: 'var(--r-md)', color: input.trim() && hasKey ? '#111820' : 'var(--text3)', cursor: input.trim() && hasKey ? 'pointer' : 'default', padding: '9px 11px', display: 'flex', alignItems: 'center', flexShrink: 0, transition: 'all .12s' }}
           >
             <Send size={14} />

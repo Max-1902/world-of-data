@@ -53,6 +53,10 @@ describe('parseWorldBank', () => {
     expect(out.map(r => r.iso3)).toEqual(['USA', 'CHN'])
     expect(out[1]).toEqual({ iso3: 'CHN', name: 'China', value: 7, year: '2020' })
   })
+  it('drops the fragile-states aggregate under its current code FCV, not only the old FCS (regression: it ranked 5th on military spending, 2026-10-16)', () => {
+    const out = parseWorldBank([{}, [row('UA', 'UKR', 39.6), row('F1', 'FCV', 6.8, '2025', 'Fragility, Conflict, and Violence (FCV) situations'), row('F2', 'FCS', 6)]])
+    expect(out.map(r => r.iso3)).toEqual(['UKR'])
+  })
   it('drops values older than the minimum year, because mrnev ignores the request date range', () => {
     const out = parseWorldBank([{}, [row('US', 'USA', 1, '1995'), row('FR', 'FRA', 2, '2009'), row('DE', 'DEU', 3, '2010'), row('JP', 'JPN', 4, '2023')]])
     expect(out.map(r => r.iso3)).toEqual(['DEU', 'JPN'])
