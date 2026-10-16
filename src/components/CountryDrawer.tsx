@@ -7,6 +7,7 @@ import { INFRA_LABELS } from '../services/infrastructure'
 import WatchButton from './WatchButton'
 import { FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS } from '../utils/flightType'
 import { formatPersonnel } from '../services/militaryPersonnel'
+import { freshness } from '../utils/freshness'
 import { formatInfraValue } from '../services/infraIndicators'
 import { getTradeProfile } from '../services/tradeStats'
 import CloseButton from './CloseButton'
@@ -38,6 +39,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     econData, econLoading, powerPlants, civilFacilities, civilLoading,
     milPersonnel, milPersonnelTotal, infraIndicators, infraIndicatorsTotal,
   } = useCountryLiveData(country)
+  const milFresh = milPersonnel ? freshness(milPersonnel.year, 'military', milPersonnel.iso2) : null
 
   const riskScore = risk?.score ?? 0
   const sevColor = riskScore >= 40 ? 'var(--red)' : riskScore >= 20 ? 'var(--amber)' : riskScore >= 10 ? 'var(--amber)' : 'var(--green)'
@@ -194,14 +196,17 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
           <Section title="ARMED FORCES PERSONNEL" color="var(--red)">
             <div style={{ display: 'flex', gap: 6, marginBottom: 3 }}>
               <div style={{ padding: '3px 6px', background: soft('var(--red)', 8), borderRadius: 'var(--r-sm)' }}>
-                <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }}>PERSONNEL</div>
+                <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }}>PERSONNEL · {milPersonnel.year}</div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)' }}>{formatPersonnel(milPersonnel.personnel)}</div>
               </div>
               <div style={{ padding: '3px 6px', background: soft('var(--red)', 8), borderRadius: 'var(--r-sm)' }}>
-                <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }}>WORLD RANK</div>
+                <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }} title="Rank among each country's latest reported figure; the years differ between countries">RANK (MIXED YEARS)</div>
                 <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)' }}>#{milPersonnel.rank} / {milPersonnelTotal}</div>
               </div>
             </div>
+            {milFresh?.label && (
+              <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--amber)', margin: '2px 0' }}>⚠ {milFresh.label.toUpperCase()}: not current strength</div>
+            )}
             <div style={{ fontSize: 9, color: 'var(--text3)' }}>Source: World Bank (IISS Military Balance), {milPersonnel.year}</div>
           </Section>
         )}

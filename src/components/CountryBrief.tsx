@@ -1,11 +1,13 @@
 import { useMemo } from 'react'
 import { formatDistanceToNowStrict } from 'date-fns'
 import { useCountryBrief } from '../hooks/useCountryBrief'
-import { formatEconValue, type EconIndicator, type IndicatorId } from '../services/worldbank'
+import { formatEconValue, resolveISO2, type EconIndicator, type IndicatorId } from '../services/worldbank'
+import { CAPITALS } from '../services/capitals'
 import { linkedCrisisEvents, pickCountryHeadlines } from '../utils/countryBrief'
 import type { TrajectoryEntry } from '../utils/trajectory'
 import type { CrisisEvent, NewsArticle } from '../types'
 import { StateMediaBadge } from './StateMediaBadge'
+import { freshness, type FreshnessKind } from '../utils/freshness'
 
 interface Props {
   country: string
@@ -23,15 +25,15 @@ function ageLabel(iso: string): string {
 }
 
 /** Few, high-signal facts. Each is shown only if the World Bank actually returned a value for it. */
-const FACT_IDS: { id: IndicatorId; label: string }[] = [
-  { id: 'SP.POP.TOTL', label: 'Population' },
-  { id: 'NY.GDP.MKTP.CD', label: 'GDP' },
-  { id: 'NY.GDP.PCAP.CD', label: 'GDP / person' },
-  { id: 'NY.GDP.MKTP.KD.ZG', label: 'GDP growth' },
-  { id: 'FP.CPI.TOTL.ZG', label: 'Inflation' },
-  { id: 'SL.UEM.TOTL.ZS', label: 'Unemployment' },
-  { id: 'SP.DYN.LE00.IN', label: 'Life expectancy' },
-  { id: 'MS.MIL.XPND.GD.ZS', label: 'Military spend' },
+const FACT_IDS: { id: IndicatorId; label: string; kind: FreshnessKind }[] = [
+  { id: 'SP.POP.TOTL', label: 'Population', kind: 'structural' },
+  { id: 'NY.GDP.MKTP.CD', label: 'GDP', kind: 'macro' },
+  { id: 'NY.GDP.PCAP.CD', label: 'GDP / person', kind: 'macro' },
+  { id: 'NY.GDP.MKTP.KD.ZG', label: 'GDP growth', kind: 'macro' },
+  { id: 'FP.CPI.TOTL.ZG', label: 'Inflation', kind: 'macro' },
+  { id: 'SL.UEM.TOTL.ZS', label: 'Unemployment', kind: 'macro' },
+  { id: 'SP.DYN.LE00.IN', label: 'Life expectancy', kind: 'structural' },
+  { id: 'MS.MIL.XPND.GD.ZS', label: 'Military spend', kind: 'military' },
 ]
 
 export default function CountryBrief({ country, crises, articles, trend }: Props) {
@@ -41,11 +43,15 @@ export default function CountryBrief({ country, crises, articles, trend }: Props
   const tracked = useMemo(() => linkedCrisisEvents(crises, country), [crises, country])
 
   const byId = new Map<string, EconIndicator>((econ?.indicators ?? []).filter(i => i.value != null).map(i => [i.id, i]))
-  const facts: { label: string; value: string; year?: string }[] = []
-  if (profile?.capital) facts.push({ label: 'Capital', value: profile.capital })
+  const facts: { label: string; value: string; year?: string; stale?: string | null }[] = []
+  // Capital names come from one curated list (services/capitals.ts), not World Bank's capitalCity, which still says
+  // "Kiev" while the map says "Kyiv". Countries left out there on purpose (disputed or split capitals) show none.
+  const iso2 = resolveISO2(country)
+  const capital = iso2 ? CAPITALS[iso2] : undefined
+  if (capital) facts.push({ label: 'Capital', value: capital })
   for (const f of FACT_IDS) {
     const ind = byId.get(f.id)
-    if (ind && ind.value != null) facts.push({ label: f.label, value: formatEconValue(f.id, ind.value), year: ind.year })
+    if (ind && ind.value != null) facts.push({ label: f.label, value: formatEconValue(f.id, ind.value), year: ind.year, stale: ind.year ? freshness(ind.year, f.kind, iso2)?.label : null })
   }
   if (profile?.incomeLevel && !/not classified/i.test(profile.incomeLevel)) facts.push({ label: 'Income group', value: profile.incomeLevel.replace(/ income$/i, '') })
   if (profile?.region) facts.push({ label: 'Region', value: profile.region.replace(/\s*\(.*?\)\s*/g, ' ').trim() })
@@ -93,7 +99,7 @@ export default function CountryBrief({ country, crises, articles, trend }: Props
             {facts.map(f => (
               <div key={f.label} className="cb-fact">
                 <span className="cb-fact-label">{f.label}</span>
-                <span className="cb-fact-value">{f.value}{f.year && <small>{f.year}</small>}</span>
+                <span className="cb-fact-value" title={f.stale ?? undefined}>{f.value}{f.year && <small style={f.stale ? { color: 'var(--amber)', fontWeight: 700 } : undefined}>{f.year}{f.stale ? ' ⚠' : ''}</small>}</span>
               </div>
             ))}
           </div>

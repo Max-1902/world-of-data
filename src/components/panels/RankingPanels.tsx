@@ -4,6 +4,7 @@
  */
 import { useState, useEffect } from 'react'
 import { fetchMilitaryPersonnelRanking, formatPersonnel, type MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
+import { freshness } from '../../utils/freshness'
 import { fetchPowerGenerationRanking, formatTwh, POWER_SOURCES, type PowerGenerationEntry, type PowerSource } from '../../services/powerGeneration'
 import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
 import { OnMapButton } from './OnMapButton'
@@ -43,7 +44,7 @@ export function MilitaryPersonnelPanel({ onCountryClick, panelState, onToggleLay
         />
       </div>
       <div style={infoStrip}>
-        <span>Ranked by total armed forces personnel · World Bank (IISS Military Balance)</span>
+        <span>Armed forces personnel, latest reported year per country (years differ; most stop at 2020) · World Bank (IISS Military Balance)</span>
         <OnMapButton indicatorId="MS.MIL.TOTL.P1" panelState={panelState} onToggleLayer={onToggleLayer} />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
@@ -51,6 +52,7 @@ export function MilitaryPersonnelPanel({ onCountryClick, panelState, onToggleLay
         {error && <div style={{ fontSize: 9.5, color: 'var(--red)', padding: '8px 0' }}>Failed to load World Bank data.</div>}
         {filtered.map(c => {
           const barW = (c.personnel / maxPersonnel) * 100
+          const fresh = freshness(c.year, 'military', c.iso2)
           return (
             <button
               key={c.iso2}
@@ -69,6 +71,9 @@ export function MilitaryPersonnelPanel({ onCountryClick, panelState, onToggleLay
               </div>
               <span style={{ fontSize: 9, color: 'var(--text2)', fontWeight: 700, width: 46, textAlign: 'right', flexShrink: 0 }}>
                 {formatPersonnel(c.personnel)}
+              </span>
+              <span title={fresh?.label ?? `reported for ${c.year}`} style={{ fontSize: 9, width: 34, textAlign: 'right', flexShrink: 0, color: fresh?.stale ? 'var(--amber)' : 'var(--text3)', fontWeight: fresh?.stale ? 700 : 400 }}>
+                {c.year}{fresh?.stale ? '⚠' : ''}
               </span>
             </button>
           )

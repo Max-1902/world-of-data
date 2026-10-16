@@ -11,6 +11,7 @@
  * Human Capital Index (63). The API only batches indicators from one source per request.
  */
 import type { Pt } from '../utils/econAnalysis'
+import { CAPITALS } from './capitals'
 
 const WB_BASE = 'https://api.worldbank.org/v2'
 export const FIRST_YEAR = 1960
@@ -260,7 +261,8 @@ export function fetchCountryList(): Promise<WbCountry[]> {
         out.push({
           iso2: r.iso2Code, iso3: typeof r.id === 'string' ? r.id : '', name: r.name, region: region.trim(),
           incomeLevel: (r.incomeLevel as { value?: string } | undefined)?.value ?? '',
-          capital: typeof r.capitalCity === 'string' ? r.capitalCity : '',
+          // canonical names (services/capitals.ts), not World Bank's capitalCity ("Kiev"); disputed capitals stay blank
+          capital: CAPITALS[r.iso2Code] ?? '',
         })
       }
       if (!out.length) throw new Error('World Bank returned no countries')

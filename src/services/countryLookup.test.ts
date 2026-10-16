@@ -55,6 +55,17 @@ describe('fetchCountryList', () => {
     expect(list.map(c => c.iso2)).toEqual(['BR', 'DE'])
     expect(list[1]).toMatchObject({ iso3: 'DEU', region: 'Europe & Central Asia', capital: 'Berlin' })
   })
+  it('takes capital names from the canonical list, not World Bank capitalCity ("Kiev"), and leaves disputed ones blank', async () => {
+    mockFetch(() => jsonResponse([{ page: 1 }, [
+      { id: 'UKR', iso2Code: 'UA', name: 'Ukraine', region: { value: 'Europe & Central Asia' }, incomeLevel: { value: 'Upper middle income' }, capitalCity: 'Kiev' },
+      { id: 'LKA', iso2Code: 'LK', name: 'Sri Lanka', region: { value: 'South Asia' }, incomeLevel: { value: 'Lower middle income' }, capitalCity: 'Colombo' },
+    ]]))
+    const { fetchCountryList } = await load()
+    const list = await fetchCountryList()
+    expect(list.find(c => c.iso2 === 'UA')!.capital).toBe('Kyiv')
+    expect(list.find(c => c.iso2 === 'LK')!.capital).toBe('')
+  })
+
   it('throws on HTTP errors and empty payloads, and retries next time', async () => {
     const f = mockFetch(() => new Response('', { status: 503 }))
     const { fetchCountryList } = await load()
