@@ -9,8 +9,10 @@ export function useElementWidth<T extends HTMLElement>(fallback = 320) {
     if (!el) return
     const measure = () => { const w = Math.floor(el.getBoundingClientRect().width); if (w > 0) setWidth(w) }
     measure()
-    if (typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(measure)
+    // the element's own window: a chart can live in the analyst's separate browser window
+    const RO = el.ownerDocument.defaultView?.ResizeObserver ?? (typeof ResizeObserver === 'undefined' ? undefined : ResizeObserver)
+    if (!RO) return
+    const ro = new RO(measure)
     ro.observe(el)
     return () => ro.disconnect()
   }, [])

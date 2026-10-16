@@ -6,6 +6,7 @@
  */
 import { lazy } from 'react'
 import type { PanelDef, PanelGroup, PanelSection } from './types'
+import { AnalystSlot } from '../components/panels/aiAnalyst/AnalystWindow'
 // Every panel is code-split: its chunk (and the datasets it pulls in) loads only when the panel is first shown.
 // PanelHost supplies the Suspense boundary.
 const NewsPanel = lazy(() => import('../components/panels/NewsPanels').then(m => ({ default: m.NewsPanel })))
@@ -36,7 +37,6 @@ const MilitaryPersonnelPanel = lazy(() => import('../components/panels/RankingPa
 const InfraIndicatorsPanel = lazy(() => import('../components/panels/RankingPanels').then(m => ({ default: m.InfraIndicatorsPanel })))
 const OwidPanel = lazy(() => import('../components/panels/RankingPanels').then(m => ({ default: m.OwidPanel })))
 const DataCentersPanel = lazy(() => import('../components/panels/RankingPanels').then(m => ({ default: m.DataCentersPanel })))
-const AIAnalystPanel = lazy(() => import('../components/panels/AIAnalystPanel').then(m => ({ default: m.AIAnalystPanel })))
 const HumanitarianPanel = lazy(() => import('../components/panels/HumanitarianPanel').then(m => ({ default: m.HumanitarianPanel })))
 const DisasterAlertsPanel = lazy(() => import('../components/panels/DisasterAlertsPanel').then(m => ({ default: m.DisasterAlertsPanel })))
 const CountryAnalyticsPanel = lazy(() => import('../components/panels/CountryAnalyticsPanel').then(m => ({ default: m.CountryAnalyticsPanel })))
@@ -125,7 +125,8 @@ const PANELS: PanelDef[] = [
   {
     id: 'analyst', title: 'Analyst chat', group: 'analysis', section: 'ai', map: 'none',
     dotColor: 'blue', desc: 'AI-assisted situational assessment',
-    render: (p) => <AIAnalystPanel crises={p.crises} flights={p.flights} onGeoSearch={p.onGeoSearch} onCountryClick={p.onCountryClick} onToggleLayer={p.onToggleLayer} panelState={p.panelState} />,
+    // one shared analyst (AnalystWindowProvider in App) is moved into this slot, or into its pop-out window
+    render: (p) => <AnalystSlot {...p} />,
   },
   {
     id: 'countryAnalytics', title: 'Country Analytics', group: 'analysis', section: 'explore', map: 'inline',

@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { lastAcledPoll } from '../../services/crises'
-import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare, ChevronDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare, ChevronDown, Maximize2, ExternalLink } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight } from '../../types'
 import { buildDashboardContext, buildSystemPrompt, notMeasured, CHAT_PARAMS, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
@@ -19,6 +19,7 @@ import { toolCatalogue, CHART_LINE, MAX_CALLS_PER_STEP, type ToolCall, type Tool
 import { AIMarkdown } from './aiAnalyst/AIMarkdown'
 import { AIChart } from './aiAnalyst/AIChart'
 import { InvestigationTrail } from './aiAnalyst/InvestigationTrail'
+import { useAnalystWindow } from './aiAnalyst/AnalystWindow'
 
 // ── Watchlist card — rule-based trajectory forecast, rendered inside AIAnalystPanel ──
 function WatchlistCard({ entry, onExplain, disabled = false }: { entry: TrajectoryEntry; onExplain: () => void; disabled?: boolean }) {
@@ -130,6 +131,8 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   /** expanded tool result per turn, opened from the trail or from a reference in the answer */
   const [openRef, setOpenRef]   = useState<{ turn: string; id: string } | null>(null)
   const modelName = (id: string) => FREE_MODELS.find(m => m.id === id)?.label ?? allModels?.find(m => m.id === id)?.label ?? id
+  // pop-out controls (null when rendered without the window provider)
+  const popout = useAnalystWindow()
   const abortRef  = useRef<AbortController | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const stickRef  = useRef(true) // follow the stream only while the reader is at the bottom
@@ -397,9 +400,11 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
   // A reference like (R2) in an answer opens that result in the turn's trail and scrolls to it.
   function showRef(turn: string, id: string) {
     setOpenRef({ turn, id })
-    requestAnimationFrame(() => {
+    // the analyst may be living in a separate browser window: look the result up in its own document
+    const view = scrollRef.current?.ownerDocument.defaultView ?? window
+    view.requestAnimationFrame(() => {
       const box = scrollRef.current
-      const el = document.getElementById(`ai-res-${turn}-${id}`)
+      const el = box?.ownerDocument.getElementById(`ai-res-${turn}-${id}`)
       if (box && el) { stickRef.current = false; box.scrollTop = el.offsetTop - 12 }
     })
   }
@@ -477,8 +482,8 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
           onChange={e => setModel(e.target.value)}
           disabled={streaming}
           style={{
-            width: 160, background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text2)',
-            fontSize: 10.5, fontFamily: 'inherit', letterSpacing: '.01em', padding: '6px 7px', borderRadius: 'var(--r-sm)',
+            background: 'var(--surface)', border: '1px solid var(--border-strong)', color: 'var(--text2)',
+            fontFamily: 'inherit', letterSpacing: '.01em', padding: '6px 7px', borderRadius: 'var(--r-sm)',
             outline: 'none', cursor: 'pointer',
           }}
         >
@@ -514,6 +519,16 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
         >
           <History size={14} />
         </button>
+        {popout?.mode === 'dock' && (
+          <>
+            <button onClick={popout.popOut} className="ai-head-btn" title="Pop out — open the analyst in a large window over the dashboard" aria-label="Pop out analyst">
+              <Maximize2 size={14} />
+            </button>
+            <button onClick={popout.openWindow} className="ai-head-btn" title="Open the analyst in a separate browser window (e.g. a second monitor)" aria-label="Open analyst in a separate window">
+              <ExternalLink size={14} />
+            </button>
+          </>
+        )}
 
         {showHistory && (
           <div className="ai-glow-border" style={{
@@ -705,10 +720,11 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
           disabled={!hasKey}
           placeholder={hasKey ? 'Ask anything — e.g. "Compare inflation in Turkey and Argentina since 2010"' : 'Connect an analysis model to start a conversation'}
           rows={3}
+          className="ai-input"
           style={{
             flex: 1, background: 'var(--surface)', border: '1px solid var(--border-strong)',
             borderRadius: 'var(--r-md)',
-            color: 'var(--text1)', fontSize: 13, fontFamily: 'inherit',
+            color: 'var(--text1)', fontFamily: 'inherit',
             padding: '9px 12px', resize: 'none', outline: 'none', lineHeight: 1.5,
             transition: 'border-color .12s',
             opacity: hasKey ? 1 : .65,
