@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import questionsV2 from '../../research/eval/questions-v2.json'
 import { extractNumbers, scoreFidelity, briefingText, isBriefing, notMeasuredViolations, parseNotMeasured, isYear } from './fidelity'
-import { buildDashboardContext } from '../services/openrouter'
+import { buildDashboardContext, NOT_IN_CONTEXT } from '../services/openrouter'
 
 const values = (t: string) => extractNumbers(t).map(n => n.value * n.scale)
 
@@ -86,7 +87,7 @@ describe('NOT MEASURED violations', () => {
 
   it('round-trips the NOT MEASURED block of a real context', () => {
     const ctx = buildDashboardContext([], [], [], '', '', '', { flightsLayer: false })
-    expect(parseNotMeasured(ctx)).toEqual(missing.map(m => m.what === 'Air traffic' ? m : { ...m }))
+    expect(parseNotMeasured(ctx)).toEqual([...missing, ...NOT_IN_CONTEXT])
     expect(parseNotMeasured('no block here')).toEqual([])
   })
 })
@@ -108,5 +109,31 @@ describe('briefing detection', () => {
 
   it('does not score numbers inside tool-call blocks', () => {
     expect(scoreFidelity("<|tool_call_start|>[FLY(coordinates='15.5, 25.5')]<|tool_call_end|>", 'ctx').checked).toBe(0)
+  })
+})
+
+describe('eval question set v2', () => {
+  const set = questionsV2 as {
+    questions: { id: string; kind: string; prompt: string; expect: string; notMeasured?: string; needs: string }[]
+  }
+
+  it('has 30+ questions with unique ids, a prompt and an expected behaviour each', () => {
+    expect(set.questions.length).toBeGreaterThanOrEqual(30)
+    expect(new Set(set.questions.map(q => q.id)).size).toBe(set.questions.length)
+    for (const q of set.questions) {
+      expect(q.prompt.length, q.id).toBeGreaterThan(10)
+      expect(q.expect.length, q.id).toBeGreaterThan(10)
+      expect(['conflict', 'any'], q.id).toContain(q.needs)
+    }
+  })
+
+  it('covers numeric-with-data, numeric-without-data, false-premise, labelling and layer-not-loaded questions', () => {
+    const kinds = new Set(set.questions.map(q => q.kind))
+    for (const k of ['numeric-in-context', 'numeric-not-in-context', 'false-premise', 'labelling', 'layer-not-loaded']) expect(kinds).toContain(k)
+  })
+
+  it('every notMeasured target is something the context can actually list as NOT MEASURED', () => {
+    const listable = new Set(['Air traffic', 'Live conflict events', ...NOT_IN_CONTEXT.map(m => m.what)])
+    for (const q of set.questions) if (q.notMeasured) expect(listable, q.id).toContain(q.notMeasured)
   })
 })

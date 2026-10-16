@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { streamAI, buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, streamAIWithFallback, groupModels, formatModelPrice } from './openrouter'
+import { streamAI, buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, NOT_IN_CONTEXT } from './openrouter'
 import { mockFetch, streamResponse, textResponse, jsonResponse } from '../test/helpers'
 import type { CrisisEvent, Flight } from '../types'
 import type { TrajectoryEntry } from '../utils/trajectory'
@@ -124,6 +124,18 @@ describe('buildSystemPrompt', () => {
     expect(p).toMatch(/NOT MEASURED is unknown, not zero/)
     expect(p).toMatch(/Only cite numbers that appear in the data below/)
   })
+
+  it('requires a source tag on every factual sentence, with an example of each tag', () => {
+    const p = buildSystemPrompt('')
+    expect(p).toMatch(/\[dashboard\] when it rests on the data below/)
+    expect(p).toMatch(/\[background\] when it rests on your general knowledge/)
+    expect(p).toMatch(/\[inference\]/)
+    expect(p).toMatch(/Example: .*\[dashboard\].*\[background\].*\[inference\]/)
+  })
+
+  it('no longer tells the model to hide source outages', () => {
+    expect(buildSystemPrompt('')).not.toMatch(/Never mention source outages/)
+  })
 })
 
 describe('visibleText', () => {
@@ -135,9 +147,38 @@ describe('visibleText', () => {
 })
 
 describe('notMeasured', () => {
-  it('is empty when both feeds delivered data', () => {
+  it('lists only the layers never passed to the analyst when both feeds delivered data', () => {
     const ev = { id: 'x', source: 'ACLED' } as CrisisEvent
-    expect(notMeasured([ev], [{}] as Flight[])).toEqual([])
+    expect(notMeasured([ev], [{}] as Flight[])).toEqual(NOT_IN_CONTEXT)
+  })
+
+  it('covers every map layer whose data is absent from the context (regression: outages were unlisted while the Cyber quick prompt asked about them)', () => {
+    const listed = notMeasured([{ id: 'x', source: 'ACLED' } as CrisisEvent], [{}] as Flight[]).map(m => m.what)
+    for (const w of ['Internet outages', 'Earthquakes', 'Wildfires', 'Disaster alerts', 'Airspace', 'Vessel positions', 'GPS interference', 'News headlines']) {
+      expect(listed).toContain(w)
+    }
+    const ctx = buildDashboardContext([{ id: 'x', source: 'ACLED', country: 'A', severity: 'low', type: 'war', title: 't' } as CrisisEvent], [{}] as Flight[])
+    expect(ctx).toContain('NOT MEASURED')
+    expect(ctx).toContain('Internet outages: IODA data is shown on the map but not passed to the analyst')
+  })
+
+  it('every quick prompt that asks about a layer finds that layer either in the context or under NOT MEASURED', () => {
+    const cyber = QUICK_PROMPTS.find(p => p.label === 'Cyber')!
+    expect(cyber.prompt).toMatch(/outage/i)
+    expect(NOT_IN_CONTEXT.map(m => m.what)).toContain('Internet outages')
+  })
+})
+
+describe('context claims about the layers', () => {
+  const ctx = buildDashboardContext([], [])
+  it('does not advertise sources the app no longer uses or numbers it cannot back', () => {
+    expect(ctx).not.toMatch(/GDELT|Reuters|230\+ countries|45 locations|closure overlays/)
+    expect(ctx).toMatch(/not NOTAMs, not closures/)
+  })
+  it('says when the ACLED poll hit its cap, so counts are not read as totals', () => {
+    const ev = { id: 'x', source: 'ACLED', country: 'A', severity: 'low', type: 'war', title: 't' } as CrisisEvent
+    expect(buildDashboardContext([ev], [], [], '', '', '', { conflictCapped: true })).toMatch(/CAPPED: .* not totals/)
+    expect(buildDashboardContext([ev], [])).not.toContain('CAPPED')
   })
 })
 
@@ -162,7 +203,9 @@ describe('buildDashboardContext', () => {
     const ctx = buildDashboardContext([], [], [], '  • Conflict events (ACLED): DOWN (HTTP 401)')
     expect(ctx).toContain('DATA SOURCE HEALTH')
     expect(ctx).toContain('ACLED): DOWN (HTTP 401)')
-    expect(ctx).toMatch(/Do NOT mention these, refuse, or caveat/)
+    // used to read "Do NOT mention these, refuse, or caveat": a down source the answer depends on must be named
+    expect(ctx).toMatch(/if the answer depends on one of them, say so in one sentence/)
+    expect(ctx).not.toMatch(/Do NOT mention these/)
   })
 
   it('includes a market snapshot only when one is given', () => {
@@ -213,7 +256,8 @@ describe('buildDashboardContext', () => {
     const ctx = buildDashboardContext([crisis({ country: 'B' })], [{ icao24: 'a' }] as unknown as Flight[])
     expect(ctx).toContain('Total events: 1')
     expect(ctx).toContain('Most affected countries: B (1)')
-    expect(ctx).not.toContain('NOT MEASURED')
+    expect(ctx).not.toContain('Live conflict events:')
+    expect(ctx).not.toContain('Air traffic:')
   })
 
   it('never counts hand-entered baseline markers as live events', () => {

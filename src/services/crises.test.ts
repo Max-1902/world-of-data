@@ -47,6 +47,18 @@ describe('fetchACLEDEvents', () => {
     expect(e.fatalities).toBe(0)
   })
 
+  it('records whether the poll hit ACLED_LIMIT, so callers can say counts are a sample (not totals)', async () => {
+    const row = (i: number) => ({ event_id_cnty: `E${i}`, event_date: '2026-10-14', event_type: 'Battles', country: 'X', admin1: 'a', location: 'b', latitude: '1', longitude: '2', notes: '', fatalities: '0' })
+    const { fetchACLEDEvents, lastAcledPoll, ACLED_LIMIT } = await load()
+    expect(lastAcledPoll()).toBeNull()
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: Array.from({ length: ACLED_LIMIT }, (_, i) => row(i)) }))
+    await fetchACLEDEvents()
+    expect(lastAcledPoll()).toEqual({ rows: ACLED_LIMIT, capped: true })
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [row(1)] }))
+    await fetchACLEDEvents()
+    expect(lastAcledPoll()).toEqual({ rows: 1, capped: false })
+  })
+
   it('sends the bearer token and a date-range query for the requested window', async () => {
     const fetchMock = mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [] }))
     const { fetchACLEDEvents } = await load()

@@ -261,7 +261,25 @@ export interface ContextOptions {
   crisesLayer?: boolean
   /** Set when flights are not measured for another reason (e.g. the research recorder does not poll OpenSky). */
   flightsUnmeasuredReason?: string
+  /** The last ACLED poll hit its row cap, so event counts are a sample of the window, not totals. */
+  conflictCapped?: boolean
 }
+
+/**
+ * Dashboard inputs that are never passed to the analyst. Listed as NOT MEASURED so the model does not read their
+ * absence from the context as an absence of events (e.g. "no outages reported"). Before 2026-10-15 only flights
+ * and conflict events were listed, while the "Cyber" quick prompt asked about outage patterns.
+ */
+export const NOT_IN_CONTEXT: NotMeasured[] = [
+  { what: 'Internet outages', why: 'IODA data is shown on the map but not passed to the analyst' },
+  { what: 'Earthquakes', why: 'USGS data is shown on the map but not passed to the analyst' },
+  { what: 'Wildfires', why: 'NASA FIRMS data is shown on the map but not passed to the analyst' },
+  { what: 'Disaster alerts', why: 'GDACS data is shown on the map but not passed to the analyst' },
+  { what: 'Airspace', why: 'the low-traffic heuristic is not passed to the analyst, and it is not a NOTAM feed in any case' },
+  { what: 'Vessel positions', why: 'AIS data is not passed to the analyst' },
+  { what: 'GPS interference', why: 'GPSJAM data is not passed to the analyst' },
+  { what: 'News headlines', why: 'headlines are not passed to the analyst' },
+]
 
 /** One input the model must treat as absent, not as zero. */
 export interface NotMeasured { what: string; why: string }
@@ -278,7 +296,7 @@ export function notMeasured(crises: CrisisEvent[], flights: Flight[], opts: Cont
   else if (flights.length === 0) out.push({ what: 'Air traffic', why: 'no flight data received from OpenSky' })
   if (opts.crisesLayer === false) out.push({ what: 'Live conflict events', why: 'crises layer switched off' })
   else if (!crises.some(c => !isBaseline(c))) out.push({ what: 'Live conflict events', why: 'no events received from ACLED' })
-  return out
+  return [...out, ...NOT_IN_CONTEXT]
 }
 
 export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], trajectories: TrajectoryEntry[] = [], dataHealth = '', marketSnapshot = '', countryAnalytics = '', opts: ContextOptions = {}): string {
@@ -313,7 +331,8 @@ export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], 
   ).join('\n')
 
   const conflicts = crisesMeasured ? `\
-ACTIVE CONFLICTS & CRISES (live events, ACLED)
+ACTIVE CONFLICTS & CRISES (live events, ACLED, last 14 days; events of one type within ~50 km are merged)${opts.conflictCapped ? `
+  CAPPED: the feed returned its maximum number of rows, so these counts are a sample of the window, not totals. Do not present them as totals.` : ''}
   Total events: ${live.length}
   Critical: ${critical.length} | High: ${high.length} | Other: ${live.length - critical.length - high.length}
   Most affected countries: ${topCountries || 'none'}
@@ -344,7 +363,7 @@ ${countryAnalytics ? `
 COUNTRY ANALYTICS — the comparison currently open in the Country Analytics panel (computed locally from World Bank / Our World in Data / Ember; not model-generated. For data questions, cite these numbers and say they come from here.)
   ${countryAnalytics}
 ` : ''}${dataHealth ? `
-DATA SOURCE HEALTH (internal note, not for the user — the dashboard has many redundant sources, so individual outages are routine. Do NOT mention these, refuse, or caveat an answer because of them; answer from everything else. Only discuss source status if the user asks about it.)
+DATA SOURCE HEALTH (sources currently failing. Don't refuse because of them and don't list them unprompted; but if the answer depends on one of them, say so in one sentence.)
 ${dataHealth}
 ` : ''}${marketSnapshot ? `
 MARKET SNAPSHOT (live quotes just pulled; these are the only prices you may cite)
@@ -354,16 +373,16 @@ AIR TRAFFIC
   ${flightsMeasured ? `Airborne flights tracked: ${flights.length.toLocaleString('en-US')}` : 'NOT MEASURED — no flight count is available.'}
 
 DASHBOARD LAYERS (what the map can show — their data is NOT in this context unless it appears in a block above)
-  Live flight positions (OpenSky ADS-B, ~10s latency)
-  Conflict events (ACLED — 230+ countries)
-  Internet outage detection (IODA — BGP + probing)
-  News feeds (GDELT, BBC, Reuters, Guardian, NYT)
-  Market data (equities, ETFs, crypto, forex, bonds — Finnhub/CoinGecko)
-  Wildfire hotspots (NASA FIRMS)
-  Military bases & nuclear facilities
-  Energy infrastructure (dams, LNG, pipelines, refineries)
-  Airspace closure overlays (FIR regions)
-  EarthCam live CCTV cameras (45 locations worldwide)
+  Live flight positions (OpenSky ADS-B)
+  Conflict events (ACLED)
+  Internet outage detection (IODA)
+  News feeds (RSS from public broadcasters and newspapers, Google News, Guardian, NYT)
+  Market data (ETF and stock quotes via Finnhub; crypto via CoinGecko; FX via open.er-api.com)
+  Earthquakes (USGS), wildfire hotspots (NASA FIRMS), disaster alerts (GDACS)
+  Military bases & nuclear facilities (curated, not individually re-verified)
+  Energy infrastructure (curated dams/LNG/refineries; WRI power plants, 2021 vintage, no operating status)
+  Airspace low-traffic heuristic (hand-drawn FIR boxes vs hand-set references; not NOTAMs, not closures)
+  Public webcams (third-party listings)
   ${resourceCapabilitySummary()}
 ===================================================`
 }
@@ -377,7 +396,9 @@ export function buildSystemPrompt(context: string): string {
 
 Anything listed under NOT MEASURED is unknown, not zero or absent: never state or imply a count, an absence, a decline or an anomaly for it. If the question depends on it, say in one sentence that the dashboard did not measure it, then answer the rest. Only cite numbers that appear in the data below; anything from your own knowledge must be marked as such and must not be presented as a live reading.
 
-NEVER refuse, defer, or open with a disclaimer because some data source is down or some data is missing — the dashboard has many redundant sources and outages are routine. Never mention source outages unless the user asks about them. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For data questions about countries, ground the answer in a COUNTRY ANALYTICS block when one is present, quoting its numbers and naming the countries it lists, then add context from your own knowledge clearly marked as such. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
+Label where each claim comes from. End every sentence that states a fact with one tag: [dashboard] when it rests on the data below, [background] when it rests on your general knowledge (which may be out of date), [inference] when it is your own reasoning. Example: "Sudan has the most live conflict events in the current data, 41 [dashboard]. The war began in April 2023 [background]. Fighting may spread toward El Fasher [inference]."
+
+Don't refuse or open with a disclaimer because some data is missing; answer from what you have. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For data questions about countries, ground the answer in a COUNTRY ANALYTICS block when one is present, quoting its numbers and naming the countries it lists, then add context from your own knowledge clearly marked as such. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
 
 IMPORTANT: You can execute dashboard commands by including them in your response. Commands are on their own line:
 

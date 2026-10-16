@@ -63,7 +63,7 @@ async function main() {
 
   const crises = mergeWithBaseline(live)
   const trajectories = computeTrajectories(crises, [], 6, [], null, now)
-  const opts = { now: new Date(now), flightsUnmeasuredReason: FLIGHTS_REASON }
+  const opts = { now: new Date(now), flightsUnmeasuredReason: FLIGHTS_REASON, conflictCapped: live.length >= ACLED_LIMIT }
   writeJson(resolve(DATA_DIR, 'dashboard', `${day}.json`), {
     v: 1,
     recordedAt: new Date(now).toISOString(),
