@@ -1,4 +1,5 @@
 import type { Map as MapboxMap } from 'mapbox-gl'
+import { esc } from './geoPopups'
 import type { Flight } from '../../types'
 import { detectFlightType, headingToCompass, FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS, type FlightType } from '../../utils/flightType'
 
@@ -108,7 +109,7 @@ export async function fetchAircraftMeta(icao24: string): Promise<AircraftMeta> {
 
 // ── Flight popup HTML ────────────────────────────────────────────────────────
 export function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta): string {
-  const cs        = String(p.callsign || p.icao24 || 'UNKNOWN')
+  const cs        = esc(String(p.callsign || p.icao24 || 'UNKNOWN'))
   const type      = String(p.flightType || 'unknown') as FlightType
   const typeColor = FLIGHT_TYPE_COLORS[type] || '#888'
   const typeLabel = FLIGHT_TYPE_LABELS[type] || type.toUpperCase()
@@ -130,16 +131,16 @@ export function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta)
     const parts: string[] = []
     if (meta.type || meta.icaoType) {
       const label = meta.type || meta.icaoType || ''
-      parts.push(`<span style="color:#14161a;font-size:11px;font-weight:600;">${label}</span>`)
+      parts.push(`<span style="color:#14161a;font-size:11px;font-weight:600;">${esc(label)}</span>`)
     }
     if (meta.manufacturer) {
-      parts.push(`<span style="color:#6b7280;font-size:10px;letter-spacing:.05em;">${meta.manufacturer}</span>`)
+      parts.push(`<span style="color:#6b7280;font-size:10px;letter-spacing:.05em;">${esc(meta.manufacturer)}</span>`)
     }
     if (meta.owner) {
-      parts.push(`<span style="color:#16a34a;font-size:10px;">${meta.owner}</span>`)
+      parts.push(`<span style="color:#16a34a;font-size:10px;">${esc(meta.owner)}</span>`)
     }
     if (meta.registration) {
-      parts.push(`<span style="color:#6b7280;font-size:10px;letter-spacing:.06em;">${meta.registration}</span>`)
+      parts.push(`<span style="color:#6b7280;font-size:10px;letter-spacing:.06em;">${esc(meta.registration)}</span>`)
     }
     if (parts.length) {
       aircraftSection = `<div style="display:flex;flex-direction:column;gap:2px;padding:6px 0;border-bottom:1px solid #e5e7eb;margin-bottom:4px;">${parts.join('')}</div>`
@@ -151,8 +152,8 @@ export function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta)
   if (meta?.photoUrl) {
     photoSection = `
       <div style="margin-top:6px;border-top:1px solid #e5e7eb;padding-top:6px;">
-        <img src="${meta.photoUrl}" style="width:100%;height:auto;display:block;border:1px solid #e5e7eb;opacity:0.96;" onerror="this.style.display='none'" />
-        ${meta.photographer ? `<div style="font-size:9px;color:#9ca3af;letter-spacing:.06em;margin-top:2px;text-align:right;">photo: ${meta.photographer}</div>` : ''}
+        <img src="${esc(meta.photoUrl)}" style="width:100%;height:auto;display:block;border:1px solid #e5e7eb;opacity:0.96;" onerror="this.style.display='none'" />
+        ${meta.photographer ? `<div style="font-size:9px;color:#9ca3af;letter-spacing:.06em;margin-top:2px;text-align:right;">photo: ${esc(meta.photographer)}</div>` : ''}
       </div>`
   }
 
@@ -170,8 +171,8 @@ export function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta)
       ${aircraftSection}
       ${loadingSection}
       <table style="width:100%;border-collapse:collapse;font-size:11px;">
-        ${row('ICAO24',    String(p.icao24    || '—'))}
-        ${row('COUNTRY',   String(p.country   || '—'))}
+        ${row('ICAO24',    esc(String(p.icao24    || '—')))}
+        ${row('COUNTRY',   esc(String(p.country   || '—')))}
         ${row('ALTITUDE',  altM  ? `${altM.toLocaleString()} m / ${altFt!.toLocaleString()} ft` : '—')}
         ${row('SPEED',     spdKmh? `${spdKmh} km/h / ${spdKts} kts` : '—')}
         ${row('HEADING',   hdg)}

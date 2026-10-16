@@ -445,3 +445,15 @@ describe('place headlines', () => {
     expect(await fetchPlaceHeadlines('  ')).toEqual([])
   })
 })
+
+describe('httpUrl (feed links rendered as <a href>)', () => {
+  it('keeps http(s) links and drops javascript:, data: and garbage', async () => {
+    const { httpUrl } = await import('./news')
+    expect(httpUrl('https://example.org/a?b=1')).toBe('https://example.org/a?b=1')
+    expect(httpUrl('http://example.org/')).toBe('http://example.org/')
+    expect(httpUrl('javascript:alert(1)')).toBe('')
+    expect(httpUrl('data:text/html,<script>x</script>')).toBe('')
+    expect(httpUrl('not a url')).toBe('')
+    expect(httpUrl(undefined)).toBe('')
+  })
+})

@@ -3,14 +3,16 @@ import { fetchTopHeadlines } from '../services/news'
 import type { NewsArticle } from '../types'
 import CloseButton from './CloseButton'
 import { StateMediaBadge } from './StateMediaBadge'
+import { isDemoMode } from '../utils/urlState'
 
 const REFRESH_MS = 3 * 60 * 1000 // refresh headlines every 3 min
 
-export default function NewsTicker({ onClose }: { onClose: () => void }) {
+export default function NewsTicker({ onClose, demo = isDemoMode() }: { onClose: () => void; demo?: boolean }) {
   const [headlines, setHeadlines] = useState<NewsArticle[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    if (demo) return
     let mounted = true
     async function load() {
       try {
@@ -21,7 +23,16 @@ export default function NewsTicker({ onClose }: { onClose: () => void }) {
     load()
     const iv = setInterval(load, REFRESH_MS)
     return () => { mounted = false; clearInterval(iv) }
-  }, [])
+  }, [demo])
+
+  if (demo) {
+    return (
+      <div className="news-ticker" role="status" style={{ height: 28, background: 'var(--surface)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 10px', gap: 8, flexShrink: 0, fontSize: 11, color: 'var(--text3)' }}>
+        Live headlines hidden (screenshot / demo mode). Remove <code>?demo=1</code> from the address to show them.
+        <span style={{ marginLeft: 'auto' }}><CloseButton onClick={onClose} label="Close news ticker" /></span>
+      </div>
+    )
+  }
 
   if (headlines.length === 0) return null
 

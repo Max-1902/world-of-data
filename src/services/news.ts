@@ -1,6 +1,18 @@
 import type { NewsArticle } from '../types'
 import { getCountryNewsSources, RSS_FEEDS, CRISISWATCH_FEEDS } from './newsSources'
 
+/**
+ * Feed links are third-party text rendered as <a href>. React 18 does not block javascript: URLs, so only
+ * http(s) links are kept; anything else becomes '' (the headline still shows, it just doesn't link out).
+ */
+export function httpUrl(u: unknown): string {
+  try {
+    const raw = String(u ?? '').trim()
+    const x = new URL(raw)
+    return x.protocol === 'https:' || x.protocol === 'http:' ? raw : ''
+  } catch { return '' }
+}
+
 // Feed lists moved to newsSources.ts; re-exported so existing imports keep working.
 export { RSS_FEEDS, COUNTRY_NEWS_SOURCES, CRISISWATCH_FEEDS, getCountryNewsSources, type CountryNewsSource, type CountryNewsEntry } from './newsSources'
 
@@ -29,7 +41,7 @@ export async function searchNewsAPI(query: string): Promise<NewsArticle[]> {
           id: `newsapi-${i}-${Date.now()}`,
           title: a.title,
           description: a.description || '',
-          url: a.url,
+          url: httpUrl(a.url),
           source: a.source?.name ?? 'NewsAPI',
           publishedAt: a.publishedAt,
           imageUrl: a.urlToImage,
@@ -63,7 +75,7 @@ export async function searchGuardian(query: string): Promise<NewsArticle[]> {
           id: `guardian-${a.id}`,
           title: a.webTitle,
           description: a.fields?.trailText || '',
-          url: a.webUrl,
+          url: httpUrl(a.webUrl),
           source: 'The Guardian',
           publishedAt: a.webPublicationDate,
           imageUrl: a.fields?.thumbnail,
@@ -100,7 +112,7 @@ export async function searchNYT(query: string): Promise<NewsArticle[]> {
           id: `nyt-${a._id}`,
           title: a.headline?.main || '',
           description: a.abstract || '',
-          url: a.web_url,
+          url: httpUrl(a.web_url),
           source: 'New York Times',
           publishedAt: a.pub_date,
           imageUrl: a.multimedia?.[0]
@@ -190,7 +202,7 @@ async function fetchGDELTNews(query: string): Promise<NewsArticle[]> {
         id: `gdelt-${i}-${Date.now()}`,
         title: a.title,
         description: '',
-        url: a.url,
+        url: httpUrl(a.url),
         source: a.domain,
         publishedAt: gdeltDateToISO(a.seendate),
         imageUrl: a.socialimage,
@@ -253,7 +265,7 @@ export async function fetchRSSFeed(feedUrl: string, sourceName: string): Promise
           id: `rss-${sourceName}-${i}`,
           title: item.title,
           description: item.description?.replace(/<[^>]*>/g, '').slice(0, 200) || '',
-          url: item.link,
+          url: httpUrl(item.link),
           source: sourceName,
           publishedAt: item.pubDate,
           imageUrl: item.thumbnail,

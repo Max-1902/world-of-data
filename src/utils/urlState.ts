@@ -75,3 +75,12 @@ export function layersToPanelState(base: PanelState, layers: readonly (keyof Pan
 export function enabledLayers(state: PanelState): (keyof PanelState)[] {
   return (Object.keys(state) as (keyof PanelState)[]).filter(k => state[k])
 }
+
+/**
+ * Screenshot / demo mode (`?demo=1` or `?screenshot=1`): live third-party headlines are not shown, so a screenshot
+ * can't carry an unmoderated headline the owner hasn't seen. Read from the query string, not the share hash.
+ */
+export function isDemoMode(search: string = typeof location !== 'undefined' ? location.search : ''): boolean {
+  const p = new URLSearchParams(search)
+  return ['demo', 'screenshot'].some(k => p.has(k) && p.get(k) !== '0' && p.get(k) !== 'false')
+}
