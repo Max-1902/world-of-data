@@ -15,7 +15,7 @@ The Energy Inventories panel (Economy → Inventories) shows "Not measured" unti
 
 The daily recorder (`.github/workflows/research-record.yml`) currently records "ACLED_EMAIL / ACLED_PASSWORD not set" (latest: 2026-10-14). The repository has no Actions secrets, so the research series is collecting empty conflict data.
 
-- [ ] GitHub → `Max-1902/mundus-datorum` → Settings → Secrets and variables → Actions → New repository secret: `ACLED_EMAIL`, `ACLED_PASSWORD` (the same values as in your `.env`).
+- [ ] GitHub → `Max-1902/world-of-data` → Settings → Secrets and variables → Actions → New repository secret: `ACLED_EMAIL`, `ACLED_PASSWORD` (the same values as in your `.env`).
 - [ ] After the next scheduled run, check that `research/data/dashboard/<day>.json` shows `"acled": {"ok": true, …}`.
 
 ## 3. Optional
