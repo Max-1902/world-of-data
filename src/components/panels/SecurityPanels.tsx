@@ -8,7 +8,7 @@ import { NewsArticle } from '../../types'
 import { searchGDELTNews } from '../../services/news'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS, fetchSanctionsNews, type SanctionedCountry } from '../../services/sanctions'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from '../../services/military'
-import { analyzeAirspace, type NOTAMAlert, type FIRStatus } from '../../services/notam'
+import { analyzeAirspace, FIR_STATUS_LABEL, type NOTAMAlert, type FIRStatus } from '../../services/notam'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { ArticleRow } from './NewsPanels'
 
@@ -306,29 +306,33 @@ export function NuclearPanel() {
 }
 
 // ── Airspace Monitor Panel ─────────────────────────────────────────────────────
-const SEV_COL: Record<string, string> = { critical: 'var(--red)', warning: 'var(--amber)', info: 'var(--amber)' }
+const SEV_COL: Record<string, string> = { critical: 'var(--red)', warning: 'var(--amber)', info: 'var(--text2)' }
 
-const STATUS_COL: Record<string, string> = { closed: 'var(--red)', restricted: 'var(--amber)', normal: 'var(--accent)' }
+const STATUS_COL: Record<FIRStatus['status'], string> = { very_low: 'var(--amber)', low: 'var(--text2)', normal: 'var(--accent)', not_assessed: 'var(--text3)', no_data: 'var(--text3)' }
 
 export function AirspacePanel({ flights }: { flights: { latitude: number | null; longitude: number | null }[] }) {
   const [tab, setTab] = useState<'alerts'|'regions'>('alerts')
-  const { alerts, statuses } = analyzeAirspace(flights)
-  const closedCount     = statuses.filter(s => s.status === 'closed').length
-  const restrictedCount = statuses.filter(s => s.status === 'restricted').length
+  const { alerts, statuses, feedOk } = analyzeAirspace(flights)
+  const veryLow = statuses.filter(s => s.status === 'very_low').length
+  const low     = statuses.filter(s => s.status === 'low').length
 
   return (
     <>
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: '9.5px', color: 'var(--red)', fontWeight: 700, letterSpacing: '.1em' }}>
-          {closedCount > 0 ? `⚠ ${closedCount} FIR${closedCount>1?'s':''} CLOSED` : ''}
-        </span>
-        {restrictedCount > 0 && <span style={{ fontSize: '9.5px', color: 'var(--amber)', fontWeight: 700, letterSpacing: '.1em' }}>↯ {restrictedCount} RESTRICTED</span>}
+        {!feedOk
+          ? <span style={{ fontSize: '9.5px', color: 'var(--text3)', fontWeight: 700, letterSpacing: '.1em' }}>FLIGHT FEED NOT LOADED · NOT ASSESSED</span>
+          : <>
+              {veryLow > 0 && <span style={{ fontSize: '9.5px', color: 'var(--amber)', fontWeight: 700, letterSpacing: '.1em' }}>{veryLow} VERY LOW</span>}
+              {low > 0 && <span style={{ fontSize: '9.5px', color: 'var(--text2)', fontWeight: 700, letterSpacing: '.1em' }}>{low} LOW</span>}
+            </>}
         <span style={{ marginLeft: 'auto', fontSize: '9.5px', color: 'var(--text3)' }}>{new Date().toLocaleTimeString()}</span>
       </div>
+      <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>
+        OpenSky aircraft counts in rough FIR boxes vs hand-set reference counts. Not NOTAMs and not closures: low counts can mean thin receiver coverage. No alerts at local night.
+      </div>
       <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>
-        <button className={`news-tab ${tab==='alerts'?'active':''}`} onClick={() => setTab('alerts')}
-          style={tab==='alerts'&&alerts.length>0?{color:'var(--red)',borderColor:'var(--red)44'}:{}}>
-          ALERTS <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{alerts.length}</span>
+        <button className={`news-tab ${tab==='alerts'?'active':''}`} onClick={() => setTab('alerts')}>
+          LOW TRAFFIC <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{alerts.length}</span>
         </button>
         <button className={`news-tab ${tab==='regions'?'active':''}`} onClick={() => setTab('regions')}>
           ALL FIRS <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{statuses.length}</span>
@@ -336,37 +340,37 @@ export function AirspacePanel({ flights }: { flights: { latitude: number | null;
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {tab === 'alerts' && alerts.length === 0 && (
-          <div style={{ padding: '12px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// ALL MONITORED FIRS NORMAL</div>
+          <div style={{ padding: '12px 10px', fontSize: '11.5px', color: 'var(--text3)' }}>
+            {feedOk ? 'No assessed FIR is below its reference right now.' : 'Flight feed empty or partial: airspace not assessed.'}
+          </div>
         )}
         {tab === 'alerts' && alerts.map((a: NOTAMAlert) => (
           <div key={a.id} style={{ padding: '5px 8px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 5 }}>
-            <div style={{ width: 2, background: SEV_COL[a.severity], flexShrink: 0, alignSelf: 'stretch', boxShadow: `0 0 4px ${SEV_COL[a.severity]}88` }} />
+            <div style={{ width: 2, background: SEV_COL[a.severity], flexShrink: 0, alignSelf: 'stretch' }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                <span style={{ fontSize: '9.5px', color: SEV_COL[a.severity], fontWeight: 700, border: `1px solid ${SEV_COL[a.severity]}44`, padding: '0 3px', letterSpacing: '.08em' }}>{a.severity.toUpperCase()}</span>
                 <span style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text1)' }}>{a.icao}</span>
                 <span style={{ fontSize: '10px', color: 'var(--text2)' }}>|</span>
                 <span style={{ fontSize: '10px', color: 'var(--text2)' }}>{a.country}</span>
-                <span style={{ fontSize: '9.5px', color: 'var(--text2)', border: '1px solid var(--border)', padding: '0 3px', marginLeft: 'auto' }}>{a.type}</span>
+                <span style={{ fontSize: '9.5px', color: SEV_COL[a.severity], border: '1px solid var(--border)', padding: '0 3px', marginLeft: 'auto' }}>{a.type === 'VERY_LOW_TRAFFIC' ? 'VERY LOW · UNVERIFIED' : 'LOW · UNVERIFIED'}</span>
               </div>
               <div style={{ fontSize: '11px', color: 'var(--text2)', lineHeight: 1.5 }}>{a.message}</div>
               <div style={{ display: 'flex', gap: 8, marginTop: 2, fontSize: '10px', color: 'var(--text3)' }}>
                 <span>Live: <b style={{ color: 'var(--text1)' }}>{a.liveCount}</b></span>
-                <span>Baseline: <b style={{ color: 'var(--text2)' }}>~{a.baseline}</b></span>
-                <span style={{ color: SEV_COL[a.severity] }}>▼ {a.dropPct}% below normal</span>
+                <span>Hand-set reference: <b style={{ color: 'var(--text2)' }}>~{a.baseline}</b></span>
               </div>
             </div>
           </div>
         ))}
         {tab === 'regions' && statuses.map((s: FIRStatus) => (
-          <div key={s.icao} style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 5, height: 5, borderRadius: '50%', background: STATUS_COL[s.status], flexShrink: 0, boxShadow: `0 0 4px ${STATUS_COL[s.status]}66` }} />
+          <div key={s.icao} title={s.reason} style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: STATUS_COL[s.status], flexShrink: 0 }} />
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text1)', minWidth: 40 }}>{s.icao}</span>
             <span style={{ fontSize: 10.5, color: 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.country}</span>
             <span style={{ fontSize: '9.5px', color: STATUS_COL[s.status], fontWeight: 700, letterSpacing: '.06em', minWidth: 60, textAlign: 'right' }}>
-              {s.status.toUpperCase()}
+              {FIR_STATUS_LABEL[s.status].toUpperCase()}
             </span>
-            <span style={{ fontSize: '10px', color: 'var(--text3)', fontVariantNumeric: 'tabular-nums', minWidth: 24, textAlign: 'right' }}>{s.liveCount}</span>
+            <span style={{ fontSize: '10px', color: 'var(--text3)', fontVariantNumeric: 'tabular-nums', minWidth: 24, textAlign: 'right' }}>{s.status === 'no_data' ? '—' : s.liveCount}</span>
           </div>
         ))}
       </div>

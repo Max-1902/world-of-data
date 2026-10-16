@@ -1,13 +1,13 @@
 /**
- * NOTAM / Airspace Status Monitor
- * Detects regional airspace closures by comparing live OpenSky flight density
- * to per-FIR baselines. A "NOTAM-class alert" fires when traffic drops >70%
- * below the regional baseline. The boxes and baselines below are hand-set heuristic
+ * Airspace traffic monitor (not a NOTAM feed).
+ * Compares live OpenSky flight counts inside rough FIR boxes with a hand-set reference count and flags
+ * unusually low traffic. It cannot detect a closure: a low ADS-B count looks the same whether the airspace is
+ * shut, it is night, or there are few receivers. The boxes and baselines below are hand-set heuristic
  * parameters, not official FIR boundaries or measured traffic — this is an anomaly
  * signal, not a NOTAM (see DATA_PROVENANCE.md).
  *
  * Data: OpenSky flight states (already polled by useFlights hook)
- * No direct NOTAM API required — anomaly detection is more reliable in practice.
+ * No NOTAM API is used, so nothing here is an official restriction.
  */
 
 export interface FIRRegion {
@@ -18,9 +18,14 @@ export interface FIRRegion {
   maxLat:   number
   minLng:   number
   maxLng:   number
-  baseline: number   // approximate normal aircraft count
+  baseline: number   // hand-set "normal" aircraft count; not measured, not hour-of-day
   lat:      number   // centroid for map marker
   lng:      number
+  /**
+   * True only once OpenSky receiver coverage for this box has been measured (e.g. from recorded counts by hour).
+   * None has been, so no FIR can raise a CRITICAL alert.
+   */
+  coverageVerified?: boolean
 }
 
 // Major Flight Information Regions with geographic bounds and baseline traffic
@@ -65,8 +70,17 @@ export const FIR_REGIONS: FIRRegion[] = [
   { icao:'KZLA', name:'Los Angeles FIR',      country:'US',           minLat:30, maxLat:42, minLng:-125,maxLng:-113,baseline:120,lat:34.0, lng:-118.0},
 ]
 
+/**
+ * OpenSky's /states/all normally returns several thousand airborne aircraft worldwide. Fewer than this means the
+ * response was empty or partial, so a low count inside a box says nothing about that airspace. A feed-sanity
+ * gate, hand-set like the baselines, not a measured figure.
+ */
+export const MIN_GLOBAL_FLIGHTS = 1000
+/** Local solar hours (at the FIR's marker) in which no alert is raised: the references are not hour-of-day baselines. */
+export const NIGHT_HOURS: [number, number] = [0, 6]
+
 export type NOTAMSeverity = 'critical' | 'warning' | 'info'
-export type NOTAMType = 'CLOSURE' | 'RESTRICTION' | 'CONFLICT_AIRSPACE' | 'NORMAL'
+export type NOTAMType = 'VERY_LOW_TRAFFIC' | 'LOW_TRAFFIC'
 
 export interface NOTAMAlert {
   id:         string
@@ -78,21 +92,34 @@ export interface NOTAMAlert {
   message:    string
   liveCount:  number
   baseline:   number
-  dropPct:    number   // 0-100%, how much below baseline
+  dropPct:    number   // 0-100%, how much below the hand-set reference
   lat:        number
   lng:        number
   detectedAt: number   // ms timestamp
 }
 
+/**
+ * normal / low / very_low: traffic compared with the hand-set reference. not_assessed: no usable reference (0 or
+ * tiny) or local night. no_data: the flight feed was empty or partial, so nothing can be said about any FIR.
+ * There is deliberately no "closed": a low ADS-B count cannot tell a closure from missing receiver coverage.
+ */
+export type FIRTrafficStatus = 'normal' | 'low' | 'very_low' | 'not_assessed' | 'no_data'
+
 export interface FIRStatus {
   icao:      string
   region:    string
   country:   string
-  status:    'closed' | 'restricted' | 'normal'
+  status:    FIRTrafficStatus
+  /** why the status is what it is, in one line, for the UI */
+  reason:    string
   liveCount: number
   baseline:  number
   lat:       number
   lng:       number
+}
+
+export const FIR_STATUS_LABEL: Record<FIRTrafficStatus, string> = {
+  normal: 'Normal', low: 'Low traffic', very_low: 'Very low traffic', not_assessed: 'Not assessed', no_data: 'No data',
 }
 
 // Count flights inside a bounding box
@@ -107,43 +134,56 @@ function countFlightsInBbox(
   ).length
 }
 
+/** Mean solar hour at a longitude: UTC hour shifted 1 h per 15°. Good enough to tell night from day. */
+export function localSolarHour(now: number, lng: number): number {
+  const d = new Date(now)
+  const utc = d.getUTCHours() + d.getUTCMinutes() / 60
+  return (((utc + lng / 15) % 24) + 24) % 24
+}
+
 export function analyzeAirspace(
   flights: { latitude: number | null; longitude: number | null }[],
   now = Date.now(),
-): { alerts: NOTAMAlert[]; statuses: FIRStatus[] } {
+): { alerts: NOTAMAlert[]; statuses: FIRStatus[]; feedOk: boolean } {
   const alerts: NOTAMAlert[] = []
   const statuses: FIRStatus[] = []
+  const located = flights.filter(f => f.latitude != null && f.longitude != null).length
+  const feedOk = located >= MIN_GLOBAL_FLIGHTS
 
   for (const fir of FIR_REGIONS) {
     const count = countFlightsInBbox(flights, fir)
-    const drop  = fir.baseline > 0 ? Math.round((1 - count / fir.baseline) * 100) : 0
+    const base = { icao: fir.icao, region: fir.name, country: fir.country, liveCount: count, baseline: fir.baseline, lat: fir.lat, lng: fir.lng }
 
-    let status: FIRStatus['status'] = 'normal'
-    if (fir.baseline > 0) {
-      if (drop >= 85) status = 'closed'
-      else if (drop >= 50) status = 'restricted'
+    if (!feedOk) {
+      statuses.push({ ...base, status: 'no_data', reason: `flight feed empty or partial (${located.toLocaleString('en-US')} aircraft worldwide)` })
+      continue
+    }
+    if (fir.baseline < 3) {
+      statuses.push({ ...base, status: 'not_assessed', reason: fir.baseline === 0 ? 'no reference: airspace already closed to civil traffic' : 'reference too small to compare' })
+      continue
+    }
+    const hour = localSolarHour(now, fir.lng)
+    if (hour >= NIGHT_HOURS[0] && hour < NIGHT_HOURS[1]) {
+      statuses.push({ ...base, status: 'not_assessed', reason: `local night (~${String(Math.floor(hour)).padStart(2, '0')}:00); the reference is not an hour-of-day baseline` })
+      continue
     }
 
-    statuses.push({ icao: fir.icao, region: fir.name, country: fir.country, status, liveCount: count, baseline: fir.baseline, lat: fir.lat, lng: fir.lng })
+    const drop = Math.round((1 - count / fir.baseline) * 100)
+    const status: FIRTrafficStatus = drop >= 85 ? 'very_low' : drop >= 50 ? 'low' : 'normal'
+    const reason = `${count} aircraft vs a hand-set reference of ~${fir.baseline}`
+    statuses.push({ ...base, status, reason })
+    if (status === 'normal') continue
 
-    // Only alert when deviation is meaningful
-    if (status === 'normal' || fir.baseline < 3) continue
-
-    const severity: NOTAMSeverity = drop >= 85 ? 'critical' : 'warning'
-    const type: NOTAMType = drop >= 85 ? 'CLOSURE' : 'RESTRICTION'
-    const countTxt = count === 0 ? '0 aircraft detected' : `${count} aircraft (normal: ~${fir.baseline})`
-    const message = drop >= 85
-      ? `${fir.name} airspace effectively closed — ${countTxt}`
-      : `${fir.name} airspace restricted — ${countTxt}`
-
+    // CRITICAL needs measured receiver coverage for this FIR; none has it yet, so no alert can be critical.
+    const severity: NOTAMSeverity = fir.coverageVerified && status === 'very_low' ? 'critical' : status === 'very_low' ? 'warning' : 'info'
     alerts.push({
       id:         `${fir.icao}-${now}`,
       icao:       fir.icao,
       region:     fir.name,
       country:    fir.country,
-      type,
+      type:       status === 'very_low' ? 'VERY_LOW_TRAFFIC' : 'LOW_TRAFFIC',
       severity,
-      message,
+      message:    `${fir.name}: ${count} aircraft seen by OpenSky, ${drop}% below a hand-set reference of ~${fir.baseline}. Unverified: thin receiver coverage, time of day or a real restriction can each cause this.`,
       liveCount:  count,
       baseline:   fir.baseline,
       dropPct:    drop,
@@ -153,11 +193,8 @@ export function analyzeAirspace(
     })
   }
 
-  // Sort: critical first, then by drop %
-  alerts.sort((a, b) => {
-    if (a.severity !== b.severity) return a.severity === 'critical' ? -1 : 1
-    return b.dropPct - a.dropPct
-  })
+  const SEV_RANK: Record<NOTAMSeverity, number> = { critical: 0, warning: 1, info: 2 }
+  alerts.sort((a, b) => SEV_RANK[a.severity] - SEV_RANK[b.severity] || b.dropPct - a.dropPct)
 
-  return { alerts, statuses }
+  return { alerts, statuses, feedOk }
 }
