@@ -23,6 +23,7 @@ import ObserveTray  from './components/PanelDock/ObserveTray'
 import CommandPalette from './components/CommandPalette'
 import NewsTicker   from './components/NewsTicker'
 import OutlookCard from './components/OutlookCard'
+import { AnalystWindowProvider } from './components/panels/aiAnalyst/AnalystWindow'
 import { triggerGlobalReload } from './utils/reloadBus'
 import { clearNewsCaches } from './services/news'
 import { summarizeKeyEvents } from './utils/keyEvents'
@@ -266,6 +267,8 @@ export default function App() {
 
   return (
     <div className="dashboard">
+      {/* one shared Analyst: docked in the right panel, or popped out (see AnalystWindow) */}
+      <AnalystWindowProvider panelProps={cornerProps}>
       <TopBar
         viewMode={viewMode}
         onViewMode={setViewMode}
@@ -414,6 +417,7 @@ export default function App() {
           focusPanel={focusPanel}
         />
       </div>
+      </AnalystWindowProvider>
     </div>
   )
 }
