@@ -15,7 +15,9 @@
     "test": "vitest run",
     "test:visual": "playwright test",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "research:coverage": "tsx scripts/research/coverage.ts",
+    "research:grade": "tsx scripts/research/grade.ts"
   },
   "dependencies": {
     "date-fns": "^4.1.0",

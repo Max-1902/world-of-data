@@ -14,6 +14,8 @@
  * https://data.worldbank.org/topic/infrastructure
  */
 
+import { isWbEconomy } from './economies'
+
 const WB_BASE = 'https://api.worldbank.org/v2'
 
 const INDICATORS = {
@@ -64,14 +66,6 @@ let cachePromise: Promise<CountryInfraEntry[]> | null = null
 let cachedAt = 0
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
-// World Bank aggregate/region codes to exclude — only real countries wanted
-const NON_COUNTRY_ISO3 = new Set([
-  'WLD','ARB','CSS','CEB','EAP','EAR','EAS','ECA','ECS','EMU','EUU','FCS','FCV',
-  'HIC','HPC','IBD','IBT','IDA','IDB','IDX','INX','LAC','LCN','LDC','LIC',
-  'LMC','LMY','LTE','MEA','MIC','MNA','NAC','OED','OSS','PRE','PSS','PST',
-  'SAS','SSA','SSF','SST','TEA','TEC','TLA','TMN','TSA','TSS','UMC','AFE','AFW',
-])
-
 async function fetchIndicatorAllCountries(id: InfraIndicatorId): Promise<Map<string, { value: number; year: string; iso3: string; country: string }>> {
   const out = new Map<string, { value: number; year: string; iso3: string; country: string }>()
   const url = `${WB_BASE}/country/all/indicator/${id}?format=json&date=2010:2024&per_page=20000&MRV=1`
@@ -81,7 +75,7 @@ async function fetchIndicatorAllCountries(id: InfraIndicatorId): Promise<Map<str
   const data = Array.isArray(json) && json.length === 2 ? json[1] : null
   if (!data || !Array.isArray(data)) throw new Error('Unexpected World Bank response shape')
   for (const d of data) {
-    if (d.value == null || !d.countryiso3code || NON_COUNTRY_ISO3.has(d.countryiso3code)) continue
+    if (d.value == null || !isWbEconomy(d.countryiso3code)) continue
     const iso2 = d.country?.id as string
     if (!iso2 || out.has(iso2)) continue
     out.set(iso2, { value: d.value as number, year: d.date as string, iso3: d.countryiso3code, country: d.country?.value as string })

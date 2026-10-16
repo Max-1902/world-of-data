@@ -1,0 +1,355 @@
+{
+  "imf": "research/data/imf-weo/mfpd-oct2025-all.json",
+  "imfSource": "IMF WEO Macroeconomic Forecasts Panel Dataset (MFPD), Mendeley Data, doi:10.17632/8dt6xpp6x4.9",
+  "imfSha256": "5a666d397e4a941451f613a243009053dedda57eeb59cf213295c01397d59580",
+  "gdp": "research/data/worldbank-gdp/2026-10-16-all.json",
+  "cpi": "research/data/worldbank-cpi/2026-10-16-all.json",
+  "design": {
+    "P": 2,
+    "MIN_TRAIN": 30,
+    "SPLIT": 2005,
+    "horizon": "October W → W+1"
+  },
+  "results": [
+    {
+      "variable": "gdp",
+      "outcomes_worldbank": [
+        {
+          "method": "IMF October WEO",
+          "early": {
+            "mae": 3.108,
+            "median": 1.735,
+            "n": 1609
+          },
+          "late": {
+            "mae": 2.821,
+            "median": 1.565,
+            "n": 3086
+          },
+          "all": {
+            "mae": 2.92,
+            "median": 1.626,
+            "n": 4695
+          }
+        },
+        {
+          "method": "AR(2) fair (data to W−1)",
+          "early": {
+            "mae": 3.625,
+            "median": 2.092,
+            "n": 1609
+          },
+          "late": {
+            "mae": 3.346,
+            "median": 2.021,
+            "n": 3086
+          },
+          "all": {
+            "mae": 3.441,
+            "median": 2.041,
+            "n": 4695
+          }
+        },
+        {
+          "method": "AR(2) oracle (data to W)",
+          "early": {
+            "mae": 3.286,
+            "median": 1.89,
+            "n": 1609
+          },
+          "late": {
+            "mae": 3.226,
+            "median": 1.915,
+            "n": 3086
+          },
+          "all": {
+            "mae": 3.246,
+            "median": 1.904,
+            "n": 4695
+          }
+        },
+        {
+          "method": "naive (year W repeated)",
+          "early": {
+            "mae": 3.57,
+            "median": 1.92,
+            "n": 1609
+          },
+          "late": {
+            "mae": 3.574,
+            "median": 1.848,
+            "n": 3086
+          },
+          "all": {
+            "mae": 3.573,
+            "median": 1.881,
+            "n": 4695
+          }
+        }
+      ],
+      "outcomes_imf_realised": [
+        {
+          "method": "IMF October WEO",
+          "early": {
+            "mae": 2.883,
+            "median": 1.748,
+            "n": 1579
+          },
+          "late": {
+            "mae": 2.921,
+            "median": 1.646,
+            "n": 2724
+          },
+          "all": {
+            "mae": 2.907,
+            "median": 1.698,
+            "n": 4303
+          }
+        },
+        {
+          "method": "AR(2) fair (data to W−1)",
+          "early": {
+            "mae": 3.374,
+            "median": 2.094,
+            "n": 1579
+          },
+          "late": {
+            "mae": 3.453,
+            "median": 2.121,
+            "n": 2724
+          },
+          "all": {
+            "mae": 3.424,
+            "median": 2.115,
+            "n": 4303
+          }
+        },
+        {
+          "method": "AR(2) oracle (data to W)",
+          "early": {
+            "mae": 3.1,
+            "median": 1.887,
+            "n": 1579
+          },
+          "late": {
+            "mae": 3.354,
+            "median": 2.035,
+            "n": 2724
+          },
+          "all": {
+            "mae": 3.261,
+            "median": 1.991,
+            "n": 4303
+          }
+        },
+        {
+          "method": "naive (year W repeated)",
+          "early": {
+            "mae": 3.453,
+            "median": 1.92,
+            "n": 1579
+          },
+          "late": {
+            "mae": 3.761,
+            "median": 2.049,
+            "n": 2724
+          },
+          "all": {
+            "mae": 3.648,
+            "median": 1.998,
+            "n": 4303
+          }
+        }
+      ],
+      "countries": 185,
+      "imfBeatsArFair": 142,
+      "imfBeatsArOracle": 136,
+      "imfBeatsNaive": 152,
+      "arFairBeatsNaive": 116,
+      "dmImfVsArFair": {
+        "countries": 166,
+        "imfSigBetter": 39,
+        "imfSigWorse": 2,
+        "bhImfBetter": 20,
+        "bhImfWorse": 0
+      },
+      "dmImfVsNaive": {
+        "countries": 166,
+        "imfSigBetter": 22,
+        "imfSigWorse": 3,
+        "bhImfBetter": 0,
+        "bhImfWorse": 0
+      }
+    },
+    {
+      "variable": "cpi",
+      "outcomes_worldbank": [
+        {
+          "method": "IMF October WEO",
+          "early": {
+            "mae": 6.392,
+            "median": 1.331,
+            "n": 1179
+          },
+          "late": {
+            "mae": 2.489,
+            "median": 1.286,
+            "n": 2261
+          },
+          "all": {
+            "mae": 3.826,
+            "median": 1.296,
+            "n": 3440
+          }
+        },
+        {
+          "method": "AR(2) fair (data to W−1)",
+          "early": {
+            "mae": 491.018,
+            "median": 3.285,
+            "n": 1179
+          },
+          "late": {
+            "mae": 15.808,
+            "median": 2.931,
+            "n": 2261
+          },
+          "all": {
+            "mae": 178.678,
+            "median": 3.038,
+            "n": 3440
+          }
+        },
+        {
+          "method": "AR(2) oracle (data to W)",
+          "early": {
+            "mae": 199.508,
+            "median": 2.168,
+            "n": 1179
+          },
+          "late": {
+            "mae": 12.171,
+            "median": 2.134,
+            "n": 2261
+          },
+          "all": {
+            "mae": 76.377,
+            "median": 2.15,
+            "n": 3440
+          }
+        },
+        {
+          "method": "naive (year W repeated)",
+          "early": {
+            "mae": 31.215,
+            "median": 1.498,
+            "n": 1179
+          },
+          "late": {
+            "mae": 2.778,
+            "median": 1.393,
+            "n": 2261
+          },
+          "all": {
+            "mae": 12.524,
+            "median": 1.413,
+            "n": 3440
+          }
+        }
+      ],
+      "outcomes_imf_realised": [
+        {
+          "method": "IMF October WEO",
+          "early": {
+            "mae": 6.171,
+            "median": 1.304,
+            "n": 1165
+          },
+          "late": {
+            "mae": 2.494,
+            "median": 1.3,
+            "n": 1982
+          },
+          "all": {
+            "mae": 3.855,
+            "median": 1.3,
+            "n": 3147
+          }
+        },
+        {
+          "method": "AR(2) fair (data to W−1)",
+          "early": {
+            "mae": 496.561,
+            "median": 3.212,
+            "n": 1165
+          },
+          "late": {
+            "mae": 16.139,
+            "median": 2.812,
+            "n": 1982
+          },
+          "all": {
+            "mae": 193.988,
+            "median": 2.948,
+            "n": 3147
+          }
+        },
+        {
+          "method": "AR(2) oracle (data to W)",
+          "early": {
+            "mae": 201.463,
+            "median": 2.11,
+            "n": 1165
+          },
+          "late": {
+            "mae": 12.548,
+            "median": 2.051,
+            "n": 1982
+          },
+          "all": {
+            "mae": 82.483,
+            "median": 2.08,
+            "n": 3147
+          }
+        },
+        {
+          "method": "naive (year W repeated)",
+          "early": {
+            "mae": 31.367,
+            "median": 1.465,
+            "n": 1165
+          },
+          "late": {
+            "mae": 2.677,
+            "median": 1.365,
+            "n": 1982
+          },
+          "all": {
+            "mae": 13.298,
+            "median": 1.4,
+            "n": 3147
+          }
+        }
+      ],
+      "countries": 146,
+      "imfBeatsArFair": 127,
+      "imfBeatsArOracle": 112,
+      "imfBeatsNaive": 95,
+      "arFairBeatsNaive": 16,
+      "dmImfVsArFair": {
+        "countries": 125,
+        "imfSigBetter": 72,
+        "imfSigWorse": 0,
+        "bhImfBetter": 68,
+        "bhImfWorse": 0
+      },
+      "dmImfVsNaive": {
+        "countries": 125,
+        "imfSigBetter": 9,
+        "imfSigWorse": 2,
+        "bhImfBetter": 0,
+        "bhImfWorse": 0
+      }
+    }
+  ]
+}

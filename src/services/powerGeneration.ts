@@ -8,6 +8,7 @@
  *
  * https://ourworldindata.org/grapher/electricity-production-by-source
  */
+import { isOwidCountry } from './economies'
 
 const URL = 'https://ourworldindata.org/grapher/electricity-production-by-source.csv?v=1&csvType=full&useColumnShortNames=true'
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
@@ -76,7 +77,7 @@ export function parsePowerCsv(text: string): PowerGenerationEntry[] {
     const [entity, code] = row
     const year = Number(row[2])
     // Ember's regional/income aggregates have no ISO code; "World" has OWID_WRL.
-    if (!entity || !code || code.startsWith('OWID_') || !Number.isFinite(year)) continue
+    if (!entity || !isOwidCountry(code) || !Number.isFinite(year)) continue
 
     const bySource = emptySources()
     let saw = false

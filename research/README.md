@@ -94,3 +94,13 @@ npx tsx scripts/research/imfCompare.ts --imf research/data/imf-weo/mfpd-oct2025.
 ```
 
 Compares the October WEO's next-year forecast with the AR, run on less information than the IMF had (fair) and on more (oracle), plus the naive forecast, on the same folds. Outcomes are the World Bank series and, as a robustness check, the IMF's realised values. The IMF data is a CC BY 4.0 republication of the IMF Historical WEO Forecasts Database (MFPD, doi:10.17632/8dt6xpp6x4.9), subset by `scripts/research/mfpd_extract.py`, which verifies the source file's sha256.
+
+## 8. Coverage check: which rows are countries
+
+```bash
+npm run research:coverage      # World Bank metadata vs src/data/wb-economies.json, plus every OWID chart through the filter
+npm run research:grade -- research/eval/results/<stamp>_<model>.jsonl   # pass/fail on the v2 grounding questions
+```
+
+`services/economies.ts` decides what counts as a country for every source. The unit tests feed all aggregate codes through every parser; this script checks the snapshot against the live API and writes `coverage/<day>.json`. All-country runs of sections 6 and 7: `--countries all` and the `-all` inputs (see FINDINGS).
+

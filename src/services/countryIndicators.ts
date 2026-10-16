@@ -10,6 +10,7 @@
  */
 import { fetchOwidChart, type OwidChartData } from './owid'
 import { fetchPowerGenerationRanking, formatTwh, type PowerGenerationEntry } from './powerGeneration'
+import { isWbEconomy, isOwidCountry } from './economies'
 
 const WB_BASE = 'https://api.worldbank.org/v2'
 
@@ -151,13 +152,6 @@ export interface CountryValue {
   year: string
 }
 
-// World Bank aggregate/region codes — only real countries wanted
-const NON_COUNTRY_ISO3 = new Set([
-  'WLD','ARB','CSS','CEB','EAP','EAR','EAS','ECA','ECS','EMU','EUU','FCS','FCV',
-  'HIC','HPC','IBD','IBT','IDA','IDB','IDX','INX','LAC','LCN','LDC','LIC',
-  'LMC','LMY','LTE','MEA','MIC','MNA','NAC','OED','OSS','PRE','PSS','PST',
-  'SAS','SSA','SSF','SST','TEA','TEC','TLA','TMN','TSA','TSS','UMC','AFE','AFW',
-])
 
 export const MIN_YEAR = 2010
 
@@ -173,7 +167,7 @@ export function parseWorldBank(json: unknown, minYear = MIN_YEAR): CountryValue[
   for (const d of data as { value?: unknown; date?: unknown; countryiso3code?: unknown; country?: { id?: unknown; value?: unknown } }[]) {
     const iso3 = d?.countryiso3code
     if (typeof d?.value !== 'number' || !Number.isFinite(d.value)) continue
-    if (typeof iso3 !== 'string' || !iso3 || NON_COUNTRY_ISO3.has(iso3)) continue
+    if (!isWbEconomy(iso3)) continue
     if (Number(d.date) < minYear) continue
     if (seen.has(iso3)) continue
     seen.add(iso3)
@@ -185,7 +179,8 @@ export function parseWorldBank(json: unknown, minYear = MIN_YEAR): CountryValue[
 /** Our World in Data chart → country rows. OWID's regional/income aggregates carry an `OWID_` code or none; pre-2010 values are dropped. */
 export function owidToRows(data: OwidChartData, minYear = MIN_YEAR): CountryValue[] {
   return data.values
-    .filter(v => /^[A-Z]{3}$/.test(v.code) && v.year >= minYear && Number.isFinite(v.value))
+    // Kosovo (OWID_KOS) has no ISO3 to join the map boundaries on, so it is left out here
+    .filter(v => /^[A-Z]{3}$/.test(v.code) && isOwidCountry(v.code) && v.year >= minYear && Number.isFinite(v.value))
     .map(v => ({ iso3: v.code, name: cleanCountryName(v.entity), value: v.value, year: String(v.year) }))
 }
 

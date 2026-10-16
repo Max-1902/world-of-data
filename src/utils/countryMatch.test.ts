@@ -24,6 +24,7 @@ const DISTINCT: [string, string][] = [
   ['Guinea', 'Papua New Guinea'],
   ['Republic of the Congo', 'Democratic Republic of the Congo'],
   ['Congo (Brazzaville)', 'Congo (Kinshasa)'],
+  ['Congo, Republic of', 'Congo, Democratic Republic of the'],
   ['Sudan', 'South Sudan'],
   ['Dominica', 'Dominican Republic'],
   ['UK', 'Ukraine'],
@@ -83,6 +84,11 @@ describe('resolveISO2', () => {
   it('still finds a country named as whole words inside a longer label', () => {
     expect(resolveISO2('Kyiv, Ukraine')).toBe('UA')
     expect(resolveISO2('Republic of the Congo (Brazzaville)')).toBe('CG')
+  })
+  it('reads the inverted IMF/ISO spellings of the two Congos (regression: "Congo, Republic of" → DRC, found mapping IMF WEO names 2026-10-16)', () => {
+    expect(resolveISO2('Congo, Republic of')).toBe('CG')
+    expect(resolveISO2('Congo, Democratic Republic of the')).toBe('CD')
+    expect(resolveISO2('Congo, The Democratic Republic of the')).toBe('CD')
   })
 })
 

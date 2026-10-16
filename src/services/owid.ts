@@ -11,6 +11,7 @@
  *
  * https://ourworldindata.org/grapher/{slug}
  */
+import { isOwidCountry } from './economies'
 
 const OWID_BASE = 'https://ourworldindata.org/grapher'
 
@@ -65,14 +66,6 @@ const cache = new Map<string, OwidChartData>()
 const inflight = new Map<string, Promise<OwidChartData | null>>()
 const CACHE_TTL = 60 * 60 * 1000 // 1 hour
 
-// Non-country aggregate entities OWID includes alongside real countries
-const NON_COUNTRY_ENTITIES = new Set([
-  'World', 'Asia', 'Europe', 'Africa', 'Oceania', 'North America', 'South America',
-  'Asia (UN)', 'Europe (UN)', 'Oceania (UN)', 'Africa (UN)', 'North America (UN)',
-  'Latin America and the Caribbean (UN)', 'European Union (27)', 'High-income countries',
-  'Low-income countries', 'Lower-middle-income countries', 'Upper-middle-income countries',
-  'OECD countries', 'World Bank high income', 'World Bank low income',
-])
 
 function parseCsv(text: string): OwidCountryValue[] {
   const lines = text.split('\n').filter(Boolean)
@@ -89,7 +82,8 @@ function parseCsv(text: string): OwidCountryValue[] {
     const code = row[1]
     const year = Number(row[2])
     if (!entity || !code || !Number.isFinite(year)) continue
-    if (NON_COUNTRY_ENTITIES.has(entity)) continue
+    // regions, income groups and former states (World, WB_SSA, OWID_USS): see economies.ts
+    if (!isOwidCountry(code)) continue
 
     let sum = 0
     let sawValue = false

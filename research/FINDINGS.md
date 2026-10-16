@@ -139,6 +139,46 @@ The analyst can now request data (`services/aiTools.ts`, loop in `services/aiAge
 - Whether models follow the protocol. Small free models may ignore `[DATA:…]`, or mix requests and prose in one turn. The default free model's native tool-call markup is mapped onto the tools when it names one, but it hasn't been re-tested end to end.
 - Number fidelity of tool runs. `scripts/research/eval.ts` takes its context from the system message only, and tool results arrive as later user messages, so a re-score would wrongly count tool numbers as unsupported. The exported run log keeps every round in `messages` and lists the queries in `toolCalls`, so the scorer can be extended.
 
+## All-country backtest, aggregate filter, overlays, 2026-10-16
+
+### Forecasts on every World Bank economy
+
+Same design as the 52-country run (rolling origin from 1990, ≥ 30 years of history, 15 for unemployment), now on all 217 World Bank economies: `npm run research:forecast -- --input research/data/worldbank-<x>/2026-10-16-all.json`. IMF: `imfCompare.ts --imf research/data/imf-weo/mfpd-oct2025-all.json` (195 economies; the IMF-code → ISO2 table is `imf-weo/imf-codes.json`, built with `resolveISO2` and checked by hand). The modified scripts reproduce the 2026-10-14 52-country outputs exactly. Outputs: `backtest/forecast_{gdp,cpi,unemployment}_all_2026-10-16.json`, `backtest/imf_compare_all_2026-10-16.json`.
+
+Shipped AR(2), one year ahead unless noted. DM = Diebold–Mariano (HLN) per country against naive; BH = Benjamini–Hochberg, q = 0.05, across countries. A DM test needs ≥ 5 folds.
+
+| target | economies scored | AR beats naive (MAE) | DM 5%: AR better / worse | after BH: better / worse | pooled MAE AR / naive (pp) | median AE AR / naive, 2005+ | IMF Oct WEO vs AR fair vs naive, MAE (median) | IMF beats AR fair / naive (countries) | DM after BH: IMF better than AR fair / than naive |
+|---|---|---|---|---|---|---|---|---|---|
+| GDP growth | 193 | **140 / 193** | 17 / 6 of 192 | **0** / 2 | 3.38 / 3.71 | 1.97 / **1.88** | **2.92** (1.63) vs 3.44 (2.04) vs 3.57 (1.88) | 142 / 152 of 185 | 20 / 0 of 166 |
+| GDP growth, 3 years | 170 | 149 / 170 | 36 / 3 | 3 / 2 | 2005+: 3.49 / 4.41 | 2.12 / 2.68 | — | — | — |
+| CPI inflation | 150 | **46 / 150** | 0 / 35 of 129 | 0 / **30** | 84.4 / 19.3 | 2.15 / **1.40** | **3.83** (1.30) vs 178.7 (3.04) vs 12.5 (1.41) | 127 / 95 of 146 | 68 / 0 of 125 |
+| unemployment | 187 | **43 / 187** | 2 / 22 | 0 / 3 | 0.69 / 0.60 | 0.37 / **0.31** | no IMF series | — | — |
+| unemployment, 3 years | 186 | 44 / 186 | 4 / 23 | 0 / 9 | 2005+: 1.94 / 1.24 | 1.00 / 0.74 | — | — | — |
+
+Reading:
+- **GDP:** the AR has the lower mean error in 140 of 193 economies, but **no country is significantly better than naive after the multiple-testing correction**, and after 2005 its *median* error is higher than naive's. Its mean-error advantage comes from avoiding naive's large misses in crisis years. The 165 economies outside the original 52, never used for any earlier decision, give the same picture (97 of 140 beat naive; 0 significant after BH). The IMF is better than both on every measure; it is significantly better than the AR in 20 economies after BH, and not significantly better than naive in any.
+- **Inflation:** the AR loses to naive in 104 of 150 economies, significantly in 30 after BH, and never wins significantly. The pooled mean is dominated by hyperinflation histories, so use the medians. **On current data the shipped model forecasts Peru from 1.5 % (2025) to 215 % (2028), Brazil from 5.0 % to 218 % and Croatia from 3.7 % to 115 %**. These fits are stationary, so the panel's instability flag does not fire; the level they converge to is set by the 1980s–90s. Croatia was already in the 2026-10-14 output and was not written up. The panel does say the model loses to naive (with p) and names the long-run pull, but it still draws the line. Not changed here: a guard (e.g. no line when the long-run level lies outside the range of the last 20 years) would be a post-hoc rule and needs a pre-registered test first.
+- **Unemployment:** the AR loses to naive in 144 of 187 economies; 291 of 3,723 full-history fits were non-stationary.
+- Interval coverage at nominal 95 %, 2005+: GDP 92.3 % (1 y), unemployment 84.6 % (1 y) and 75.9 % (3 y).
+
+### Aggregates shown as countries: systemic check and fix
+
+The FCV bug was fixed on 2026-10-16 by adding one code to three hand-copied lists. A check of every country-producing parser against the World Bank's own metadata (`region: Aggregates`) found:
+
+1. **The lists missed 30 of the World Bank's 79 aggregate codes** (AFR, NAF, MDE, SXZ, all IBRD-only/IDA-eligible/IFC regional groups…). None appeared in the three indicators checked that day, so this was latent, but the next renamed code would have leaked as FCV did.
+2. **A live leak in the Rankings panel:** `owid.ts` filtered aggregates by a list of names, so OWID's World Bank regions (`WB_SSA`, `WB_EAP`, … seven in all) were ranked as countries on R&D spending, patents and electricity access. Former states (USSR, Yugoslavia, East Germany) could rank on their last year.
+3. **"Congo, Republic of" resolved to the DR Congo** (`resolveISO2`), found while mapping IMF names. Inverted IMF/ISO spellings added, with a regression test.
+
+Fix: `services/economies.ts` is the single filter. World Bank rows must be one of the 217 economies in `src/data/wb-economies.json` (a snapshot of the API metadata). This is an allowlist, so an unknown code is dropped, not shown. OWID/Ember rows must carry an ISO3 code that is not a World Bank aggregate, or be Kosovo. `services/economies.test.ts` feeds every aggregate code through every parser (Country Analytics, rankings, force size, infrastructure access, OWID, Ember). `tests/policy.test.ts` fails if a service keeps its own aggregate list or fetches `country/all` without the filter. `npm run research:coverage` re-fetches the metadata and reports drift (none on 2026-10-16). It also lists what OWID lets through that is not a World Bank economy: territories, Taiwan, Western Sahara, plus Antarctica and the Netherlands Antilles, which are still open. The cost of the allowlist is that an economy the World Bank adds later is missing until the snapshot is refreshed.
+
+### Overlays that carry no analysis
+
+Checked by import: for six overlays, nothing on the dashboard computes from their data. No brief, trend, ranking, hex, drawer lookup or analyst tool reads it. These are VESSELS, CAMERAS, SUPPLY CHAIN, PIPELINES, DATA CENTERS and SHIPPING (a 2004–05 density raster). They now sit in a last, collapsed "REFERENCE ONLY" section of the overlay menu, with that reason stated, and sort last in Settings and the command palette. Nothing was deleted. The NEWS layer was described as "GDELT article markers"; it pins key headlines from every source.
+
+### Analyst eval: built, run not finished
+
+Built: `--needs any` in `eval.ts` (the 23 v2 questions that make sense when ACLED and flights are NOT MEASURED, as in every recorded context so far), a pass/fail grader with one rule per expectation (`src/research/grounding.ts`, tested) and `npm run research:grade -- <results.jsonl>`. A run of 23 questions × 2 repeats on the 2026-10-16 context with `nemotron-3-super-120b:free` and the default `lfm-2.5-2.6b:free` ($0) was started and had not finished when this was written. **No eval numbers are reported here.** The grader is pattern-based, so its verdicts need a manual pass before they count as results. The 11 `needs: conflict` questions still cannot run until the recorder has ACLED data.
+
 ## Not done
 
 - **Trend-flag backtest:** the code is built and tested (it reproduces the dashboard's flag exactly), but it hasn't run on real data. The ACLED account returned `flood_user_blocked` (locked after failed logins) and was left alone so the lock wouldn't be extended. Run `npm run research:backtest -- --fetch-days 180` once access is back.
