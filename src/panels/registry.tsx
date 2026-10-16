@@ -275,7 +275,7 @@ export const GROUP_SECTIONS: Record<PanelGroup, PanelSection[]> = {
     { id: 'profile', title: 'One country in depth', desc: 'A single country\'s full World Bank record by category, ECB/Eurostat data for Europe, and an analysis of its own history.' },
   ],
   security: [
-    { id: 'live', title: 'Live alerts', desc: 'Airspace status and NOTAM alerts, updated continuously.' },
+    { id: 'live', title: 'Live alerts', desc: 'Low air traffic against hand-set references, updated continuously. Not NOTAMs.' },
     { id: 'pressure', title: 'Sanctions & illicit trade', desc: 'Economic pressure and criminal flows: sanctions registries and narcotics trafficking.' },
     { id: 'military', title: 'Military posture', desc: 'How large each armed force is, and where its installations are.' },
     { id: 'nuclear', title: 'Nuclear', desc: 'Reactors and weapons storage sites, worldwide and by country.' },

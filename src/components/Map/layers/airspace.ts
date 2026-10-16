@@ -5,7 +5,7 @@ import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 
 export function addAirspaceLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
-  // ── Airspace closure overlay ──────────────────────────────────────────
+  // ── Airspace low-traffic overlay (heuristic, not closures) ───────────
   // FIR bounding boxes rendered as filled polygons; updated reactively
   const firFeatures: GeoJSON.Feature[] = FIR_REGIONS.map(fir => ({
     type: 'Feature',
@@ -25,13 +25,13 @@ export function addAirspaceLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     type: 'geojson',
     data: { type: 'FeatureCollection', features: firFeatures },
   })
-  // Closed = dense red diagonal stripes via fill + line pattern
   map.addLayer({
     id: 'airspace-fill', type: 'fill', source: 'airspace-fir',
     paint: {
+      // very low / low traffic vs a hand-set reference: amber and grey, not "closure" red (see services/notam.ts)
       'fill-color': ['match', ['get', 'status'],
-        'closed',     '#ff1a3e',
-        'restricted', '#ff8800',
+        'very_low', '#ff8800',
+        'low',      '#9ca3af',
         'transparent',
       ],
       'fill-opacity': 0.12,
@@ -42,21 +42,20 @@ export function addAirspaceLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     id: 'airspace-lines', type: 'line', source: 'airspace-fir',
     paint: {
       'line-color': ['match', ['get', 'status'],
-        'closed',     '#ff1a3e',
-        'restricted', '#ff8800',
+        'very_low', '#ff8800',
+        'low',      '#9ca3af',
         'rgba(0,255,136,0.13)',
       ],
-      'line-width': ['match', ['get', 'status'], 'closed', 1.5, 'restricted', 1, 0.4],
-      'line-dasharray': ['match', ['get', 'status'], 'normal', ['literal', [2, 4]], ['literal', [1, 0]]],
-      'line-opacity': ['match', ['get', 'status'], 'normal', 0.2, 0.75],
+      'line-width': ['match', ['get', 'status'], 'very_low', 1.5, 'low', 1, 0.4],
+      'line-dasharray': ['match', ['get', 'status'], 'very_low', ['literal', [1, 0]], 'low', ['literal', [1, 0]], ['literal', [2, 4]]],
+      'line-opacity': ['match', ['get', 'status'], 'very_low', 0.75, 'low', 0.75, 0.2],
     },
     layout: { visibility: 'none' },
   })
 }
 
-/** Airspace closure overlay */
+/** Airspace low-traffic overlay: OpenSky counts vs hand-set references (services/notam.ts) */
 export function useAirspaceData({ mapRef, layersReadyRef }: MapHandle, { flights, showAirspace }: Pick<MapViewProps, 'flights' | 'showAirspace'>) {
-  // ── Airspace closure overlay ──────────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !layersReadyRef.current) return

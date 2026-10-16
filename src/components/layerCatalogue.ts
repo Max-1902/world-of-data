@@ -13,7 +13,7 @@ export const LAYER_IDS: { id: keyof PanelState; label: string; desc: string }[] 
   { id: 'sanctions', label: 'SANCTIONS', desc: 'Sanctioned countries' },
   { id: 'cameras', label: 'CAMERAS', desc: 'Live webcam feeds' },
   { id: 'infrastructure', label: 'INFRA', desc: 'Energy infrastructure' },
-  { id: 'airspace', label: 'AIRSPACE', desc: 'FIR/NOTAM regions' },
+  { id: 'airspace', label: 'AIRSPACE', desc: 'Low-traffic heuristic over FIR boxes (not NOTAMs)' },
   { id: 'humanitarian', label: 'HUMANITARIAN', desc: 'UNHCR displacement data' },
   { id: 'vessels', label: 'VESSELS', desc: 'AIS ship tracking' },
   { id: 'oil', label: 'OIL', desc: 'Oil reserves and production' },
