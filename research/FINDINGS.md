@@ -175,9 +175,32 @@ Fix: `services/economies.ts` is the single filter. World Bank rows must be one o
 
 Checked by import: for six overlays, nothing on the dashboard computes from their data. No brief, trend, ranking, hex, drawer lookup or analyst tool reads it. These are VESSELS, CAMERAS, SUPPLY CHAIN, PIPELINES, DATA CENTERS and SHIPPING (a 2004–05 density raster). They now sit in a last, collapsed "REFERENCE ONLY" section of the overlay menu, with that reason stated, and sort last in Settings and the command palette. Nothing was deleted. The NEWS layer was described as "GDELT article markers"; it pins key headlines from every source.
 
-### Analyst eval: built, run not finished
+### Analyst eval: 23 grounding questions, two free models
 
-Built: `--needs any` in `eval.ts` (the 23 v2 questions that make sense when ACLED and flights are NOT MEASURED, as in every recorded context so far), a pass/fail grader with one rule per expectation (`src/research/grounding.ts`, tested) and `npm run research:grade -- <results.jsonl>`. A run of 23 questions × 2 repeats on the 2026-10-16 context with `nemotron-3-super-120b:free` and the default `lfm-2.5-2.6b:free` ($0) was started and had not finished when this was written. **No eval numbers are reported here.** The grader is pattern-based, so its verdicts need a manual pass before they count as results. The 11 `needs: conflict` questions still cannot run until the recorder has ACLED data.
+Run: `eval.ts --contexts research/data/dashboard/2026-10-16.json --question-set v2 --needs any --repeats 2` with `nemotron-3-super-120b:free` and the default `lfm-2.5-2.6b:free`. That is 92 calls at $0, and no call failed. The context has ACLED and flights NOT MEASURED. Graded with `npm run research:grade` (offline): one pattern rule per expectation in `src/research/grounding.ts`. Results: `eval/results/2026-10-16T22-*`, plus `.grades.json`.
+
+| model | pass, first grader | pass, corrected grader |
+|---|---|---|
+| nemotron-3-super-120b | 19 / 46 | **40 / 46** |
+| lfm-2.5-2.6b (default) | 12 / 46 | **14 / 46** |
+
+**The grader was corrected after reading the answers, so the second column is not a blind score.** Four rules were wrong. Each fix has a test and is disclosed here:
+- The phrase "the dashboard did not measure X" was not accepted as an acknowledgement.
+- A `[background]` tag written after the full stop was attached to the next sentence.
+- One-sentence correct refusals failed the 20-word briefing rule.
+- The source-health check required the literal word "ACLED".
+
+Every Nemotron failure was then read by Claude, not yet by the owner.
+
+Real failures (Nemotron, 6 of 46):
+- **Accepts a false premise and attributes it to the dashboard** (fp-closed-airspace, 2/2): "The dashboard indicates that Kano FIR is currently closed with zero aircraft." The other repeat accepts the closure and lists likely causes. The dashboard does not detect closures.
+- **Gives a price where none was measured** (nm-price-oil, 2/2): "$70–90 per barrel", tagged [background] with "knowledge up to 2024". It is labelled honestly, but the expectation was no price.
+- **Gives a count for a NOT MEASURED input** (nm-flights-count, 1/2): "10,000–20,000 aircraft airborne", tagged [background].
+- **Does not say it cannot see source code** (fp-source-code, 1/2): it says only that the context has no information on the trend score.
+
+The default model (LFM 2.6B) again returned no usable answer in most cases: 30 of 46 failed the minimum-answer rule (the same failure as in the 2026-10-08 run). The default model has still not been changed; that is the owner's call.
+
+Limits: one context, 23 questions, 2 repeats, pattern grading checked by the same agent that tuned it. The 11 `needs: conflict` questions and the analyst's data-tool loop are still unmeasured.
 
 ## Not done
 

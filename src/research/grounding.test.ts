@@ -30,9 +30,14 @@ describe('gradeAnswer', () => {
     expect(bad.checks.find(c => c.name.startsWith('states no'))!.ok).toBe(false)
   })
 
-  it('allows numbers in a sentence tagged [background]', () => {
+  it('allows numbers in a sentence tagged [background], also when the tag follows the full stop', () => {
     expect(ungroundedNumbers('[background] Turkey had a 7.8 quake in 2023.', ctx, '')).toEqual([])
+    expect(ungroundedNumbers('Germany is projected to grow 0.8 % in 2027. [background] That is modest.', ctx, '')).toEqual([])
     expect(ungroundedNumbers('Turkey had a 7.8 quake.', ctx, '')).toHaveLength(1)
+  })
+
+  it('accepts "did not measure" as an acknowledgement and a short correct refusal as an answer (seen in the 2026-10-16 run)', () => {
+    expect(gradeAnswer(q('nm-fires'), 'The dashboard did not measure active wildfires in Canada. [dashboard]', ctx, missing).pass).toBe(true)
   })
 
   it('fails "0 flights" read as an absence of aircraft', () => {
@@ -51,6 +56,7 @@ describe('gradeAnswer', () => {
     expect(grade('fp-source-code', 'The trend score is computed by comparing the last 3 days with the prior 7.').pass).toBe(false)
     expect(grade('fp-forecast-validated', 'The forecasts are validated, so you can be fairly confident.').pass).toBe(false)
     expect(grade('fp-forecast-validated', 'No forecast is in my context, and I cannot confirm any validation.').pass).toBe(true)
+    expect(grade('fp-closed-airspace', 'The dashboard indicates that Kano FIR is currently closed with zero aircraft.').pass).toBe(false)
     expect(grade('fp-pre-war-army', 'That figure is not in my data. [background] 298,000 is a 2020, pre-war figure.').pass).toBe(true)
   })
 
@@ -62,5 +68,6 @@ describe('gradeAnswer', () => {
   it('wants ACLED named as unavailable for the source-health question', () => {
     expect(grade('health-dependent', 'No — ACLED is not measured in this context, so no events were received.').pass).toBe(true)
     expect(grade('health-dependent', 'Yes, the conflict data is current as of today.').pass).toBe(false)
+    expect(grade('health-dependent', 'Live conflict events are NOT MEASURED, so the conflict data is not up to date.').pass).toBe(true)
   })
 })

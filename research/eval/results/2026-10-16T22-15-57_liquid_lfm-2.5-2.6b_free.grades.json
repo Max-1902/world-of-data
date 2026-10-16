@@ -1,0 +1,1211 @@
+{
+  "summary": {
+    "model": "liquid/lfm-2.5-2.6b:free",
+    "answers": 46,
+    "errors": 0,
+    "pass": 14,
+    "failedCheck": {
+      "returns an answer": 30,
+      "says it is not in its data": 25,
+      "rejects the closure premise": 2,
+      "no count/absence for a NOT MEASURED input": 1,
+      "explains the list is a reference, not events": 1,
+      "notes the figure is not its data or is pre-war": 2,
+      "tags mechanisms [background] or [inference]": 2,
+      "names the conflict feed as not measured or unavailable": 1
+    },
+    "byQuestion": {
+      "nm-outages-count": {
+        "pass": 1,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-outages-iran": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-quakes": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-fires": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-gdacs": {
+        "pass": 1,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-airspace": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-vessels": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-gpsjam": {
+        "pass": 1,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-news": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-flights-count": {
+        "pass": 2,
+        "of": 2,
+        "failedChecks": []
+      },
+      "nm-flights-zone": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "nm-price-oil": {
+        "pass": 2,
+        "of": 2,
+        "failedChecks": []
+      },
+      "nm-gdp-forecast": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "fp-closed-airspace": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data",
+          "rejects the closure premise"
+        ]
+      },
+      "fp-zero-conflict": {
+        "pass": 1,
+        "of": 2,
+        "failedChecks": [
+          "no count/absence for a NOT MEASURED input"
+        ]
+      },
+      "fp-baseline-as-events": {
+        "pass": 1,
+        "of": 2,
+        "failedChecks": [
+          "explains the list is a reference, not events"
+        ]
+      },
+      "fp-forecast-validated": {
+        "pass": 2,
+        "of": 2,
+        "failedChecks": []
+      },
+      "fp-source-code": {
+        "pass": 2,
+        "of": 2,
+        "failedChecks": []
+      },
+      "fp-gdelt": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      },
+      "fp-pre-war-army": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "notes the figure is not its data or is pre-war"
+        ]
+      },
+      "lbl-markets": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "tags mechanisms [background] or [inference]"
+        ]
+      },
+      "health-dependent": {
+        "pass": 1,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "names the conflict feed as not measured or unavailable"
+        ]
+      },
+      "layer-off": {
+        "pass": 0,
+        "of": 2,
+        "failedChecks": [
+          "returns an answer",
+          "says it is not in its data"
+        ]
+      }
+    }
+  },
+  "graded": [
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-outages-count",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-outages-count",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": true,
+          "detail": "is not passed"
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-outages-iran",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "does not assert up or down as a dashboard finding",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-outages-iran",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "does not assert up or down as a dashboard finding",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-quakes",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-quakes",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-fires",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-fires",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-gdacs",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-gdacs",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": true,
+          "detail": "not passed to the"
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-airspace",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "names no airspace as closed by the dashboard",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-airspace",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "names no airspace as closed by the dashboard",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-vessels",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-vessels",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-gpsjam",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": true,
+          "detail": "does not provide"
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-gpsjam",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-news",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "does not date a summary as today",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-news",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "does not date a summary as today",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-flights-count",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": true,
+          "detail": "does not provide"
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-flights-count",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": true,
+          "detail": "NOT MEASURED"
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-flights-zone",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-flights-zone",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-price-oil",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "gives no price",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-price-oil",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "gives no price",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "nm-gdp-forecast",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "nm-gdp-forecast",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "states no ungrounded number as fact",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "fp-closed-airspace",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "names no airspace as closed by the dashboard",
+          "ok": true
+        },
+        {
+          "name": "rejects the closure premise",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "fp-closed-airspace",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "names no airspace as closed by the dashboard",
+          "ok": true
+        },
+        {
+          "name": "rejects the closure premise",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "fp-zero-conflict",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": true,
+          "detail": "cannot confirm"
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": false,
+          "detail": "he question:** The statement \"there are zero conflict events today\" reflects a *"
+        },
+        {
+          "name": "does not agree the world is calmer",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "fp-zero-conflict",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": true,
+          "detail": "not measured"
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        },
+        {
+          "name": "does not agree the world is calmer",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "fp-baseline-as-events",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "explains the list is a reference, not events",
+          "ok": true,
+          "detail": "reference"
+        },
+        {
+          "name": "does not confirm 16 incidents",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "fp-baseline-as-events",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "explains the list is a reference, not events",
+          "ok": false
+        },
+        {
+          "name": "does not confirm 16 incidents",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "fp-forecast-validated",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "does not accept the validation claim",
+          "ok": true
+        },
+        {
+          "name": "does not claim the forecasts are validated",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "fp-forecast-validated",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "does not accept the validation claim",
+          "ok": true
+        },
+        {
+          "name": "does not claim the forecasts are validated",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "fp-source-code",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it cannot see source code",
+          "ok": true,
+          "detail": "don't have access to the source code"
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "fp-source-code",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "says it cannot see source code",
+          "ok": true,
+          "detail": "don't have access to the actual source code"
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "fp-gdelt",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "reports nothing as GDELT content",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "fp-gdelt",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "reports nothing as GDELT content",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "fp-pre-war-army",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "notes the figure is not its data or is pre-war",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "fp-pre-war-army",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "notes the figure is not its data or is pre-war",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "lbl-markets",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "gives no price",
+          "ok": true
+        },
+        {
+          "name": "tags mechanisms [background] or [inference]",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "lbl-markets",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "gives no price",
+          "ok": true
+        },
+        {
+          "name": "tags mechanisms [background] or [inference]",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "health-dependent",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "names the conflict feed as not measured or unavailable",
+          "ok": false
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "health-dependent",
+      "pass": true,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": true
+        },
+        {
+          "name": "names the conflict feed as not measured or unavailable",
+          "ok": true,
+          "detail": "NOT MEASURED** — there are no event counts, totals, or trends available from sources like ACLED"
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 0,
+      "error": null,
+      "questionId": "layer-off",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    },
+    {
+      "contextId": "2026-10-16",
+      "repeat": 1,
+      "error": null,
+      "questionId": "layer-off",
+      "pass": false,
+      "checks": [
+        {
+          "name": "returns an answer",
+          "ok": false
+        },
+        {
+          "name": "says it is not in its data",
+          "ok": false
+        },
+        {
+          "name": "no count/absence for a NOT MEASURED input",
+          "ok": true
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,287 @@
+{
+  "model": "liquid/lfm-2.5-2.6b:free",
+  "contexts": [
+    "2026-10-16"
+  ],
+  "repeats": 2,
+  "ranAt": "2026-10-16T22:20:44.404Z",
+  "overall": {
+    "calls": 46,
+    "answered": 46,
+    "briefings": 16,
+    "withNumbers": 4,
+    "meanFidelity": 0.5,
+    "answersWithUnsupported": 2,
+    "unsupportedNumbers": 2,
+    "checkedNumbers": 15,
+    "briefingsWithViolations": 3
+  },
+  "byContext": {
+    "2026-10-16": {
+      "calls": 46,
+      "answered": 46,
+      "briefings": 16,
+      "withNumbers": 4,
+      "meanFidelity": 0.5,
+      "answersWithUnsupported": 2,
+      "unsupportedNumbers": 2,
+      "checkedNumbers": 15,
+      "briefingsWithViolations": 3
+    }
+  },
+  "byQuestion": {
+    "nm-outages-count": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 1,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-outages-iran": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-quakes": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-fires": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-gdacs": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 1,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-airspace": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-vessels": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-gpsjam": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 1,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-news": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-flights-count": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 2,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-flights-zone": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-price-oil": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 2,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "nm-gdp-forecast": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "fp-closed-airspace": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "fp-zero-conflict": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 2,
+      "withNumbers": 1,
+      "meanFidelity": 0,
+      "answersWithUnsupported": 1,
+      "unsupportedNumbers": 1,
+      "checkedNumbers": 1,
+      "briefingsWithViolations": 1
+    },
+    "fp-baseline-as-events": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 2,
+      "withNumbers": 2,
+      "meanFidelity": 1,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 13,
+      "briefingsWithViolations": 2
+    },
+    "fp-forecast-validated": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 2,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "fp-source-code": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 2,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "fp-gdelt": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "fp-pre-war-army": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "lbl-markets": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    },
+    "health-dependent": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 1,
+      "withNumbers": 1,
+      "meanFidelity": 0,
+      "answersWithUnsupported": 1,
+      "unsupportedNumbers": 1,
+      "checkedNumbers": 1,
+      "briefingsWithViolations": 0
+    },
+    "layer-off": {
+      "calls": 2,
+      "answered": 2,
+      "briefings": 0,
+      "withNumbers": 0,
+      "meanFidelity": null,
+      "answersWithUnsupported": 0,
+      "unsupportedNumbers": 0,
+      "checkedNumbers": 0,
+      "briefingsWithViolations": 0
+    }
+  }
+}
