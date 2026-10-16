@@ -125,6 +125,17 @@ export function acledToCrisisEvent(e: Record<string, string>): CrisisEvent {
   }
 }
 
+let lastPoll: { rows: number; capped: boolean } | null = null
+
+/**
+ * The last successful ACLED poll: how many rows came back and whether that hit ACLED_LIMIT. A capped poll is a
+ * sample of the 14-day window (ACLED records far more than 500 events a fortnight worldwide), so its counts are
+ * not totals.
+ */
+export function lastAcledPoll(): { rows: number; capped: boolean } | null {
+  return lastPoll
+}
+
 export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
   const token = await getACLEDToken()
   if (!token) return []
@@ -145,7 +156,9 @@ export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
       return []
     }
 
-    return (json.data || []).map(acledToCrisisEvent)
+    const rows: Record<string, string>[] = Array.isArray(json.data) ? json.data : []
+    lastPoll = { rows: rows.length, capped: rows.length >= ACLED_LIMIT }
+    return rows.map(acledToCrisisEvent)
   } catch (err) {
     console.warn('[ACLED] fetch error:', err)
     return []

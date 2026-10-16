@@ -2,6 +2,7 @@
  * Panel implementations. Split out of the former PanelContent.tsx; wired up in src/panels/registry.tsx.
  */
 import { useState, useEffect, useRef, useMemo } from 'react'
+import { lastAcledPoll } from '../../services/crises'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight } from '../../types'
 import { buildDashboardContext, buildSystemPrompt, notMeasured, CHAT_PARAMS, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
@@ -205,10 +206,11 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     if (MARKET_QUESTION.test(prompt)) {
       try {
         const quotes = await fetchMultipleQuotes(MARKET_HUBS.map(h => h.symbol))
-        marketSnapshot = quotes.map(q => `  • ${q.name} (${q.symbol}): ${q.price.toFixed(2)} ${q.currency}, ${q.changePercent >= 0 ? '+' : ''}${q.changePercent.toFixed(2)}% today`).join('\n')
+        // "% on the last session, last trade <UTC time>": on a weekend the latest change is Friday's, not today's
+        marketSnapshot = quotes.map(q => `  • ${q.name} (${q.symbol}): ${q.price.toFixed(2)} ${q.currency}, ${q.changePercent >= 0 ? '+' : ''}${q.changePercent.toFixed(2)}% on the last session (last trade ${q.lastUpdated.slice(0, 16).replace('T', ' ')} UTC)`).join('\n')
       } catch { /* answer without it */ }
     }
-    const layers   = { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises }
+    const layers   = { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises, conflictCapped: lastAcledPoll()?.capped ?? false }
     const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot, countryAnalyticsSummary, layers)
     const sysMsg: DSMessage = { role: 'system', content: buildSystemPrompt(context) }
     const userMsg: DSMessage = { role: 'user', content: prompt }

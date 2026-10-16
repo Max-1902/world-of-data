@@ -6,6 +6,7 @@
  *
  *   npx tsx scripts/research/eval.ts --contexts research/data/dashboard [--repeats 3] [--questions probe-flights,probe-trend]
  *   npx tsx scripts/research/eval.ts --contexts ai-runs-2026-10-08.jsonl     # contexts from the panel's "Export runs"
+ *   npx tsx scripts/research/eval.ts --contexts research/data/dashboard --question-set v2   # 34-prompt grounding set
  *
  * Cost guard: only `:free` models run unless --allow-paid is passed explicitly (DEFAULT_MODEL is free).
  * Writes research/eval/results/<stamp>_<model>.jsonl (every answer) and .summary.json.
@@ -16,6 +17,12 @@ import { buildSystemPrompt, CHAT_PARAMS, DEFAULT_MODEL } from '../../src/service
 import type { NotMeasured } from '../../src/services/openrouter'
 import { scoreFidelity, notMeasuredViolations, parseNotMeasured, briefingText, isBriefing } from '../../src/research/fidelity'
 import { ROOT, loadEnv, writeJson, arg, flag } from './lib'
+
+/** --question-set v2 reads research/eval/questions-v2.json; the default stays the frozen v1 set. */
+function questionSetPath(): string {
+  const v = arg('question-set')
+  return v && v !== 'v1' ? `research/eval/questions-${v}.json` : 'research/eval/questions.json'
+}
 
 interface Ctx {
   id: string
@@ -84,7 +91,7 @@ function score(answer: string, context: string, question: string, missing: NotMe
 /** Recompute scores for a stored results file (no model calls) and rewrite it and its summary. */
 function rescore(file: string) {
   const abs = resolve(process.cwd(), file)
-  const { questions } = JSON.parse(readFileSync(resolve(ROOT, 'research/eval/questions.json'), 'utf8')) as { questions: Question[] }
+  const { questions } = JSON.parse(readFileSync(resolve(ROOT, questionSetPath()), 'utf8')) as { questions: Question[] }
   const contexts = new Map<string, Ctx>()
   for (const c of loadContexts(resolve(ROOT, 'research/eval/contexts'))) contexts.set(c.id, c)
   const rows = readFileSync(abs, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l) as Record<string, any>)
@@ -115,7 +122,7 @@ async function main() {
 
   const contexts = loadContexts(contextsPath)
   const only = arg('questions')?.split(',')
-  const { questions } = JSON.parse(readFileSync(resolve(ROOT, 'research/eval/questions.json'), 'utf8')) as { questions: Question[] }
+  const { questions } = JSON.parse(readFileSync(resolve(ROOT, questionSetPath()), 'utf8')) as { questions: Question[] }
   const qs = only ? questions.filter(q => only.includes(q.id)) : questions
   const repeats = Number(arg('repeats') ?? 3)
   const total = contexts.length * qs.length * repeats
