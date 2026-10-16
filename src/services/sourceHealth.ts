@@ -38,7 +38,7 @@ export const SOURCE_RULES: SourceRule[] = [
   { id: 'ecb',       label: 'ECB Data Portal',           match: has('data-api.ecb.europa.eu') },
   { id: 'eurostat',  label: 'Eurostat',                  match: has('ec.europa.eu/eurostat') },
   { id: 'bis',       label: 'BIS policy rates',          match: has('stats.bis.org') },
-  { id: 'osm',       label: 'OpenStreetMap (Overpass)',  match: has('overpass-api.de', 'overpass.openstreetmap.fr') },
+  { id: 'osm',       label: 'OpenStreetMap (Overpass)',  match: has('overpass-api.de', 'overpass.openstreetmap.fr', 'overpass.kumi.systems', 'overpass.private.coffee', 'maps.mail.ru/osm/tools/overpass') },
   { id: 'ai',        label: 'AI Analyst (OpenRouter)',   match: has('/api/openrouter') },
 ]
 

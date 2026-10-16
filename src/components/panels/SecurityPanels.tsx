@@ -5,8 +5,8 @@ import { useState, useCallback, useEffect } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { NewsArticle } from '../../types'
-import { searchGDELTNews } from '../../services/news'
-import { SANCTIONED_COUNTRIES, SANCTION_COLORS, fetchSanctionsNews, type SanctionedCountry } from '../../services/sanctions'
+import { searchGDELTNews, fetchSanctionsNews } from '../../services/news'
+import { SANCTIONED_COUNTRIES, SANCTION_COLORS, type SanctionedCountry } from '../../services/sanctions'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from '../../services/military'
 import { analyzeAirspace, FIR_STATUS_LABEL, type NOTAMAlert, type FIRStatus } from '../../services/notam'
 import { onGlobalReload } from '../../utils/reloadBus'
@@ -109,7 +109,11 @@ export function SanctionsPanel() {
       .finally(() => setNewsLoading(false))
   }, [q])
 
-  useEffect(() => { loadNews() }, [loadNews])
+  // Debounced: the filter box changes `q` per keystroke, and each distinct query is a GDELT request (1 per 5 s).
+  useEffect(() => {
+    const t = window.setTimeout(loadNews, 600)
+    return () => clearTimeout(t)
+  }, [loadNews])
 
   // Auto-refresh 30 min
   useEffect(() => {

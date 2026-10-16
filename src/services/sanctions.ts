@@ -229,19 +229,3 @@ export const SANCTION_COLORS: Record<SanctionSeverity, string> = {
 export const SANCTIONS_BY_ISO2 = Object.fromEntries(
   SANCTIONED_COUNTRIES.map(c => [c.iso2, c])
 )
-
-// Fetch recent sanctions news from GDELT
-export async function fetchSanctionsNews(country?: string): Promise<{ title: string; url: string; domain: string; seendate: string }[]> {
-  const q = country
-    ? `sanctions "${country}" economy OFAC sourcelang:english`
-    : 'economic sanctions OFAC treasury designation sourcelang:english'
-  const url = `/api/gdelt/v2/doc/doc?query=${encodeURIComponent(q)}&mode=artlist&maxrecords=30&format=json&sort=DateDesc`
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(15_000) })
-    if (!res.ok) return []
-    const json = await res.json()
-    return json.articles || []
-  } catch {
-    return []
-  }
-}
