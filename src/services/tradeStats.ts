@@ -12,6 +12,7 @@
  * reporter and has no profile here. See DATA_PROVENANCE.md.
  */
 import generated from '../data/trade-profiles.json'
+import { resolveISO2 } from './worldbank'
 
 export interface TradeProfile {
   iso2: string
@@ -149,7 +150,7 @@ for (const p of TRADE_PROFILES) {
 Object.assign(NAME_TO_ISO2, {
   'usa': 'US', 'united states of america': 'US', 'america': 'US',
   'uk': 'GB', 'england': 'GB', 'britain': 'GB', 'great britain': 'GB',
-  'south korea': 'KR', 's.korea': 'KR', 'korea': 'KR', 'republic of korea': 'KR',
+  'south korea': 'KR', 's.korea': 'KR', 'republic of korea': 'KR', // bare "korea" is ambiguous: no profile
   'uae': 'AE', 'emirates': 'AE', 'united arab emirates': 'AE',
   's.africa': 'ZA', 'south africa': 'ZA',
   'holland': 'NL', 'the netherlands': 'NL',
@@ -160,15 +161,6 @@ Object.assign(NAME_TO_ISO2, {
 
 export function getTradeProfile(countryName: string): TradeProfile | null {
   const lc = countryName.toLowerCase().trim()
-  // Direct name match
-  const iso = NAME_TO_ISO2[lc]
-  if (iso) return PROFILE_MAP.get(iso) ?? null
-  // ISO2 match
-  if (/^[A-Z]{2}$/.test(countryName)) return PROFILE_MAP.get(countryName) ?? null
-  // Partial match — blank/very short input would otherwise be a substring of every name
-  if (lc.length < 3) return null
-  for (const [name, code] of Object.entries(NAME_TO_ISO2)) {
-    if (lc.includes(name) || name.includes(lc)) return PROFILE_MAP.get(code) ?? null
-  }
-  return null
+  const iso = NAME_TO_ISO2[lc] ?? (/^[A-Z]{2}$/.test(countryName) ? countryName : resolveISO2(countryName))
+  return iso ? PROFILE_MAP.get(iso) ?? null : null
 }

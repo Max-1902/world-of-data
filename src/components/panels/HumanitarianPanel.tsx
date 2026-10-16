@@ -2,6 +2,7 @@
  * Panel implementations. Split out of the former PanelContent.tsx; wired up in src/panels/registry.tsx.
  */
 import { useState, useEffect } from 'react'
+import { sameCountry } from '../../utils/countryBrief'
 import { CrisisEvent, Flight } from '../../types'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { UNHCR_GLOBAL_2023, TOP_HOSTING, TOP_ORIGINS, UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS, REFUGEE_FLOWS, COUNTRY_DISPLACEMENT, fetchUNHCRPopulation, type UNHCRStat } from '../../services/unhcr'
@@ -146,10 +147,8 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
         // Group flows by origin country (extract from "Origin → Dest" label)
         const originCountries = [...new Set(REFUGEE_FLOWS.map(f => f.label.split(' → ')[0]))]
 
-        // Match crises to origin countries (fuzzy — country name substring)
-        const matchCrises = (origin: string) =>
-          crises.filter(c => c.country.toLowerCase().includes(origin.toLowerCase())
-            || origin.toLowerCase().includes(c.country.toLowerCase()))
+        // Match crises to origin countries by ISO code / whole-word name (not substring: "Sudan" ≠ "South Sudan")
+        const matchCrises = (origin: string) => crises.filter(c => sameCountry(c.country, origin))
 
         // Count flights near camps in host countries
         const countFlightsNear = (lat: number, lng: number, radius = 2) =>
@@ -160,16 +159,15 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
         const getDisp = (name: string) => {
           const entry = Object.entries(COUNTRY_DISPLACEMENT).find(([, d]) => {
             const stat = [...TOP_HOSTING, ...TOP_ORIGINS].find(s => s.iso3 === Object.keys(COUNTRY_DISPLACEMENT).find(k => COUNTRY_DISPLACEMENT[k] === d))
-            return stat?.country.toLowerCase().includes(name.toLowerCase())
-              || name.toLowerCase().includes(stat?.country.toLowerCase() ?? '')
+            // (a missing stat used to match every name: "x".includes('') is always true)
+            return !!stat && sameCountry(stat.country, name)
           })
           return entry ? entry[1] : null
         }
 
         // Get camps in a country (host side)
         const getCamps = (dest: string) =>
-          REFUGEE_CAMPS.filter(c => c.country.toLowerCase().includes(dest.toLowerCase())
-            || dest.toLowerCase().includes(c.country.toLowerCase()))
+          REFUGEE_CAMPS.filter(c => sameCountry(c.country, dest))
 
         return (
           <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
@@ -274,9 +272,7 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
               const pct = (f.count / (maxCount || 1)) * 100
               const origin = f.label.split(' → ')[0]
               const dest = f.label.split(' → ')[1]
-              const linked = crises.filter(c =>
-                c.country.toLowerCase().includes(origin.toLowerCase())
-                || origin.toLowerCase().includes(c.country.toLowerCase()))
+              const linked = crises.filter(c => sameCountry(c.country, origin))
               const isActive = linked.length > 0
               // Color gradient by count
               const t = Math.min(1, f.count / 4_000_000)

@@ -6,6 +6,7 @@
  * Caches per country for 1 hour to avoid redundant fetches.
  */
 
+import { placeMentions } from '../utils/countryMatch'
 const WB_BASE = 'https://api.worldbank.org/v2'
 
 /** One row of a World Bank v2 indicator response (`[meta, rows]`). Any field can be null or missing in practice. */
@@ -116,7 +117,19 @@ const NAME_TO_ISO2: Record<string, string> = {
   'slovak republic':'SK','russian federation':'RU','republic of serbia':'RS','the netherlands':'NL',
   'falklands':'FK','gibraltar':'GI','bermuda':'BM','ascension is.':'SH',
   's.china sea':'CN','n.korea':'KP',
+  // Qualified names that a plain whole-word match would send to the wrong country ("American Samoa" is not Samoa)
+  'american samoa':'AS','caribbean netherlands':'BQ','congo-brazzaville':'CG','congo (brazzaville)':'CG',
+  'congo-kinshasa':'CD','congo (kinshasa)':'CD','drc':'CD','macedonia':'MK',
+  // World Bank / UN spellings, so names coming back from those APIs resolve to themselves
+  'congo, rep.':'CG','congo, dem. rep.':'CD','korea, rep.':'KR',"korea, dem. people's rep.":'KP','republic of korea':'KR',
+  'egypt, arab rep.':'EG','iran, islamic rep.':'IR','yemen, rep.':'YE','venezuela, rb':'VE','gambia, the':'GM',
+  'bahamas, the':'BS','lao pdr':'LA','viet nam':'VN','syrian arab republic':'SY','kyrgyz republic':'KG',
+  'west bank and gaza':'PS','hong kong sar, china':'HK','macao sar, china':'MO','micronesia, fed. sts.':'FM',
+  'st. lucia':'LC','st. kitts and nevis':'KN','st. vincent and the grenadines':'VC','united republic of tanzania':'TZ',
 }
+
+/** Partial matches compile a regex per alias, and the same labels are resolved over and over. */
+const partialMemo = new Map<string, string | null>()
 
 export function resolveISO2(countryName: string): string | null {
   const lc = countryName.toLowerCase().trim()
@@ -124,12 +137,22 @@ export function resolveISO2(countryName: string): string | null {
   if (NAME_TO_ISO2[lc]) return NAME_TO_ISO2[lc]
   // 2-letter code already
   if (/^[A-Z]{2}$/.test(countryName)) return countryName
-  // Partial match — blank/very short input would otherwise be a substring of every name
+  // Partial match: a known name appearing as whole words ("Kyiv, Ukraine"), never a substring ("uk" in "ukraine")
+  // and never a qualified one ("South Sudan" for Sudan, "New Mexico" for Mexico). Labels that name two different
+  // countries ("UK/US", "Georgia, USA") are ambiguous and resolve to nothing.
   if (lc.length < 3) return null
+  const memo = partialMemo.get(lc)
+  if (memo !== undefined) return memo
+  const hits: { start: number; end: number; code: string }[] = []
   for (const [name, code] of Object.entries(NAME_TO_ISO2)) {
-    if (lc.includes(name) || name.includes(lc)) return code
+    for (const start of placeMentions(lc, name)) hits.push({ start, end: start + name.length, code })
   }
-  return null
+  // a hit inside a longer one ("congo" inside "republic of the congo") is part of that name, not a second country
+  const outer = hits.filter(h => !hits.some(o => o !== h && o.start <= h.start && o.end >= h.end && o.end - o.start > h.end - h.start))
+  const codes = new Set(outer.map(h => h.code))
+  const code = codes.size === 1 ? [...codes][0] : null
+  partialMemo.set(lc, code)
+  return code
 }
 
 // Aliases too ambiguous in free text ("tell us", "us and them") to treat as a country mention.

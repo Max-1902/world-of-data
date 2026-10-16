@@ -13,6 +13,7 @@
  */
 
 import { distanceKm } from '../utils/geo'
+import { sameCountry } from '../utils/countryBrief'
 
 export type InfraType =
   | 'dam' | 'pipeline' | 'lng' | 'refinery' | 'grid'
@@ -326,11 +327,8 @@ export async function fetchAllPowerPlants(): Promise<InfraPoint[]> {
 /** Fetch all power plants (any fuel) for a specific country — used by CountryDrawer. */
 export async function fetchPowerPlantsForCountry(countryName: string): Promise<InfraPoint[]> {
   const rows = await fetchGppd()
-  const lc = countryName.toLowerCase()
-  const matches = rows.filter(r => {
-    const rc = r.countryLong.toLowerCase()
-    return rc.includes(lc) || lc.includes(rc)
-  })
+  // GPPD's country_long names are matched by ISO code, never by substring ("Niger" must not pull in Nigeria's plants)
+  const matches = rows.filter(r => sameCountry(r.countryLong, countryName))
   matches.sort((a, b) => b.capacityMw - a.capacityMw)
   return matches.slice(0, 30).map(toInfraPoint)
 }
