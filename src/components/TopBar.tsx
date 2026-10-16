@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useSyncExternalStore } from 'react'
-import { Search, X, RefreshCw, Globe2 } from 'lucide-react'
-import type { MapViewMode, Stock } from '../types'
+import { useState, useEffect, useSyncExternalStore } from 'react'
+import { RefreshCw, Globe2 } from 'lucide-react'
+import type { MapViewMode, PanelState, Stock } from '../types'
+import SmartSearch from './SmartSearch'
 import OSINTSearch from './OSINTSearch'
 import SourceHealth from './SourceHealth'
 import { healthTracker } from '../services/sourceHealth'
@@ -26,30 +27,20 @@ interface Props {
   stocks: Stock[]
   searchQuery: string
   onSearch: (q: string) => void
+  onOpenPanel: (id: string) => void
+  onToggleLayer: (id: keyof PanelState) => void
   onSettingsOpen?: () => void
   onReloadAll?: () => void
   reloading?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSearch, onSettingsOpen, onReloadAll, reloading }: Props) {
+export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSearch, onOpenPanel, onToggleLayer, onSettingsOpen, onReloadAll, reloading }: Props) {
   const sources = useSyncExternalStore(healthTracker.subscribe, healthTracker.getAll)
   const market = summarizeMarketHud(stocks)
   const sanctions = summarizeSanctionsHud()
   const feedsOk = sources.filter(s => s.status === 'ok').length
   const marketGap = marketHudPlaceholder(sources.find(s => s.id === 'markets'))
   const asOf = market.asOf ? ` · last trade ${new Date(market.asOf).toUTCString().slice(5, 22)} UTC` : ''
-  const [expanded, setExpanded] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
-  useEffect(() => {
-    if (expanded) inputRef.current?.focus()
-  }, [expanded])
-
-  function handleKey(e: React.KeyboardEvent) {
-    if (e.key === 'Escape') { onSearch(''); setExpanded(false) }
-    if (e.key === 'Enter')  { setExpanded(false) }
-  }
-
-  function clearSearch() { onSearch(''); setExpanded(false) }
 
   return (
     <div className="topbar" style={{ height: 52 }}>
@@ -135,41 +126,7 @@ export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSe
 
         <div className="hud-sep" />
 
-        {/* search */}
-        <div className="search-wrap" style={{ minWidth: expanded ? 180 : 'auto' }}>
-          <Search size={13} style={{ color: searchQuery ? 'var(--accent)' : 'var(--text3)', flexShrink: 0 }} />
-          {expanded ? (
-            <input
-              ref={inputRef}
-              value={searchQuery}
-              onChange={e => onSearch(e.target.value)}
-              onKeyDown={handleKey}
-              onBlur={() => { if (!searchQuery) setExpanded(false) }}
-              placeholder="location, coordinates..."
-              style={{
-                flex: 1, background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 11, color: 'var(--text1)', fontFamily: 'Inter, -apple-system, sans-serif',
-                minWidth: 130,
-              }}
-            />
-          ) : (
-            <button
-              onClick={() => setExpanded(true)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontSize: 11, padding: 0, fontFamily: 'Inter, -apple-system, sans-serif' }}
-            >
-              {searchQuery || 'Locate'}
-            </button>
-          )}
-          {searchQuery && (
-            <button onClick={clearSearch}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', display: 'flex', padding: 0 }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--red)' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = 'var(--text3)' }}
-            >
-              <X size={12} />
-            </button>
-          )}
-        </div>
+        <SmartSearch searchQuery={searchQuery} onSearch={onSearch} onOpenPanel={onOpenPanel} onToggleLayer={onToggleLayer} onViewMode={onViewMode} />
 
         <div className="hud-sep" />
 

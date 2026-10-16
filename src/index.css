@@ -1038,3 +1038,25 @@ input::placeholder { color: #647883; opacity: 1; }
 .cl-method b { color: var(--text2); font-weight: 650; }
 .viz-card .viz-kpis + .viz-verdict, .viz-foot .viz-verdict { margin-top: 8px; }
 .viz-foot .viz-kpis { margin-top: 6px; }
+
+/* ── Top-bar smart search (SmartSearch.tsx) — fixed so the top bar's overflow:hidden can't clip it ── */
+.smart-search-clear { background: none; border: none; cursor: pointer; color: var(--text3); display: flex; padding: 0; }
+.smart-search-clear:hover { color: var(--red); }
+.smart-search-list {
+  position: fixed; z-index: 1000; max-width: calc(100vw - 16px);
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lg); padding: 4px 0; overflow: hidden;
+  font-family: 'Inter', -apple-system, sans-serif;
+}
+.smart-search-heading { padding: 6px 12px 4px; font-size: 9.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+.smart-search-row { display: flex; align-items: center; gap: 10px; padding: 7px 12px; cursor: pointer; }
+.smart-search-row.active { background: var(--surface2); }
+.smart-search-kind { width: 62px; flex-shrink: 0; font-size: 9.5px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--text3); }
+.smart-search-row.active .smart-search-kind { color: var(--accent); }
+.smart-search-label { font-size: 12px; font-weight: 600; color: var(--text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-search-sub { font-size: 10.5px; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.smart-search-foot { margin-top: 4px; padding: 6px 12px 4px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text3); }
+
+/* A panel picked from search / ⌘K briefly glows so the eye lands on it after the scroll. */
+@keyframes dock-panel-focus { 0%, 40% { box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 2px transparent; } }
+.dock-panel.dock-panel-focus { animation: dock-panel-focus 1.6s ease-out; }

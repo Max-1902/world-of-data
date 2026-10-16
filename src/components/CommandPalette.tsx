@@ -1,17 +1,14 @@
 import CloseButton from './CloseButton'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MapViewMode, PanelState } from '../types'
-import type { PanelGroup } from '../panels/types'
-import { GROUP_ORDER, panelsForGroup } from '../panels/registry'
-import { LAYER_IDS, VIEW_MODES } from './layerCatalogue'
-import { CHOKEPOINTS } from '../services/chokepoints'
 import { rankItems, type PaletteItem } from '../utils/paletteSearch'
+import { buildSearchCatalogue } from './searchCatalogue'
 
 interface Props {
   open: boolean
   onClose: () => void
   panelState: PanelState
-  onSelectGroup: (g: PanelGroup) => void
+  onOpenPanel: (id: string) => void
   onToggleLayer: (id: keyof PanelState) => void
   onViewMode: (m: MapViewMode) => void
   onGeoSearch: (q: string) => void
@@ -22,26 +19,12 @@ const KIND_LABEL: Record<PaletteItem['kind'], string> = {
 }
 
 /** Cmd/Ctrl+K palette over the panel registry, map layers, map styles and chokepoints. */
-export default function CommandPalette({ open, onClose, panelState, onSelectGroup, onToggleLayer, onViewMode, onGeoSearch }: Props) {
+export default function CommandPalette({ open, onClose, panelState, onOpenPanel, onToggleLayer, onViewMode, onGeoSearch }: Props) {
   const [query, setQuery] = useState('')
   const [cursor, setCursor] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Static catalogue; panel → group lookup kept alongside so selection can switch the dock.
-  const { catalogue, groupOfPanel } = useMemo(() => {
-    const groupOfPanel = new Map<string, PanelGroup>()
-    const catalogue: PaletteItem[] = []
-    for (const g of GROUP_ORDER) {
-      for (const p of panelsForGroup(g.id)) {
-        groupOfPanel.set(p.id, g.id)
-        catalogue.push({ id: `panel:${p.id}`, kind: 'panel', label: p.title, hint: p.desc, keywords: g.label })
-      }
-    }
-    for (const l of LAYER_IDS) catalogue.push({ id: `layer:${l.id}`, kind: 'layer', label: l.label, hint: l.desc })
-    for (const v of VIEW_MODES) catalogue.push({ id: `view:${v.id}`, kind: 'view', label: v.label })
-    for (const c of CHOKEPOINTS) catalogue.push({ id: `choke:${c.name}`, kind: 'chokepoint', label: c.name, hint: c.controlledBy })
-    return { catalogue, groupOfPanel }
-  }, [])
+  const { catalogue } = useMemo(buildSearchCatalogue, [])
 
   const results = useMemo(() => {
     const ranked = rankItems(catalogue, query)
@@ -59,7 +42,7 @@ export default function CommandPalette({ open, onClose, panelState, onSelectGrou
 
   function run(item: PaletteItem) {
     const key = item.id.slice(item.id.indexOf(':') + 1)
-    if (item.kind === 'panel') { const g = groupOfPanel.get(key); if (g) onSelectGroup(g) }
+    if (item.kind === 'panel') onOpenPanel(key)
     else if (item.kind === 'layer') onToggleLayer(key as keyof PanelState)
     else if (item.kind === 'view') onViewMode(key as MapViewMode)
     else if (item.kind === 'chokepoint' || item.kind === 'search') onGeoSearch(key)
