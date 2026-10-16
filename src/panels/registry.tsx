@@ -51,194 +51,194 @@ const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').
 const PANELS: PanelDef[] = [
   // ── OVERVIEW ──────────────────────────────────────────────────────────────────
   {
-    id: 'threat', title: 'Threat Level', group: 'overview', section: 'headline', minHeight: 300,
+    id: 'threat', title: 'Threat Level', group: 'overview', section: 'headline', map: ['crises'], minHeight: 300,
     dotColor: 'orange', desc: 'Composite global threat index',
     render: (p) => <ThreatPanel crises={p.crises} flights={p.flights} />,
   },
   {
-    id: 'risk', title: 'Risk Matrix', group: 'overview', section: 'headline',
+    id: 'risk', title: 'Risk Matrix', group: 'overview', section: 'headline', map: ['crises'],
     dotColor: 'red', desc: 'Country-level threat assessment',
     render: (p) => <RiskPanel crises={p.crises} />,
   },
   {
-    id: 'intel', title: 'Incidents', group: 'overview', section: 'events',
+    id: 'intel', title: 'Incidents', group: 'overview', section: 'events', map: ['crises'],
     dotColor: 'red', desc: 'Active conflict & event tracking',
     render: (p) => <IntelPanel crises={p.crises} />,
   },
   {
-    id: 'crisiswatch', title: 'Crisis Monitor', group: 'overview', section: 'events',
+    id: 'crisiswatch', title: 'Crisis Monitor', group: 'overview', section: 'events', map: 'none',
     dotColor: 'orange', desc: 'ICG conflict tracking — 70+ states',
     render: () => <CrisisWatchPanel />,
   },
   {
-    id: 'watchlist', title: 'Watchlist', group: 'overview', section: 'yours',
+    id: 'watchlist', title: 'Watchlist', group: 'overview', section: 'yours', map: ['crises'],
     dotColor: 'yellow', desc: 'Countries you watch — alerts on new events & rising trends',
     render: (p) => <WatchlistPanel crises={p.crises} onCountryClick={p.onCountryClick} />,
   },
   // ── ECONOMY ───────────────────────────────────────────────────────────────────
   {
-    id: 'markets', title: 'Markets', group: 'markets', section: 'live',
+    id: 'markets', title: 'Markets', group: 'markets', section: 'live', map: ['stocks'],
     dotColor: 'grn', desc: 'Consolidated financial data feed',
     render: () => <MarketsPanel />,
   },
   {
-    id: 'inventories', title: 'Energy Inventories', group: 'markets', section: 'inventories', minHeight: 900,
+    id: 'inventories', title: 'Energy Inventories', group: 'markets', section: 'inventories', map: 'none', minHeight: 900,
     dotColor: 'amber', desc: 'Weekly US crude, gasoline, distillate and natural-gas stocks against the same week in the previous five years (EIA, free key)',
     render: () => <InventoriesPanel />,
   },
   {
-    id: 'economy', title: 'Economy', group: 'markets', section: 'macro',
+    id: 'economy', title: 'Economy', group: 'markets', section: 'macro', map: 'inline',
     dotColor: 'blue', desc: 'Global trade profiles & World Bank data',
     render: (p) => <GlobalEconomyPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
   {
-    id: 'owid', title: 'Global Trends', group: 'markets', section: 'macro',
+    id: 'owid', title: 'Global Trends', group: 'markets', section: 'macro', map: 'inline',
     dotColor: 'amber', desc: 'Agriculture, violence & war, energy & environment, innovation & tech (Our World in Data)',
     render: (p) => <OwidPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
   {
-    id: 'tradePartnersByCountry', title: 'Trade Partners', group: 'markets', section: 'trade',
+    id: 'tradePartnersByCountry', title: 'Trade Partners', group: 'markets', section: 'trade', map: ['tradeStats'],
     dotColor: 'grn', desc: 'Top export/import partner countries — click to fly to',
     render: (p) => <TradePartnersByCountryPanel onGeoSearch={p.onCountryClick} onCountryClick={p.onCountryClick} />,
   },
   {
-    id: 'tradeProductsByCountry', title: 'Trade Products', group: 'markets', section: 'trade',
+    id: 'tradeProductsByCountry', title: 'Trade Products', group: 'markets', section: 'trade', map: ['tradeStats'],
     dotColor: 'blue', desc: 'Top exported/imported product categories by country',
     render: (p) => <TradeProductsByCountryPanel onCountryClick={p.onCountryClick} />,
   },
   {
-    id: 'resources', title: 'Resources', group: 'markets', section: 'resources',
+    id: 'resources', title: 'Resources', group: 'markets', section: 'resources', map: ['resources'],
     dotColor: 'amber', desc: 'Critical minerals, reserves & production by country',
     render: (p) => <ResourcesPanel onCountryClick={p.onCountryClick} />,
   },
   {
-    id: 'resourcesByCountry', title: 'Resources by Country', group: 'markets', section: 'resources',
+    id: 'resourcesByCountry', title: 'Resources by Country', group: 'markets', section: 'resources', map: ['resources'],
     dotColor: 'amber', desc: 'Critical minerals & commodities by country',
     render: (p) => <ResourcesByCountryPanel onGeoSearch={p.onCountryClick} onCountryClick={p.onCountryClick} />,
   },
   // ── FORECASTS & ANALYSIS ──────────────────────────────────────────────────────
   {
-    id: 'predictions', title: 'Predictions', group: 'analysis', section: 'forecasts', minHeight: 900,
+    id: 'predictions', title: 'Predictions', group: 'analysis', section: 'forecasts', map: 'none', minHeight: 900,
     dotColor: 'green', desc: 'GDP growth, inflation and unemployment forecast from a country’s own history — AR model vs. a naive baseline, backtested out of sample (World Bank)',
     render: () => <PredictionsPanel />,
   },
   {
-    id: 'analyst', title: 'Analyst chat', group: 'analysis', section: 'ai',
+    id: 'analyst', title: 'Analyst chat', group: 'analysis', section: 'ai', map: 'none',
     dotColor: 'blue', desc: 'AI-assisted situational assessment',
     render: (p) => <AIAnalystPanel crises={p.crises} flights={p.flights} onGeoSearch={p.onGeoSearch} onCountryClick={p.onCountryClick} onToggleLayer={p.onToggleLayer} panelState={p.panelState} />,
   },
   {
-    id: 'countryAnalytics', title: 'Country Analytics', group: 'analysis', section: 'explore',
+    id: 'countryAnalytics', title: 'Country Analytics', group: 'analysis', section: 'explore', map: 'inline',
     dotColor: 'blue', desc: 'Compare any two country indicators (economy, population, military, society): trend, correlation, outliers and a map of the results (World Bank)',
     render: (p) => <CountryAnalyticsPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'analytics', title: 'Hazard Analytics', group: 'analysis', section: 'explore',
+    id: 'analytics', title: 'Hazard Analytics', group: 'analysis', section: 'explore', map: 'inline',
     dotColor: 'blue', desc: 'Earthquake and wildfire data analysed in the browser: trends, magnitude law, heatmaps — plotted as 3D hexagons on the map',
     render: (p) => <AnalyticsPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} onGeoSearch={p.onGeoSearch} />,
   },
   // ── COUNTRY LOOKUP ────────────────────────────────────────────────────────────
   {
-    id: 'countryLookup', title: 'Country Lookup', group: 'country', section: 'profile',
+    id: 'countryLookup', title: 'Country Lookup', group: 'country', section: 'profile', map: 'none',
     dotColor: 'blue', minHeight: 1400,
     desc: "One country's full World Bank record by category, ECB/Eurostat data for Europe, and an analysis of that economy's own history",
     render: () => <CountryLookupPanel />,
   },
   // ── SECURITY & DEFENSE ────────────────────────────────────────────────────────
   {
-    id: 'airspace', title: 'Airspace', group: 'security', section: 'live',
+    id: 'airspace', title: 'Airspace', group: 'security', section: 'live', map: ['airspace'],
     dotColor: 'red', desc: 'FIR status & NOTAM alerts',
     render: (p) => <AirspacePanel flights={p.flights} />,
   },
   {
-    id: 'sanctions', title: 'Sanctions', group: 'security', section: 'pressure',
+    id: 'sanctions', title: 'Sanctions', group: 'security', section: 'pressure', map: ['sanctions'],
     dotColor: 'red', desc: 'OFAC EU UN UK sanctions registry',
     render: () => <SanctionsPanel />,
   },
   {
-    id: 'drugs', title: 'Narcotics', group: 'security', section: 'pressure',
+    id: 'drugs', title: 'Narcotics', group: 'security', section: 'pressure', map: 'none',
     dotColor: 'red', desc: 'Trafficking routes & seizure data',
     render: () => <DrugTrafficPanel />,
   },
   {
-    id: 'militaryPersonnel', title: 'Force Size', group: 'security', section: 'military',
+    id: 'militaryPersonnel', title: 'Force Size', group: 'security', section: 'military', map: 'inline',
     dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
     render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
   {
-    id: 'military', title: 'Installations', group: 'security', section: 'military',
+    id: 'military', title: 'Installations', group: 'security', section: 'military', map: ['military'],
     dotColor: 'blue', desc: 'Military bases & force posture',
     render: (p) => <MilitaryPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'militaryInstallationsByCountry', title: 'Bases by Country', group: 'security', section: 'military',
+    id: 'militaryInstallationsByCountry', title: 'Bases by Country', group: 'security', section: 'military', map: ['military'],
     dotColor: 'blue', desc: 'Military bases by country — click to fly to',
     render: (p) => <MilitaryInstallationsByCountryPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'nuclear', title: 'Nuclear', group: 'security', section: 'nuclear',
+    id: 'nuclear', title: 'Nuclear', group: 'security', section: 'nuclear', map: ['nuclear'],
     dotColor: 'yellow', desc: 'Reactors & weapons storage sites',
     render: () => <NuclearPanel />,
   },
   {
-    id: 'nuclearFacilitiesByCountry', title: 'Nuclear Sites by Country', group: 'security', section: 'nuclear',
+    id: 'nuclearFacilitiesByCountry', title: 'Nuclear Sites by Country', group: 'security', section: 'nuclear', map: ['nuclear'],
     dotColor: 'yellow', desc: 'Reactors & weapons sites by country — click to fly to',
     render: (p) => <NuclearFacilitiesByCountryPanel onGeoSearch={p.onGeoSearch} />,
   },
   // ── INFRASTRUCTURE ────────────────────────────────────────────────────────────
   {
-    id: 'disasters', title: 'Disaster Alerts', group: 'geo', section: 'live',
+    id: 'disasters', title: 'Disaster Alerts', group: 'geo', section: 'live', map: ['disasters'],
     dotColor: 'orange', desc: 'GDACS Orange/Red: quakes, cyclones, floods, volcanoes, drought',
     render: (p) => <DisasterAlertsPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'outages', title: 'Connectivity', group: 'geo', section: 'live',
+    id: 'outages', title: 'Connectivity', group: 'geo', section: 'live', map: ['outages'],
     dotColor: 'yellow', desc: 'Internet disruption monitoring',
     render: (p) => <OutagesPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'humanitarian', title: 'Humanitarian', group: 'geo', section: 'people',
+    id: 'humanitarian', title: 'Humanitarian', group: 'geo', section: 'people', map: ['humanitarian'],
     dotColor: 'blue', desc: 'UNHCR displacement & border status',
     render: (p) => <HumanitarianPanel crises={p.crises} flights={p.flights} onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'infraIndicators', title: 'Power Output', group: 'geo', section: 'capacity',
+    id: 'infraIndicators', title: 'Power Output', group: 'geo', section: 'capacity', map: 'inline',
     dotColor: 'blue', desc: 'Countries ranked by electricity generated, with source mix (Ember via Our World in Data)',
     render: (p) => <InfraIndicatorsPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
   {
-    id: 'infrastructureByCountry', title: 'Infrastructure Sites', group: 'geo', section: 'capacity',
+    id: 'infrastructureByCountry', title: 'Infrastructure Sites', group: 'geo', section: 'capacity', map: ['infrastructure'],
     dotColor: 'amber', desc: 'Dams, pipelines, LNG, power plants by country — click to fly to',
     render: (p) => <InfrastructureByCountryPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'datacenters', title: 'Data Centers', group: 'geo', section: 'capacity',
+    id: 'datacenters', title: 'Data Centers', group: 'geo', section: 'capacity', map: ['datacenters'],
     dotColor: 'blue', desc: 'Data center facilities worldwide (OpenStreetMap) — click to fly to',
     render: (p) => <DataCentersPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
-    id: 'layers', title: 'Overlays', group: 'geo', section: 'map',
+    id: 'layers', title: 'Overlays', group: 'geo', section: 'map', map: 'none',
     dotColor: 'blue', desc: 'Map layer configuration',
     render: (p) => <LayersPanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} deepstateMode={p.deepstateMode} onDeepstateToggle={p.onDeepstateToggle} />,
   },
   // ── NEWS & MEDIA ──────────────────────────────────────────────────────────────
   {
-    id: 'news', title: 'Signals', group: 'news', section: 'reporting',
+    id: 'news', title: 'Signals', group: 'news', section: 'reporting', map: ['news'],
     dotColor: 'grn', desc: 'Aggregated open-source reporting',
     render: () => <NewsPanel />,
   },
   {
-    id: 'brief', title: 'Briefing', group: 'news', section: 'reporting',
+    id: 'brief', title: 'Briefing', group: 'news', section: 'reporting', map: 'none',
     dotColor: 'red', desc: 'Correlated intel for active query',
     render: (p) => <IntelBriefPanel query={p.searchQuery ?? ''} crises={p.crises} flights={p.flights} />,
   },
   {
-    id: 'livefeed', title: 'Live Feed', group: 'news', section: 'video',
+    id: 'livefeed', title: 'Live Feed', group: 'news', section: 'video', map: 'none',
     dotColor: 'red', desc: 'Live news broadcasts — CNN, FOX, NBC, CBS, Euronews, DW, Sky News, France 24',
     render: () => <LiveFeedPanel />,
   },
   {
-    id: 'webcams', title: 'US Webcams', group: 'news', section: 'video',
+    id: 'webcams', title: 'US Webcams', group: 'news', section: 'video', map: ['cameras'],
     dotColor: 'grn', desc: 'SkylineWebcams & EarthCam — live US grid',
     render: () => <USWebcamsPanel />,
   },

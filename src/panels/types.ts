@@ -28,6 +28,14 @@ export interface PanelDef {
   section: string
   /** dock height for long, research-style panels (default 700px) */
   minHeight?: number
+  /**
+   * How this panel's data reaches the map. Required, so every panel decides:
+   * - a list of map layers: the layers that draw this panel's data; the panel header gets the standard
+   *   "Show on map" toggle for them (`PanelMapToggle`)
+   * - 'inline': the panel has its own, more specific map control in its body (e.g. which indicator shades the globe)
+   * - 'none': nothing in the panel has a map layer to show it on
+   */
+  map: (keyof PanelState)[] | 'inline' | 'none'
   /** Render function — receives all props, panel uses what it needs */
   render: (props: PanelProps) => React.ReactNode
 }
