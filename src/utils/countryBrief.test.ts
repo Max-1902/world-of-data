@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { mentionsCountry, sameCountry, pickCountryHeadlines, linkedCrisisEvents } from './countryBrief'
+import { mentionsCountry, sameCountry, pickCountryHeadlines, linkedCrisisEvents, countryIncidents, quakesInCountry } from './countryBrief'
+import type { Earthquake } from '../services/earthquakes'
 import type { CrisisEvent, NewsArticle } from '../types'
 
 const NOW = Date.parse('2026-10-04T12:00:00Z')
@@ -93,5 +94,32 @@ describe('linkedCrisisEvents', () => {
   })
   it('is empty for a country with nothing tracked', () => {
     expect(linkedCrisisEvents([crisis('a', 'Sudan', 'low')], 'Iceland')).toEqual({ total: 0, top: [] })
+  })
+})
+
+describe('countryIncidents (shared by the brief and the drawer)', () => {
+  const quake = (id: string, place: string, magnitude = 4.8) =>
+    ({ id, place, magnitude, time: 0, latitude: 0, longitude: 0, depth: 10, url: '' }) as Earthquake
+  const live = { id: 'a1', title: 'Battles in X', type: 'war', severity: 'critical', latitude: 0, longitude: 0, country: 'Turkey', date: '2026-10-14', description: '', source: 'ACLED' } as CrisisEvent
+  const marker = { ...live, id: 'baseline-x', source: 'Baseline' } as CrisisEvent
+  const feed = [quake('q1', '12 km SW of Malatya, Turkey'), quake('q2', 'south of the Fiji Islands', 5.1)]
+
+  it('regression: a quake on the map is not reported as "no live incidents" by the brief', () => {
+    const r = countryIncidents('Turkey', [live], feed)
+    expect(r.quakes!.map(q => q.id)).toEqual(['q1'])
+  })
+
+  it('says "not measured" (null), not "none", when a feed has not loaded', () => {
+    expect(countryIncidents('Turkey', [marker], feed).conflict).toBeNull()
+    expect(countryIncidents('Turkey', [live], []).quakes).toBeNull()
+    expect(countryIncidents('Turkey', [live], undefined).quakes).toBeNull()
+  })
+
+  it('reports a measured zero as zero', () => {
+    expect(countryIncidents('Chile', [live], feed)).toEqual({ conflict: { total: 0, top: [] }, quakes: [] })
+  })
+
+  it('attributes quakes by country name, not by a box around nearby bases (drawer used to list neighbours\' quakes)', () => {
+    expect(quakesInCountry([quake('x', '40 km NE of Tabriz, Iran')], 'Iraq')).toEqual([])
   })
 })

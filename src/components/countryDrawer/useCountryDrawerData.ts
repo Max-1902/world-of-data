@@ -14,7 +14,7 @@ import { fetchMilitaryPersonnelRanking, type MilitaryPersonnelEntry } from '../.
 import { fetchInfraIndicatorRanking, type CountryInfraEntry } from '../../services/infraIndicators'
 import { fetchCivilFacilities, type CivilFacility } from '../../services/civilFacilities'
 import { matchCountry } from './parts'
-import { mentionsCountry } from '../../utils/countryBrief'
+import { quakesInCountry } from '../../utils/countryBrief'
 
 export function useCountryDrawerData(country: string, crises: CrisisEvent[], flights: Flight[], earthquakes?: Earthquake[], fires?: FirePoint[]) {
   return useMemo(() => {
@@ -83,12 +83,10 @@ export function useCountryDrawerData(country: string, crises: CrisisEvent[], fli
       flightTypes[t] = (flightTypes[t] ?? 0) + 1
     }
 
-    // Earthquakes near this country (within ~5 deg of any known point)
+    // Earthquakes in this country: same rule as the country brief (USGS place names the country). The old
+    // "within 5° of any base or camp" box also listed neighbours' quakes, so drawer and brief disagreed.
+    const nearbyQuakes = quakesInCountry(earthquakes ?? [], country).slice(0, 5)
     const refPoints = [...camps, ...milBases, ...nukes, ...infra]
-    const nearbyQuakes = (earthquakes ?? []).filter(eq =>
-      refPoints.some(p => Math.abs(eq.latitude - p.lat) < 5 && Math.abs(eq.longitude - p.lng) < 5)
-      || (eq.place && mentionsCountry(eq.place, country))
-    ).sort((a, b) => b.magnitude - a.magnitude).slice(0, 5)
 
     // Wildfires near this country
     const nearbyFires = (fires ?? []).filter(f =>

@@ -3,7 +3,8 @@ import { formatDistanceToNowStrict } from 'date-fns'
 import { useCountryBrief } from '../hooks/useCountryBrief'
 import { formatEconValue, resolveISO2, type EconIndicator, type IndicatorId } from '../services/worldbank'
 import { CAPITALS } from '../services/capitals'
-import { linkedCrisisEvents, pickCountryHeadlines } from '../utils/countryBrief'
+import { countryIncidents, INCIDENT_WINDOWS, pickCountryHeadlines } from '../utils/countryBrief'
+import type { Earthquake } from '../services/earthquakes'
 import type { TrajectoryEntry } from '../utils/trajectory'
 import type { CrisisEvent, NewsArticle } from '../types'
 import { StateMediaBadge } from './StateMediaBadge'
@@ -14,6 +15,8 @@ interface Props {
   crises: CrisisEvent[]
   /** app-wide headlines; any that name the country are merged into the country's own feed */
   articles: NewsArticle[]
+  /** the same USGS feed the map shows; undefined/empty = not loaded */
+  earthquakes?: Earthquake[]
   trend?: TrajectoryEntry
 }
 
@@ -36,11 +39,12 @@ const FACT_IDS: { id: IndicatorId; label: string; kind: FreshnessKind }[] = [
   { id: 'MS.MIL.XPND.GD.ZS', label: 'Military spend', kind: 'military' },
 ]
 
-export default function CountryBrief({ country, crises, articles, trend }: Props) {
+export default function CountryBrief({ country, crises, articles, earthquakes, trend }: Props) {
   const { headlines, profile, econ, loading } = useCountryBrief(country)
 
   const picked = useMemo(() => pickCountryHeadlines(country, headlines, articles), [country, headlines, articles])
-  const tracked = useMemo(() => linkedCrisisEvents(crises, country), [crises, country])
+  const incidents = useMemo(() => countryIncidents(country, crises, earthquakes), [country, crises, earthquakes])
+  const tracked = incidents.conflict
 
   const byId = new Map<string, EconIndicator>((econ?.indicators ?? []).filter(i => i.value != null).map(i => [i.id, i]))
   const facts: { label: string; value: string; year?: string; stale?: string | null }[] = []
@@ -77,9 +81,11 @@ export default function CountryBrief({ country, crises, articles, trend }: Props
 
       <div className="cb-section">
         <div className="cb-label">TRACKED ACTIVITY</div>
-        {tracked.total > 0 ? (
+        {tracked === null ? (
+          <div className="cb-line cb-dim">Conflict events not measured: the ACLED feed returned nothing ({INCIDENT_WINDOWS.conflict}).</div>
+        ) : tracked.total > 0 ? (
           <>
-            <div className="cb-line">{tracked.total} live incident{tracked.total === 1 ? '' : 's'} on the map{trend && trend.recentCount + trend.priorCount > 0 ? ` · ${trend.reason}` : ''}</div>
+            <div className="cb-line">{tracked.total} conflict event{tracked.total === 1 ? '' : 's'} ({INCIDENT_WINDOWS.conflict}){trend && trend.recentCount + trend.priorCount > 0 ? ` · ${trend.reason}` : ''}</div>
             {tracked.top.map(c => (
               <div key={c.id} className="cb-incident" title={c.title}>
                 <i className={`cb-dot ${c.severity}`} />
@@ -88,8 +94,24 @@ export default function CountryBrief({ country, crises, articles, trend }: Props
             ))}
           </>
         ) : (
-          <div className="cb-line cb-dim">No live incidents (conflict, disaster, quake, outage) currently tracked here.</div>
+          <div className="cb-line cb-dim">No conflict events here ({INCIDENT_WINDOWS.conflict}).</div>
         )}
+        {incidents.quakes === null ? (
+          <div className="cb-line cb-dim">Earthquakes not measured: USGS feed not loaded.</div>
+        ) : incidents.quakes.length > 0 ? (
+          <>
+            <div className="cb-line">{incidents.quakes.length} earthquake{incidents.quakes.length === 1 ? '' : 's'} ({INCIDENT_WINDOWS.quakes})</div>
+            {incidents.quakes.slice(0, 3).map(q => (
+              <div key={q.id} className="cb-incident" title={q.place}>
+                <i className={`cb-dot ${q.magnitude >= 6 ? 'critical' : 'high'}`} />
+                <span>M{q.magnitude.toFixed(1)} · {q.place}</span>
+              </div>
+            ))}
+          </>
+        ) : (
+          <div className="cb-line cb-dim">No earthquakes here ({INCIDENT_WINDOWS.quakes}).</div>
+        )}
+        <div className="cb-source">Disaster alerts, internet outages and wildfires are not included in this brief.</div>
       </div>
 
       <div className="cb-section">
