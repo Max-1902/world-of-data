@@ -2,7 +2,7 @@
 
 ## Shape
 
-No application server and no database. This is a Vite-built React SPA that talks directly to public APIs from the browser. The exceptions are a handful of thin serverless functions in `api/` (Vercel-style; `vite.api-dev.ts` serves the same files in `npm run dev`): they exist only to inject server-side secrets (OpenSky/ACLED OAuth, Finnhub, Guardian, NYT, OpenRouter keys) or to get around a missing CORS header (RSS, GPSJam), and hold no state. Everything else is fetched straight from the browser. There is no persistence layer beyond `localStorage` (panel layout, view mode, AI chat history) — every panel is a live view over whatever the last poll returned.
+No application server and no database. This is a Vite-built React SPA that talks directly to public APIs from the browser. The exceptions are a handful of thin serverless functions in `api/` (Vercel-style; `vite.api-dev.ts` serves the same files in `npm run dev`): they exist only to inject server-side secrets (OpenSky/ACLED OAuth, Finnhub, NYT, OpenRouter keys) or to get around a missing CORS header (RSS, GPSJam), and hold no state. Everything else is fetched straight from the browser. There is no persistence layer beyond `localStorage` (panel layout, view mode, AI chat history) — every panel is a live view over whatever the last poll returned.
 
 ```
 src/

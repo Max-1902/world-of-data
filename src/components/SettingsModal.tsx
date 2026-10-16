@@ -40,7 +40,8 @@ const DATA_SOURCES: { category: string; items: { label: string; source: string; 
     items: [
       { label: 'Global articles', source: 'GDELT Project v2', notes: '65k+ sources, near real-time. English filter.' },
       { label: 'Wire services', source: 'BBC, Reuters, DW, Al Jazeera, France 24', notes: 'RSS feeds via proxy.' },
-      { label: 'Premium feeds', source: 'NewsAPI, Guardian, NYT', notes: 'Requires API keys. Optional.' },
+      { label: 'Keyword search', source: 'Google News', notes: 'No key. Searches Reuters, AP, BBC, Guardian and more.' },
+      { label: 'Premium feeds', source: 'NewsAPI, NYT', notes: 'Requires API keys. Optional.' },
     ],
   },
   {
@@ -103,7 +104,6 @@ const CLIENT_API_KEYS = [
 // the client, so their configured status can't be checked from here.
 const SERVER_API_KEYS = [
   { label: 'OpenRouter', desc: 'AI analyst (free tier available)' },
-  { label: 'The Guardian', desc: 'Guardian news API' },
   { label: 'New York Times', desc: 'NYT article search' },
   { label: 'Finnhub', desc: 'Market data' },
   { label: 'ACLED', desc: 'Conflict event data (email + password)' },

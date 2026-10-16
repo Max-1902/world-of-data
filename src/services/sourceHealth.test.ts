@@ -12,6 +12,7 @@ describe('sourceForUrl', () => {
     ['https://overpass.private.coffee/api/interpreter', 'osm'],
     ['https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'osm'],
     ['/api/rss?url=https%3A%2F%2Fexample.com', 'rss'],
+    ['/api/rss?url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3Dx', 'gnews'],
     ['/api/openrouter/chat', 'ai'],
   ])('%s -> %s', (url, id) => {
     expect(sourceForUrl(url)?.id).toBe(id)

@@ -168,25 +168,23 @@ describe('article search', () => {
   afterEach(() => vi.useRealTimers())
   beforeEach(() => quietConsole())
 
-  it('searchGuardian maps the Guardian payload and encodes the query', async () => {
-    const fetchMock = mockFetch(() => jsonResponse({ response: { results: [{
-      id: 'world/1', webTitle: 'Headline', fields: { trailText: 'Trail', thumbnail: 'https://t' },
-      webUrl: 'https://g/1', webPublicationDate: '2025-01-01T00:00:00Z', sectionName: 'World',
-    }] } }))
-    const { searchGuardian } = await load()
-    const [a] = await searchGuardian('war & peace')
-    expect(a).toEqual({
-      id: 'guardian-world/1', title: 'Headline', description: 'Trail', url: 'https://g/1',
-      source: 'The Guardian', publishedAt: '2025-01-01T00:00:00Z', imageUrl: 'https://t', category: 'World',
-    })
-    expect(String(fetchMock.mock.calls[0][0])).toContain('q=war%20%26%20peace')
+  it('searchGoogleNewsHeadlines queries Google News via the RSS proxy and splits the outlet out of the title', async () => {
+    vi.useFakeTimers()
+    const fetchMock = mockFetch(() => rssBody([{ title: 'Ceasefire talks resume in Geneva - Reuters', link: 'https://n/1', pubDate: '2025-01-01 00:00:00' }]))
+    const { searchGoogleNewsHeadlines } = await load()
+    const [a] = await settle(searchGoogleNewsHeadlines('war & peace'))
+    expect(a).toMatchObject({ title: 'Ceasefire talks resume in Geneva', source: 'Reuters', url: 'https://n/1', description: '' })
+    const feed = decodeURIComponent(decodeURIComponent(String(fetchMock.mock.calls[0][0])))
+    expect(feed).toContain('news.google.com/rss/search?q=war & peace when:7d')
   })
 
-  it('searchGuardian returns [] on failure', async () => {
-    mockFetch(() => jsonResponse({}, { status: 500 }))
-    expect(await (await load()).searchGuardian('x')).toEqual([])
-    mockFetch(() => { throw new Error('offline') })
-    expect(await (await load()).searchGuardian('x')).toEqual([])
+  it('searchGoogleNewsHeadlines returns [] for a blank query or a failed feed', async () => {
+    vi.useFakeTimers()
+    const fetchMock = mockFetch(() => jsonResponse({}, { status: 500 }))
+    const news = await load()
+    expect(await news.searchGoogleNewsHeadlines('  ')).toEqual([])
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(await settle(news.searchGoogleNewsHeadlines('x'))).toEqual([])
   })
 
   it('searchNYT maps docs, builds image URLs, and tolerates missing headline/multimedia', async () => {
@@ -268,11 +266,11 @@ describe('searchAllSources', () => {
 
   it('merges sources, drops non-English titles, de-duplicates by title and sorts newest-first', async () => {
     mockFetch(url => {
-      if (url.startsWith('/api/guardian')) return jsonResponse({ response: { results: [
-        { id: '1', webTitle: 'Shared headline about the war', webUrl: 'u1', webPublicationDate: '2025-01-01T00:00:00Z', sectionName: 'w' },
-        { id: '2', webTitle: 'Новости из Москвы сегодня', webUrl: 'u2', webPublicationDate: '2025-06-01T00:00:00Z', sectionName: 'w' },
-        { id: '3', webTitle: 'Éléàèù âêîôû éàèùç ûîôâ', webUrl: 'u3', webPublicationDate: '2025-06-02T00:00:00Z', sectionName: 'w' },
-      ] } })
+      if (url.includes('news.google.com')) return rssBody([
+        { title: 'Shared headline about the war', link: 'https://g/1', pubDate: '2025-01-01T00:00:00Z' },
+        { title: 'Новости из Москвы сегодня', link: 'https://g/2', pubDate: '2025-06-01T00:00:00Z' },
+        { title: 'Éléàèù âêîôû éàèùç ûîôâ', link: 'https://g/3', pubDate: '2025-06-02T00:00:00Z' },
+      ])
       if (url.startsWith('/api/nyt')) return jsonResponse({ response: { docs: [
         { _id: 'x', headline: { main: 'shared headline about the war' }, web_url: 'u4', pub_date: '2025-05-01T00:00:00Z' },
         { _id: 'y', headline: { main: 'A newer unique headline' }, web_url: 'u5', pub_date: '2025-04-01T00:00:00Z' },
@@ -286,9 +284,8 @@ describe('searchAllSources', () => {
   })
 
   it('caps the result at 100 articles', async () => {
-    mockFetch(url => url.startsWith('/api/guardian')
-      ? jsonResponse({ response: { results: Array.from({ length: 150 }, (_, i) => ({ id: `${i}`, webTitle: `Unique english headline number ${i}`, webUrl: `u${i}`, webPublicationDate: '2025-01-01T00:00:00Z', sectionName: 'w' })) } })
-      : url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [] } })
+    mockFetch(url => url.startsWith('/api/nyt')
+      ? jsonResponse({ response: { docs: Array.from({ length: 150 }, (_, i) => ({ _id: `${i}`, headline: { main: `Unique english headline number ${i}` }, web_url: `u${i}`, pub_date: '2025-01-01T00:00:00Z' })) } })
       : url.startsWith('/api/gdelt') ? jsonResponse({ articles: [] })
       : rssBody([]))
     const result = await settle((await load()).searchAllSources('x'))
@@ -297,7 +294,7 @@ describe('searchAllSources', () => {
 
   it('still returns results when some sources fail outright', async () => {
     mockFetch(url => {
-      if (url.startsWith('/api/guardian')) throw new Error('offline')
+      if (url.includes('news.google.com')) throw new Error('offline')
       if (url.startsWith('/api/nyt')) return jsonResponse({}, { status: 500 })
       if (url.startsWith('/api/gdelt')) return jsonResponse({ articles: [{ url: 'u', title: 'Surviving english headline', seendate: '2025-01-01', domain: 'd', language: 'English' }] })
       return jsonResponse({}, { status: 500 })
@@ -386,7 +383,7 @@ describe('manual reload and headline freshness', () => {
   it('fetchTopHeadlines keeps only the last 48 h when enough fresh articles exist', async () => {
     const fresh = Array.from({ length: 10 }, (_, i) => ({ _id: `f${i}`, headline: { main: `Fresh story ${i}` }, web_url: `u${i}`, pub_date: '2026-10-04T10:00:00Z' }))
     const stale = { _id: 's', headline: { main: 'Stale story' }, web_url: 'us', pub_date: '2026-09-29T10:00:00Z' }
-    mockFetch(url => url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [...fresh, stale] } }) : url.startsWith('/api/guardian') ? jsonResponse({ response: { results: [] } }) : url.startsWith('/api/gdelt') ? jsonResponse({ articles: [] }) : rssBody([]))
+    mockFetch(url => url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [...fresh, stale] } }) : url.startsWith('/api/gdelt') ? jsonResponse({ articles: [] }) : rssBody([]))
     const { fetchTopHeadlines } = await load()
     const result = await settle(fetchTopHeadlines())
     expect(result).toHaveLength(10)
@@ -394,7 +391,7 @@ describe('manual reload and headline freshness', () => {
   })
 
   it('fetchTopHeadlines falls back to the newest available when almost nothing is fresh', async () => {
-    mockFetch(url => url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [{ _id: 's', headline: { main: 'Stale story' }, web_url: 'us', pub_date: '2026-09-29T10:00:00Z' }] } }) : url.startsWith('/api/guardian') ? jsonResponse({ response: { results: [] } }) : url.startsWith('/api/gdelt') ? jsonResponse({ articles: [] }) : rssBody([]))
+    mockFetch(url => url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [{ _id: 's', headline: { main: 'Stale story' }, web_url: 'us', pub_date: '2026-09-29T10:00:00Z' }] } }) : url.startsWith('/api/gdelt') ? jsonResponse({ articles: [] }) : rssBody([]))
     const { fetchTopHeadlines } = await load()
     const result = await settle(fetchTopHeadlines())
     expect(result.map(a => a.title)).toEqual(['Stale story'])
@@ -404,7 +401,7 @@ describe('manual reload and headline freshness', () => {
     mockFetch(url => url.startsWith('/api/gdelt')
       ? jsonResponse({ articles: [{ url: 'g', title: 'Gdelt newest story', seendate: '20261004T110000Z', domain: 'd.com', language: 'English' }] })
       : url.startsWith('/api/nyt') ? jsonResponse({ response: { docs: [{ _id: 'n', headline: { main: 'Older nyt story' }, web_url: 'n', pub_date: '2026-10-03T00:00:00Z' }] } })
-      : url.startsWith('/api/guardian') ? jsonResponse({ response: { results: [] } }) : rssBody([]))
+      : rssBody([]))
     const { searchAllSources } = await load()
     const result = await settle(searchAllSources('x'))
     expect(result.map(a => a.title)).toEqual(['Gdelt newest story', 'Older nyt story'])

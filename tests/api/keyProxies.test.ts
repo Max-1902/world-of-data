@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
 import finnhub from '../../api/finnhub/[...path]'
-import guardian from '../../api/guardian/[...path]'
 import nyt from '../../api/nyt'
 import { mockReq, mockRes, mockUpstream } from './helpers'
 
@@ -8,7 +7,6 @@ const lastUrl = (fetchMock: ReturnType<typeof mockUpstream>) => new URL(String((
 
 describe.each([
   { name: 'finnhub', handler: finnhub, env: 'FINNHUB_KEY', keyParam: 'token', origin: 'https://finnhub.io', base: '/api/v1/', empty: {} },
-  { name: 'guardian', handler: guardian, env: 'GUARDIAN_KEY', keyParam: 'api-key', origin: 'https://content.guardianapis.com', base: '/', empty: { response: { results: [] } } },
 ])('$name proxy', ({ handler, env, keyParam, origin, base, empty }) => {
   it('returns an empty payload without calling upstream when no key is configured', async () => {
     vi.stubEnv(env, '')

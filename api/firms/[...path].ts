@@ -15,7 +15,7 @@ const TIMEOUT_MS = 20_000
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method && req.method !== 'GET') return res.status(405).json({ error: 'GET only' })
-  // `vercel dev`'s local mode puts the catch-all segment under "...path" (see api/guardian)
+  // `vercel dev`'s local mode puts the catch-all segment under "...path"
   const rawPath = req.query.path ?? req.query['...path']
   const path = Array.isArray(rawPath) ? rawPath.join('/') : (rawPath ?? '')
   if (!ALLOWED_PATHS.has(path)) return res.status(404).json({ error: 'not a FIRMS file this app uses' })
