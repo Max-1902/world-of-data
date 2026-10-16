@@ -3,7 +3,7 @@ import {
   normalCdf, tPValue, tCrit95, regress, senSlope, mannKendall, trendTest, hpFilter, outputGap, recessions, byDecade,
   cagr, growthDecomposition, okun, phillips, persistence, sectoralBalances, debtDynamics, anomalyScan, meanBreak,
   benjaminiHochberg, diffs, lastRun, spreadSeries, annualAverage, SUPF_CRIT_5, type Pt,
-  naiveForecast, meanForecast, arForecast, backtestForecast,
+  naiveForecast, meanForecast, arForecast, backtestForecast, dieboldMariano,
 } from './econAnalysis'
 
 const series = (ys: number[], x0 = 2000): Pt[] => ys.map((y, i) => ({ x: x0 + i, y }))
@@ -369,5 +369,67 @@ describe('forecast', () => {
   })
   it('backtestForecast returns null with no eligible folds', () => {
     expect(backtestForecast(series([1, 2, 3]), s => arForecast(s, 1, 1), 10)).toBeNull()
+  })
+})
+
+describe('dieboldMariano', () => {
+  // Reference values from an independent NumPy/SciPy implementation (HLN-corrected DM, t(n−1) p-value), 2026-10-15.
+  const REF = [
+    { e1: [2.245011,-2.811232,0.459909,-0.624547,-0.497914,-0.237157,-2.221985,-0.255126,-0.951734,3.655299,0.248365,-0.387894,-0.309416,-0.734851,-1.160666,-0.429881,0.530140,-0.262409,1.053535,-0.219782,0.026686,1.700403,0.599616,-0.555752,-0.201123,0.594578,2.128597,-0.296582,-0.267915,1.102545,-0.975106,-0.320892,0.970793,0.638385,0.100668,0.737115,-3.110979,1.123437,-1.055609,-1.835482,0.304090,0.770599,-0.489244,-1.184046,0.028737,-0.058022,1.546158,0.822149,0.213197,1.222797,-0.226075], e2: [-1.098490,0.722464,0.560792,-0.156312,-0.941089,0.332069,-2.663284,0.839137,0.620505,-1.722743,-0.012511,-1.140510,0.752943,-2.157584,-1.085944,0.860538,1.352041,-2.453806,-0.627844,0.280822,-0.590138,1.829704,-1.230349,0.309985,-1.073246,1.626559,0.056184,-0.329476,-1.810003,1.770008,0.748056,0.748920,1.331669,0.464149,-0.783171,-0.960265,-0.800220,1.427080,-1.686419,-0.576006,-0.273368,0.167081,0.552884,-1.454007,-1.983015,0.075144,1.414920,0.912764,0.317216,-0.268871,0.402557], h: 1, stat: -0.586902, p: 0.559910 },
+    { e1: [-1.678775,-0.503930,0.122627,-0.861483,-0.524073,-0.901032,-0.366846,0.938419,-0.447238,-0.169258,0.895090,0.709247,1.864728,-2.299534,0.942545,-0.530512,0.148161,0.921491,1.191578,1.143286], e2: [-0.329383,1.270629,-0.811272,0.344920,1.379286,-0.106510,2.876997,1.621127,2.893133,0.470752,-0.921397,-0.316247,1.308034,-1.146170,0.917672,-0.518485,2.277250,-1.228972,0.650778,-0.208250], h: 1, stat: -0.883611, p: 0.387950 },
+    { e1: [-0.616260,-0.199053,0.046058,-0.148005,-0.207683,-0.915689,-0.208047,-2.352175,-0.173065,-1.317862,1.232290,1.396919,-2.146128,0.159408,-0.139000,-1.151387,0.584818,-0.507858,-1.944359,-0.293344,-0.163078,0.117074,-1.354356,0.677249,0.809003,-1.260410,-0.724741,-0.088371,-0.622518,1.918130], e2: [0.229209,-1.111640,-0.866920,-0.063217,2.525357,-0.196091,0.140224,0.565450,-0.044139,2.508727,-0.584677,0.818623,0.176482,0.683316,-1.294307,1.944924,-0.133680,0.037580,-1.028474,-0.802665,0.620663,1.085150,0.828580,1.329867,0.785938,0.031308,0.920179,0.652964,-0.110633,0.798680], h: 2, stat: 0.104666, p: 0.917361 },
+  ]
+  it.each(REF.map((r, i) => [i, r] as const))('matches the SciPy reference (case %i)', (_i, r) => {
+    const dm = dieboldMariano(r.e1, r.e2, r.h)!
+    expect(dm.stat).toBeCloseTo(r.stat, 4)
+    expect(dm.p).toBeCloseTo(r.p, 4)
+    expect(dm.n).toBe(r.e1.length)
+  })
+
+  it('calls a small MAE gap on ~50 folds "not significant" (the 0.89 vs 0.97 question)', () => {
+    const r = REF[0]
+    const mae = (v: number[]) => v.reduce((s, x) => s + Math.abs(x), 0) / v.length
+    expect(Math.abs(mae(r.e1) - mae(r.e2))).toBeLessThan(0.15)
+    expect(dieboldMariano(r.e1, r.e2)!.p).toBeGreaterThan(0.05)
+  })
+
+  it('detects a real difference', () => {
+    const small = Array.from({ length: 40 }, (_, i) => (i % 2 ? 0.2 : -0.2))
+    const big = Array.from({ length: 40 }, (_, i) => (i % 3 ? 1.5 : -1.2))
+    expect(dieboldMariano(small, big)!.p).toBeLessThan(0.001)
+    expect(dieboldMariano(small, big)!.stat).toBeLessThan(0)
+  })
+
+  it('refuses below 5 folds or with zero variance', () => {
+    expect(dieboldMariano([1, 2, 3, 4], [1, 2, 3, 4])).toBeNull()
+    expect(dieboldMariano([1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1])).toBeNull()
+  })
+})
+
+describe('backtestForecast pairing', () => {
+  it('scores model and baseline on the same folds even when the model skips some', () => {
+    const pts = Array.from({ length: 30 }, (_, i) => ({ x: 1990 + i, y: Math.sin(i) }))
+    // a model that declines every other fold
+    const bt = backtestForecast(pts, train => (train.length % 2 ? null : naiveForecast(train, 1)), 10)!
+    expect(bt.folds).toBe(10)
+    expect(bt.mae).toBeCloseTo(bt.baselineMae!, 10) // same model as the baseline, same folds: identical MAE
+  })
+})
+
+describe('mannKendall / senSlope against pymannkendall', () => {
+  // pymannkendall 1.4.3 original_test (tie-corrected variance, continuity correction), 2026-10-15. Over 40 random
+  // series S, z and Sen's slope matched exactly and p to 1.4e-7. trendTest's autocorrelation correction is a
+  // documented variant (bias-corrected r1, applied only when r1 > 0) and is not compared here.
+  const REF = [
+    { ys: [-0.2, -0.265, -1.8, -0.9, 1.1, 0.8, -0.0, 0.2, -0.5, -0.518, 1.2, 0.767], s: 14.0, z: 0.8914431257, p: 0.3726914905, slope: 0.0800000000 },
+    { ys: [0.6, 0.8, -0.844, -0.1, 0.5, 0.9, -0.032, 1.428, 0.656, 1.2, 2.4, 0.7, 1.31, 2.05, 2.1], s: 59.0, z: 2.8702556240, p: 0.0041014009, slope: 0.1464000000 },
+    { ys: [2.721, 1.5, 1.4, 0.537, -1.138, -0.794, -1.5, 0.838, -1.8, 0.909, 0.851, -0.179, -2.1, 0.2, -0.268, 1.5, 1.1, -1.465, 0.9, 0.777], s: -25.0, z: -0.7790729678, p: 0.4359367329, slope: -0.0384068627 },
+  ]
+  it.each(REF.map((r, i) => [i, r] as const))('case %i', (_i, r) => {
+    const m = mannKendall(r.ys)
+    expect(m.s).toBe(r.s)
+    expect(m.z).toBeCloseTo(r.z, 8)
+    expect(m.p).toBeCloseTo(r.p, 6)
+    expect(senSlope(r.ys.map((y, x) => ({ x, y })))).toBeCloseTo(r.slope, 10)
   })
 })

@@ -27,7 +27,7 @@ vi.mock('../../hooks/useCountryLookup', () => ({
   useCountryLookup: () => ({ iso2: 'DE', setIso2: () => {}, countries: [], listError: null, data, status: 'ready', error: null, europe: null, europeStatus: 'idle', retry: () => {} }),
 }))
 
-const { PredictionsPanel } = await import('./PredictionsPanel')
+const { PredictionsPanel, significance } = await import('./PredictionsPanel')
 
 describe('PredictionsPanel', () => {
   it('states the forecast direction with start and end values, and whether "no change" is inside the interval', () => {
@@ -66,5 +66,13 @@ describe('PredictionsPanel', () => {
   it('declines to forecast a series that is too short', () => {
     render(<PredictionsPanel />)
     expect(screen.getByText(/Inflation \(CPI\): fewer than 15 years of data/)).toBeTruthy()
+  })
+})
+
+describe('significance sentence', () => {
+  it('never lets "lower MAE" stand alone: it says whether the gap could be chance', () => {
+    expect(significance({ stat: -0.6, p: 0.56, n: 51 })).toMatch(/not statistically significant .* p = 0\.56, 51 folds/)
+    expect(significance({ stat: -4, p: 0.0002, n: 51 })).toMatch(/is statistically significant .* p < 0\.001/)
+    expect(significance(null)).toMatch(/Too few folds/)
   })
 })
