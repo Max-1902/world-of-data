@@ -8,6 +8,9 @@ describe('sourceForUrl', () => {
     ['/api/acled/read?x=1', 'acled'],
     ['https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson', 'usgs'],
     ['https://overpass.openstreetmap.fr/api/interpreter', 'osm'],
+    ['https://overpass.kumi.systems/api/interpreter', 'osm'],
+    ['https://overpass.private.coffee/api/interpreter', 'osm'],
+    ['https://maps.mail.ru/osm/tools/overpass/api/interpreter', 'osm'],
     ['/api/rss?url=https%3A%2F%2Fexample.com', 'rss'],
     ['/api/openrouter/chat', 'ai'],
   ])('%s -> %s', (url, id) => {

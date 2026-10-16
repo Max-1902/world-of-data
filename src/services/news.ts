@@ -88,89 +88,121 @@ export async function searchGuardian(query: string): Promise<NewsArticle[]> {
   }
 }
 
-// ── New York Times ───────────────────────────────────────────────────────────
-export async function searchNYT(query: string): Promise<NewsArticle[]> {
-  try {
-    const url =
-      `/api/nyt?q=${encodeURIComponent(query)}` +
-      `&sort=newest&fq=document_type:("article")`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`NYT ${res.status}`)
-    const json = await res.json()
-    const docs = json.response?.docs || []
-    return docs.map(
-      (a: {
-        _id: string
-        headline?: { main?: string }
-        abstract?: string
-        web_url: string
-        pub_date: string
-        multimedia?: { url: string }[]
-        section_name?: string
-      }) =>
-        ({
-          id: `nyt-${a._id}`,
-          title: a.headline?.main || '',
-          description: a.abstract || '',
-          url: httpUrl(a.web_url),
-          source: 'New York Times',
-          publishedAt: a.pub_date,
-          imageUrl: a.multimedia?.[0]
-            ? `https://www.nytimes.com/${a.multimedia[0].url}`
-            : undefined,
-          category: a.section_name,
-        } satisfies NewsArticle)
-    )
-  } catch (err) {
-    console.warn('[NYT]', err)
-    return []
+// ── Rate-limited search queue ────────────────────────────────────────────────
+// GDELT and NYT both cap requests per IP (GDELT one per 5 s, NYT five per minute) and answer HTTP 429 beyond
+// that, while the app fires several searches at once on load. So calls to each are serialized with a gap,
+// results are cached per query, identical in-flight queries share one request, and a 429 pauses that source
+// for a minute (serving the last cached result, if any, meanwhile).
+class RateLimited extends Error {}
+
+const SEARCH_CACHE_TTL_MS = 10 * 60 * 1000
+const SEARCH_COOLDOWN_MS = 60 * 1000
+
+function throttledSearch(label: string, gapMs: number, fetcher: (query: string) => Promise<NewsArticle[]>) {
+  const cache = new Map<string, { at: number; data: NewsArticle[] }>()
+  const inFlight = new Map<string, Promise<NewsArticle[]>>()
+  let tail: Promise<unknown> = Promise.resolve()
+  let cooldownUntil = 0
+
+  function search(query: string): Promise<NewsArticle[]> {
+    const cached = cache.get(query)
+    if (cached && Date.now() - cached.at < SEARCH_CACHE_TTL_MS) return Promise.resolve(cached.data)
+    const pending = inFlight.get(query)
+    if (pending) return pending
+
+    const run = tail.then(async () => {
+      if (Date.now() < cooldownUntil) return cached?.data ?? []
+      try {
+        const data = await fetcher(query)
+        cache.set(query, { at: Date.now(), data })
+        return data
+      } catch (err) {
+        if (err instanceof RateLimited) cooldownUntil = Date.now() + SEARCH_COOLDOWN_MS
+        console.warn(`[${label}]`, err)
+        return cached?.data ?? []
+      }
+    })
+    tail = run.then(() => sleep(gapMs), () => sleep(gapMs))
+    inFlight.set(query, run)
+    void run.finally(() => inFlight.delete(query))
+    return run
   }
+
+  function clear() {
+    cache.clear()
+    cooldownUntil = 0
+  }
+
+  return { search, clear }
+}
+
+// ── New York Times ───────────────────────────────────────────────────────────
+// Article Search allows 5 requests/minute (and 500/day) per key.
+const nytSearch = throttledSearch('NYT', 12_500, fetchNYT)
+
+export function searchNYT(query: string): Promise<NewsArticle[]> {
+  return nytSearch.search(query)
+}
+
+async function fetchNYT(query: string): Promise<NewsArticle[]> {
+  // No `fq=document_type:("article")` here: since NYT's search backend change that filter matches nothing
+  // (0 hits for every query), so non-articles are dropped client-side instead.
+  const url = `/api/nyt?q=${encodeURIComponent(query)}&sort=newest`
+  const res = await fetch(url)
+  if (res.status === 429) throw new RateLimited('NYT 429 (limit is 5 requests per minute)')
+  if (!res.ok) throw new Error(`NYT ${res.status}`)
+  const json = await res.json()
+  const docs: {
+    _id: string
+    document_type?: string
+    headline?: { main?: string }
+    abstract?: string
+    web_url: string
+    pub_date: string
+    multimedia?: { url: string }[]
+    section_name?: string
+  }[] = json.response?.docs || []
+  return docs.filter(a => !a.document_type || a.document_type === 'article').map(
+    a =>
+      ({
+        id: `nyt-${a._id}`,
+        title: a.headline?.main || '',
+        description: a.abstract || '',
+        url: httpUrl(a.web_url),
+        source: 'New York Times',
+        publishedAt: a.pub_date,
+        imageUrl: a.multimedia?.[0]
+          ? `https://www.nytimes.com/${a.multimedia[0].url}`
+          : undefined,
+        category: a.section_name,
+      } satisfies NewsArticle)
+  )
 }
 
 // ── GDELT article search ─────────────────────────────────────────────────────
-// GDELT Article Search — free, no key, pulls from 65k+ global news sources
-// GDELT's DOC API allows one request per 5 seconds per IP and answers HTTP 429 beyond that — and the app
-// fires several searches at once on load. So calls are serialized with a gap, results are cached per query,
-// identical in-flight queries share one request, and a 429 pauses all GDELT calls for a minute.
-const GDELT_GAP_MS = 5_500
-const GDELT_CACHE_TTL_MS = 10 * 60 * 1000
-const GDELT_COOLDOWN_MS = 60 * 1000
-const gdeltCache = new Map<string, { at: number; data: NewsArticle[] }>()
-const gdeltInFlight = new Map<string, Promise<NewsArticle[]>>()
-let gdeltTail: Promise<unknown> = Promise.resolve()
-let gdeltCooldownUntil = 0
-
-class GdeltRateLimited extends Error {}
+// GDELT Article Search — free, no key, pulls from 65k+ global news sources.
+// Every GDELT Doc caller (news panels, sanctions news) must go through this queue: one request per 5 s per IP.
+const gdeltSearch = throttledSearch('GDELT News', 5_500, fetchGDELTNews)
 
 /** Drops every cached news response so the next fetch hits the network (used by the manual Reload). */
 export function clearNewsCaches() {
   rssCache.clear()
-  gdeltCache.clear()
-  gdeltCooldownUntil = 0
+  gdeltSearch.clear()
+  nytSearch.clear()
 }
 
 export function searchGDELTNews(query: string): Promise<NewsArticle[]> {
-  const cached = gdeltCache.get(query)
-  if (cached && Date.now() - cached.at < GDELT_CACHE_TTL_MS) return Promise.resolve(cached.data)
-  const pending = gdeltInFlight.get(query)
-  if (pending) return pending
+  return gdeltSearch.search(query)
+}
 
-  const run = gdeltTail.then(async () => {
-    if (Date.now() < gdeltCooldownUntil) return cached?.data ?? []
-    try {
-      const data = await fetchGDELTNews(query)
-      gdeltCache.set(query, { at: Date.now(), data })
-      return data
-    } catch (err) {
-      if (err instanceof GdeltRateLimited) gdeltCooldownUntil = Date.now() + GDELT_COOLDOWN_MS
-      console.warn('[GDELT News]', err)
-      return cached?.data ?? []
-    }
-  })
-  gdeltTail = run.then(() => sleep(GDELT_GAP_MS), () => sleep(GDELT_GAP_MS))
-  gdeltInFlight.set(query, run)
-  void run.finally(() => gdeltInFlight.delete(query))
-  return run
+// Fetch recent sanctions news from GDELT. Goes through the shared GDELT queue above (one request per 5 s per IP)
+// — a direct fetch here used to run alongside the news panels' searches and drew HTTP 429s. `seendate` is ISO.
+export async function fetchSanctionsNews(country?: string): Promise<{ title: string; url: string; domain: string; seendate: string }[]> {
+  const q = country
+    ? `sanctions "${country}" economy OFAC`
+    : 'economic sanctions OFAC treasury designation'
+  const articles = await searchGDELTNews(q)
+  return articles.map(a => ({ title: a.title, url: a.url, domain: a.source, seendate: a.publishedAt }))
 }
 
 // GDELT stamps articles "20260104T120000Z", which `new Date()` can't parse — an invalid date makes every
@@ -185,7 +217,7 @@ async function fetchGDELTNews(query: string): Promise<NewsArticle[]> {
     `/api/gdelt/v2/doc/doc?query=${encodeURIComponent(query + ' sourcelang:english')}` +
     `&mode=artlist&maxrecords=50&format=json&sort=DateDesc&sourcelang=english`
   const res = await fetch(url)
-  if (res.status === 429) throw new GdeltRateLimited('GDELT Doc 429 (limit is one request per 5 s)')
+  if (res.status === 429) throw new RateLimited('GDELT Doc 429 (limit is one request per 5 s)')
   if (!res.ok) throw new Error(`GDELT Doc ${res.status}`)
   const json = await res.json()
   const articles = json.articles || []

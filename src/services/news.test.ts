@@ -206,6 +206,42 @@ describe('article search', () => {
     expect(await (await load()).searchNYT('x')).toEqual([])
   })
 
+  it('searchNYT sends no fq filter (it matches nothing upstream) and drops non-article docs', async () => {
+    const fetchMock = mockFetch(() => jsonResponse({ response: { docs: [
+      { _id: 'a', document_type: 'article', web_url: 'https://n/a', pub_date: '2025-01-01' },
+      { _id: 'm', document_type: 'multimedia', web_url: 'https://n/m', pub_date: '2025-01-01' },
+    ] } }))
+    const res = await (await load()).searchNYT('x')
+    expect(res.map(a => a.id)).toEqual(['nyt-a'])
+    expect(String(fetchMock.mock.calls[0][0])).not.toContain('fq=')
+  })
+
+  it('searchNYT serializes requests, caches per query, and backs off for a minute after a 429', async () => {
+    vi.useFakeTimers()
+    try {
+      let status = 200
+      const fetchMock = mockFetch(() => status === 200
+        ? jsonResponse({ response: { docs: [{ _id: 'a', web_url: 'https://n/a', pub_date: '2025-01-01' }] } })
+        : jsonResponse({}, { status }))
+      const news = await load()
+      expect(await news.searchNYT('a')).toHaveLength(1)
+      const b = news.searchNYT('b')
+      await vi.advanceTimersByTimeAsync(5_000)
+      expect(fetchMock).toHaveBeenCalledTimes(1) // 'b' waits for NYT's 5-per-minute gap
+      await vi.runAllTimersAsync(); await b
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(await news.searchNYT('a')).toHaveLength(1) // cached
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+
+      status = 429
+      const c = news.searchNYT('c'); await vi.runAllTimersAsync(); expect(await c).toEqual([])
+      const d = news.searchNYT('d'); await vi.runAllTimersAsync(); expect(await d).toEqual([])
+      expect(fetchMock).toHaveBeenCalledTimes(3) // 'd' skipped during the cooldown
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('searchGDELTNews maps articles and returns [] on failure', async () => {
     mockFetch(() => jsonResponse({ articles: [{ url: 'https://u', title: 'T', seendate: '20250101T000000Z', domain: 'd.com', socialimage: 'https://i', language: 'English' }] }))
     const [a] = await (await load()).searchGDELTNews('x')

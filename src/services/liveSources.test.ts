@@ -181,22 +181,26 @@ describe('emailrep lookup', () => {
 })
 
 describe('sanctions news (GDELT)', () => {
-  it('returns articles, scoping the query to a country when given', async () => {
-    const fetchMock = mockFetch(() => jsonResponse({ articles: [{ title: 'T', url: 'u', domain: 'd', seendate: 's' }] }))
-    const { fetchSanctionsNews } = await load(() => import('./sanctions'))
-    expect(await fetchSanctionsNews('Iran')).toHaveLength(1)
+  it('returns articles with ISO dates, scoping the query to a country when given', async () => {
+    const fetchMock = mockFetch(() => jsonResponse({ articles: [{ title: 'T', url: 'https://u', domain: 'd', seendate: '20260101T120000Z' }] }))
+    const { fetchSanctionsNews } = await load(() => import('./news'))
+    expect(await fetchSanctionsNews('Iran')).toEqual([{ title: 'T', url: 'https://u', domain: 'd', seendate: '2026-01-01T12:00:00Z' }])
     expect(decodeURIComponent(String(fetchMock.mock.calls[0][0]))).toContain('sanctions "Iran"')
-    await fetchSanctionsNews()
+    // shares the GDELT queue: the second search waits out the 5 s gap instead of firing alongside the first
+    const second = fetchSanctionsNews()
+    await vi.advanceTimersByTimeAsync(1_000)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    await vi.runAllTimersAsync()
+    await second
     expect(decodeURIComponent(String(fetchMock.mock.calls[1][0]))).toContain('economic sanctions OFAC')
   })
   it('returns [] on failure or missing articles', async () => {
-    const { fetchSanctionsNews } = await load(() => import('./sanctions'))
     mockFetch(() => jsonResponse({}))
-    expect(await fetchSanctionsNews()).toEqual([])
+    expect(await (await load(() => import('./news'))).fetchSanctionsNews()).toEqual([])
     mockFetch(() => jsonResponse({}, { status: 500 }))
-    expect(await fetchSanctionsNews()).toEqual([])
+    expect(await (await load(() => import('./news'))).fetchSanctionsNews()).toEqual([])
     mockFetch(() => { throw new Error('offline') })
-    expect(await fetchSanctionsNews()).toEqual([])
+    expect(await (await load(() => import('./news'))).fetchSanctionsNews()).toEqual([])
   })
 })
 
