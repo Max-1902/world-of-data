@@ -116,7 +116,7 @@ const NAME_TO_ISO2: Record<string, string> = {
   'trinidad and tobago':'TT','tuvalu':'TV','türkiye':'TR','turkiye':'TR','vanuatu':'VU','western sahara':'EH',
   'slovak republic':'SK','russian federation':'RU','republic of serbia':'RS','the netherlands':'NL',
   'falklands':'FK','gibraltar':'GI','bermuda':'BM','ascension is.':'SH',
-  's.china sea':'CN','n.korea':'KP',
+  'n.korea':'KP',
   // Qualified names that a plain whole-word match would send to the wrong country ("American Samoa" is not Samoa)
   'american samoa':'AS','caribbean netherlands':'BQ','congo-brazzaville':'CG','congo (brazzaville)':'CG',
   'congo-kinshasa':'CD','congo (kinshasa)':'CD','drc':'CD','macedonia':'MK',
@@ -128,11 +128,24 @@ const NAME_TO_ISO2: Record<string, string> = {
   'st. lucia':'LC','st. kitts and nevis':'KN','st. vincent and the grenadines':'VC','united republic of tanzania':'TZ',
 }
 
+/**
+ * Places whose sovereignty is disputed and unsettled resolve to no country, so a feature there is never filed
+ * under one claimant. Same rule as the curated datasets' `host` field (de jure sovereign: Sevastopol → Ukraine,
+ * Gudauta → Georgia; `operator` says who controls it). See DATA_PROVENANCE.md, "Contested territory".
+ */
+export const DISPUTED_PLACES = ['s.china sea', 'south china sea', 'spratly islands', 'paracel islands']
+
 /** Partial matches compile a regex per alias, and the same labels are resolved over and over. */
 const partialMemo = new Map<string, string | null>()
 
+export function isDisputedPlace(label: string): boolean {
+  const lc = label.toLowerCase().trim()
+  return DISPUTED_PLACES.some(d => lc === d || lc.startsWith(`${d} `) || lc.startsWith(`${d},`) || lc.startsWith(`${d}(`))
+}
+
 export function resolveISO2(countryName: string): string | null {
   const lc = countryName.toLowerCase().trim()
+  if (isDisputedPlace(lc)) return null
   // Direct match
   if (NAME_TO_ISO2[lc]) return NAME_TO_ISO2[lc]
   // 2-letter code already

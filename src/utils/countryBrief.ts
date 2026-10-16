@@ -2,7 +2,7 @@ import type { CrisisEvent, NewsArticle } from '../types'
 import type { Earthquake } from '../services/earthquakes'
 import { classifyKeyEvent, type KeyEventCategory } from './keyEvents'
 import { placeMentions } from './countryMatch'
-import { resolveISO2 } from '../services/worldbank'
+import { isDisputedPlace, resolveISO2 } from '../services/worldbank'
 
 export interface BriefHeadline {
   article: NewsArticle
@@ -32,6 +32,8 @@ export function sameCountry(a: string, b: string): boolean {
   const y = b.toLowerCase().trim()
   if (!x || !y) return false
   if (x === y) return true
+  // a disputed area ("S.China Sea") is no claimant's territory, whichever country name it contains
+  if (isDisputedPlace(x) || isDisputedPlace(y)) return false
   const cx = resolveISO2(a), cy = resolveISO2(b)
   if (cx && cy) return cx === cy
   const [short, long] = x.length <= y.length ? [x, y] : [y, x]

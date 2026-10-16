@@ -30,6 +30,14 @@ The rule in `CLAUDE.md` is that a curated entry must be a real, identifiable thi
 | `services/stateMedia.ts` — outlet ownership labels | 9 outlets | Each entry names the owning or funding body (e.g. RT → ANO TV-Novosti, federal budget; Global Times → People's Daily) | Labels **ownership/control, not editorial stance**: state owns, funds or directs the outlet and no independent statutory body shields its editorial line. Public-service broadcasters (BBC, DW, France 24, NHK, …) and privately owned pro-government outlets are deliberately unlabelled; both boundaries are judgement calls. Matched by outlet name, so an aggregator source string that doesn't match an alias goes unlabelled |
 | `hooks/useCrises.ts` — `BASELINE` | 16 | none | Region-centre coordinates (not event locations), stamped with the **load date** rather than an event date. Shown only as a fallback; the incident counter excludes them |
 
+## Contested territory
+
+One rule, applied in the curated datasets and in country matching (`resolveISO2`, `sameCountry`):
+
+- **`host` / country = the de jure sovereign** as recognised by UN membership and UN General Assembly resolutions: Sevastopol and the rest of Crimea → Ukraine (UNGA 68/262), Gudauta in Abkhazia → Georgia. Who actually controls a site is in `operator` and the notes, so "Sevastopol Naval Base, host Ukraine, operator Russia" states both facts.
+- **Unsettled disputes resolve to no country.** Spratly and Paracel features (Fiery Cross, Mischief, Subi, Woody Island), labelled "S.China Sea", are not filed under any claimant. Until 2026-10-15 an alias sent them to China, which broke the rule above.
+- Capitals: `services/capitals.ts` leaves out disputed or split capitals (IL, PS, BO, LK, YE, XK, EH) rather than pick one.
+
 ## What would close the gaps
 
 In order of payoff for a skeptical reader:
