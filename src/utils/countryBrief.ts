@@ -1,4 +1,5 @@
 import type { CrisisEvent, NewsArticle } from '../types'
+import type { Earthquake } from '../services/earthquakes'
 import { classifyKeyEvent, type KeyEventCategory } from './keyEvents'
 import { placeMentions } from './countryMatch'
 import { resolveISO2 } from '../services/worldbank'
@@ -83,4 +84,32 @@ export function linkedCrisisEvents(crises: CrisisEvent[], country: string, limit
     .sort((a, b) => (SEVERITY_RANK[b.severity] ?? 0) - (SEVERITY_RANK[a.severity] ?? 0) || Date.parse(b.date) - Date.parse(a.date))
     .slice(0, limit)
   return { total: all.length, top }
+}
+
+// ── Country incidents: one source of truth for the brief and the drawer ──────────────────────────────────────────
+
+/** The windows the live feeds are fetched with (useCrises: ACLED 14 days; useEarthquakes: USGS M4.5+ week). */
+export const INCIDENT_WINDOWS = {
+  conflict: 'ACLED, last 14 days',
+  quakes: 'USGS M4.5+, last 7 days',
+} as const
+
+/** Earthquakes whose USGS place string names this country, largest first. */
+export function quakesInCountry(quakes: Earthquake[], country: string): Earthquake[] {
+  return quakes.filter(q => q.place && mentionsCountry(q.place, country)).sort((a, b) => b.magnitude - a.magnitude)
+}
+
+export interface CountryIncidents {
+  /** null = the conflict feed returned nothing at all (only the hand-entered baseline), so "none" can't be claimed */
+  conflict: { total: number; top: CrisisEvent[] } | null
+  /** null = no earthquake feed loaded (the global M4.5+ weekly feed is never empty when it loads) */
+  quakes: Earthquake[] | null
+}
+
+export function countryIncidents(country: string, crises: CrisisEvent[], earthquakes: Earthquake[] | undefined): CountryIncidents {
+  const conflictMeasured = crises.some(c => c.source !== 'Baseline' && !c.id.startsWith('baseline-'))
+  return {
+    conflict: conflictMeasured ? linkedCrisisEvents(crises, country) : null,
+    quakes: earthquakes && earthquakes.length > 0 ? quakesInCountry(earthquakes, country) : null,
+  }
 }

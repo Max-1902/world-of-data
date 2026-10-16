@@ -53,7 +53,7 @@ export default function OutlookCard({ crises, flights, articles, earthquakes = [
       {selectedPlace ? (
         <PlaceBrief place={selectedPlace} crises={crises} flights={flights} earthquakes={earthquakes} fires={fires} articles={articles} onSelectCountry={onSelectCountry} />
       ) : selectedCountry ? (
-        <CountryBrief country={selectedCountry} crises={crises} articles={articles} trend={entries[0]} />
+        <CountryBrief country={selectedCountry} crises={crises} articles={articles} earthquakes={earthquakes} trend={entries[0]} />
       ) : featured.length > 0 ? (
         <div className="outlook-list">
           {featured.map(entry => {

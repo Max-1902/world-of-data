@@ -27,17 +27,22 @@ export const BASELINE: CrisisEvent[] = [
   mk('taiwan-str', 'Taiwan Strait Tensions',           'political','medium',   24.0,  120.0,   'Taiwan',        'PRC military exercises & threats'),
 ]
 
-/** Baseline first, then live events, dropping any event within 0.5° of an earlier one of the same type. */
+const near = (a: CrisisEvent, b: CrisisEvent) =>
+  a.type === b.type && Math.abs(a.latitude - b.latitude) < 0.5 && Math.abs(a.longitude - b.longitude) < 0.5
+
+/**
+ * Baseline markers plus live events. A hand-entered marker is shown only where no live event of its type lies
+ * within 0.5°; it never displaces live data. (It used to: the baseline went first, so every ACLED battle within
+ * 0.5° of the Khartoum, Goma or Gaza markers was dropped and replaced by one marker dated today, and those
+ * events vanished from every count that skips the baseline.)
+ *
+ * Live events are still thinned against each other (same type within 0.5° keeps the first). That is unchanged
+ * here but it lowers every downstream count; see research/AUDIT_2026-10-15.md (open methodology question).
+ */
 export function mergeWithBaseline(live: CrisisEvent[]): CrisisEvent[] {
-  const merged = [...BASELINE, ...live]
-  return merged.filter((ev, i) =>
-    !merged.slice(0, i).some(
-      (prev) =>
-        Math.abs(prev.latitude  - ev.latitude)  < 0.5 &&
-        Math.abs(prev.longitude - ev.longitude) < 0.5 &&
-        prev.type === ev.type
-    )
-  )
+  const thinned = live.filter((ev, i) => !live.slice(0, i).some(prev => near(prev, ev)))
+  const markers = BASELINE.filter(b => !thinned.some(ev => near(ev, b)))
+  return [...markers, ...thinned]
 }
 
 export function useCrises(enabled: boolean) {

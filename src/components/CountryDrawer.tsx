@@ -8,6 +8,7 @@ import WatchButton from './WatchButton'
 import { FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS } from '../utils/flightType'
 import { formatPersonnel } from '../services/militaryPersonnel'
 import { freshness } from '../utils/freshness'
+import { INCIDENT_WINDOWS } from '../utils/countryBrief'
 import { formatInfraValue } from '../services/infraIndicators'
 import { getTradeProfile } from '../services/tradeStats'
 import CloseButton from './CloseButton'
@@ -404,7 +405,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
 
         {/* ── Earthquakes ───────────────────────────────────── */}
         {nearbyQuakes.length > 0 && (
-          <Section title="SEISMIC ACTIVITY" color="var(--amber)" count={nearbyQuakes.length}>
+          <Section title={`EARTHQUAKES · ${INCIDENT_WINDOWS.quakes.toUpperCase()}`} color="var(--amber)" count={nearbyQuakes.length}>
             {nearbyQuakes.map(eq => (
               <Row key={eq.id} onClick={() => onFlyTo?.(`${eq.latitude},${eq.longitude}`)}>
                 <span style={{
