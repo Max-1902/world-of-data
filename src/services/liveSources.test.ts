@@ -254,6 +254,18 @@ describe('power plants (WRI GPPD)', () => {
     expect((await fetchAllPowerPlants()).map(p => p.name)).toEqual(['Elsewhere'])
   })
 
+  it('never reports an operating status GPPD does not have, and carries the capacity year (regression: every plant said OPERATIONAL)', async () => {
+    const header = 'country,country_long,name,capacity_mw,latitude,longitude,primary_fuel,year_of_capacity_data'
+    mockFetch(() => textResponse([header, 'DEU,Germany,Old Coal,900,51,9,Coal,2017', 'FRA,France,No Year,50,48,2,Wind,'].join('\n')))
+    const { fetchAllPowerPlants, fetchPowerPlantsForCountry, fetchPowerPlantsNear } = await loadMod()
+    const all = [...await fetchAllPowerPlants(), ...await fetchPowerPlantsForCountry('Germany'), ...await fetchPowerPlantsNear(51, 9, 50)]
+    expect(all.length).toBeGreaterThan(2)
+    expect(all.every(p => p.status === 'unknown')).toBe(true)
+    expect(all.every(p => /operating status not in source/.test(p.notes ?? ''))).toBe(true)
+    expect(all.find(p => p.name === 'Old Coal')!.notes).toContain('capacity as of 2017')
+    expect(all.find(p => p.name === 'No Year')!.notes).toContain('an unstated year')
+  })
+
   it('parses quoted CSV fields containing commas and escaped quotes', async () => {
     mockFetch(() => textResponse(csv('DEU,Germany,"Plant, with ""quotes""",300,50,8,Solar')))
     const [p] = await (await loadMod()).fetchAllPowerPlants()

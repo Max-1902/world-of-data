@@ -32,7 +32,8 @@ export interface InfraPoint {
   capacityMw?: number // numeric MW for power plants — used to size/sort map dots
   river?:   string   // for dams
   notes?:   string
-  status:   'operational' | 'under_construction' | 'decommissioned'
+  /** 'unknown' = the source has no status field (WRI GPPD): shown as "status not in source", never as operational */
+  status:   'operational' | 'under_construction' | 'decommissioned' | 'unknown'
 }
 
 
@@ -204,6 +205,16 @@ export interface PowerPlantRow {
   lat:        number
   lng:        number
   fuel:       string  // primary_fuel, e.g. "Coal", "Gas", "Wind", "Solar", "Hydro", "Nuclear"
+  /** year_of_capacity_data; '' when the row gives none */
+  capacityYear: string
+}
+
+/**
+ * GPPD v1.3.0 (June 2021) has no operating-status column: a plant retired since then is still listed. So the
+ * status is 'unknown' and the popup says where the numbers come from and how old they are.
+ */
+function gppdNotes(r: PowerPlantRow): string {
+  return `${r.fuel} — WRI Global Power Plant Database v1.3.0 (2021); capacity as of ${r.capacityYear || 'an unstated year'}; operating status not in source`
 }
 
 // Every GPPD primary_fuel value (lower-cased). Anything not listed falls back to 'grid'.
@@ -266,6 +277,7 @@ async function fetchGppd(): Promise<PowerPlantRow[]> {
       lat:         header.indexOf('latitude'),
       lng:         header.indexOf('longitude'),
       fuel:        header.indexOf('primary_fuel'),
+      capacityYear: header.indexOf('year_of_capacity_data'),
     }
     const rows: PowerPlantRow[] = []
     for (let i = 1; i < lines.length; i++) {
@@ -283,6 +295,7 @@ async function fetchGppd(): Promise<PowerPlantRow[]> {
         capacityMw,
         lat, lng,
         fuel:        cols[idx.fuel],
+        capacityYear: idx.capacityYear >= 0 ? (cols[idx.capacityYear] ?? '').trim() : '',
       })
     }
     gppdRows = rows
@@ -317,8 +330,8 @@ export async function fetchAllPowerPlants(): Promise<InfraPoint[]> {
       lng:        r.lng,
       capacity:   `${Math.round(r.capacityMw).toLocaleString()} MW`,
       capacityMw: r.capacityMw,
-      status:     'operational',
-      notes:      `${r.fuel} — Source: WRI Global Power Plant Database`,
+      status:     'unknown',
+      notes:      gppdNotes(r),
     })
   }
   return out
@@ -356,7 +369,7 @@ function toInfraPoint(r: PowerPlantRow): InfraPoint {
     lng:        r.lng,
     capacity:   `${Math.round(r.capacityMw).toLocaleString()} MW`,
     capacityMw: r.capacityMw,
-    status:     'operational',
-    notes:      `${r.fuel} — Source: WRI Global Power Plant Database`,
+    status:     'unknown',
+    notes:      gppdNotes(r),
   }
 }

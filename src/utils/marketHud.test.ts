@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { summarizeMarketHud, summarizeSanctionsHud } from './marketHud'
+import { marketHudPlaceholder, summarizeMarketHud, summarizeSanctionsHud } from './marketHud'
 import type { Stock } from '../types'
 
 const stock = (symbol: string, changePercent: number): Stock => ({
@@ -34,5 +34,19 @@ describe('summarizeSanctionsHud', () => {
     expect(result.sanctioned).toBeGreaterThan(0)
     expect(result.critical).toBeGreaterThan(0)
     expect(result.critical).toBeLessThanOrEqual(result.sanctioned)
+  })
+})
+
+describe('empty market HUD', () => {
+  it('says why there is no value instead of a bare dash', () => {
+    expect(marketHudPlaceholder(undefined)).toEqual({ value: '…', title: 'Market quotes not requested yet (Finnhub)' })
+    expect(marketHudPlaceholder({ status: 'down', lastError: 'HTTP 401' })).toEqual({ value: 'N/A', title: 'Finnhub not responding (HTTP 401): no market data' })
+    expect(marketHudPlaceholder({ status: 'degraded', lastError: null }).value).toBe('…')
+  })
+
+  it('reports the oldest last-trade time, so a stale close is visible', () => {
+    const s = (symbol: string, at: string) => ({ symbol, changePercent: 1, lastUpdated: at }) as Stock
+    expect(summarizeMarketHud([s('SPY', '2026-10-16T20:00:00Z'), s('EWJ', '2026-10-16T06:00:00Z')]).asOf).toBe('2026-10-16T06:00:00.000Z')
+    expect(summarizeMarketHud([]).asOf).toBeUndefined()
   })
 })

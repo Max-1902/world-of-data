@@ -4,7 +4,7 @@ import type { MapViewMode, Stock } from '../types'
 import OSINTSearch from './OSINTSearch'
 import SourceHealth from './SourceHealth'
 import { healthTracker } from '../services/sourceHealth'
-import { summarizeMarketHud, summarizeSanctionsHud } from '../utils/marketHud'
+import { marketHudPlaceholder, summarizeMarketHud, summarizeSanctionsHud } from '../utils/marketHud'
 
 const VIEW_MODES: { id: MapViewMode; label: string }[] = [
   { id: 'earth',       label: 'EARTH' },
@@ -36,6 +36,8 @@ export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSe
   const market = summarizeMarketHud(stocks)
   const sanctions = summarizeSanctionsHud()
   const feedsOk = sources.filter(s => s.status === 'ok').length
+  const marketGap = marketHudPlaceholder(sources.find(s => s.id === 'markets'))
+  const asOf = market.asOf ? ` · last trade ${new Date(market.asOf).toUTCString().slice(5, 22)} UTC` : ''
   const [expanded, setExpanded] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   useEffect(() => {
@@ -76,16 +78,16 @@ export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSe
 
       {/* center: stats — ordered most → least important; each stat sheds with its own breakpoint (see index.css) so the box reflows instead of clipping text */}
       <div className="tb-center">
-        <span className="tb-stat tb-stat-hubs" title={`${market.up} of ${market.tracked} tracked global market-hub ETFs (SPY, QQQ, EWU, EWG, EWJ, EWH, FXI, EWZ, EWA, EWC) trading up today`}>
-          <HudStat label="HUBS UP" value={market.tracked ? `${market.up}/${market.tracked}` : '—'} />
+        <span className="tb-stat tb-stat-hubs" title={market.tracked ? `${market.up} of ${market.tracked} tracked global market-hub ETFs (SPY, QQQ, EWU, EWG, EWJ, EWH, FXI, EWZ, EWA, EWC) up on their last session${asOf}` : marketGap.title}>
+          <HudStat label="HUBS UP" value={market.tracked ? `${market.up}/${market.tracked}` : marketGap.value} />
         </span>
 
         <div className="hud-sep tb-stat-hubs" />
 
-        <span className="tb-stat tb-stat-mover" title={market.topMover ? `Largest move among tracked market hubs: ${market.topMover.symbol} ${market.topMover.changePercent > 0 ? '+' : ''}${market.topMover.changePercent.toFixed(1)}%` : 'No market data loaded yet'}>
+        <span className="tb-stat tb-stat-mover" title={market.topMover ? `Largest move among tracked market hubs: ${market.topMover.symbol} ${market.topMover.changePercent > 0 ? '+' : ''}${market.topMover.changePercent.toFixed(1)}%${asOf}` : marketGap.title}>
           <HudStat
             label="TOP MOVER"
-            value={market.topMover ? market.topMover.symbol : '—'}
+            value={market.topMover ? market.topMover.symbol : marketGap.value}
             sub={market.topMover ? `${market.topMover.changePercent > 0 ? '+' : ''}${market.topMover.changePercent.toFixed(1)}%` : undefined}
             subColor={market.topMover ? (market.topMover.changePercent >= 0 ? 'var(--green)' : 'var(--red)') : undefined}
           />

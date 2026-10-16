@@ -7,7 +7,8 @@ async function load() {
   return import('./stocks')
 }
 
-const quote = (c: number, extra: Record<string, number> = {}) => ({ c, d: 1, dp: 0.5, h: c + 1, l: c - 1, o: c, pc: c - 1, ...extra })
+const T = 1_760_000_000 // a trade time, unix seconds
+const quote = (c: number, extra: Record<string, number> = {}) => ({ c, d: 1, dp: 0.5, h: c + 1, l: c - 1, o: c, pc: c - 1, t: T, ...extra })
 
 describe('fetchQuote / fetchMultipleQuotes', () => {
   beforeEach(() => { vi.useFakeTimers(); quietConsole() })
@@ -40,12 +41,22 @@ describe('fetchQuote / fetchMultipleQuotes', () => {
     expect(await p).toBeNull()
   })
 
-  it('defaults missing optional fields to 0', async () => {
-    mockFetch(() => jsonResponse({ c: 42 }))
+  it.each(['d', 'dp', 'h', 'l', 'o', 'pc', 't'])('drops a quote missing %s instead of inventing 0 (regression: "0.0%" for unknown change)', async (field) => {
+    const q: Record<string, unknown> = quote(42)
+    q[field] = null
+    mockFetch(() => jsonResponse(q))
     const { fetchQuote } = await load()
     const p = fetchQuote('AAPL')
     await vi.advanceTimersByTimeAsync(150)
-    expect(await p).toMatchObject({ price: 42, change: 0, changePercent: 0, high: 0, low: 0, open: 0, previousClose: 0 })
+    expect(await p).toBeNull()
+  })
+
+  it('stamps the quote with Finnhub\'s trade time, not the fetch time', async () => {
+    mockFetch(() => jsonResponse(quote(42)))
+    const { fetchQuote } = await load()
+    const p = fetchQuote('AAPL')
+    await vi.advanceTimersByTimeAsync(150)
+    expect((await p)!.lastUpdated).toBe(new Date(T * 1000).toISOString())
   })
 
   it('returns null on HTTP errors without rejecting', async () => {

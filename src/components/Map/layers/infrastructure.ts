@@ -62,7 +62,7 @@ export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void 
         ${p.capacity ? `<div><span style="color:#9ca3af;">Capacity:</span> <b style="color:${color};">${p.capacity}</b></div>` : ''}
         ${p.river    ? `<div><span style="color:#9ca3af;">River:</span> ${p.river}</div>` : ''}
         ${p.notes    ? `<div style="margin-top:4px;font-size:10px;color:#9ca3af;">${p.notes}</div>` : ''}
-        <div style="margin-top:4px;font-size:10px;color:#${p.status === 'operational' ? '16a34a' : p.status === 'under_construction' ? 'd97706' : 'dc2626'};">● ${String(p.status).replace('_',' ').toUpperCase()}</div>
+        <div style="margin-top:4px;font-size:10px;color:#${p.status === 'operational' ? '16a34a' : p.status === 'under_construction' ? 'd97706' : p.status === 'unknown' ? '9ca3af' : 'dc2626'};">● ${p.status === 'unknown' ? 'OPERATING STATUS NOT IN SOURCE' : String(p.status).replace('_',' ').toUpperCase()}</div>
       </div>
     </div>`
     if (popupRef.current) popupRef.current.remove()
