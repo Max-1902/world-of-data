@@ -3,6 +3,7 @@ import type { CrisisEvent, PanelState, Flight } from '../../types'
 import { PANEL_MAP } from '../../panels/registry'
 import type { PanelProps } from '../../panels/types'
 import PanelHost from '../PanelHost'
+import PanelMapToggle from '../PanelMapToggle'
 
 const MAX_SLOTS = 6
 const MIN_H     = 80
@@ -137,6 +138,7 @@ export default function ObserveTray({ ids, crises, flights, panelState, onToggle
         }}>
           {def.dotColor && <span className={`live-dot ${def.dotColor}`} />}
           <span className="panel-title" style={{ flex: 1 }}>{def.title}</span>
+          <PanelMapToggle map={def.map} panelState={panelState} onToggleLayer={onToggleLayer} />
           <button
             onClick={() => onClose(id)}
             title="Return to dock"

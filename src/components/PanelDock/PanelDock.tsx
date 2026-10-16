@@ -3,6 +3,7 @@ import type { CrisisEvent, PanelState, Flight } from '../../types'
 import { GROUP_ORDER, GROUP_SECTIONS, panelsForGroup } from '../../panels/registry'
 import type { PanelGroup, PanelProps } from '../../panels/types'
 import PanelHost from '../PanelHost'
+import PanelMapToggle from '../PanelMapToggle'
 import CloseButton from '../CloseButton'
 
 interface Props {
@@ -153,6 +154,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
                 <span className="dock-grip" aria-hidden="true" />
                 {isAI ? <span className="ai-pulse-dot" /> : def.dotColor && <span className={`live-dot ${def.dotColor}`} />}
                 <span className="panel-title" style={{ flex: 1 }}>{def.title}</span>
+                <PanelMapToggle map={def.map} panelState={panelState} onToggleLayer={onToggleLayer} />
                 <CloseButton onClick={() => closePanel(def.id)} label={`Close ${def.title} panel`} />
               </div>
               <div className="dock-body" style={{ flex: '1 1 0', minHeight: 0, overflow: 'auto' }}>
