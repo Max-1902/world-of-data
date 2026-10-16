@@ -66,19 +66,27 @@ async function fetchQuoteRaw(symbol: string): Promise<Stock | null> {
     if (!res.ok) throw new Error(`Finnhub ${res.status}`)
     const q = await res.json()
     if (q.c == null || q.c === 0) return null
+    // A quote missing its change, range or trade time is not shown at all: a missing change used to read as
+    // "0.0%" and every quote was stamped with the fetch time, so Friday's close looked live on a Sunday.
+    const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v)
+    if (![q.d, q.dp, q.h, q.l, q.o, q.pc].every(num) || !num(q.t) || q.t <= 0) {
+      console.warn(`[Finnhub] ${symbol}: incomplete quote, not shown`)
+      return null
+    }
     return {
       symbol,
       name:          SYMBOL_NAMES[symbol] ?? symbol,
       price:         q.c,
-      change:        q.d  ?? 0,
-      changePercent: q.dp ?? 0,
-      high:          q.h  ?? 0,
-      low:           q.l  ?? 0,
-      open:          q.o  ?? 0,
-      previousClose: q.pc ?? 0,
+      change:        q.d,
+      changePercent: q.dp,
+      high:          q.h,
+      low:           q.l,
+      open:          q.o,
+      previousClose: q.pc,
       currency:      'USD',
       exchange:      '',
-      lastUpdated:   new Date().toISOString(),
+      // Finnhub's `t`: time of the last trade (unix seconds), not when we asked
+      lastUpdated:   new Date(q.t * 1000).toISOString(),
     } satisfies Stock
   } catch (err) {
     console.warn(`[Finnhub] ${symbol}:`, err)
