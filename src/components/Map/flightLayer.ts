@@ -2,7 +2,7 @@ import type { Map as MapboxMap } from 'mapbox-gl'
 import type { Flight } from '../../types'
 import { detectFlightType, headingToCompass, FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS, type FlightType } from '../../utils/flightType'
 
-export const ALL_TYPES: FlightType[] = ['passenger', 'cargo', 'military', 'private', 'unknown']
+export const ALL_TYPES: FlightType[] = ['airline', 'cargo', 'military', 'private', 'unknown']
 
 // ── Geodesic destination point: given [lng,lat], bearing (deg), distance (km) ──
 export function destinationPoint(lng: number, lat: number, bearingDeg: number, distKm: number): [number, number] {

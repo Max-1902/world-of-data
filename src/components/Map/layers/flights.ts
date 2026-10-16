@@ -59,7 +59,7 @@ export function addFlightLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     } as Record<string, unknown>,
     paint: {
       'icon-color': ['match', ['get', 'flightType'],
-        'passenger', FLIGHT_TYPE_COLORS.passenger,
+        'airline', FLIGHT_TYPE_COLORS.airline,
         'cargo',     FLIGHT_TYPE_COLORS.cargo,
         'military',  FLIGHT_TYPE_COLORS.military,
         'private',   FLIGHT_TYPE_COLORS.private,

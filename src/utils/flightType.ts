@@ -1,28 +1,38 @@
 import type { Flight } from '../types'
 
-export type FlightType = 'passenger' | 'cargo' | 'military' | 'private' | 'unknown'
+/**
+ * 'airline' = an airline-format callsign (operator prefix + flight number). Whether that flight carries passengers
+ * or freight is NOT known: mixed operators (Qatar, Emirates, Cathay, Lufthansa…) fly freighters under the same
+ * prefix, and OpenSky state vectors carry no aircraft type. Only operators that fly nothing but freight are 'cargo'.
+ */
+export type FlightType = 'airline' | 'cargo' | 'military' | 'private' | 'unknown'
 
 export const FLIGHT_TYPE_COLORS: Record<FlightType, string> = {
-  passenger: '#00c8ff',   // cyan  — most common; distinctive against dark map
+  airline:   '#00c8ff',   // cyan  — most common; distinctive against dark map
   cargo:     '#ff9900',   // amber
   military:  '#ff1a3e',   // red
   private:   '#00ff88',   // green
-  unknown:   '#cc88ff',   // violet — clearly different from passenger
+  unknown:   '#cc88ff',   // violet — clearly different from airline
 }
 
 export const FLIGHT_TYPE_LABELS: Record<FlightType, string> = {
-  passenger: 'Passenger',
+  airline:   'Airline (pax/cargo unknown)',
   cargo:     'Cargo',
   military:  'Military',
   private:   'Private / GA',
   unknown:   'Unknown',
 }
 
-// Known cargo airline ICAO operator codes (first 2-3 chars of callsign)
+// All-cargo operators by ICAO airline designator (first 3 characters of the callsign).
+// Added 2026-10-15 from ICAO Doc 8585 designators: BOX AeroLogic, GEC Lufthansa Cargo, DHK DHL Air UK,
+// DAE DHL Aero Expreso, CAO Air China Cargo, CKK China Cargo Airlines, CSS SF Airlines, MPH Martinair,
+// ABW AirBridgeCargo, NCA Nippon Cargo Airlines, SWN West Atlantic, TAY ASL Airlines Belgium.
+// The first three rows predate that and were not individually re-checked (see research/AUDIT_2026-10-15.md).
 const CARGO_OPS = new Set([
   'UPS','FDX','FXE','GTI','ABX','ATN','CLX','CKS','FTH','POL',
   'NCR','WGN','KMI','MCF','SDO','TRK','BCS','AAO','DHL','TNT',
   'SQC','PAC','QTA','LCO','VGO','BGA','RAK','TUS','OPS',
+  'BOX','GEC','DHK','DAE','CAO','CKK','CSS','MPH','ABW','NCA','SWN','TAY',
 ])
 
 // Military callsign regex patterns (US DoD, NATO, USAF, USN, USMC, USCG)
@@ -86,9 +96,8 @@ export function detectFlightType(callsign: string, icao24: string): FlightType {
   // Military by callsign pattern
   if (MIL_PATTERNS.some((p) => p.test(cs))) return 'military'
 
-  // Cargo by 2-3 letter prefix
+  // Cargo by ICAO operator designator (all designators here are three letters)
   if (CARGO_OPS.has(cs.slice(0, 3))) return 'cargo'
-  if (CARGO_OPS.has(cs.slice(0, 2))) return 'cargo'
 
   // Private: bare registration format (N1234AB, G-ABCD, D-ABCD, PH-ABC…)
   if (/^N\d{1,5}[A-Z]{0,2}$/.test(cs)) return 'private'
@@ -96,15 +105,15 @@ export function detectFlightType(callsign: string, icao24: string): FlightType {
   if (/^[A-Z]{2}-[A-Z]{2,3}$/.test(cs)) return 'private'
   if (/^OE-[A-Z]/.test(cs))             return 'private'
 
-  // Passenger: airline ICAO prefix (2-3 letters) + flight number (1-4 digits + optional letter)
-  if (/^[A-Z]{2,3}\d{1,4}[A-Z]?$/.test(cs) && cs.length >= 4) return 'passenger'
+  // Airline-format callsign: ICAO prefix (2-3 letters) + flight number. Passenger vs cargo is not determinable here.
+  if (/^[A-Z]{2,3}\d{1,4}[A-Z]?$/.test(cs) && cs.length >= 4) return 'airline'
 
   return 'unknown'
 }
 
 // Compute counts of each type from a flight array
 export function countFlightTypes(flights: Flight[]): Record<FlightType, number> {
-  const counts: Record<FlightType, number> = { passenger: 0, cargo: 0, military: 0, private: 0, unknown: 0 }
+  const counts: Record<FlightType, number> = { airline: 0, cargo: 0, military: 0, private: 0, unknown: 0 }
   for (const f of flights) {
     const t = detectFlightType(f.callsign || '', f.icao24 || '')
     counts[t]++
