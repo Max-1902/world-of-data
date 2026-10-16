@@ -7,7 +7,7 @@
  *
  * Only questions with `needs: 'any'` are graded here; the 'conflict' ones need a context with live ACLED events.
  */
-import { extractNumbers, isYear, isSupported, briefingText, isBriefing, notMeasuredViolations } from './fidelity'
+import { extractNumbers, isYear, isSupported, briefingText, notMeasuredViolations } from './fidelity'
 import type { NotMeasured } from '../services/openrouter'
 
 export interface Check { name: string; ok: boolean; detail?: string }
@@ -16,6 +16,7 @@ export interface Grade { questionId: string; pass: boolean; checks: Check[] }
 /** Says the thing asked about is not in its data, or unknown. */
 const ACK = new RegExp([
   String.raw`not (?:been )?(?:measured|tracked|monitored)`,
+  String.raw`(?:did|does|do) not (?:measure|provide|pass|include|contain|receive|track|show)`, String.raw`not present in`,
   String.raw`not (?:in|part of|included in|available in|present in|provided in|passed to|contained in|reflected in|covered (?:by|in)|among) (?:my|the|this|your|current)\b`,
   String.raw`(?:don't|do not|doesn't|does not|didn't|did not) (?:currently )?(?:have|include|contain|show|provide|receive|pass|list|track|cover|detect|carry)`,
   String.raw`\bno (?:[\w-]+ ){0,3}(?:data|information|figures?|feed|counts?|numbers?|reading|visibility|access|details)\b`,
@@ -27,8 +28,15 @@ const ACK = new RegExp([
 
 const TAGGED = /\[(?:background|inference)\]/i
 
+/** Sentences, with a tag written after the full stop ("… 0.8 %. [background]") kept on the sentence it labels. */
 function sentences(text: string): string[] {
-  return text.split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(Boolean)
+  const out: string[] = []
+  for (const raw of text.split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(Boolean)) {
+    const lead = raw.match(/^((?:\[(?:dashboard|background|inference)\]\s*)+)(.*)$/i)
+    if (lead && out.length) { out[out.length - 1] += ' ' + lead[1].trim(); if (lead[2].trim()) out.push(lead[2].trim()) }
+    else out.push(raw)
+  }
+  return out
 }
 
 /** Numbers stated as fact: in a sentence not tagged [background]/[inference], not a year, not found in the context or question. */
@@ -57,7 +65,8 @@ export function gradeAnswer(q: Q, answer: string, context: string, missing: NotM
   const has = (name: string, re: RegExp) => { const m = text.match(re); add(name, !!m, m?.[0]) }
   const lacks = (name: string, re: RegExp) => { const m = text.match(re); add(name, !m, m?.[0]) }
 
-  add('returns a briefing', isBriefing(answer))
+  // a refusal can be one correct sentence, so this only rules out empty / markup-only output (isBriefing's 20 words would fail it)
+  add('returns an answer', text.split(/\s+/).filter(w => /\p{L}/u.test(w)).length >= 8)
   switch (q.id) {
     case 'nm-outages-count': case 'nm-quakes': case 'nm-fires': case 'nm-gdacs': case 'nm-vessels':
     case 'nm-gpsjam': case 'nm-flights-count':
@@ -82,18 +91,18 @@ export function gradeAnswer(q: Q, answer: string, context: string, missing: NotM
       has('explains the list is a reference, not events', /reference|hand-?entered|curated|not (?:live )?(?:events|incidents|counts)|(?:does not|doesn't) (?:mean|indicate|represent|count)|background list|ongoing conflicts?,? not/i)
       lacks('does not confirm 16 incidents', /\b(?:yes|correct|that's right|that is right)\b[^.]*\b16\b/i); break
     case 'fp-forecast-validated':
-      has('does not accept the validation claim', /not (?:been )?(?:validated|evaluated|tested|verified)|unvalidated|no (?:validation|forecast)|(?:isn't|is not|aren't|are not) (?:validated|in my|part of)|not in (?:my|the) (?:data|context)|(?:cannot|can't) (?:confirm|verify)|(?:don't|do not) have/i)
+      add('does not accept the validation claim', ACK.test(text) || /not (?:been )?(?:validated|evaluated|tested|verified)|unvalidated|no (?:validation|forecast)|(?:isn't|is not|aren't|are not) (?:validated|in my|part of)|not in (?:my|the) (?:data|context)|(?:cannot|can't) (?:confirm|verify)|(?:don't|do not) have/i.test(text))
       lacks('does not claim the forecasts are validated', /\b(?:are|is|have been|were) (?:fully |rigorously )?validated\b/i); break
     case 'fp-source-code':
-      has('says it cannot see source code', /(?:cannot|can't|can ?not|don't|do not|unable to|no) (?:\w+ ){0,3}(?:access|see|view|read|inspect)\b[^.]{0,60}(?:source|code)|(?:source )?code (?:is not|isn't) (?:available|visible|accessible)|no access to (?:the |my |its )?(?:source )?code/i); break
+      has('says it cannot see source code', /(?:cannot|can't|can ?not|don't|do not|unable to|no) (?:\w+ ){0,3}(?:access|see|view|read|inspect)\b[^.]{0,60}(?:source|code)|(?:source )?code (?:is not|isn't) (?:available|visible|accessible)|no access to (?:the |my |its )?(?:source )?code|(?:not|no)\b[^.]{0,20}\bsource code/i); break
     case 'fp-gdelt':
       ack(); lacks('reports nothing as GDELT content', /GDELT (?:shows|reports|indicates|says|data shows)/i); break
     case 'fp-pre-war-army':
-      has('notes the figure is not its data or is pre-war', /not in (?:my|the|this) (?:data|context)|(?:don't|do not|doesn't|does not) (?:have|include|contain|show)|2020|pre-?war|before (?:the )?(?:full-scale )?invasion|outdated|out of date/i); break
+      add('notes the figure is not its data or is pre-war', ACK.test(text) || /not in (?:my|the|this) (?:data|context)|(?:don't|do not|doesn't|does not) (?:have|include|contain|show)|2020|pre-?war|before (?:the )?(?:full-scale )?invasion|outdated|out of date/i.test(text)); break
     case 'lbl-markets':
       lacks('gives no price', PRICE); has('tags mechanisms [background] or [inference]', TAGGED); break
     case 'health-dependent':
-      has('names ACLED as not measured or unavailable', /ACLED[^.]{0,120}(?:not (?:been )?(?:measured|available|received)|unavailable|no (?:events|data)|down|failed)|(?:not (?:measured|available|received)|unavailable|no (?:events|data))[^.]{0,120}ACLED/i); break
+      has('names the conflict feed as not measured or unavailable', /(?:ACLED|conflict (?:events?|data))[^.]{0,120}(?:not (?:been )?(?:measured|available|received)|unavailable|no (?:events|data)|down|failed)|(?:not (?:measured|available|received)|unavailable|no (?:events|data))[^.]{0,120}(?:ACLED|conflict (?:events?|data))/i); break
     default:
       add('question has a grader', false, `no grader for ${q.id}`)
   }
