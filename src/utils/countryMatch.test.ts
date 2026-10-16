@@ -181,3 +181,17 @@ describe('power plants by country (WRI GPPD)', () => {
     expect((await fetchPowerPlantsForCountry(country)).map(p => p.name)).toEqual(['Own'])
   })
 })
+
+describe('contested territory', () => {
+  it('files disputed South China Sea features under no claimant (regression: an alias sent them to China)', () => {
+    expect(resolveISO2('S.China Sea')).toBeNull()
+    expect(resolveISO2('Spratly Islands')).toBeNull()
+    expect(sameCountry('S.China Sea', 'China')).toBe(false)
+    expect(matchCountry('S.China Sea', 'china')).toBe(false)
+    expect(matchCountry('S.China Sea', 'philippines')).toBe(false)
+  })
+  it('files Crimea and Abkhazia sites under the de jure sovereign, as the datasets do', () => {
+    expect(matchCountry('Ukraine', 'ukraine')).toBe(true)
+    expect(matchCountry('Georgia', 'georgia')).toBe(true)
+  })
+})
