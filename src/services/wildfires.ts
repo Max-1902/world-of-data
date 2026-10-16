@@ -18,7 +18,7 @@ export interface FirePoint {
   brightness: number   // bright_ti4 (K)
 }
 
-// Proxy path — Vite rewrites /api/firms → https://firms.modaps.eosdis.nasa.gov
+// Proxy path — api/firms/[...path].ts forwards this one file from https://firms.modaps.eosdis.nasa.gov
 const FIRMS_CSV = '/api/firms/data/active_fire/noaa-20-viirs-c2/csv/J2_VIIRS_C2_Global_24h.csv'
 
 export async function fetchWildfires(): Promise<FirePoint[]> {
