@@ -18,9 +18,9 @@ describe('apiDevPlugin route resolution (mirrors Vercel file routing)', () => {
   it('maps nested files', () => {
     expect(rel(resolveApiRoute(['openrouter', 'chat', 'completions'], apiDir))?.file).toBe(path.join('openrouter', 'chat', 'completions.ts'))
   })
-  it('returns null for routes Vite proxies itself (gdelt, firms, …) so they fall through', () => {
+  it('returns null for routes Vite proxies itself (gdelt, hexdb, …) so they fall through', () => {
     expect(resolveApiRoute(['gdelt', 'v2', 'doc', 'doc'], apiDir)).toBeNull()
-    expect(resolveApiRoute(['firms', 'x'], apiDir)).toBeNull()
+    expect(resolveApiRoute(['hexdb', 'api', 'v1', 'aircraft', 'x'], apiDir)).toBeNull()
     expect(resolveApiRoute([], apiDir)).toBeNull()
   })
 })

@@ -50,12 +50,7 @@ export default defineConfig({
   server: {
     port: 3000,
     proxy: {
-      // NASA FIRMS active fire data (no CORS headers on their CDN, no key required)
-      '/api/firms': {
-        target: 'https://firms.modaps.eosdis.nasa.gov',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/firms/, ''),
-      },
+      // NASA FIRMS is served by api/firms/[...path].ts in dev and production alike (it used to be dev-only here).
       // EmailRep.io — email reputation lookup (free, 10 req/day without key)
       '/api/emailrep': {
         target: 'https://emailrep.io',
