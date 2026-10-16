@@ -352,7 +352,7 @@ const TOOLS: ToolDef[] = [
   {
     name: 'news',
     usage: '[DATA:news] or [DATA:news|search terms]',
-    describe: 'Recent headlines from the dashboard news sources (RSS, Guardian, NYT, NewsAPI, GDELT). Use specific terms.',
+    describe: 'Recent headlines from the dashboard news sources (RSS, Google News, NYT, NewsAPI, GDELT). Use specific terms.',
     async run(args) {
       const q = (args[0] ?? '').trim()
       const items = q ? await searchAllSources(q) : await fetchTopHeadlines()

@@ -75,7 +75,7 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/gdelt/, '/api'),
       },
-      // opensky / acled / finnhub / guardian / nyt / openrouter are NOT proxied
+      // opensky / acled / finnhub / nyt / openrouter are NOT proxied
       // here — they need a key injected server-side, so they're served by the
       // /api/*.ts functions (apiDevPlugin locally, Vercel in production).
     },

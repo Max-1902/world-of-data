@@ -20,4 +20,4 @@ The daily recorder (`.github/workflows/research-record.yml`) currently records "
 
 ## 3. Optional
 
-- [ ] `VITE_NEWSAPI_KEY` is empty. It is optional: the news panels work from RSS, the Guardian and NYT without it. NewsAPI's free plan only works from localhost.
+- [ ] `VITE_NEWSAPI_KEY` is empty. It is optional: the news panels work from RSS, Google News and NYT without it. NewsAPI's free plan only works from localhost.

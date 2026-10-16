@@ -24,9 +24,10 @@ export const SOURCE_RULES: SourceRule[] = [
   { id: 'gpsjam',    label: 'GPS interference (GPSJAM)', match: has('/api/gpsjam') },
   { id: 'gdacs',     label: 'Disaster alerts (GDACS)',   match: has('gdacs.org') },
   { id: 'ioda',      label: 'Internet outages (IODA)',   match: has('api.ioda.inetintel.cc.gatech.edu') },
+  // Google News search is fetched through /api/rss, so it must match before the generic rss rule.
+  { id: 'gnews',     label: 'Google News search',        match: has('news.google.com') },
   { id: 'rss',       label: 'RSS headlines',             match: has('/api/rss') },
   { id: 'gdelt',     label: 'GDELT news search',         match: has('/api/gdelt', 'api.gdeltproject.org') },
-  { id: 'guardian',  label: 'The Guardian',              match: has('/api/guardian') },
   { id: 'nyt',       label: 'New York Times',            match: has('/api/nyt') },
   { id: 'newsapi',   label: 'NewsAPI',                   match: has('newsapi.org') },
   { id: 'geocode',   label: 'Place lookup (Open-Meteo)', match: has('geocoding-api.open-meteo.com') },

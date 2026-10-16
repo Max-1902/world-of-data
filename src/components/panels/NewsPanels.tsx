@@ -5,7 +5,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { ExternalLink, Languages, RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { CrisisEvent, NewsArticle, Flight } from '../../types'
-import { fetchRSSFeed, searchGDELTNews, searchGuardian, searchNYT, searchNewsAPI, fetchAllCrisisWatch, CRISISWATCH_FEEDS, type CrisisWatchEntry, COUNTRY_NEWS_SOURCES, fetchCountryNews } from '../../services/news'
+import { fetchRSSFeed, searchGDELTNews, searchGoogleNewsHeadlines, searchNYT, searchNewsAPI, fetchAllCrisisWatch, CRISISWATCH_FEEDS, type CrisisWatchEntry, COUNTRY_NEWS_SOURCES, fetchCountryNews } from '../../services/news'
 import { fetchOutageEvents, type OutageEvent } from '../../services/outages'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { useAutoTranslate, useTranslatedArticle } from '../../hooks/useTranslation'
@@ -295,7 +295,7 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
     setNewsLoading(true)
     setNews([])
     Promise.allSettled([
-      searchGuardian(q),
+      searchGoogleNewsHeadlines(q),
       searchNYT(q),
       searchGDELTNews(q),
       searchNewsAPI(q),

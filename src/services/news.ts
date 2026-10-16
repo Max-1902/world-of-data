@@ -53,41 +53,6 @@ export async function searchNewsAPI(query: string): Promise<NewsArticle[]> {
   }
 }
 
-// ── The Guardian ─────────────────────────────────────────────────────────────
-export async function searchGuardian(query: string): Promise<NewsArticle[]> {
-  try {
-    const url =
-      `/api/guardian/search?q=${encodeURIComponent(query)}` +
-      `&show-fields=headline,trailText,thumbnail&order-by=newest&page-size=30&lang=en&production-office=uk`
-    const res = await fetch(url)
-    if (!res.ok) throw new Error(`Guardian ${res.status}`)
-    const json = await res.json()
-    return (json.response?.results || []).map(
-      (a: {
-        id: string
-        webTitle: string
-        fields?: { trailText?: string; thumbnail?: string }
-        webUrl: string
-        webPublicationDate: string
-        sectionName: string
-      }) =>
-        ({
-          id: `guardian-${a.id}`,
-          title: a.webTitle,
-          description: a.fields?.trailText || '',
-          url: httpUrl(a.webUrl),
-          source: 'The Guardian',
-          publishedAt: a.webPublicationDate,
-          imageUrl: a.fields?.thumbnail,
-          category: a.sectionName,
-        } satisfies NewsArticle)
-    )
-  } catch (err) {
-    console.warn('[Guardian]', err)
-    return []
-  }
-}
-
 // ── Rate-limited search queue ────────────────────────────────────────────────
 // GDELT and NYT both cap requests per IP (GDELT one per 5 s, NYT five per minute) and answer HTTP 429 beyond
 // that, while the app fires several searches at once on load. So calls to each are serialized with a gap,
@@ -386,6 +351,16 @@ async function searchGoogleNews(query: string, idPrefix: string): Promise<NewsAr
 }
 
 /**
+ * Keyword search across the outlets Google News indexes (Reuters, AP, BBC, the Guardian, …), last 7 days.
+ * Keyless, through our /api/rss proxy. Replaced the Guardian Content API search, whose key stopped working.
+ * Each article keeps its own outlet as `source`. [] on failure.
+ */
+export function searchGoogleNewsHeadlines(query: string): Promise<NewsArticle[]> {
+  if (!query.trim()) return Promise.resolve([])
+  return searchGoogleNews(`${query.trim()} when:7d`, `gnews-q-${query.trim()}`)
+}
+
+/**
  * Recent headlines about a city. Tries the name + state/province first; if that finds almost nothing
  * (many stories only say "New Orleans"), widens to the bare name. [] on failure.
  */
@@ -460,7 +435,7 @@ function looksEnglish(text: string): boolean {
 export async function searchAllSources(query: string): Promise<NewsArticle[]> {
   const results = await Promise.allSettled([
     searchNewsAPI(query),
-    searchGuardian(query),
+    searchGoogleNewsHeadlines(query),
     searchNYT(query),
     searchGDELTNews(query),
     ...RSS_FEEDS.map((f) => fetchRSSFeed(f.url, f.name)),
