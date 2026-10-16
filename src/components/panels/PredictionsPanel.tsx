@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { AlertTriangle, MoveRight, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react'
 import { useCountryLookup } from '../../hooks/useCountryLookup'
 import { pointsOf } from '../../services/countryLookup'
-import { arForecast, backtestForecast, median, naiveForecast, trendTest, type Forecast, type Pt } from '../../utils/econAnalysis'
+import { arForecast, backtestForecast, median, naiveForecast, trendTest, type DieboldMariano, type Forecast, type Pt } from '../../utils/econAnalysis'
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart, type LinePoint } from '../charts/LineChart'
 import { Kpi, Method, PERIODS, inPeriod, plain, toLine, type Period } from './countryLookup/shared'
@@ -25,6 +25,15 @@ const TARGETS: Target[] = [
 const tolerance = 1e-9
 
 /** Recent-trend line: Sen slope through the median intercept, over the trend test's own window. */
+/** One sentence on whether the backtest gap could be chance: Diebold–Mariano with the HLN small-sample correction. */
+export function significance(dm: DieboldMariano | null): string {
+  if (!dm) return 'Too few folds to test whether the difference is more than chance.'
+  const p = dm.p < 0.001 ? '< 0.001' : `= ${dm.p.toFixed(2)}`
+  return dm.p < 0.05
+    ? `The difference is statistically significant (Diebold–Mariano test, small-sample corrected, p ${p}, ${dm.n} folds).`
+    : `The difference is not statistically significant (Diebold–Mariano test, small-sample corrected, p ${p}, ${dm.n} folds): on this record the two cannot be told apart.`
+}
+
 function trendLine(series: Pt[], t: { from: number; to: number; slope: number }): LinePoint[] {
   const w = series.filter(p => p.x >= t.from && p.x <= t.to)
   const b0 = median(w.map(p => p.y - t.slope * p.x))
@@ -108,12 +117,12 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
           {backtest == null
             ? `Not enough history to backtest this series out of sample.`
             : beatsBaseline
-              ? <>On {backtest.folds} historical one-year-ahead tests, the AR({AR_ORDER}) model's average error ({plain(backtest.mae!, 2)} pp) was lower than just repeating the last known value ({plain(backtest.baselineMae!, 2)} pp).</>
-              : <>On {backtest.folds} historical one-year-ahead tests, the AR({AR_ORDER}) model did <b>not</b> beat the naive baseline of repeating the last known value ({plain(backtest.mae ?? NaN, 2)} pp vs {plain(backtest.baselineMae ?? NaN, 2)} pp). The forecast above is shown anyway, for transparency — but the honest reading is that recent history predicts next year about as well as any model tried here.</>}
+              ? <>On {backtest.folds} historical one-year-ahead tests, the AR({AR_ORDER}) model's average error ({plain(backtest.mae!, 2)} pp) was lower than just repeating the last known value ({plain(backtest.baselineMae!, 2)} pp). {significance(backtest.dm)}</>
+              : <>On {backtest.folds} historical one-year-ahead tests, the AR({AR_ORDER}) model did <b>not</b> beat the naive baseline of repeating the last known value ({plain(backtest.mae ?? NaN, 2)} pp vs {plain(backtest.baselineMae ?? NaN, 2)} pp). {significance(backtest.dm)} The forecast above is shown anyway, for transparency — but the honest reading is that recent history predicts next year about as well as any model tried here.</>}
           {ar.longRun != null && <> Iterated forward, the forecast converges toward {plain(ar.longRun)}{target.unit}, a level set by the whole {last.x - ar.n + 1}–{last.x} history. If the economy has changed structurally since (e.g. a boom-era growth rate that no longer applies), that pull is an assumption of the model, not evidence.</>}
         </p>
         <p className="viz-verdict">{target.evidence}</p>
-        <Method caveats={`A point forecast ${HORIZON} years out on an annual series this short carries a wide, genuine interval — shown, not hidden. The backtest only ever fits on data before the year it is scored against (no look-ahead), but it reuses the same historical events the live model will have also seen, so a model that merely fits recent history well can still look good here without truly generalising. The 95% interval assumes past error spread holds and ignores uncertainty in the fitted coefficients, so it can hold the real outcome less often than 95%: for real GDP growth across 52 European and Asian economies, forecasts made for 2005–2025 landed inside it about 90% of the time one year ahead (research/FINDINGS.md).`}>
+        <Method caveats={`A point forecast ${HORIZON} years out on an annual series this short carries a wide, genuine interval — shown, not hidden. The backtest only ever fits on data before the year it is scored against (no look-ahead), but it uses today's revised World Bank figures, not the data as first published, so it is more favourable than a real-time test; and it reuses the same historical events the live model will have also seen, so a model that merely fits recent history well can still look good here without truly generalising. The 95% interval assumes past error spread holds and ignores uncertainty in the fitted coefficients, so it can hold the real outcome less often than 95%: for real GDP growth across 52 European and Asian economies, forecasts made for 2005–2025 landed inside it about 90% of the time one year ahead (research/FINDINGS.md).`}>
           Low-order autoregression (AR{AR_ORDER}) fit by ordinary least squares on the most recent unbroken run of years; forecast iterated forward using the model's own prior steps; 95% interval from the residual standard error (n − p − 1 degrees of freedom), widened with the horizon by the model's own ψ-weights (the standard AR forecast-error variance). Baseline: next year equals the last observed value (random walk). Backtest: for every possible cutoff year with at least {MIN_HISTORY} years before it, refit on data up to that year only and score the 1-year-ahead forecast against what actually happened next.
         </Method>
       </>}>

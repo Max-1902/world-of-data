@@ -650,6 +650,35 @@ export interface ForecastBacktest {
   mae: number | null
   /** the same folds' naive-baseline MAE, for the same question put to both */
   baselineMae: number | null
+  /** Diebold–Mariano test of equal accuracy vs the naive baseline (absolute-error loss); null below 5 folds */
+  dm: DieboldMariano | null
+}
+
+export interface DieboldMariano {
+  /** HLN-corrected statistic: negative = the model's errors are smaller */
+  stat: number
+  /** two-sided p-value from Student's t with n − 1 degrees of freedom */
+  p: number
+  n: number
+}
+
+/**
+ * Diebold–Mariano (1995) test that two forecasts are equally accurate, with the Harvey, Leybourne & Newbold (1997)
+ * small-sample correction and t(n−1) reference distribution. Loss differential d_t = |e1_t| − |e2_t|. For h-step
+ * forecasts the long-run variance uses autocovariances up to lag h − 1 (none at h = 1).
+ */
+export function dieboldMariano(errors1: number[], errors2: number[], h = 1): DieboldMariano | null {
+  const n = Math.min(errors1.length, errors2.length)
+  if (n < 5) return null
+  const d = Array.from({ length: n }, (_, i) => Math.abs(errors1[i]) - Math.abs(errors2[i]))
+  const m = mean(d)
+  const gamma = (k: number) => { let s = 0; for (let t = k; t < n; t++) s += (d[t] - m) * (d[t - k] - m); return s / n }
+  let lrv = gamma(0)
+  for (let k = 1; k < h; k++) lrv += 2 * gamma(k)
+  if (!(lrv > 0)) return null
+  const dm = m / Math.sqrt(lrv / n)
+  const stat = dm * Math.sqrt((n + 1 - 2 * h + (h * (h - 1)) / n) / n)
+  return { stat, p: tPValue(stat, n - 1), n }
 }
 
 /**
@@ -668,14 +697,18 @@ export function backtestForecast(pts: Pt[], makeForecast: (train: Pt[]) => Forec
     const actual = s[cut]
     const f = makeForecast(train)
     const base = naiveForecast(train, 1)
-    if (f?.points[0]) errors.push(Math.abs(f.points[0].value - actual.y))
-    if (base?.points[0]) baselineErrors.push(Math.abs(base.points[0].value - actual.y))
+    // paired: a fold counts only when both forecasts exist, so the two MAEs are over the same years
+    if (!f?.points[0] || !base?.points[0]) continue
+    errors.push(f.points[0].value - actual.y)
+    baselineErrors.push(base.points[0].value - actual.y)
   }
   if (!errors.length) return null
+  const abs = (v: number[]) => v.map(Math.abs)
   return {
     model: 'model', folds: errors.length,
-    mae: mean(errors),
-    baselineMae: baselineErrors.length ? mean(baselineErrors) : null,
+    mae: mean(abs(errors)),
+    baselineMae: mean(abs(baselineErrors)),
+    dm: dieboldMariano(errors, baselineErrors, 1),
   }
 }
 
