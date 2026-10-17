@@ -1,0 +1,53 @@
+{
+  "v": 1,
+  "recordedAt": "2026-10-17T09:22:33.766Z",
+  "acled": {
+    "ok": false,
+    "error": "ACLED_EMAIL / ACLED_PASSWORD not set"
+  },
+  "trajectories": [],
+  "liveScoreByCountry": {},
+  "notMeasured": [
+    {
+      "what": "Air traffic",
+      "why": "the research recorder does not poll OpenSky"
+    },
+    {
+      "what": "Live conflict events",
+      "why": "no events received from ACLED"
+    },
+    {
+      "what": "Internet outages",
+      "why": "IODA data is shown on the map but not passed to the analyst"
+    },
+    {
+      "what": "Earthquakes",
+      "why": "USGS data is shown on the map but not passed to the analyst"
+    },
+    {
+      "what": "Wildfires",
+      "why": "NASA FIRMS data is shown on the map but not passed to the analyst"
+    },
+    {
+      "what": "Disaster alerts",
+      "why": "GDACS data is shown on the map but not passed to the analyst"
+    },
+    {
+      "what": "Airspace",
+      "why": "the low-traffic heuristic is not passed to the analyst, and it is not a NOTAM feed in any case"
+    },
+    {
+      "what": "Vessel positions",
+      "why": "AIS data is not passed to the analyst"
+    },
+    {
+      "what": "GPS interference",
+      "why": "GPSJAM data is not passed to the analyst"
+    },
+    {
+      "what": "News headlines",
+      "why": "headlines are not passed to the analyst"
+    }
+  ],
+  "context": "=== WORLD SURVEILLANCE DASHBOARD — LIVE CONTEXT ===\nTimestamp (UTC): Sat, 17 Oct 2026 09:22:33 GMT\n\nNOT MEASURED (absent from this context — this is unknown, NOT zero; never state a count, absence, decline or anomaly for these)\n  • Air traffic: the research recorder does not poll OpenSky\n  • Live conflict events: no events received from ACLED\n  • Internet outages: IODA data is shown on the map but not passed to the analyst\n  • Earthquakes: USGS data is shown on the map but not passed to the analyst\n  • Wildfires: NASA FIRMS data is shown on the map but not passed to the analyst\n  • Disaster alerts: GDACS data is shown on the map but not passed to the analyst\n  • Airspace: the low-traffic heuristic is not passed to the analyst, and it is not a NOTAM feed in any case\n  • Vessel positions: AIS data is not passed to the analyst\n  • GPS interference: GPSJAM data is not passed to the analyst\n  • News headlines: headlines are not passed to the analyst\n\nACTIVE CONFLICTS & CRISES\n  Live events: NOT MEASURED — no event counts, totals or trends are available.\n\nKNOWN ONGOING CONFLICTS (hand-entered reference list — not live events, not counts, not evidence of current activity)\n  • Ukraine — Russia–Ukraine War\n  • Palestine — Gaza Conflict\n  • Sudan — Sudan Civil War (SAF vs RSF)\n  • DR Congo — DRC–M23 Conflict\n  • Myanmar — Myanmar Civil War\n  • Haiti — Haiti Gang Crisis\n  • Burkina Faso — Sahel Insurgency (Burkina Faso)\n  • Mali — Sahel Insurgency (Mali)\n  • Somalia — Somalia – al-Shabaab\n  • Syria — Syrian Conflict\n  • Yemen — Yemen Civil War\n  • Ethiopia — Ethiopia – Amhara Conflict\n  • Nigeria — Nigeria – Boko Haram / ISWAP\n  • Palestine — West Bank Violence\n  • Niger — Niger Coup Instability\n  • Taiwan — Taiwan Strait Tensions\n\n\n\nAIR TRAFFIC\n  NOT MEASURED — no flight count is available.\n\nDASHBOARD LAYERS (what the map can show — their data is NOT in this context unless it appears in a block above)\n  Live flight positions (OpenSky ADS-B)\n  Conflict events (ACLED)\n  Internet outage detection (IODA)\n  News feeds (RSS from public broadcasters and newspapers, Google News, NYT)\n  Market data (ETF and stock quotes via Finnhub; crypto via CoinGecko; FX via open.er-api.com)\n  Earthquakes (USGS), wildfire hotspots (NASA FIRMS), disaster alerts (GDACS)\n  Military bases & nuclear facilities (curated, not individually re-verified)\n  Energy infrastructure (curated dams/LNG/refineries; WRI power plants, 2021 vintage, no operating status)\n  Airspace low-traffic heuristic (hand-drawn FIR boxes vs hand-set references; not NOTAMs, not closures)\n  Public webcams (third-party listings)\n  Critical minerals & resource data available for 29 major producer countries (China, Australia, Russia, Saudi Arabia, United States, DR Congo, Chile, Peru, +more) — production rank, world share, strategic notes. Live World Bank resource-rent data (mineral/oil/gas/coal % of GDP) available on-demand for any country.\n==================================================="
+}
