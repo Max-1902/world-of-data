@@ -11,8 +11,7 @@
  *
  * Coverage notes worth showing next to the data:
  *  - Palestine refugees under UNRWA's mandate are not in UNHCR's figures.
- *  - IDP figures are those UNHCR reports (conflict-related, largely from IDMC); IOM DTM rounds
- *    (src/services/dtm.ts) are more recent and survey-based for the countries DTM covers.
+ *  - IDP figures are those UNHCR reports (conflict-related, largely from IDMC).
  *  - A year-on-year change in a stock can be new arrivals, returns, onward movement or a change in
  *    how a host registers people; it is not a count of new crossings.
  */
