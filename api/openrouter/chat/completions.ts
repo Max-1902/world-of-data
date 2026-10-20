@@ -92,7 +92,7 @@ export default async function handler(req: Request): Promise<Response> {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${key}`,
       'HTTP-Referer': req.headers.get('origin') || 'https://worldview.app',
-      'X-Title': 'Macroeconomic Forecasting System',
+      'X-Title': 'World of Data',
     },
     body: JSON.stringify(body),
   })

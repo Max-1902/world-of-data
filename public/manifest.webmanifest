@@ -1,6 +1,6 @@
 {
-  "name": "Mundus Datorum — Live World Monitor",
-  "short_name": "Mundus",
+  "name": "World of Data — Live World Monitor",
+  "short_name": "World of Data",
   "description": "Live global situational-awareness dashboard",
   "start_url": "/",
   "scope": "/",
