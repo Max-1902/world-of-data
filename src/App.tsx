@@ -167,7 +167,7 @@ export default function App() {
   const { fires, refresh: refreshFires }             = useWildfires(panelState.wildfires)
   const { data: gpsJam }                             = useGPSJam(panelState.gpsjam)
   const { vessels, refresh: refreshVessels }         = useVessels(panelState.vessels)
-  const { outages, refresh: refreshOutages }         = useOutages(panelState.outages)
+  const { outages, radarOutages, refresh: refreshOutages } = useOutages(panelState.outages)
   const { alerts: disasterAlerts } = useDisasterAlerts()
   const keyEvents = useMemo(() => summarizeKeyEvents(articles), [articles])
 
@@ -358,6 +358,7 @@ export default function App() {
             showSupplyChain={panelState.supplychain}
             showShippingDensity={panelState.shippingDensity}
             outages={outages}
+            radarOutages={radarOutages}
             showOutages={panelState.outages}
             disasterAlerts={disasterAlerts}
             showDisasters={panelState.disasters}

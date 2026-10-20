@@ -73,6 +73,9 @@ describe('foldOutageAlerts', () => {
     expect(loc['asn:1']).toBeNull()
     expect(loc['region:9999']).toMatchObject({ precision: 'country', label: 'CM' })
     expect(out.find(e => e.id === 'geoasn:1234-684')?.org).toBe('Telco')
+    // the country each event belongs to, for the country shading
+    const cc = Object.fromEntries(out.map(e => [e.id, e.countryCode]))
+    expect(cc).toEqual({ 'region:684': 'CM', 'geoasn:1234-684': 'CM', 'geoasn:36522-CA': 'CA', 'asn:1': '', 'region:9999': 'CM' })
   })
 
   it('tolerates junk entries and missing fields', () => {

@@ -63,7 +63,7 @@ export default function MapView({
   showCameras, showInfrastructure, showDatacenters, showAirspace, showHumanitarian,
   vessels, showVessels, showOil, showGas, showGPSJam, gpsJam, showPorts, showPipelines,
   showChokepoints, showSupplyChain, showShippingDensity,
-  outages, showOutages, disasterAlerts, showDisasters, showResources, showTradeStats, showMilitaryPersonnel,
+  outages, radarOutages, showOutages, disasterAlerts, showDisasters, showResources, showTradeStats, showMilitaryPersonnel,
   showInfraIndicators, showAnalyticsHex, showCountryAnalytics,
   flyToQuery, geoFlyTo, onCountryClick, onPlaceClick, selectedCountry, selectedPlace,
   reticleColor = '#00ff88',
@@ -182,7 +182,7 @@ export default function MapView({
   useResourcesVisibility(handle, { showResources })
   useTradeStatsVisibility(handle, { showTradeStats })
   useCountryIndicatorData(handle, { showMilitaryPersonnel, showInfraIndicators })
-  useOutageData(handle, { outages, showOutages })
+  useOutageData(handle, { outages, radarOutages, showOutages })
   useDisasterData(handle, { disasterAlerts, showDisasters })
   useMilitaryData(handle, { showMilitary })
   usePortData(handle, { showPorts })
@@ -234,7 +234,7 @@ export default function MapView({
         <CountryAnalyticsLegend countryData={countryData} countryShading={countryShading} raised={showAnalyticsHex} />
       )}
       {(showOutages || showDisasters) && !deepstateMode && (
-        <IncidentLegend outages={showOutages ? outages : null} disasters={showDisasters ? disasterAlerts : null} />
+        <IncidentLegend outages={showOutages ? outages : null} radarOutages={radarOutages} disasters={showDisasters ? disasterAlerts : null} />
       )}
       {showAnalyticsHex && !deepstateMode && (
         <HazardHexLegend

@@ -6,6 +6,7 @@ import type { Earthquake } from '../../services/earthquakes'
 import type { Vessel } from '../../services/aisstream'
 import type { OutageEvent } from '../../services/outages'
 import type { DisasterAlert } from '../../services/gdacs'
+import type { RadarOutage } from '../../services/radarOutages'
 import type { GPSJamData } from '../../services/gpsjam'
 import type { GeoNewsPin } from '../../utils/geoNews'
 import type { MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
@@ -52,6 +53,7 @@ export interface MapViewProps {
   showSupplyChain:    boolean
   showShippingDensity: boolean
   outages:            OutageEvent[]
+  radarOutages:       RadarOutage[]
   showOutages:        boolean
   disasterAlerts:     DisasterAlert[]
   showDisasters:      boolean

@@ -11,7 +11,7 @@ const fetchRadarOutages = vi.fn<(range: string) => Promise<RadarResult>>()
 vi.mock('../../services/radarOutages', async (orig) => ({ ...(await orig<typeof import('../../services/radarOutages')>()), fetchRadarOutages: (r: string) => fetchRadarOutages(r) }))
 
 const outage = (over: Partial<OutageEvent>): OutageEvent => ({
-  id: 'x', entityType: 'country', entityName: 'Testland', entityCode: 'TL', org: '', status: 'ongoing', level: 'critical',
+  id: 'x', entityType: 'country', entityName: 'Testland', entityCode: 'TL', countryCode: 'TL', org: '', status: 'ongoing', level: 'critical',
   severity: 'minor', dropPct: 10, start: 0, lastAlert: 0, signals: [], location: null, ...over,
 })
 

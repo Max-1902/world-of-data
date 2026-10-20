@@ -1,23 +1,23 @@
-// Popup HTML for the incident pins: internet outages (IODA) and disaster alerts (GDACS). Everything from a
+// Popup HTML for the incident layers: internet outages by country (IODA, Cloudflare Radar) and disaster alerts (GDACS). Everything from a
 // feed is escaped, and every popup says what its severity label means and how precise the pin is, so the
 // map never presents a country-level or region-level signal as a street address.
 import { esc } from './geoPopups'
-import { OUTAGE_SOURCES, SEVERITY_LABEL, type OutageEvent, type OutageSeverity } from '../../services/outages'
+import { OUTAGE_SOURCES, SEVERITY_LABEL, type OutageSeverity } from '../../services/outages'
+import { RADAR_UNREST_CAUSES, radarCauseLabel } from '../../services/radarOutages'
+import type { OutageCountry } from './layers/outages'
 import { ALERT_MEANING, DISASTER_LABELS, type DisasterAlert } from '../../services/gdacs'
 
 export const OUTAGE_COLORS: Record<OutageSeverity | 'recovered', string> = {
   severe: '#dc2626', major: '#f97316', minor: '#eab308', recovered: '#64748b',
 }
+/** Country outline for an outage Cloudflare Radar has confirmed: red for deliberate/conflict causes. */
+export const OUTAGE_CONFIRMED_COLORS = { deliberate: '#f43f5e', other: '#e2e8f0' } as const
 export const DISASTER_COLORS: Record<DisasterAlert['alert'], string> = { Red: '#dc2626', Orange: '#f97316' }
 
 export const SEVERITY_MEANING: Record<OutageSeverity, string> = {
   severe: 'signal 50 % or more below normal — most of the area offline',
   major: 'signal 20–49 % below normal',
   minor: 'signal under 20 % below normal — a partial or localised drop',
-}
-
-const ENTITY_KIND: Record<string, string> = {
-  country: 'Whole country', region: 'Region', asn: 'Network operator', geoasn: 'Network operator in one region',
 }
 
 const BOX = "padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:300px;font-size:11px;color:#14161a;line-height:1.5;"
@@ -36,40 +36,39 @@ export function timeAgo(epochMs: number, now = Date.now()): string {
 }
 const utc = (epochMs: number) => new Date(epochMs).toISOString().slice(0, 16).replace('T', ' ') + ' UTC'
 
-export function outagePopupHtml(o: OutageEvent, now = Date.now()): string {
-  const ongoing = o.status === 'ongoing'
-  const color = ongoing ? OUTAGE_COLORS[o.severity] : OUTAGE_COLORS.recovered
-  const status = ongoing ? `${SEVERITY_LABEL[o.severity]} · ongoing` : 'Recovered'
-  const kind = ENTITY_KIND[o.entityType] ?? o.entityType
-  const where = o.location
-    ? o.location.precision === 'region'
-      ? `pin marks the region (${esc(o.location.label)}) — IODA has no finer location`
-      : 'pin marks the country — IODA only reports it country-wide'
-    : 'no location in the IODA data'
+const ENTITY_SHORT: Record<string, string> = { country: 'country-wide', region: 'region', asn: 'network', geoasn: 'network in region' }
+const regionNames = (() => { try { return new Intl.DisplayNames(['en'], { type: 'region' }) } catch { return null } })()
+const countryName = (iso2: string) => { try { return regionNames?.of(iso2) ?? iso2 } catch { return iso2 } }
 
-  const signals = o.signals.map(s => {
-    const src = OUTAGE_SOURCES[s.source]
-    const live = s.level === 'critical'
-    return `<div style="margin-top:3px">
-      <b>${esc(src?.label ?? s.source)}</b>
-      ${live ? `<span style="color:${color};font-weight:700">${s.dropPct}% below normal</span>` : '<span style="color:#16a34a">back to normal</span>'}
-      <span style="${MUTED}">(${s.value.toLocaleString()} vs ${s.baseline.toLocaleString()} usual)</span>
-      ${src ? `<div style="font-size:10px;${MUTED}">${esc(src.meaning)}</div>` : ''}
+/** Popup for one shaded country: IODA's measured ongoing outages, then Cloudflare Radar's confirmed ones. */
+export function outageCountryPopupHtml(c: OutageCountry, now = Date.now()): string {
+  const head = c.severity
+    ? badge(`${SEVERITY_LABEL[c.severity]} · ${c.countryWide ? 'country-wide' : 'partial'}`.toUpperCase(), OUTAGE_COLORS[c.severity])
+    : badge('CONFIRMED', c.deliberate ? OUTAGE_CONFIRMED_COLORS.deliberate : '#6b7280')
+  const measured = c.events.slice(0, 6).map(o => {
+    const live = o.signals.filter(s => s.level === 'critical').map(s => OUTAGE_SOURCES[s.source]?.label ?? s.source)
+    return `<div style="margin-top:4px">
+      <b>${esc(o.entityType === 'country' ? 'Whole country' : o.location?.precision === 'region' ? o.location.label : o.entityName)}</b>
+      <span style="${MUTED}">${esc(ENTITY_SHORT[o.entityType] ?? o.entityType)}${o.org ? ` · ${esc(o.org)}` : ''}</span>
+      <div><b style="color:${OUTAGE_COLORS[o.severity]}">${o.dropPct}% below normal</b> <span style="${MUTED}">since ${timeAgo(o.start * 1000, now)}${live.length ? ` · ${esc(live.join(', '))}` : ''}</span></div>
     </div>`
   }).join('')
-
+  const confirmed = c.confirmed.map(r => {
+    const color = RADAR_UNREST_CAUSES.has(r.cause) ? OUTAGE_CONFIRMED_COLORS.deliberate : '#14161a'
+    return `<div style="margin-top:4px">
+      <b style="color:${color}">${esc(radarCauseLabel(r.cause))}</b>
+      <span style="${MUTED}">${esc([r.type.toLowerCase(), r.scope].filter(Boolean).join(' · '))} · since ${timeAgo(r.start, now)}</span>
+      ${r.description ? `<div style="font-size:10.5px">${esc(r.description)}</div>` : ''}
+      ${r.linkedUrl ? `<a href="${esc(r.linkedUrl)}" target="_blank" rel="noopener noreferrer" style="font-size:10px">Cloudflare write-up ↗</a>` : ''}
+    </div>`
+  }).join('')
   return `<div style="${BOX}">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #e5e7eb">
-      <span style="font-size:13px;font-weight:800">Internet outage · ${esc(o.entityName)}</span>
-      ${badge(status.toUpperCase(), color)}
+      <span style="font-size:13px;font-weight:800">${esc(countryName(c.iso2))}</span>${head}
     </div>
-    ${row('What', `${esc(kind)}${o.org ? ` — ${esc(o.org)}` : ''}`)}
-    ${row('Drop', `<b style="color:${color}">${o.dropPct}%</b> below IODA's normal level${ongoing ? '' : ' (worst seen)'}`)}
-    ${ongoing ? `<div style="font-size:10px;${MUTED}">${SEVERITY_LABEL[o.severity]} = ${SEVERITY_MEANING[o.severity]}</div>` : ''}
-    ${row('Started', `${timeAgo(o.start * 1000, now)} <span style="${MUTED}">(${utc(o.start * 1000)})</span>`)}
-    ${row(ongoing ? 'Last update' : 'Recovered', timeAgo(o.lastAlert * 1000, now))}
-    <div style="margin-top:6px;padding-top:5px;border-top:1px solid #e5e7eb"><span style="${MUTED}">Measured by:</span>${signals}</div>
-    <div style="margin-top:6px;font-size:10px;color:#9ca3af">Source: IODA, Georgia Tech · ${where}. Severity bands are this app's grading of the drop; IODA itself flags any signal past its threshold as "critical".</div>
+    ${c.events.length ? `<div style="${MUTED};font-size:10px;letter-spacing:.06em">MEASURED · IODA</div>${measured}${c.events.length > 6 ? `<div style="${MUTED};margin-top:3px">+${c.events.length - 6} more in the Connectivity panel</div>` : ''}` : ''}
+    ${c.confirmed.length ? `<div style="${MUTED};font-size:10px;letter-spacing:.06em;margin-top:${c.events.length ? 8 : 0}px">CONFIRMED · CLOUDFLARE RADAR</div>${confirmed}` : ''}
+    <div style="margin-top:7px;font-size:10px;color:#9ca3af">${c.severity && !c.countryWide ? 'Shading covers the whole country, but IODA only reports a region or network inside it. ' : ''}${c.severity ? `${SEVERITY_LABEL[c.severity]} = ${SEVERITY_MEANING[c.severity]} (this app's bands on IODA's baseline). ` : ''}${c.confirmed.length ? 'Causes are Cloudflare\'s own attribution.' : ''}</div>
   </div>`
 }
 
