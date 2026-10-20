@@ -4,7 +4,7 @@ Steps only the owner can do (account sign-ups and secrets). Tick them off here w
 
 ## 1. Register for a free EIA API key (Energy Inventories panel)
 
-The Energy Inventories panel (Economy → Inventories) shows "Not measured" until this is done. The key is free and there is no billing.
+The Energy Inventories panel (Forecasts → Energy Inventories) shows "Not measured" until this is done. The key is free and there is no billing.
 
 - [x] Register at <https://www.eia.gov/opendata/register.php>. The key arrives by email.
 - [x] Add it to your local `.env`: `EIA_API_KEY=<your key>`, then restart the dev server.
