@@ -1,7 +1,7 @@
 /**
  * Single-country economic time-series analysis for the Country Lookup workspace. Pure functions: no network, no clock.
  *
- * Every result carries its sample size and enough of its method to be reported honestly. The choices, and why:
+ * Every result carries its sample size and enough of its method to state its limits. The choices, and why:
  *  - Trends: Mann–Kendall with Sen's slope and an effective-sample-size correction for autocorrelation (Yue & Wang
  *    2004). Annual macro series are autocorrelated, and the plain test then reports trends far too often; trend-free
  *    pre-whitening, tried first, made that worse in simulation (see trendTest).
@@ -541,13 +541,10 @@ export function anomalyScan(series: { id: string; points: Pt[]; mode: 'diff' | '
 // ── Forecast ─────────────────────────────────────────────────────────────────
 //
 // A univariate projection of a single annual series (e.g. GDP growth) from its own history, in the same
-// spirit as trendTest/hpFilter above: a named, textbook method with n and a documented assumption, not a
-// black box. With ~60 annual points per country this is deliberately a low-order AR model, not anything
-// more flexible — there isn't enough data to justify more parameters, and macro forecasting research itself
-// finds that simple univariate models are hard to beat at a 1–2 year horizon for GDP growth specifically.
-// Two baselines are reported alongside every forecast for exactly that reason: if the AR model can't beat
-// "repeat last year's value" or "the historical mean" out of sample (backtestForecast below), that is the
-// honest result to show, not a reason to hide the baseline.
+// spirit as trendTest/hpFilter above: a named, textbook method with n and a documented assumption.
+// With ~60 annual points per country this is deliberately a low-order AR model; there isn't enough data to
+// justify more parameters. Every forecast is scored against the "repeat last year's value" baseline out of
+// sample (backtestForecast below), and when it doesn't beat the baseline, that result is shown.
 
 export interface Forecast {
   method: string
@@ -596,7 +593,7 @@ function fitAr(y: number[], p: number): { coef: number[]; intercept: number; res
  * h-step AR forecast interval (Hamilton, Time Series Analysis, 1994, ch. 4; Hyndman & Athanasopoulos, FPP3 §9.8):
  *   ŷ ± t(0.975, n−p−1) · σ̂ · √(ψ₀² + … + ψ²₍h−1₎),  σ̂² = Σe² / (n−p−1),  ψ₀ = 1, ψⱼ = Σᵢ φᵢ ψⱼ₋ᵢ
  * It ignores parameter-estimation uncertainty and assumes the past error spread holds, so real coverage can
- * fall short of 95% (measured in research/FINDINGS.md). Null below 2p + 3 points.
+ * fall short of 95% (measured coverage is in forecastPolicy.ts). Null below 2p + 3 points.
  */
 export function arForecast(pts: Pt[], p = 2, horizon = 3): Forecast | null {
   const s = lastRun(pts)
@@ -695,9 +692,9 @@ export const INTERVAL_MIN_ERRORS = 19
  * Replaces a forecast's interval with one measured from the method's own track record on this series: rerun it from
  * every past origin (≥ INTERVAL_MIN_TRAIN years, data before the origin only), collect the absolute h-step errors and
  * take the ⌈0.95 (n + 1)⌉-th smallest as the half-width (the split-conformal rule). That rule guarantees ≥ 95% coverage
- * only if past and future errors are exchangeable; rolling-origin errors overlap and regimes shift, so they are not, and
- * real coverage has to be measured (forecastPolicy.ts reports it). Unlike the textbook interval it needs no distributional assumption and includes
- * the model's own estimation error. Below INTERVAL_MIN_ERRORS errors at a horizon there are too few to read a 95%
+ * only if past and future errors are exchangeable; rolling-origin errors overlap and regimes shift, so they are not,
+ * and real coverage has to be measured (forecastPolicy.ts reports it). Unlike the textbook interval it needs no
+ * distributional assumption and includes the model's own estimation error. Below INTERVAL_MIN_ERRORS errors at a horizon there are too few to read a 95%
  * quantile from, and that horizon's interval is NaN (not shown) rather than guessed.
  */
 export function empiricalInterval(pts: Pt[], f: Forecast, make: (train: Pt[], horizon: number) => Forecast | null, recent = Infinity): Forecast & { calibration: number[] } {
@@ -723,7 +720,6 @@ export function empiricalInterval(pts: Pt[], f: Forecast, make: (train: Pt[], ho
 }
 
 export interface ForecastBacktest {
-  model: string
   /** rolling-origin folds: fit on data up to each cutoff year, score the 1-year-ahead forecast only */
   folds: number
   mae: number | null
@@ -763,9 +759,8 @@ export function dieboldMariano(errors1: number[], errors2: number[], h = 1): Die
 /**
  * Pseudo-out-of-sample backtest: for every possible cutoff year with enough history before it and at least
  * one real value after it, refits the model using only data up to that year and scores its 1-year-ahead
- * forecast against what the series actually did next. This is the only honest way to claim a forecast
- * method "works" on a series this short — an in-sample fit error is not a forecast error. Mirrors
- * research/src/backtest.ts's replay-and-score shape for the trend flag.
+ * forecast against what the series actually did next. An in-sample fit error is not a forecast error, so this is
+ * what the panel and the analyst report as a model's skill on a country.
  */
 export function backtestForecast(pts: Pt[], makeForecast: (train: Pt[]) => Forecast | null, minHistory: number): ForecastBacktest | null {
   const s = lastRun(pts)
@@ -784,7 +779,7 @@ export function backtestForecast(pts: Pt[], makeForecast: (train: Pt[]) => Forec
   if (!errors.length) return null
   const abs = (v: number[]) => v.map(Math.abs)
   return {
-    model: 'model', folds: errors.length,
+    folds: errors.length,
     mae: mean(abs(errors)),
     baselineMae: mean(abs(baselineErrors)),
     dm: dieboldMariano(errors, baselineErrors, 1),
