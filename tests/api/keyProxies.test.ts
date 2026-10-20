@@ -32,11 +32,21 @@ describe.each([
     expect(url.searchParams.has('path')).toBe(false)
   })
 
-  it('joins multi-segment catch-all paths', async () => {
+  it.each(['stock/candle', 'x', '../../anything', ''])('refuses the path %j, which the app never calls', async (path) => {
     vi.stubEnv(env, 'K')
     const fetchMock = mockUpstream()
-    await handler(mockReq({ query: { path: ['stock', 'candle'] } }), mockRes().res)
-    expect(lastUrl(fetchMock).pathname).toBe(`${base}stock/candle`)
+    const out = mockRes()
+    await handler(mockReq({ query: { path: path.split('/') } }), out.res)
+    expect(out.statusCode()).toBe(404)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('returns 502 instead of crashing when upstream is unreachable', async () => {
+    vi.stubEnv(env, 'K')
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('offline') }))
+    const out = mockRes()
+    await handler(mockReq({ query: { path: 'quote' } }), out.res)
+    expect(out.statusCode()).toBe(502)
   })
 
   it('supports the "...path" key used by `vercel dev` local mode', async () => {
@@ -51,7 +61,7 @@ describe.each([
   it('does not let a client-supplied key parameter override the server key', async () => {
     vi.stubEnv(env, 'SERVER-KEY')
     const fetchMock = mockUpstream()
-    await handler(mockReq({ query: { path: 'x', [keyParam]: 'ATTACKER-KEY' } }), mockRes().res)
+    await handler(mockReq({ query: { path: 'quote', [keyParam]: 'ATTACKER-KEY' } }), mockRes().res)
     const url = lastUrl(fetchMock)
     expect(url.searchParams.getAll(keyParam)).toEqual(['SERVER-KEY'])
     expect(url.toString()).not.toContain('ATTACKER-KEY')
@@ -72,7 +82,7 @@ describe.each([
     vi.stubEnv(env, 'K')
     vi.stubGlobal('fetch', vi.fn(async () => { const r = new Response('{}'); r.headers.delete('content-type'); return r }))
     const out = mockRes()
-    await handler(mockReq({ query: { path: 'x' } }), out.res)
+    await handler(mockReq({ query: { path: 'quote' } }), out.res)
     expect(out.headers()['content-type']).toBe('application/json')
   })
 })

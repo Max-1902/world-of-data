@@ -145,6 +145,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Redirects are followed, but the final host must still be one we allow.
     if (upstream.url && !ALLOWED_FEED_HOSTS.has(new URL(upstream.url).hostname)) return res.status(502).json({ error: 'feed redirected to a host that is not allowed' })
     if (!upstream.ok) return res.status(502).json({ error: `feed returned HTTP ${upstream.status}` })
+    // refuse before reading when the size is declared; the length check below covers chunked replies
+    if (Number(upstream.headers.get('content-length')) > MAX_BYTES) return res.status(502).json({ error: 'feed too large' })
     const xml = await upstream.text()
     if (xml.length > MAX_BYTES) return res.status(502).json({ error: 'feed too large' })
 

@@ -21,6 +21,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body }
   )
 
-  const data = await upstream.json()
+  // an HTML error page from the provider would otherwise crash the function
+  const data = await upstream.json().catch(() => ({ error: `token endpoint returned HTTP ${upstream.status} without JSON` }))
   res.status(upstream.status).json(data)
 }

@@ -25,6 +25,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
     if (!upstream.ok) return res.status(502).json({ error: `FIRMS HTTP ${upstream.status}` })
+    if (Number(upstream.headers.get('content-length')) > MAX_BYTES) return res.status(502).json({ error: 'FIRMS file unexpectedly large' })
     const csv = await upstream.text()
     if (csv.length > MAX_BYTES) return res.status(502).json({ error: 'FIRMS file unexpectedly large' })
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
