@@ -207,8 +207,14 @@ const cache = new Map<string, { at: number; rows: CountryValue[] }>()
 const inflight = new Map<string, Promise<CountryValue[]>>()
 
 async function fetchWorldBank(id: string): Promise<CountryValue[]> {
-  const url = `${WB_BASE}/country/all/indicator/${encodeURIComponent(id)}?format=json&per_page=20000&mrnev=1`
+  const base = `${WB_BASE}/country/all/indicator/${encodeURIComponent(id)}`
+  // The retry asks for the same data with the parameters reordered: World Bank's CDN has been seen (2026-10-20,
+  // EG.USE.PCAP.KG.OE) serving a cached copy of one exact URL without its CORS header for up to a day, which a browser
+  // reports as a network error. A different query string is a different cache entry.
+  const urls = [`${base}?format=json&per_page=20000&mrnev=1`, `${base}?per_page=20000&mrnev=1&format=json`]
+  let tries = 0
   const attempt = async (): Promise<CountryValue[]> => {
+    const url = urls[Math.min(tries++, urls.length - 1)]
     const res = await fetch(url, { signal: AbortSignal.timeout(20_000) })
     if (!res.ok) throw Object.assign(new Error(`World Bank HTTP ${res.status}`), { transient: res.status === 429 || res.status >= 500 })
     return parseWorldBank(await res.json())
