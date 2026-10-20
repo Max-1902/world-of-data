@@ -27,7 +27,7 @@ const OUT = 'src/data/trade-profiles.json'
 const CT = 'https://comtradeapi.un.org/public/v1/preview/C/A/HS'
 const CT_REF = 'https://comtradeapi.un.org/files/v1/app/reference'
 const WB = 'https://api.worldbank.org/v2'
-const UA = 'MundusDatorum-trade-snapshot/1.0 (open research dashboard build script)'
+const UA = 'WorldOfData-trade-snapshot/1.0 (open research dashboard build script)'
 const YEARS = [2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018]
 
 // Reporters, by ISO 3166-1 alpha-2. Taiwan is not a UN Comtrade reporter, so

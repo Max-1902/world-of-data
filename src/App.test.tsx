@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
 // Stand-ins for the heavy pieces: the map just exposes a "click a country" button,
@@ -20,7 +20,12 @@ vi.mock('./components/OutlookCard', () => ({
   ),
 }))
 
+// App renders a "Mapbox token required" screen instead of the map without a token. A developer's .env has one, CI
+// doesn't, so the test sets a placeholder (the map is mocked above; nothing is sent to Mapbox). In beforeEach because
+// the config's unstubEnvs resets stubbed env vars before every test.
 describe('country drawer and outlook card', () => {
+  beforeEach(() => { vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder') })
+
   async function pickCountry() {
     const { default: App } = await import('./App')
     render(<App />)

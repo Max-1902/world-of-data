@@ -57,7 +57,7 @@ export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSe
             <Globe2 size={15} color="#111820" />
           </div>
           <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '.02em', color: 'var(--text1)', lineHeight: 1.1, fontFamily: 'Inter, -apple-system, sans-serif' }}>
-            MUNDUS DATORUM
+            WORLD OF DATA
           </div>
         </div>
 

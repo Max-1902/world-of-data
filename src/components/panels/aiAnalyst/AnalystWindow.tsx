@@ -107,7 +107,7 @@ export function AnalystWindowProvider({ panelProps, children }: { panelProps: Pa
       setMode('float')
       return
     }
-    prepareWindow(w, 'Analyst — Macroeconomic Forecasting System')
+    prepareWindow(w, 'Analyst — World of Data')
     setNotice('')
     setWin(w)
     setMode('window')
