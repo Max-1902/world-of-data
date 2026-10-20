@@ -3,7 +3,7 @@ import {
   normalCdf, tPValue, tCrit95, regress, senSlope, mannKendall, trendTest, hpFilter, outputGap, recessions, byDecade,
   cagr, growthDecomposition, okun, phillips, persistence, sectoralBalances, debtDynamics, anomalyScan, meanBreak,
   benjaminiHochberg, diffs, lastRun, spreadSeries, annualAverage, SUPF_CRIT_5, type Pt,
-  naiveForecast, meanForecast, arForecast, backtestForecast, dieboldMariano,
+  naiveForecast, arForecast, backtestForecast, dieboldMariano,
 } from './econAnalysis'
 
 const series = (ys: number[], x0 = 2000): Pt[] => ys.map((y, i) => ({ x: x0 + i, y }))
@@ -308,14 +308,6 @@ describe('forecast', () => {
   })
   it('naiveForecast is null below 2 points', () => {
     expect(naiveForecast(series([1]), 1)).toBeNull()
-  })
-
-  it('meanForecast is flat at the historical mean', () => {
-    const f = meanForecast(series([2, 4, 6, 4, 4]), 2)!
-    expect(f.points.every(p => p.value === 4)).toBe(true)
-  })
-  it('meanForecast is null below 5 points', () => {
-    expect(meanForecast(series([1, 2, 3]), 1)).toBeNull()
   })
 
   it('arForecast recovers an exact AR(1) recurrence with zero residual spread', () => {

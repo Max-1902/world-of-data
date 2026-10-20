@@ -38,7 +38,6 @@ export interface TradeProfile {
   dependencies?: string[]
 }
 
-export const TRADE_SOURCE = generated.sources
 
 interface CountryMeta {
   name: string

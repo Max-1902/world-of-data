@@ -108,9 +108,3 @@ export function translateToEnglish(text: string): Promise<Translation | null> {
   void run.finally(() => inFlight.delete(input))
   return run
 }
-
-/** Test hook: forget everything, including the persisted cache and any rate-limit pause. */
-export function resetTranslateCache() {
-  cache.clear(); inFlight.clear(); hydrated = false; blockedUntil = 0; active = 0; waiting.length = 0
-  try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }
-}

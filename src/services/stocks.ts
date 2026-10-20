@@ -109,19 +109,6 @@ export async function fetchMultipleQuotes(symbols: string[]): Promise<Stock[]> {
   return results.filter((r): r is Stock => r !== null)
 }
 
-export async function searchSymbol(query: string): Promise<{ symbol: string; name: string }[]> {
-  try {
-    const res  = await fetch(`${BASE}/search?q=${encodeURIComponent(query)}`)
-    if (!res.ok) return []
-    const data = await res.json()
-    return (data.result || [])
-      .slice(0, 10)
-      .map((r: { symbol: string; description: string }) => ({ symbol: r.symbol, name: r.description }))
-  } catch {
-    return []
-  }
-}
-
 // Major global exchanges. Each is tracked through a country/index ETF as a proxy (Finnhub's free tier has no
 // index quotes), so the names say what the ETF actually holds rather than naming a local index it only resembles.
 export const MARKET_HUBS: { symbol: string; name: string; lat: number; lng: number; exchange: string }[] = [

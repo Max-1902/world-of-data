@@ -131,9 +131,3 @@ export function geocodePlace(name: string): Promise<GeoPlace | null> {
   void run.finally(() => inFlight.delete(key))
   return run
 }
-
-/** Test hook: forget everything, including the persisted cache. */
-export function resetGeocodeCache() {
-  cache.clear(); inFlight.clear(); hydrated = false; tail = Promise.resolve()
-  try { localStorage.removeItem(LS_KEY) } catch { /* ignore */ }
-}

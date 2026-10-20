@@ -12,7 +12,7 @@ describe.each([
     vi.stubEnv(env, '')
     const fetchMock = mockUpstream()
     const out = mockRes()
-    await handler(mockReq({ query: { path: 'search' } }), out.res)
+    await handler(mockReq({ query: { path: 'quote' } }), out.res)
     expect(out.statusCode()).toBe(200)
     expect(out.body()).toEqual(empty)
     expect(fetchMock).not.toHaveBeenCalled()
@@ -32,7 +32,7 @@ describe.each([
     expect(url.searchParams.has('path')).toBe(false)
   })
 
-  it.each(['stock/candle', 'x', '../../anything', ''])('refuses the path %j, which the app never calls', async (path) => {
+  it.each(['search', 'stock/candle', 'x', '../../anything', ''])('refuses the path %j, which the app never calls', async (path) => {
     vi.stubEnv(env, 'K')
     const fetchMock = mockUpstream()
     const out = mockRes()
