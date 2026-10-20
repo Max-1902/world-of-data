@@ -7,7 +7,7 @@ import type { Flight } from '../types'
 import type { ToolContext } from './aiTools'
 
 const m = vi.hoisted(() => ({
-  fetchWildfires: vi.fn(), fetchDisasterAlerts: vi.fn(), fetchOutageEvents: vi.fn(), fetchGPSJam: vi.fn(),
+  fetchWildfires: vi.fn(), fetchDisasterAlerts: vi.fn(), fetchOutageEvents: vi.fn(), fetchRadarOutages: vi.fn(), fetchGPSJam: vi.fn(),
   searchAllSources: vi.fn(), fetchTopHeadlines: vi.fn(), fetchMultipleQuotes: vi.fn(), fetchEiaSeries: vi.fn(),
   fetchIndicatorAll: vi.fn(), fetchCountryDataset: vi.fn(), fetchPowerGenerationRanking: vi.fn(),
   fetchMilitaryPersonnelRanking: vi.fn(), fetchResourceRents: vi.fn(), historyLoad: vi.fn(), getSnapshots: vi.fn(),
@@ -16,6 +16,7 @@ const m = vi.hoisted(() => ({
 vi.mock('./wildfires', () => ({ fetchWildfires: m.fetchWildfires }))
 vi.mock('./gdacs', async orig => ({ ...await orig<typeof import('./gdacs')>(), fetchDisasterAlerts: m.fetchDisasterAlerts }))
 vi.mock('./outages', async orig => ({ ...await orig<typeof import('./outages')>(), fetchOutageEvents: m.fetchOutageEvents }))
+vi.mock('./radarOutages', async orig => ({ ...await orig<typeof import('./radarOutages')>(), fetchRadarOutages: m.fetchRadarOutages }))
 vi.mock('./gpsjam', async orig => ({ ...await orig<typeof import('./gpsjam')>(), fetchGPSJam: m.fetchGPSJam }))
 vi.mock('./news', async orig => ({ ...await orig<typeof import('./news')>(), searchAllSources: m.searchAllSources, fetchTopHeadlines: m.fetchTopHeadlines }))
 vi.mock('./stocks', async orig => ({ ...await orig<typeof import('./stocks')>(), fetchMultipleQuotes: m.fetchMultipleQuotes }))
@@ -139,10 +140,30 @@ describe('outages', () => {
 
   it('matches a country by code or name and sorts by signal drop', async () => {
     m.fetchOutageEvents.mockResolvedValue([outage({ dropPct: 40, entityName: 'Tehran', entityType: 'region', entityCode: 'x', location: { label: 'Tehran, Iran' } }), outage(), outage({ entityName: 'Peru', entityCode: 'PE' })])
+    m.fetchRadarOutages.mockResolvedValue({ status: 'ok', outages: [] })
     const r = await run('outages', ['Iran'])
-    expect(r.text).toMatch(/^2 outage events \(2 ongoing\):\n {2}• Iran/)
+    expect(r.text).toMatch(/^2 IODA outage events \(2 ongoing\):\n {2}• Iran/)
     expect(r.text).not.toContain('Peru')
     expect(r.chart).toMatchObject({ items: [{ value: 80 }, { value: 40 }] })
+  })
+
+  const verified = (o = {}) => ({ id: 'r', cause: 'GOVERNMENT_DIRECTED', type: 'NATIONWIDE', scope: '', countries: [{ code: 'IR', name: 'Iran' }], asns: [], start: NOW - 3_600_000, end: null, description: 'Shutdown during protests', linkedUrl: '', ...o })
+
+  it('adds Cloudflare Radar verified outages with their stated cause, filtered to the country', async () => {
+    m.fetchOutageEvents.mockResolvedValue([])
+    m.fetchRadarOutages.mockResolvedValue({ status: 'ok', outages: [verified(), verified({ id: 'p', cause: 'POWER_OUTAGE', countries: [{ code: 'PE', name: 'Peru' }] })] })
+    const r = await run('outages', ['Iran'])
+    expect(r.text).toContain('Cloudflare Radar verified outages, last 7 days (1;')
+    expect(r.text).toContain('Iran — Government-directed shutdown, nationwide')
+    expect(r.text).toContain('no end time recorded: Shutdown during protests')
+    expect(r.text).not.toContain('Peru')
+  })
+
+  it('reports Radar as not available, not as "no outages", when the token is missing', async () => {
+    m.fetchOutageEvents.mockResolvedValue([])
+    m.fetchRadarOutages.mockResolvedValue({ status: 'not_configured' })
+    const r = await run('outages')
+    expect(r.text).toContain('Cloudflare Radar verified outages: NOT AVAILABLE (no token configured)')
   })
 })
 

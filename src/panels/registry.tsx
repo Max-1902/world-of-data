@@ -194,7 +194,7 @@ const PANELS: PanelDef[] = [
   },
   {
     id: 'outages', title: 'Connectivity', group: 'geo', section: 'live', map: ['outages'],
-    dotColor: 'yellow', desc: 'Internet disruption monitoring',
+    dotColor: 'yellow', desc: 'Internet disruption monitoring (IODA alerts, Cloudflare Radar verified outages)',
     render: (p) => <OutagesPanel onGeoSearch={p.onGeoSearch} />,
   },
   {
