@@ -66,6 +66,17 @@ describe.each(handlers)('$name', ({ handler, envs, upstream }) => {
   })
 })
 
+describe.each(handlers)('$name with a non-JSON reply', ({ handler, envs }) => {
+  it('relays the status with a JSON error instead of crashing', async () => {
+    for (const [k, v] of Object.entries(envs)) vi.stubEnv(k, v)
+    mockUpstream('<html>Bad Gateway</html>', { status: 502, headers: { 'Content-Type': 'text/html' } })
+    const out = mockRes()
+    await handler(mockReq({ method: 'POST' }), out.res)
+    expect(out.statusCode()).toBe(502)
+    expect(out.body()).toEqual({ error: expect.stringContaining('HTTP 502') })
+  })
+})
+
 describe('token grant types', () => {
   it('acled uses the password grant with the acled client id', async () => {
     vi.stubEnv('ACLED_EMAIL', 'e'); vi.stubEnv('ACLED_PASSWORD', 'p')

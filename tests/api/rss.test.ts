@@ -123,6 +123,12 @@ describe('/api/rss handler', () => {
     mockUpstream('x'.repeat(2_000_001))
     expect((await call('https://rss.dw.com/xml/rss-en-world')).statusCode()).toBe(502)
 
+    // a declared oversize body is refused without reading it
+    const body = { text: vi.fn() }
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, url: '', headers: new Headers({ 'content-length': '9999999' }), ...body })))
+    expect((await call('https://rss.dw.com/xml/rss-en-world')).statusCode()).toBe(502)
+    expect(body.text).not.toHaveBeenCalled()
+
     vi.stubGlobal('fetch', vi.fn(async () => Object.defineProperty(new Response(RSS), 'url', { value: 'https://evil.example.com/feed' })))
     const redirected = await call('https://rss.dw.com/xml/rss-en-world')
     expect(redirected.statusCode()).toBe(502)
