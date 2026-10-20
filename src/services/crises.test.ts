@@ -47,6 +47,16 @@ describe('fetchACLEDEvents', () => {
     expect(e.fatalities).toBe(0)
   })
 
+  it('drops rows without usable coordinates', async () => {
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [
+      acledRow({ event_id_cnty: 'A', latitude: '' }),
+      acledRow({ event_id_cnty: 'B', longitude: 'n/a' }),
+      acledRow({ event_id_cnty: 'C' }),
+    ] }))
+    const { fetchACLEDEvents } = await load()
+    expect((await fetchACLEDEvents()).map(e => e.id)).toEqual(['C'])
+  })
+
   it('records whether the poll hit ACLED_LIMIT, so callers can say counts are a sample (not totals)', async () => {
     const row = (i: number) => ({ event_id_cnty: `E${i}`, event_date: '2026-10-14', event_type: 'Battles', country: 'X', admin1: 'a', location: 'b', latitude: '1', longitude: '2', notes: '', fatalities: '0' })
     const { fetchACLEDEvents, lastAcledPoll, ACLED_LIMIT } = await load()
