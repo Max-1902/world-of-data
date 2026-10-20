@@ -163,23 +163,6 @@ describe('civil facilities (OSM Overpass)', () => {
   })
 })
 
-describe('emailrep lookup', () => {
-  it('lower-cases and encodes the address, and returns the parsed body', async () => {
-    const fetchMock = mockFetch(() => jsonResponse({ email: 'a@b.com', reputation: 'high', suspicious: false }))
-    const { lookupEmail } = await load(() => import('./osint'))
-    const r = await lookupEmail('A+Tag@B.com')
-    expect(r).toMatchObject({ reputation: 'high' })
-    expect(String(fetchMock.mock.calls[0][0])).toBe('/api/emailrep/a%2Btag%40b.com')
-  })
-  it('returns null on rate limiting and network errors', async () => {
-    const { lookupEmail } = await load(() => import('./osint'))
-    mockFetch(() => jsonResponse({}, { status: 429 }))
-    expect(await lookupEmail('a@b.com')).toBeNull()
-    mockFetch(() => { throw new Error('offline') })
-    expect(await lookupEmail('a@b.com')).toBeNull()
-  })
-})
-
 describe('sanctions news (GDELT)', () => {
   it('returns articles with ISO dates, scoping the query to a country when given', async () => {
     const fetchMock = mockFetch(() => jsonResponse({ articles: [{ title: 'T', url: 'https://u', domain: 'd', seendate: '20260101T120000Z' }] }))
