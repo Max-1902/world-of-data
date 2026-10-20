@@ -2,7 +2,6 @@ import { useState, useEffect, useSyncExternalStore } from 'react'
 import { RefreshCw, Globe2 } from 'lucide-react'
 import type { MapViewMode, PanelState, Stock } from '../types'
 import SmartSearch from './SmartSearch'
-import OSINTSearch from './OSINTSearch'
 import SourceHealth from './SourceHealth'
 import { healthTracker } from '../services/sourceHealth'
 import { marketHudPlaceholder, summarizeMarketHud, summarizeSanctionsHud } from '../utils/marketHud'
@@ -62,8 +61,6 @@ export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSe
         </div>
 
         <span className="live-badge">LIVE</span>
-
-        <OSINTSearch />
       </div>
 
       <div className="hud-sep" />

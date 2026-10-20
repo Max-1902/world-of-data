@@ -51,12 +51,6 @@ export default defineConfig({
     port: 3000,
     proxy: {
       // NASA FIRMS is served by api/firms/[...path].ts in dev and production alike (it used to be dev-only here).
-      // EmailRep.io — email reputation lookup (free, 10 req/day without key)
-      '/api/emailrep': {
-        target: 'https://emailrep.io',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/emailrep/, ''),
-      },
       // Aircraft database — hexdb.io (free, no auth)
       '/api/hexdb': {
         target: 'https://hexdb.io',
