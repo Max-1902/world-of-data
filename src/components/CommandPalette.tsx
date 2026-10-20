@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MapViewMode, PanelState } from '../types'
 import { rankItems, type PaletteItem } from '../utils/paletteSearch'
 import { buildSearchCatalogue } from './searchCatalogue'
+import type { Screen } from './Windows/screens'
 
 interface Props {
   open: boolean
@@ -12,19 +13,28 @@ interface Props {
   onToggleLayer: (id: keyof PanelState) => void
   onViewMode: (m: MapViewMode) => void
   onGeoSearch: (q: string) => void
+  /** named window layouts — listed first, so an empty palette doubles as a screen switcher */
+  screens?: Screen[]
+  onLoadScreen?: (id: string) => void
+  onOpenLibrary?: () => void
 }
 
 const KIND_LABEL: Record<PaletteItem['kind'], string> = {
-  panel: 'Panel', layer: 'Layer', view: 'Map style', chokepoint: 'Chokepoint', search: 'Search map',
+  panel: 'Panel', layer: 'Layer', view: 'Map style', chokepoint: 'Chokepoint', search: 'Search map', screen: 'Screen', action: 'Browse',
 }
 
 /** Cmd/Ctrl+K palette over the panel registry, map layers, map styles and chokepoints. */
-export default function CommandPalette({ open, onClose, panelState, onOpenPanel, onToggleLayer, onViewMode, onGeoSearch }: Props) {
+export default function CommandPalette({ open, onClose, panelState, onOpenPanel, onToggleLayer, onViewMode, onGeoSearch, screens = [], onLoadScreen, onOpenLibrary }: Props) {
   const [query, setQuery] = useState('')
   const [cursor, setCursor] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const { catalogue } = useMemo(buildSearchCatalogue, [])
+  const { catalogue: base } = useMemo(buildSearchCatalogue, [])
+  const catalogue = useMemo<PaletteItem[]>(() => [
+    ...screens.map((s, i) => ({ id: `screen:${s.id}`, kind: 'screen' as const, label: s.name, hint: `${s.desc ?? `${s.wins.length} windows`}${i < 9 ? ` · Alt+${i + 1}` : ''}`, keywords: 'screen layout workspace' })),
+    ...(onOpenLibrary ? [{ id: 'action:library', kind: 'action' as const, label: 'All panels…', hint: 'Browse and search every panel (P)', keywords: 'panels library browse list find' }] : []),
+    ...base,
+  ], [screens, onOpenLibrary, base])
 
   const results = useMemo(() => {
     const ranked = rankItems(catalogue, query)
@@ -43,6 +53,8 @@ export default function CommandPalette({ open, onClose, panelState, onOpenPanel,
   function run(item: PaletteItem) {
     const key = item.id.slice(item.id.indexOf(':') + 1)
     if (item.kind === 'panel') onOpenPanel(key)
+    else if (item.kind === 'screen') onLoadScreen?.(key)
+    else if (item.kind === 'action') onOpenLibrary?.()
     else if (item.kind === 'layer') onToggleLayer(key as keyof PanelState)
     else if (item.kind === 'view') onViewMode(key as MapViewMode)
     else if (item.kind === 'chokepoint' || item.kind === 'search') onGeoSearch(key)
@@ -73,7 +85,7 @@ export default function CommandPalette({ open, onClose, panelState, onOpenPanel,
           value={query}
           onChange={e => setQuery(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder="Jump to a panel, toggle a layer, change map style, or fly to a place…"
+          placeholder="Switch screen, jump to a panel, toggle a layer, or fly to a place…"
           aria-label="Search commands"
           style={{ width: '100%', boxSizing: 'border-box', padding: '14px 44px 14px 16px', fontSize: 13, border: 'none', borderBottom: '1px solid var(--border)', outline: 'none', background: 'transparent', color: 'var(--text1)' }}
         />
