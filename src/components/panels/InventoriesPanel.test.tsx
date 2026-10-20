@@ -48,6 +48,26 @@ describe('InventoriesPanel', () => {
     expect(card.querySelectorAll('tbody tr').length).toBeGreaterThanOrEqual(104)
   })
 
+  it('forecasts next week\'s gas storage change under the gas series, with the backtest verdict', async () => {
+    // weekly change = seasonal swing + a persistent departure, so the model has something to find
+    let level = 3000, dep = 0, seed = 1
+    const noise = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647 - 0.5 }
+    const gasStart = Date.UTC(2010, 0, 1)
+    const gas = Array.from({ length: 52 * 16 }, (_, i) => {
+      const t = gasStart + i * 7 * DAY
+      dep = 0.6 * dep + 60 * noise()
+      level += -100 * Math.cos(2 * Math.PI * i / 52.18) + dep
+      return { t, period: new Date(t).toISOString().slice(0, 10), value: Math.round(level) }
+    })
+    impl = id => id === 'NG.NW2_EPG0_SWO_R48_BCF.W' ? { status: 'ok', points: gas, unit: 'BCF' } : { status: 'ok', points: weekly(20, i => i), unit: 'MBBL' }
+    render(<InventoriesPanel />)
+    const card = await screen.findByRole('region', { name: "Next week's natural-gas storage change" })
+    expect(card.textContent).toMatch(/Forecast \((model|seasonal norm)\)[+−]\d+ Bcf/)
+    expect(card.textContent).toMatch(/80% range[+−]\d+ Bcf to [+−]\d+ Bcf/)
+    expect(card.textContent).toMatch(/weekly forecasts made in time order/)
+    expect(card.textContent).toMatch(/the 80% range held the reported change in \d+\.\d% of \d+ backtest weeks/)
+  })
+
   it('shows an error per series with a retry, without hiding the others', async () => {
     impl = id => id === 'PET.WGTSTUS1.W' ? { status: 'error', message: 'EIA returned HTTP 404: Series not found' } : { status: 'ok', points: weekly(20, i => i), unit: 'BCF' }
     render(<InventoriesPanel />)
