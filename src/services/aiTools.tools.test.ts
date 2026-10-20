@@ -7,14 +7,14 @@ import type { Flight } from '../types'
 import type { ToolContext } from './aiTools'
 
 const m = vi.hoisted(() => ({
-  fetchWildfires: vi.fn(), fetchDisasterAlerts: vi.fn(), fetchOutageEvents: vi.fn(), fetchRadarOutages: vi.fn(), fetchGPSJam: vi.fn(),
+  fetchWildfires: vi.fn(), loadDisasterAlerts: vi.fn(), fetchOutageEvents: vi.fn(), fetchRadarOutages: vi.fn(), fetchGPSJam: vi.fn(),
   searchAllSources: vi.fn(), fetchTopHeadlines: vi.fn(), fetchMultipleQuotes: vi.fn(), fetchEiaSeries: vi.fn(),
   fetchIndicatorAll: vi.fn(), fetchCountryDataset: vi.fn(), fetchPowerGenerationRanking: vi.fn(),
   fetchMilitaryPersonnelRanking: vi.fn(), fetchResourceRents: vi.fn(), historyLoad: vi.fn(), getSnapshots: vi.fn(),
 }))
 
 vi.mock('./wildfires', () => ({ fetchWildfires: m.fetchWildfires }))
-vi.mock('./gdacs', async orig => ({ ...await orig<typeof import('./gdacs')>(), fetchDisasterAlerts: m.fetchDisasterAlerts }))
+vi.mock('./gdacs', async orig => ({ ...await orig<typeof import('./gdacs')>(), loadDisasterAlerts: m.loadDisasterAlerts }))
 vi.mock('./outages', async orig => ({ ...await orig<typeof import('./outages')>(), fetchOutageEvents: m.fetchOutageEvents }))
 vi.mock('./radarOutages', async orig => ({ ...await orig<typeof import('./radarOutages')>(), fetchRadarOutages: m.fetchRadarOutages }))
 vi.mock('./gpsjam', async orig => ({ ...await orig<typeof import('./gpsjam')>(), fetchGPSJam: m.fetchGPSJam }))
@@ -122,16 +122,23 @@ describe('disasters', () => {
   const alert = (o = {}) => ({ id: 'a', type: 'EQ', name: 'Quake', country: 'Japan', alert: 'Red', score: 1, latitude: 0, longitude: 0, from: '', to: '', reportUrl: '', severityText: 'M7', source: 'USGS', affectedCountries: ['Japan'], isCurrent: true, ...o })
 
   it('filters by an affected country and counts red alerts', async () => {
-    m.fetchDisasterAlerts.mockResolvedValue([alert(), alert({ alert: 'Orange', country: 'Chile', affectedCountries: ['Chile', 'Japan'] }), alert({ country: 'Peru', affectedCountries: ['Peru'] })])
+    m.loadDisasterAlerts.mockResolvedValue([alert(), alert({ alert: 'Orange', country: 'Chile', affectedCountries: ['Chile', 'Japan'] }), alert({ country: 'Peru', affectedCountries: ['Peru'] })])
     const r = await run('disasters', ['Japan'])
-    expect(m.fetchDisasterAlerts).toHaveBeenCalledWith(14)
+    expect(m.loadDisasterAlerts).toHaveBeenCalledWith(14)
     expect(r.text).toContain('2 alerts (1 red)')
     expect(r.text).not.toContain('Peru')
   })
 
   it('says plainly when there are none', async () => {
-    m.fetchDisasterAlerts.mockResolvedValue([])
+    m.loadDisasterAlerts.mockResolvedValue([])
     expect((await run('disasters')).text).toBe('No orange/red GDACS alerts in the last 14 days.')
+  })
+
+  it('reports a failed GDACS request as NOT AVAILABLE, not as no alerts', async () => {
+    m.loadDisasterAlerts.mockRejectedValue(new Error('GDACS 503'))
+    const r = await run('disasters')
+    expect(r.ok).toBe(false)
+    expect(r.text).toMatch(/^NOT AVAILABLE: .*GDACS 503/)
   })
 })
 

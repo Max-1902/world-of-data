@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fetchDisasterAlerts, parseDisasterAlerts } from './gdacs'
+import { fetchDisasterAlerts, loadDisasterAlerts, parseDisasterAlerts } from './gdacs'
 import { mockFetch, jsonResponse, quietConsole } from '../test/helpers'
 
 const feat = (o: Record<string, unknown> = {}, coords: unknown = [33.6, 0.76], geomType = 'Point') => ({
@@ -61,5 +61,9 @@ describe('fetchDisasterAlerts', () => {
     expect(await fetchDisasterAlerts()).toEqual([])
     mockFetch(() => { throw new Error('offline') })
     expect(await fetchDisasterAlerts()).toEqual([])
+  })
+  it('loadDisasterAlerts throws instead, so a caller can tell a failure from no alerts', async () => {
+    mockFetch(() => jsonResponse({}, { status: 500 }))
+    await expect(loadDisasterAlerts()).rejects.toThrow('GDACS 500')
   })
 })

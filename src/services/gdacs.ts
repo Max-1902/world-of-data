@@ -91,15 +91,20 @@ export function parseDisasterAlerts(json: unknown): DisasterAlert[] {
     (a.alert === b.alert ? 0 : a.alert === 'Red' ? -1 : 1) || b.score - a.score || b.to.localeCompare(a.to))
 }
 
-/** Orange/Red alerts for events active in the last `days` days. Returns [] on any failure. */
+/** Orange/Red alerts for events active in the last `days` days. Throws on failure, so an empty list means none. */
+export async function loadDisasterAlerts(days = 14): Promise<DisasterAlert[]> {
+  const now = new Date()
+  const from = new Date(now.getTime() - days * 86_400_000)
+  const url = `${BASE}?eventtype=${Object.keys(DISASTER_LABELS).join(',')}&fromDate=${ymd(from)}&toDate=${ymd(now)}`
+  const res = await fetch(url, { signal: AbortSignal.timeout(20_000) })
+  if (!res.ok) throw new Error(`GDACS ${res.status}`)
+  return parseDisasterAlerts(await res.json())
+}
+
+/** `loadDisasterAlerts` for the map layer and panel: returns [] on any failure. */
 export async function fetchDisasterAlerts(days = 14): Promise<DisasterAlert[]> {
   try {
-    const now = new Date()
-    const from = new Date(now.getTime() - days * 86_400_000)
-    const url = `${BASE}?eventtype=${Object.keys(DISASTER_LABELS).join(',')}&fromDate=${ymd(from)}&toDate=${ymd(now)}`
-    const res = await fetch(url, { signal: AbortSignal.timeout(20_000) })
-    if (!res.ok) throw new Error(`GDACS ${res.status}`)
-    return parseDisasterAlerts(await res.json())
+    return await loadDisasterAlerts(days)
   } catch (err) {
     console.warn('[GDACS] fetch error:', err)
     return []

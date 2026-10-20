@@ -17,7 +17,7 @@ import { ALL_SERIES, SERIES_BY_ID, CATEGORIES, formatValue, fetchSeriesForCountr
 import { INDICATORS, INDICATOR_BY_ID, fetchIndicatorAll, type IndicatorMeta } from './countryIndicators'
 import { fetchEarthquakes } from './earthquakes'
 import { fetchWildfires } from './wildfires'
-import { fetchDisasterAlerts, DISASTER_LABELS } from './gdacs'
+import { loadDisasterAlerts, DISASTER_LABELS } from './gdacs'
 import { fetchOutageEvents } from './outages'
 import { fetchRadarOutages, radarCauseLabel } from './radarOutages'
 import { fetchGPSJam } from './gpsjam'
@@ -312,7 +312,7 @@ const TOOLS: ToolDef[] = [
     usage: '[DATA:disasters] or [DATA:disasters|Country]',
     describe: 'GDACS orange/red disaster alerts, last 14 days (earthquakes, cyclones, floods, volcanoes, droughts, fires).',
     async run(args) {
-      const all = await fetchDisasterAlerts(14)
+      const all = await loadDisasterAlerts(14)
       const c = optCountry(args[0])
       const set = c ? all.filter(a => a.affectedCountries.some(x => sameCountry(x, c.name)) || sameCountry(a.country, c.name)) : all
       return {
@@ -456,7 +456,9 @@ const TOOLS: ToolDef[] = [
       const pts: Pt[] = (await fetchSeriesForCountries([c.iso2], meta.id, 1960))[c.iso2]?.points ?? []
       const hf = headlineForecast(meta.id, pts, 3)
       if (!hf?.ar) throw new ToolError(`too little unbroken history of ${meta.short} for ${c.name} to fit a forecast`)
-      const { forecast: fc, ar, headline, policy } = hf
+      const { forecast: fc, ar, headline, policy, fallbackHorizons } = hf
+      // a horizon with too few past errors shows the textbook interval, which the backtest coverage was not measured on
+      const ciLabel = (h: number) => coverageLabel(fallbackHorizons.includes(h) ? null : policy, h)
       const bt = backtestForecast(pts, train => arForecast(train, 2, 1), 12)
       const f = (v: number) => formatValue(meta.kind, v)
       const last = pts[pts.length - 1]
@@ -472,7 +474,7 @@ const TOOLS: ToolDef[] = [
         title: `${meta.short} forecast — ${c.name}`, source: `Computed locally from World Bank data: ${headline === 'ar' ? 'AR(2) by OLS on the latest unbroken run' : 'no-change (random walk)'}; model choice from a cross-country backtest`,
         text: [
           `${c.name} ${meta.short}: last observed ${f(last.y)} (${last.x}), n=${fc.n}.`,
-          `${label}: ${fc.points.map((p, i) => `${p.year} ${f(p.value)} [${coverageLabel(policy, i + 1)}: ${f(p.lo)} to ${f(p.hi)}]`).join('; ')}${headline === 'ar' && ar.longRun != null ? `; long-run level ${f(ar.longRun)}` : ''}.`,
+          `${label}: ${fc.points.map((p, i) => `${p.year} ${f(p.value)} [${ciLabel(i + 1)}: ${f(p.lo)} to ${f(p.hi)}]`).join('; ')}${headline === 'ar' && ar.longRun != null ? `; long-run level ${f(ar.longRun)}` : ''}.`,
           why,
           `Skill on this country: ${verdict}. A model that does not beat naive out of sample should not be presented as informative.`,
         ].join('\n'),
@@ -482,7 +484,7 @@ const TOOLS: ToolDef[] = [
             { label: `${c.name} (observed)`, points: pts.slice(-25).map(p => ({ t: p.x, v: p.y })) },
             { label, dashed: true, points: [{ t: last.x, v: last.y }, ...fc.points.map(p => ({ t: p.year, v: p.value }))] },
           ],
-          area: { label: coverageLabel(policy, 3), points: fc.points.filter(p => Number.isFinite(p.lo)).map(p => ({ t: p.year, lo: p.lo, hi: p.hi })) },
+          area: { label: ciLabel(fc.points.length), points: fc.points.filter(p => Number.isFinite(p.lo)).map(p => ({ t: p.year, lo: p.lo, hi: p.hi })) },
         },
       }
     },
