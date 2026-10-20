@@ -21,48 +21,35 @@ const LAYER_KEYS: Record<string, keyof PanelState> = {
   '0': 'shippingDensity',
 }
 
+const VIEW_KEYS: Record<string, MapViewMode> = { g: 'earth', d: 'dark', s: 'satellite', n: 'nightvision' }
+
+const HELP = [
+  '1-0: Toggle layers (flights, crises, military, nuclear, sanctions, vessels, humanitarian, ports, chokepoints, shipping)',
+  'G: Globe view | D: Dark | S: Satellite | N: Nightvision',
+  'ESC: Close panel | ,: Settings | ?: This help',
+].join('\n')
+
+function isTyping(target: EventTarget | null): boolean {
+  const el = target as HTMLElement | null
+  return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable)
+}
+
 export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      // Don't intercept when typing in inputs
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      // leave browser and OS combos (Cmd+1, Ctrl+D, Cmd+G …) alone
+      if (e.metaKey || e.ctrlKey || e.altKey || isTyping(e.target)) return
 
-      // ESC — close panels/drawers
       if (e.key === 'Escape') { handlers.onCloseDrawer(); return }
-
-      // G — toggle globe/earth view
-      if (e.key === 'g' || e.key === 'G') { handlers.onViewMode('earth'); return }
-
-      // D — dark mode
-      if (e.key === 'd' && !e.metaKey && !e.ctrlKey) { handlers.onViewMode('dark'); return }
-
-      // S — satellite
-      if (e.key === 's' && !e.metaKey && !e.ctrlKey) { handlers.onViewMode('satellite'); return }
-
-      // N — nightvision
-      if (e.key === 'n' && !e.metaKey && !e.ctrlKey) { handlers.onViewMode('nightvision'); return }
-
-      // , — settings
       if (e.key === ',') { handlers.onSettingsOpen(); return }
-
-      // ? — show shortcut help (console for now)
       if (e.key === '?') {
-        console.log(
-          '%c Macroeconomic Forecasting System Keyboard Shortcuts',
-          'color:#00ff88;font-weight:bold;font-size:14px',
-          '\n\n1-0: Toggle layers (flights, crises, military, nuclear, sanctions, vessels, humanitarian, ports, chokepoints, shipping)',
-          '\nG: Globe view | D: Dark | S: Satellite | N: Nightvision',
-          '\nESC: Close panel | ,: Settings | ?: This help',
-        )
+        console.log('%c World of Data keyboard shortcuts', 'color:#d5a85f;font-weight:bold;font-size:14px', `\n\n${HELP}`)
         return
       }
-
-      // 1-9, 0 — toggle layers
-      if (LAYER_KEYS[e.key]) {
-        handlers.onToggleLayer(LAYER_KEYS[e.key])
-        return
-      }
+      const view = VIEW_KEYS[e.key.toLowerCase()]
+      if (view) { handlers.onViewMode(view); return }
+      const layer = LAYER_KEYS[e.key]
+      if (layer) handlers.onToggleLayer(layer)
     }
 
     window.addEventListener('keydown', onKey)
