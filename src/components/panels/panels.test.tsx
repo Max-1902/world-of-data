@@ -2,10 +2,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import type { OutageEvent } from '../../services/outages'
+import type { RadarResult } from '../../services/radarOutages'
 
 // ── OutagesPanel ──────────────────────────────────────────────────────────────
 const fetchOutageEvents = vi.fn<(hours: number) => Promise<OutageEvent[]>>()
 vi.mock('../../services/outages', async (orig) => ({ ...(await orig<typeof import('../../services/outages')>()), fetchOutageEvents: (h: number) => fetchOutageEvents(h) }))
+const fetchRadarOutages = vi.fn<(range: string) => Promise<RadarResult>>()
+vi.mock('../../services/radarOutages', async (orig) => ({ ...(await orig<typeof import('../../services/radarOutages')>()), fetchRadarOutages: (r: string) => fetchRadarOutages(r) }))
 
 const outage = (over: Partial<OutageEvent>): OutageEvent => ({
   id: 'x', entityType: 'country', entityName: 'Testland', entityCode: 'TL', org: '', status: 'ongoing', level: 'critical',
@@ -78,6 +81,34 @@ describe('OutagesPanel', () => {
     expect(onGeoSearch).toHaveBeenCalledWith('Iran')
     fireEvent.click(screen.getByText('TELCO -- Nord'))
     expect(onGeoSearch).toHaveBeenLastCalledWith('Nord, CM')   // a region-located outage flies to its region
+  })
+
+  it('the Confirmed tab lists Cloudflare Radar outages with their stated cause and link', async () => {
+    fetchOutageEvents.mockResolvedValue([])
+    fetchRadarOutages.mockResolvedValue({ status: 'ok', outages: [{
+      id: 'a', cause: 'GOVERNMENT_DIRECTED', type: 'NATIONWIDE', scope: '', countries: [{ code: 'IR', name: 'Iran' }], asns: [],
+      start: Date.now() - 3_600_000, end: null, description: 'Shutdown during protests', linkedUrl: 'https://x.test/post',
+    }] })
+    const onGeoSearch = vi.fn()
+    const { OutagesPanel } = await import('./OutagesPanel')
+    render(<OutagesPanel onGeoSearch={onGeoSearch} />)
+    fireEvent.click(screen.getByRole('button', { name: 'CONFIRMED' }))
+    expect(await screen.findByText('GOVERNMENT-DIRECTED SHUTDOWN')).toBeTruthy()
+    expect(screen.getByText('Shutdown during protests')).toBeTruthy()
+    expect(screen.getByText(/no end time recorded/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: /Cloudflare write-up/ }).getAttribute('href')).toBe('https://x.test/post')
+    expect(fetchRadarOutages).toHaveBeenCalledWith('7d')
+    fireEvent.click(screen.getByText('Iran'))
+    expect(onGeoSearch).toHaveBeenCalledWith('Iran')
+  })
+
+  it('the Confirmed tab says when Radar has no token instead of showing an empty list', async () => {
+    fetchOutageEvents.mockResolvedValue([])
+    fetchRadarOutages.mockResolvedValue({ status: 'not_configured' })
+    const { OutagesPanel } = await import('./OutagesPanel')
+    render(<OutagesPanel />)
+    fireEvent.click(screen.getByRole('button', { name: 'CONFIRMED' }))
+    expect(await screen.findByText(/CLOUDFLARE RADAR NOT CONFIGURED/)).toBeTruthy()
   })
 })
 

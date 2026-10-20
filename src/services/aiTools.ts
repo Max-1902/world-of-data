@@ -19,6 +19,7 @@ import { fetchEarthquakes } from './earthquakes'
 import { fetchWildfires } from './wildfires'
 import { fetchDisasterAlerts, DISASTER_LABELS } from './gdacs'
 import { fetchOutageEvents } from './outages'
+import { fetchRadarOutages, radarCauseLabel } from './radarOutages'
 import { fetchGPSJam } from './gpsjam'
 import { searchAllSources, fetchTopHeadlines } from './news'
 import { fetchMultipleQuotes, MARKET_HUBS } from './stocks'
@@ -324,17 +325,23 @@ const TOOLS: ToolDef[] = [
   {
     name: 'outages',
     usage: '[DATA:outages] or [DATA:outages|Country]',
-    describe: 'IODA internet outage alerts, last 24 h: which networks/regions, ongoing or recovered, signal drop.',
+    describe: 'Internet outages: IODA automatic alerts, last 24 h (networks/regions, ongoing or recovered, signal drop), plus Cloudflare Radar verified outages, last 7 days, with the cause Cloudflare states (e.g. government-directed shutdown, power outage, cable cut, military action).',
     async run(args) {
-      const all = await fetchOutageEvents(24)
+      const [all, radar] = await Promise.all([fetchOutageEvents(24), fetchRadarOutages('7d')])
       const c = optCountry(args[0])
       const set = c ? all.filter(o => o.entityCode === c.iso2 || sameCountry(o.entityName, c.name) || (o.location?.label ? mentionsCountry(o.location.label, c.name) : false)) : all
       const rows = [...set].sort((a, b) => b.dropPct - a.dropPct)
+      const verified = radar.status === 'ok' ? radar.outages.filter(o => !c || o.countries.some(x => x.code === c.iso2 || sameCountry(x.name, c.name))) : []
+      const radarText = radar.status !== 'ok'
+        ? `Cloudflare Radar verified outages: NOT AVAILABLE (${radar.status === 'not_configured' ? 'no token configured' : radar.message}).`
+        : verified.length
+          ? `Cloudflare Radar verified outages, last 7 days (${verified.length}; cause is Cloudflare's own attribution):\n${verified.slice(0, 12).map(o => `  • ${o.countries.map(x => x.name).join(', ') || o.asns.map(a => a.name || `AS${a.asn}`).join(', ') || '—'}${o.scope ? ` (${o.scope})` : ''} — ${radarCauseLabel(o.cause)}${o.type ? `, ${o.type.toLowerCase()}` : ''}, began ${iso(o.start)}, ${o.end === null ? 'no end time recorded' : `ended ${iso(o.end)}`}${o.description ? `: ${o.description.length > 140 ? o.description.slice(0, 139) + '…' : o.description}` : ''}`).join('\n')}`
+          : `Cloudflare Radar: no verified outages${c ? ` for ${c.name}` : ''} in the last 7 days.`
       return {
-        title: c ? `Internet outages — ${c.name}` : 'Internet outages, last 24 h', source: 'IODA (Georgia Tech) alerts, last 24 h',
-        text: rows.length
-          ? `${rows.length} outage events (${rows.filter(o => o.status === 'ongoing').length} ongoing):\n${rows.slice(0, 12).map(o => `  • ${o.entityName}${o.org ? ` (${o.org})` : ''} [${o.entityType}] — ${o.status}, ${o.severity}, drop ${n0(o.dropPct)}% since ${iso(o.start * 1000)}`).join('\n')}`
-          : `No IODA outage alerts${c ? ` for ${c.name}` : ''} in the last 24 h.`,
+        title: c ? `Internet outages — ${c.name}` : 'Internet outages, last 24 h', source: 'IODA (Georgia Tech) alerts, last 24 h; Cloudflare Radar Outage Center, last 7 days',
+        text: (rows.length
+          ? `${rows.length} IODA outage events (${rows.filter(o => o.status === 'ongoing').length} ongoing):\n${rows.slice(0, 12).map(o => `  • ${o.entityName}${o.org ? ` (${o.org})` : ''} [${o.entityType}] — ${o.status}, ${o.severity}, drop ${n0(o.dropPct)}% since ${iso(o.start * 1000)}`).join('\n')}`
+          : `No IODA outage alerts${c ? ` for ${c.name}` : ''} in the last 24 h.`) + `\n${radarText}`,
         chart: rows.length > 1 ? { kind: 'rank', unit: '% drop', items: rows.slice(0, 10).map(o => ({ label: o.entityName, value: o.dropPct, text: `${n0(o.dropPct)}%`, detail: o.status })) } : undefined,
       }
     },
