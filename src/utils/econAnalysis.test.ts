@@ -50,6 +50,11 @@ describe('regress', () => {
     expect(r.r2).toBeCloseTo(1)
     expect(r.se).toBeCloseTo(0)
   })
+  it('regression: a constant y is not a significant zero slope', () => {
+    const r = regress([1, 2, 3, 4, 5], [4, 4, 4, 4, 4])!
+    expect(r.slope).toBe(0)
+    expect(r.p).toBe(1)
+  })
   it('matches a hand-worked example (slope, SE, CI)', () => {
     // x = 1..5, y = 2,4,5,4,5 → slope 0.6, intercept 2.2, SSE 2.4, se = sqrt(0.8/10) = 0.2828
     const r = regress([1, 2, 3, 4, 5], [2, 4, 5, 4, 5])!
