@@ -5,7 +5,7 @@ import type { Flight } from '../../types'
 import type { FlightType } from '../../utils/flightType'
 import type { MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
 import type { CountryInfraEntry } from '../../services/infraIndicators'
-import { ALL_TYPES, buildFlightGeoJSON } from './flightLayer'
+import { ALL_TYPES } from './flightLayer'
 import {
   addAllLayers,
   type CountryAnalyticsView,
@@ -45,8 +45,6 @@ import {
 import type { MapHandle, MapViewProps } from './types'
 import CountryAnalyticsLegend from './overlays/CountryAnalyticsLegend'
 import HazardHexLegend from './overlays/HazardHexLegend'
-import IncidentLegend from './overlays/IncidentLegend'
-import FlightFilter from './overlays/FlightFilter'
 import OverlayMenu from './overlays/OverlayMenu'
 import Reticle from './overlays/Reticle'
 import DeepStatePanel from './overlays/DeepStatePanel'
@@ -90,8 +88,6 @@ export default function MapView({
   // Filter state
   const [filterQuery, setFilterQuery] = useState('')
   const [filterTypes, setFilterTypes] = useState<Set<FlightType>>(new Set(ALL_TYPES))
-
-  const filteredCount = buildFlightGeoJSON(flights, filterQuery, filterTypes, showFlights).features.length
 
   // ── Fly to via Mapbox Geocoding ────────────────────────────────────────────
   function geocodeAndFly(q: string) {
@@ -233,9 +229,6 @@ export default function MapView({
       {showCountryAnalytics && !deepstateMode && (
         <CountryAnalyticsLegend countryData={countryData} countryShading={countryShading} raised={showAnalyticsHex} />
       )}
-      {(showOutages || showDisasters) && !deepstateMode && (
-        <IncidentLegend outages={showOutages ? outages : null} radarOutages={radarOutages} disasters={showDisasters ? disasterAlerts : null} />
-      )}
       {showAnalyticsHex && !deepstateMode && (
         <HazardHexLegend
           analytics={analytics}
@@ -243,15 +236,8 @@ export default function MapView({
           onTilt={() => { const m = mapRef.current; if (m) m.easeTo({ pitch: m.getPitch() > 10 ? 0 : 55, duration: 800 }) }}
         />
       )}
-      {showFlights && !deepstateMode && (
-        <FlightFilter
-          flights={flights} filteredCount={filteredCount}
-          filterQuery={filterQuery} setFilterQuery={setFilterQuery}
-          filterTypes={filterTypes} setFilterTypes={setFilterTypes}
-        />
-      )}
       {panelState && onToggleLayer && (
-        <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} top={showFlights && !deepstateMode ? 82 : 52} />
+        <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} top={52} />
       )}
       {!deepstateMode && <Reticle color={reticleColor} />}
       </div>

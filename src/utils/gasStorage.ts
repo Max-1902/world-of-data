@@ -22,7 +22,7 @@
  * backtest. Coverage is measured in the backtest, not assumed.
  */
 import type { WeeklyPoint } from '../services/eia'
-import { dieboldMariano, mean, type DieboldMariano } from './econAnalysis'
+import { mean, tPValue, type DieboldMariano } from './econAnalysis'
 import { seasonal5y } from './inventory'
 
 const DAY = 86_400_000
@@ -92,6 +92,9 @@ export interface Fold {
   beta: number
   /** the model's 80% / 95% interval at that time, from its earlier errors only; null until enough exist */
   lo80: number | null; hi80: number | null; lo95: number | null; hi95: number | null
+  /** matching interval for the seasonal forecast, calibrated on its own earlier errors */
+  seasonalLo80: number | null; seasonalHi80: number | null
+  seasonalLo95: number | null; seasonalHi95: number | null
 }
 
 export interface Score { mae: number; rmse: number; directionHit: number }
@@ -108,12 +111,17 @@ export interface GasBacktest {
   dmVsLast: DieboldMariano | null
   coverage80: { held: number; n: number }
   coverage95: { held: number; n: number }
+  /** Measured interval coverage by forecast method; `coverage80/95` remain the model's for compatibility. */
+  coverageByMethod: Record<'model' | 'seasonal', {
+    coverage80: { held: number; n: number }
+    coverage95: { held: number; n: number }
+  }>
   /** MAE by calendar month of the week ending, model vs seasonal: where it wins and where it fails */
   byMonth: { month: number; n: number; model: number; seasonal: number }[]
   periods: PeriodScore[]
   /** the model's five largest misses */
   worst: Fold[]
-  /** whether the model is the headline: lower MAE than the seasonal baseline and DM p < 0.05 */
+  /** whether the model beats the seasonal baseline in both eras and a 52-week HAC comparison is significant */
   modelWins: boolean
 }
 
@@ -162,6 +170,30 @@ function score(folds: Fold[], m: Method): Score {
 
 const maeOf = (folds: Fold[], m: Method) => mean(folds.map(f => Math.abs(f.forecast[m] - f.actual)))
 
+/**
+ * Diebold–Mariano comparison with a Newey–West long-run variance estimate. Weekly loss differences can remain
+ * correlated well beyond the one-week forecast horizon, especially across a seasonal cycle; the textbook h−1
+ * bandwidth is therefore too short here. The 52-week Bartlett window is fixed in advance to cover one full year.
+ */
+function gasHacDm(errors1: number[], errors2: number[], bandwidth = 52): DieboldMariano | null {
+  const n = Math.min(errors1.length, errors2.length)
+  if (n < 5) return null
+  const d = Array.from({ length: n }, (_, i) => Math.abs(errors1[i]) - Math.abs(errors2[i]))
+  const m = mean(d)
+  const maxLag = Math.min(bandwidth, n - 1)
+  let lrv = 0
+  for (let lag = 0; lag <= maxLag; lag++) {
+    let covariance = 0
+    for (let t = lag; t < n; t++) covariance += (d[t] - m) * (d[t - lag] - m)
+    covariance /= n
+    const weight = lag === 0 ? 1 : 1 - lag / (maxLag + 1)
+    lrv += (lag === 0 ? 1 : 2) * weight * covariance
+  }
+  if (!(lrv > 0)) return null
+  const stat = m / Math.sqrt(lrv / n)
+  return { stat, p: tPValue(stat, n - 1), n }
+}
+
 /** Rolling-origin backtest over the whole history; null when no week can be forecast (under ~6 years of data). */
 export function backtestGasStorage(levels: WeeklyPoint[]): GasBacktest | null {
   const p = prepare(levels)
@@ -174,22 +206,34 @@ export function backtestGasStorage(levels: WeeklyPoint[]): GasBacktest | null {
     const f = predict(p, i, beta)
     if (!f) continue
     const t = p.c[i].t
-    const recent = seasonErrors(folds, t, x => x.forecast.model)
-    const h80 = conformalHalfWidth(recent, 0.8), h95 = conformalHalfWidth(recent, 0.95)
-    const ok = Number.isFinite(h80)
+    const recentModel = seasonErrors(folds, t, x => x.forecast.model)
+    const recentSeasonal = seasonErrors(folds, t, x => x.forecast.seasonal)
+    const model80 = conformalHalfWidth(recentModel, 0.8), model95 = conformalHalfWidth(recentModel, 0.95)
+    const seasonal80 = conformalHalfWidth(recentSeasonal, 0.8), seasonal95 = conformalHalfWidth(recentSeasonal, 0.95)
     folds.push({
       t, period: p.c[i].period, actual: p.c[i].value, forecast: f, beta,
-      lo80: ok ? f.model - h80 : null, hi80: ok ? f.model + h80 : null,
-      lo95: ok ? f.model - h95 : null, hi95: ok ? f.model + h95 : null,
+      lo80: Number.isFinite(model80) ? f.model - model80 : null,
+      hi80: Number.isFinite(model80) ? f.model + model80 : null,
+      lo95: Number.isFinite(model95) ? f.model - model95 : null,
+      hi95: Number.isFinite(model95) ? f.model + model95 : null,
+      seasonalLo80: Number.isFinite(seasonal80) ? f.seasonal - seasonal80 : null,
+      seasonalHi80: Number.isFinite(seasonal80) ? f.seasonal + seasonal80 : null,
+      seasonalLo95: Number.isFinite(seasonal95) ? f.seasonal - seasonal95 : null,
+      seasonalHi95: Number.isFinite(seasonal95) ? f.seasonal + seasonal95 : null,
     })
   }
   if (!folds.length) return null
 
   const err = (m: Method) => folds.map(f => f.forecast[m] - f.actual)
   const sc = Object.fromEntries(METHODS.map(m => [m, score(folds, m)])) as Record<Method, Score>
-  const dmVsSeasonal = dieboldMariano(err('model'), err('seasonal'), 1)
-  const withInterval = folds.filter(f => f.lo80 != null)
+  const dmVsSeasonal = gasHacDm(err('model'), err('seasonal'))
+  const withModelInterval = folds.filter(f => f.lo80 != null)
+  const withSeasonalInterval = folds.filter(f => f.seasonalLo80 != null)
   const inside = (f: Fold, lo: number | null, hi: number | null) => f.actual >= lo! && f.actual <= hi!
+  const coverage = (fs: Fold[], lower: (f: Fold) => number | null, upper: (f: Fold) => number | null) => ({
+    held: fs.filter(f => inside(f, lower(f), upper(f))).length,
+    n: fs.length,
+  })
 
   const byMonth = Array.from({ length: 12 }, (_, month) => {
     const fs = folds.filter(f => new Date(f.t).getUTCMonth() === month)
@@ -198,20 +242,34 @@ export function backtestGasStorage(levels: WeeklyPoint[]): GasBacktest | null {
   const half = (label: string, fs: Fold[]): PeriodScore => ({ label, n: fs.length, model: fs.length ? maeOf(fs, 'model') : NaN, seasonal: fs.length ? maeOf(fs, 'seasonal') : NaN, last: fs.length ? maeOf(fs, 'last') : NaN })
   const before = folds.filter(f => f.t < SPLIT_T), after = folds.filter(f => f.t >= SPLIT_T)
   const relMae = sc.model.mae / sc.seasonal.mae
+  const modelBeatsInBothPeriods = before.length > 0 && after.length > 0
+    && maeOf(before, 'model') < maeOf(before, 'seasonal')
+    && maeOf(after, 'model') < maeOf(after, 'seasonal')
+  const coverageByMethod = {
+    model: {
+      coverage80: coverage(withModelInterval, f => f.lo80, f => f.hi80),
+      coverage95: coverage(withModelInterval, f => f.lo95, f => f.hi95),
+    },
+    seasonal: {
+      coverage80: coverage(withSeasonalInterval, f => f.seasonalLo80, f => f.seasonalHi80),
+      coverage95: coverage(withSeasonalInterval, f => f.seasonalLo95, f => f.seasonalHi95),
+    },
+  }
 
   return {
     folds, from: folds[0].t, to: folds[folds.length - 1].t,
     score: sc, relMae, dmVsSeasonal,
-    dmVsLast: dieboldMariano(err('model'), err('last'), 1),
-    coverage80: { held: withInterval.filter(f => inside(f, f.lo80, f.hi80)).length, n: withInterval.length },
-    coverage95: { held: withInterval.filter(f => inside(f, f.lo95, f.hi95)).length, n: withInterval.length },
+    dmVsLast: gasHacDm(err('model'), err('last')),
+    coverage80: coverageByMethod.model.coverage80,
+    coverage95: coverageByMethod.model.coverage95,
+    coverageByMethod,
     byMonth,
     periods: [
       ...(before.length ? [half(`${new Date(folds[0].t).getUTCFullYear()}–2020`, before)] : []),
       ...(after.length ? [half(`2021–${new Date(folds[folds.length - 1].t).getUTCFullYear()}`, after)] : []),
     ],
     worst: [...folds].sort((x, y) => Math.abs(y.forecast.model - y.actual) - Math.abs(x.forecast.model - x.actual)).slice(0, 5),
-    modelWins: relMae < 1 && dmVsSeasonal != null && dmVsSeasonal.p < 0.05,
+    modelWins: relMae < 1 && modelBeatsInBothPeriods && dmVsSeasonal != null && dmVsSeasonal.p < 0.05,
   }
 }
 

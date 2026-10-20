@@ -36,7 +36,7 @@ describe('GasStorageForecastPanel', () => {
     expect(card.textContent).toMatch(/Forecast \((model|seasonal norm)\)[+−]\d+ Bcf/)
     expect(card.textContent).toMatch(/80% range[+−]\d+ Bcf to [+−]\d+ Bcf/)
     expect(card.textContent).toMatch(/weekly forecasts made in time order/)
-    expect(card.textContent).toMatch(/the 80% range held the reported change in \d+\.\d% of \d+ backtest weeks/)
+    expect(card.textContent).toMatch(/the headline method's 80% range held the reported change in \d+\.\d% of \d+ backtest weeks/)
   })
 
   it('says it is not measured, and how to fix it, without a key', async () => {
