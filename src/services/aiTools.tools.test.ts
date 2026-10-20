@@ -7,7 +7,7 @@ import type { Flight } from '../types'
 import type { ToolContext } from './aiTools'
 
 const m = vi.hoisted(() => ({
-  fetchWildfires: vi.fn(), fetchDisasterAlerts: vi.fn(), fetchOutageEvents: vi.fn(), fetchRadarOutages: vi.fn(), fetchGPSJam: vi.fn(),
+  fetchWildfires: vi.fn(), fetchDisasterAlerts: vi.fn(), fetchOutageEvents: vi.fn(), fetchRadarOutages: vi.fn(), fetchGfwAll: vi.fn(), fetchGPSJam: vi.fn(),
   searchAllSources: vi.fn(), fetchTopHeadlines: vi.fn(), fetchMultipleQuotes: vi.fn(), fetchEiaSeries: vi.fn(),
   fetchIndicatorAll: vi.fn(), fetchCountryDataset: vi.fn(), fetchPowerGenerationRanking: vi.fn(),
   fetchMilitaryPersonnelRanking: vi.fn(), fetchResourceRents: vi.fn(), historyLoad: vi.fn(), getSnapshots: vi.fn(),
@@ -16,6 +16,7 @@ const m = vi.hoisted(() => ({
 vi.mock('./wildfires', () => ({ fetchWildfires: m.fetchWildfires }))
 vi.mock('./gdacs', async orig => ({ ...await orig<typeof import('./gdacs')>(), fetchDisasterAlerts: m.fetchDisasterAlerts }))
 vi.mock('./outages', async orig => ({ ...await orig<typeof import('./outages')>(), fetchOutageEvents: m.fetchOutageEvents }))
+vi.mock('./gfw', async orig => ({ ...await orig<typeof import('./gfw')>(), fetchGfwAll: m.fetchGfwAll }))
 vi.mock('./radarOutages', async orig => ({ ...await orig<typeof import('./radarOutages')>(), fetchRadarOutages: m.fetchRadarOutages }))
 vi.mock('./gpsjam', async orig => ({ ...await orig<typeof import('./gpsjam')>(), fetchGPSJam: m.fetchGPSJam }))
 vi.mock('./news', async orig => ({ ...await orig<typeof import('./news')>(), searchAllSources: m.searchAllSources, fetchTopHeadlines: m.fetchTopHeadlines }))
@@ -164,6 +165,37 @@ describe('outages', () => {
     m.fetchRadarOutages.mockResolvedValue({ status: 'not_configured' })
     const r = await run('outages')
     expect(r.text).toContain('Cloudflare Radar verified outages: NOT AVAILABLE (no token configured)')
+  })
+})
+
+describe('darkships', () => {
+  const DAY = 86_400_000
+  const ev = (o = {}) => ({ id: 'g', kind: 'gaps', start: NOW - 3 * DAY, end: NOW - 2 * DAY, lat: -10.12, lon: -80.04, durationHours: 30, vessel: { name: 'SEA STAR', flag: 'CHN', type: 'fishing', ssvid: '' }, other: null, gapDistanceKm: 300, onPosition: null, encounterType: '', potentialRisk: false, highSeas: true, distanceFromShoreKm: 400, ...o })
+  const ok = (events: unknown[], o = {}) => ({ status: 'ok', events, capped: false, total: events.length, newest: NOW - 2 * DAY, ...o })
+
+  it('counts AIS-off events and flagged encounters, ranks flags, and passes the caveat along', async () => {
+    m.fetchGfwAll.mockResolvedValue({
+      gaps: ok([ev(), ev({ id: 'h', durationHours: 50 }), ev({ id: 'i', vessel: { name: 'MAR', flag: 'PAN', type: '', ssvid: '' } })]),
+      encounters: ok([ev({ kind: 'encounters', potentialRisk: true, other: { name: 'REEFER', flag: 'PAN', type: 'carrier', ssvid: '' } }), ev({ kind: 'encounters' })]),
+    })
+    const r = await run('darkships')
+    expect(r.text).toContain('AIS-off events: 3. Most common flags: CHN 2, PAN 1.')
+    expect(r.text).toContain('Encounters: 2, of which 1 carry GFW\'s potential-risk flag')
+    expect(r.text).toContain('not proof of illegal activity')
+    expect(r.text).toContain('SEA STAR (CHN, fishing) met REEFER (PAN, carrier) at -10.1, -80')
+    expect(r.text.indexOf('50 h')).toBeLessThan(r.text.lastIndexOf('30 h'))
+    expect(r.chart).toMatchObject({ kind: 'rank', items: [{ label: 'CHN', value: 2 }, { label: 'PAN', value: 1 }] })
+  })
+
+  it('filters by ISO3 flag, says when counts are a sample, and reports a missing token as not available', async () => {
+    m.fetchGfwAll.mockResolvedValue({ gaps: ok([ev(), ev({ vessel: { name: 'MAR', flag: 'PAN', type: '', ssvid: '' } })], { capped: true, total: 4000 }), encounters: { status: 'not_configured' } })
+    const r = await run('darkships', ['pan'])
+    expect(r.text).toContain('AIS-off events involving PAN-flagged vessels: 1.')
+    expect(r.text).toContain('only the first 2 of 4000 events loaded')
+    expect(r.text).toContain('Encounters: NOT AVAILABLE (no GFW token configured).')
+    const bad = await run('darkships', ['Panama'])
+    expect(bad.ok).toBe(false)
+    expect(bad.text).toMatch(/ISO3/)
   })
 })
 
