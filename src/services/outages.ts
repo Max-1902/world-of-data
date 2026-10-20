@@ -45,6 +45,8 @@ export interface OutageEvent {
   entityType: 'country' | 'asn' | 'region' | 'geoasn' | string
   entityName: string
   entityCode: string
+  /** ISO 3166-1 alpha-2 country the outage is in ('' when IODA gives none, e.g. a plain multinational ASN) */
+  countryCode: string
   /** network operator, for asn/geoasn entities */
   org: string
   status: 'ongoing' | 'recovered'
@@ -134,6 +136,18 @@ export function loadRegionPoints(): Promise<RegionPoints> {
   return regionsPromise
 }
 
+/** The ISO2 country an IODA entity sits in, from its own code, its region or IODA's country attribute. Exported for tests. */
+export function outageCountry(entityType: string, code: string, countryCode: string, regions: RegionPoints): string {
+  const cc = (v: string | undefined) => (v && /^[A-Za-z]{2}$/.test(v) ? v.toUpperCase() : '')
+  if (entityType === 'country') return cc(code)
+  if (entityType === 'region') return cc(regions[code]?.[3]) || cc(countryCode)
+  if (entityType === 'geoasn') {
+    const suffix = code.slice(code.indexOf('-') + 1)
+    return (/^\d+$/.test(suffix) ? cc(regions[suffix]?.[3]) : cc(suffix)) || cc(countryCode)
+  }
+  return cc(countryCode)
+}
+
 export function locateOutage(entityType: string, code: string, countryCode: string, regions: RegionPoints): OutageLocation | null {
   const region = (id: string): OutageLocation | null => {
     const r = regions[id]
@@ -202,6 +216,7 @@ export function foldOutageAlerts(raw: unknown[], regions: RegionPoints = {}): Ou
       entityType: acc.type,
       entityName: acc.name,
       entityCode: acc.code,
+      countryCode: outageCountry(acc.type, acc.code, acc.cc, regions),
       org: acc.org,
       status: ongoing ? 'ongoing' : 'recovered',
       level: ongoing ? 'critical' : 'normal',
