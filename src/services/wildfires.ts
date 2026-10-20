@@ -1,8 +1,7 @@
 /**
  * NASA FIRMS (Fire Information for Resource Management System)
  * Active fire detections from NOAA-20 VIIRS — last 24h, global
- * Proxied via Vite dev server to avoid CORS.
- * No API key required for the public CSV feeds.
+ * Goes through api/firms (FIRMS sends no CORS headers). Keyless, no billing.
  */
 
 export interface FirePoint {
@@ -54,6 +53,5 @@ export async function fetchWildfires(): Promise<FirePoint[]> {
     })
   }
 
-  console.info(`[FIRMS] ${points.length} active fire detections loaded`)
   return points
 }

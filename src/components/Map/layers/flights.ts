@@ -22,7 +22,6 @@ export function addFlightLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     const src = map.getSource('flights') as mapboxgl.GeoJSONSource | undefined
     if (src && flightDataRef.current.length > 0) {
       src.setData(buildFlightGeoJSON(flightDataRef.current, '', new Set(ALL_TYPES), true))
-      console.info(`[Map] Applied ${flightDataRef.current.length} cached flights after load`)
     }
   }
   applyFlights()

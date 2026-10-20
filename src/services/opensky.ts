@@ -26,7 +26,6 @@ async function getBearerToken(): Promise<string> {
   const json = await res.json()
   cachedToken    = json.access_token ?? ''
   tokenExpiresAt = Date.now() + (json.expires_in ?? 1800) * 1000
-  console.info(`[OpenSky] token refreshed, expires in ${json.expires_in}s`)
   return cachedToken
 }
 
@@ -35,8 +34,6 @@ export async function fetchFlights(): Promise<Flight[]> {
     const token   = await getBearerToken()
     const headers: Record<string, string> = { Accept: 'application/json' }
     if (token) headers.Authorization = `Bearer ${token}`
-
-    console.debug('[OpenSky] fetching /states/all via proxy, authenticated:', !!token)
 
     const res = await fetch(`${BASE}/states/all`, {
       headers,
@@ -87,6 +84,5 @@ function parseStates(data: { states?: unknown[][] }): Flight[] {
     }))
     .filter(f => !f.on_ground)
 
-  console.info(`[OpenSky] ${flights.length} airborne flights parsed`)
   return flights
 }
