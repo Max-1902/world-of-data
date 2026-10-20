@@ -79,6 +79,16 @@ describe('PredictionsPanel', () => {
     expect(card.textContent).toContain('Backtested on 192 World Bank economies')
   })
 
+  it('GDP with 30 years: the 3-year interval falls back to the textbook one and does not claim the measured coverage', () => {
+    // 30 years give 20 / 19 / 18 past errors at 1 / 2 / 3 years ahead; 19 are needed
+    data.series['NY.GDP.MKTP.KD.ZG'] = { points: pts(gdp.slice(10), 1996) }
+    render(<PredictionsPanel />)
+    const card = screen.getByRole('region', { name: 'Real GDP growth' })
+    expect(card.textContent).toContain('3-year: too few past errors, textbook interval shown instead')
+    expect(card.textContent).toContain('95% interval (held 93.1% of outcomes in backtests since 2010)')
+    expect(card.textContent).toMatch(/The 2028 95% interval \(coverage not measured for this series\)/)
+  })
+
   it('unemployment headlines "no change", with no AR(2) forecast or instability warning even when AR(2) would explode', () => {
     render(<PredictionsPanel />)
     const card = screen.getByRole('region', { name: 'Unemployment' })

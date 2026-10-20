@@ -81,7 +81,8 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
     ? `set from AR(${AR_ORDER})'s own last ${INTERVAL_RECENT} out-of-sample errors on this country${fallbackHorizons.length ? ` (${fallbackHorizons.map(h => `${h}-year`).join(', ')}: too few past errors, textbook interval shown instead)` : ''}`
     : isAr ? 'the textbook AR interval' : "from the spread of this country's past year-to-year changes"
   const scaled = policy ? `, then ${policy.scale.map(k => `×${k.toFixed(2)}`).join(' / ')} at 1 / 2 / 3 years so it held 95% of outcomes on forecasts made before 2010` : ''
-  const ciLabel = (h: number) => coverageLabel(policy, h)
+  // a fallback horizon shows the textbook interval, which the backtest coverage was not measured on
+  const ciLabel = (h: number) => coverageLabel(fallbackHorizons.includes(Math.min(h, HORIZON)) ? null : policy, h)
 
   return (
     <ChartFrame
