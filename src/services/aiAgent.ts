@@ -11,7 +11,7 @@ import { streamAIWithFallback, type DSMessage } from './openrouter'
 import { parseToolCalls, runTool, formatToolResults, MAX_CALLS_PER_STEP, type ToolCall, type ToolContext, type ToolResult } from './aiTools'
 
 /** Data rounds before the model must answer. Each round is one model call; the answer is one more. */
-export const MAX_DATA_ROUNDS = 3
+export const MAX_DATA_ROUNDS = 4
 
 export type AgentEvent =
   | { type: 'step'; step: number }

@@ -394,7 +394,7 @@ DASHBOARD LAYERS (what the map can show — their data is NOT in this context un
  * so the offline eval harness sends exactly what the app sends.
  */
 export function buildSystemPrompt(context: string, opts: { tools?: string } = {}): string {
-  return `You are the analyst in the Macroeconomic Forecasting System, a live world monitoring dashboard. You receive the dashboard's current data below, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style. Be concise, specific, and direct. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
+  return `You are the analyst in the Macroeconomic Forecasting System, a live world monitoring dashboard. You receive the dashboard's current data below, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style: specific and direct, but thorough. The user wants depth, not a summary of a summary: use the full breadth of the data you have, explain the mechanism behind each development, connect related signals across datasets and regions, and give historical and geopolitical context from your own knowledge (tagged [background]). Don't pad, but never cut an answer short when the data supports more. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
 
 Anything listed under NOT MEASURED is unknown, not zero or absent: never state or imply a count, an absence, a decline or an anomaly for it. If the question depends on it, say in one sentence that the dashboard did not measure it, then answer the rest. Only cite numbers that appear in the data below; anything from your own knowledge must be marked as such and must not be presented as a live reading.
 
@@ -421,7 +421,7 @@ ${context}`
  * frozen contexts stay comparable). `catalogue` is services/aiTools.ts toolCatalogue(); passed in rather than
  * imported so this module does not pull every data service into the eval script.
  */
-export function toolInstructions(catalogue: string, rounds = 3, perRound = 6): string {
+export function toolInstructions(catalogue: string, rounds = 4, perRound = 6): string {
   return `INVESTIGATING WITH DATA TOOLS
 The live context below is only a summary. You can query every dataset in the dashboard yourself. To request data, write one request per line in exactly this form, with nothing else in that turn:
 [DATA:tool|argument|argument]
@@ -434,7 +434,7 @@ ${catalogue}
 
 Charts: to show a result as a chart, put [CHART:R2] on its own line where it belongs in the answer. Only results marked "chartable" can be charted, and the chart draws the result's own data. Use a chart when a trend, comparison or ranking is central to the answer, usually one or two per answer.
 
-Answer format: open with a one- or two-sentence bottom line. Then use short "## " headings, bullet points, and a markdown table when comparing several items. Refer to the result behind a key claim by its id, e.g. (R2). When the question is about what comes next, end with "## What to watch": two or three concrete signals that would confirm or overturn the assessment. Never present a forecast as certain; give the method and its backtest skill when a forecast result is used.`
+Answer format: open with a two- to three-sentence bottom line. Then cover each development in its own "## " section: what the data shows (with numbers and result ids), why it is happening, how it connects to the other signals, and what it means for the coming days and weeks. Use bullet points for evidence and a markdown table when comparing several items. A full briefing usually runs to several sections; a narrow factual question can be shorter. Refer to the result behind a key claim by its id, e.g. (R2). When the question is about what comes next, end with "## What to watch": two or three concrete signals that would confirm or overturn the assessment. Never present a forecast as certain; give the method and its backtest skill when a forecast result is used.`
 }
 
 /** Dashboard command and data-request lines ([FLY:…], [LAYER:…], [DATA:…], …) the panel strips from what the user sees. [CHART:…] stays: the panel draws it. */
@@ -464,7 +464,7 @@ export const QUICK_PROMPTS: { label: string; prompt: string }[] = [
   },
   {
     label:  'Threat Brief',
-    prompt: 'Give me a concise intelligence brief on the current global threat landscape based on the active data. Highlight the most critical situations and any notable patterns.',
+    prompt: 'Give me a thorough intelligence brief on the current global threat landscape based on the active data. Highlight the most critical situations and any notable patterns.',
   },
   {
     label:  'Conflict Map',
