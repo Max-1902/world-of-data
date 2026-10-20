@@ -19,7 +19,8 @@ import MapView      from './components/Map/MapView'
 import TopBar       from './components/TopBar'
 import Sidebar      from './components/Sidebar'
 import PanelDock    from './components/PanelDock/PanelDock'
-import ObserveTray  from './components/PanelDock/ObserveTray'
+import WindowLayer, { WindowTaskbar } from './components/Windows/WindowLayer'
+import { useWindowLayout } from './components/Windows/useWindowLayout'
 import CommandPalette from './components/CommandPalette'
 import NewsTicker   from './components/NewsTicker'
 import OutlookCard from './components/OutlookCard'
@@ -139,15 +140,9 @@ export default function App() {
     try { return localStorage.getItem('ws-reticle-color') || '#16a34a' } catch { return '#16a34a' }
   })
 
-  // Panels popped out to the bottom-left observe tray (up to 6)
-  const [observeIds, setObserveIds] = useState<string[]>([])
-  const poppedOut = new Set(observeIds)
-  const handlePopOut = useCallback((id: string) => {
-    setObserveIds(prev => prev.includes(id) ? prev : prev.length >= 6 ? prev : [...prev, id])
-  }, [])
-  const handlePopIn = useCallback((id: string) => {
-    setObserveIds(prev => prev.filter(x => x !== id))
-  }, [])
+  // Panels popped out of the dock into floating windows (Windows/WindowLayer)
+  const windows = useWindowLayout()
+  const poppedOut = windows.ids
 
   const { flights, refresh: refreshFlights }         = useFlights(panelState.flights)
   const { crises, refresh: refreshCrises } = useCrises(panelState.crises)
@@ -247,15 +242,17 @@ export default function App() {
     setGeoFlyTo(q + '\u0000' + Date.now())
   }, [])
 
-  const cornerProps = {
+  const toggleDeepstate = useCallback(() => setDeepstateMode(v => !v), [])
+  // memoised so floating windows only re-render their panel when the data actually changes
+  const cornerProps = useMemo(() => ({
     crises, flights, panelState,
     onToggleLayer: toggleLayer,
     deepstateMode,
-    onDeepstateToggle: () => setDeepstateMode(v => !v),
+    onDeepstateToggle: toggleDeepstate,
     onGeoSearch: handleGeoSearch,
     onCountryClick: selectCountry,
     searchQuery,
-  }
+  }), [crises, flights, panelState, toggleLayer, deepstateMode, toggleDeepstate, handleGeoSearch, selectCountry, searchQuery])
 
   if (!TOKEN) {
     return (
@@ -395,32 +392,21 @@ export default function App() {
             onGeoSearch={handleGeoSearch}
           />
 
-          {/* ── Bottom-left observation tray (up to 6 panels) ──────── */}
-          <ObserveTray
-            ids={observeIds}
-            crises={crises}
-            flights={flights}
-            panelState={panelState}
-            onToggleLayer={toggleLayer}
-            deepstateMode={deepstateMode}
-            onDeepstateToggle={() => setDeepstateMode(v => !v)}
-            onGeoSearch={handleGeoSearch}
-            onCountryClick={selectCountry}
-            onClose={handlePopIn}
-            onAdd={handlePopOut}
-          />
+          {/* ── Bottom strip: open windows and the layout tools ──────── */}
+          <WindowTaskbar layout={windows} />
         </div>
 
         {/* ── Right command panel ──────────────────────────────────── */}
         <PanelDock
           {...cornerProps}
           poppedOut={poppedOut}
-          onPopOut={handlePopOut}
-          onPopIn={handlePopIn}
+          onPopOut={windows.actions.open}
+          onPopOutAll={windows.actions.openMany}
           activeGroup={activeGroup}
           focusPanel={focusPanel}
         />
       </div>
+      <WindowLayer layout={windows} panelProps={cornerProps} />
       </AnalystWindowProvider>
     </div>
   )
