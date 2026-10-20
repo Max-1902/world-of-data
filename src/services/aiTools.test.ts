@@ -106,10 +106,27 @@ describe('runTool — fetched sources', () => {
     mockFetch(() => jsonResponse(wbRows({ DE: pts })))
     const r = await runTool({ tool: 'forecast', args: ['Germany', 'NY.GDP.MKTP.KD.ZG'], raw: '' }, 'R1', { crises: [], flights: [], trajectories: [] })
     expect(r.ok).toBe(true)
-    expect(r.text).toMatch(/AR\(2\): 2025 .*\[95% /)
+    expect(r.text).toMatch(/AR\(2\) forecast: 2025 .*\[95% /)
+    expect(r.text).toContain('Headline model: AR(2)')
     expect(r.text).toMatch(/backtest over \d+ one-year-ahead folds/)
     expect(r.chart).toMatchObject({ kind: 'line', series: [{ label: 'Germany (observed)' }, { label: 'AR(2) forecast', dashed: true }] })
     expect(r.chart!.kind === 'line' && r.chart!.area?.points).toHaveLength(3)
+  })
+
+  it('forecast: for inflation the headline is "no change", with no AR(2) forecast given, and the model choice is explained', async () => {
+    const { runTool } = await load()
+    // a 1990s hyperinflation then low single digits: full-history AR(2) would forecast a return towards the 1990s
+    const ys = [400, 2000, 900, 60, 20, 10, ...Array.from({ length: 28 }, (_, i) => 3 + Math.sin(i) * 0.5)]
+    const pts: [number, number][] = ys.map((y, i) => [1990 + i, y])
+    mockFetch(() => jsonResponse(wbRows({ BR: pts })))
+    const r = await runTool({ tool: 'forecast', args: ['Brazil', 'FP.CPI.TOTL.ZG'], raw: '' }, 'R1', { crises: [], flights: [], trajectories: [] })
+    expect(r.ok).toBe(true)
+    const lastV = ys[ys.length - 1].toFixed(1)
+    expect(r.text).toMatch(new RegExp(`No-change forecast: 2024 \\+?${lastV}%`))
+    expect(r.text).toContain('hyperinflation or crisis years')
+    expect(r.text).not.toMatch(/AR\(2\): 20/)
+    expect(r.text).toContain('Headline model: "no change"')
+    expect(r.chart).toMatchObject({ kind: 'line', series: [{ label: 'Brazil (observed)' }, { label: 'No-change forecast', dashed: true }] })
   })
 
   it('quakes: filters by place and charts per day', async () => {

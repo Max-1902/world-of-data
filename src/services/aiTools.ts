@@ -36,7 +36,8 @@ import { CHOKEPOINTS, oilSharePct } from './chokepoints'
 import { PORTS } from './ports'
 import { TOP_HOSTING, TOP_ORIGINS } from './unhcr'
 import { EIA_SERIES, fetchEiaSeries } from './eia'
-import { arForecast, naiveForecast, trendTest, backtestForecast, type Pt } from '../utils/econAnalysis'
+import { arForecast, trendTest, backtestForecast, type Pt } from '../utils/econAnalysis'
+import { headlineForecast } from '../utils/forecastPolicy'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -447,35 +448,41 @@ const TOOLS: ToolDef[] = [
   {
     name: 'forecast',
     usage: '[DATA:forecast|Country|indicator]',
-    describe: 'Statistical 3-year forecast of one World Bank series: AR(2) with 95% interval, naive baseline, and an out-of-sample backtest of both.',
+    describe: 'Statistical 3-year forecast of one World Bank series: the headline model chosen by a cross-country backtest (AR(2) for GDP growth, "no change" for inflation and unemployment, AR(2) for unevaluated series) with a 95% interval, plus an out-of-sample backtest of AR(2) vs "no change" on this country.',
     async run(args) {
       const c = needCountry(args[0])
       const meta = findSeries(args[1] ?? '')
       if (!meta) throw new ToolError(`unknown indicator "${args[1] ?? ''}" — request [DATA:catalog] for the list`)
       const pts: Pt[] = (await fetchSeriesForCountries([c.iso2], meta.id, 1960))[c.iso2]?.points ?? []
-      const ar = arForecast(pts, 2, 3)
-      const naive = naiveForecast(pts, 3)
-      if (!ar || !naive) throw new ToolError(`too little unbroken history of ${meta.short} for ${c.name} to fit a forecast`)
+      const hf = headlineForecast(meta.id, pts, 3)
+      if (!hf?.ar) throw new ToolError(`too little unbroken history of ${meta.short} for ${c.name} to fit a forecast`)
+      const { forecast: fc, ar, headline, policy } = hf
       const bt = backtestForecast(pts, train => arForecast(train, 2, 1), 12)
       const f = (v: number) => formatValue(meta.kind, v)
       const last = pts[pts.length - 1]
+      const label = headline === 'ar' ? 'AR(2) forecast' : 'No-change forecast'
       const verdict = !bt || bt.mae == null || bt.baselineMae == null ? 'backtest not possible (too short)'
         : `backtest over ${bt.folds} one-year-ahead folds: AR(2) mean abs. error ${n2(bt.mae)} vs naive ${n2(bt.baselineMae)}${bt.dm ? ` (Diebold–Mariano p=${n2(bt.dm.p)}${bt.dm.p < 0.05 ? ', significant' : ', not significant'})` : ''}`
+      const why = policy
+        ? headline === 'ar'
+          ? 'Headline model: AR(2), which beat "no change" on average across 192 economies for this series (not significantly in any single one; the IMF\'s forecasts beat it in most).'
+          : 'Headline model: "no change". In a backtest across every World Bank economy AR(2) and the other models tried did not beat it for this series, so no AR(2) forecast is given. Its interval comes from the spread of every past year-to-year change, so a history with hyperinflation or crisis years makes it very wide.'
+        : 'Headline model: AR(2). This series has not been evaluated across countries; the per-country backtest is the only evidence.'
       return {
-        title: `${meta.short} forecast — ${c.name}`, source: 'Computed locally from World Bank data: AR(2) by OLS on the latest unbroken run; intervals ignore parameter uncertainty',
+        title: `${meta.short} forecast — ${c.name}`, source: `Computed locally from World Bank data: ${headline === 'ar' ? 'AR(2) by OLS on the latest unbroken run' : 'no-change (random walk)'}; model choice from a cross-country backtest`,
         text: [
-          `${c.name} ${meta.short}: last observed ${f(last.y)} (${last.x}), n=${ar.n}.`,
-          `AR(2): ${ar.points.map(p => `${p.year} ${f(p.value)} [95% ${f(p.lo)} to ${f(p.hi)}]`).join('; ')}${ar.longRun != null ? `; long-run level ${f(ar.longRun)}` : ''}.`,
-          `Naive (no change): ${f(naive.points[0].value)} each year.`,
-          `Skill: ${verdict}. A model that does not beat naive out of sample should not be presented as informative.`,
+          `${c.name} ${meta.short}: last observed ${f(last.y)} (${last.x}), n=${fc.n}.`,
+          `${label}: ${fc.points.map(p => `${p.year} ${f(p.value)} [95% ${f(p.lo)} to ${f(p.hi)}]`).join('; ')}${headline === 'ar' && ar.longRun != null ? `; long-run level ${f(ar.longRun)}` : ''}.`,
+          why,
+          `Skill on this country: ${verdict}. A model that does not beat naive out of sample should not be presented as informative.`,
         ].join('\n'),
         chart: {
           kind: 'line', xKind: 'year', unit: meta.short,
           series: [
             { label: `${c.name} (observed)`, points: pts.slice(-25).map(p => ({ t: p.x, v: p.y })) },
-            { label: 'AR(2) forecast', dashed: true, points: [{ t: last.x, v: last.y }, ...ar.points.map(p => ({ t: p.year, v: p.value }))] },
+            { label, dashed: true, points: [{ t: last.x, v: last.y }, ...fc.points.map(p => ({ t: p.year, v: p.value }))] },
           ],
-          area: { label: '95% interval', points: ar.points.filter(p => Number.isFinite(p.lo)).map(p => ({ t: p.year, lo: p.lo, hi: p.hi })) },
+          area: { label: '95% interval', points: fc.points.filter(p => Number.isFinite(p.lo)).map(p => ({ t: p.year, lo: p.lo, hi: p.hi })) },
         },
       }
     },
