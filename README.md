@@ -4,11 +4,11 @@ A monitoring and analysis system for macroeconomic, political and industrial dat
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6) ![React](https://img.shields.io/badge/React-18-61dafb) ![Mapbox](https://img.shields.io/badge/Mapbox_GL-v3-000000) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
 
-![Macroeconomic Forecasting System on Ukraine: satellite globe with the country brief, country panel with military and nuclear sites, and the AI analyst's answer on the economic impact of the war](docs/screenshots/main.jpg)
+![Satellite globe in the Economy workspace with live exchange tags (TSX, NASDAQ, LSE, XETRA) and the Markets panel's regional equity ETF quotes](docs/screenshots/markets-globe.jpg)
 
 ## 30 overlays in 5 categories
 
-![Satellite view of Europe with many overlays switched on at once, the Germany country brief open at bottom left and the Economy workspace with Germany's trade profile on the right](docs/screenshots/overlays-europe.jpg)
+![Europe, North Africa and the Middle East with the infrastructure overlays on: energy sites, pipelines, ports and chokepoints from Gibraltar and the Bosphorus to Suez, Bab el-Mandeb and Hormuz](docs/screenshots/infrastructure-europe.jpg)
 
 | Category | Overlays |
 |---|---|
@@ -20,13 +20,11 @@ A monitoring and analysis system for macroeconomic, political and industrial dat
 
 Panels add what isn't a map layer, e.g. weekly energy inventories (EIA). Curated layers (military sites, energy sites, sanctions…) are hand-entered from named sources and not all re-verified; [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md) says which.
 
-![Split view over Donbas: Mapbox satellite map on the left, the embedded DeepState Ukraine battlefield monitor on the right, and a live news feed in the dock](docs/screenshots/deepstate-split.jpg)
-
 Split view: the satellite map beside the embedded DeepState Ukraine battlefield monitor, with a live news feed in the dock.
 
-![Infrastructure workspace on the United States: country panel listing dams, LNG terminals, refineries and the largest power plants, a hover card with electricity output against the trend, and the Power Output ranking in the dock](docs/screenshots/infrastructure-us.jpg)
+![The Americas shaded red and blue by how much electricity each country generates compared with what its GDP per capita predicts, with the Power Output ranking in the dock](docs/screenshots/power-output-vs-trend.jpg)
 
-Infrastructure workspace on the United States: the country panel lists its dams, LNG terminals, refineries and largest power plants, and the dock ranks countries by electricity generated (Ember via Our World in Data).
+Infrastructure workspace, Power Output shown on the map in *Vs trend* mode: each country is shaded by the electricity it generates against what its GDP per capita predicts (red above, blue below), and the dock ranks countries by electricity generated (Ember via Our World in Data).
 
 ## Analytics
 
@@ -34,10 +32,23 @@ Pick any two of **50 country indicators** (World Bank, Our World in Data, Ember)
 
 | | |
 |---|---|
-| ![Globe coloured red and blue by how far each country's life expectancy is above or below the trend predicted by GDP per capita, with the scatter in the dock](docs/screenshots/trend-map.jpg) | ![Population against armed forces personnel on log axes, with North Korea, Eritrea and Israel labelled above the trend](docs/screenshots/army-size.jpg) |
-| **Wealth vs health**, 214 countries, ρ = 0.86. Map in *Vs trend* mode: red lives longer than income predicts, blue shorter | **Army size**, 165 countries, ρ = 0.79. North Korea, Eritrea and Israel sit furthest above the trend. Armed-forces counts are World Bank / IISS, and every country's latest value is **2020** (pre-dating the war in Ukraine) |
-| ![Correlation matrix of twelve indicators, blue negative and red positive, values printed in each cell](docs/screenshots/correlation-matrix.jpg) | ![About 120,000 wildfire detections binned into extruded hexagons over Africa](docs/screenshots/hazard-hex.jpg) |
-| **What moves together**: 12×12 Spearman matrix; click a cell to plot that pair | **Big data in the browser**: ~120,000 NASA FIRMS detections binned into 3D hexagons client-side. Also earthquakes, with a Gutenberg–Richter fit |
+| ![Globe coloured red and blue by how far each country's life expectancy is above or below the trend predicted by GDP per capita, with the scatter in the dock](docs/screenshots/country-analytics-map.jpg) | ![Globe turned to Asia, every country shaded by GDP in US dollars from the Economy panel, with the panel's country list in the dock](docs/screenshots/economy-gdp-map.jpg) |
+| **Wealth vs health**, 214 countries, ρ = 0.86. Map in *Vs trend* mode: red lives longer than income predicts, blue shorter | **Economy data on the map**: the Economy panel's *Show on map* shades 214 countries by GDP (US$); *Vs trend* switches to the residual view |
+
+Also: a 12×12 Spearman matrix of what moves together (click a cell to plot that pair), and ~120,000 NASA FIRMS wildfire detections binned into 3D hexagons in the browser, plus earthquakes with a Gutenberg–Richter fit.
+
+## Forecasts
+
+Computed in the browser, each with the backtest that decides whether it is shown. Statistical projections, not AI output.
+
+![Predictions panel for the United States: real GDP growth since 2000 with a three-year AR(2) forecast, its interval, the naive baseline, and the backtest results below](docs/screenshots/predictions-gdp.jpg)
+
+**GDP, inflation and unemployment for 217 economies.** The headline model for each series was picked by a rolling-origin backtest across every World Bank economy: AR(2) for GDP growth (8% below "no change" one year ahead on average; the IMF still beats it in 142 of 185 economies), "no change" for inflation and unemployment, where no model tested beat it. Intervals were calibrated on forecasts made before 2010, and the label shows what they held since. Each card also backtests the model on the selected country: for the US, AR(2)'s one-year error was 1.44 pp against 1.78 pp for "no change", not a significant difference (p = 0.09).
+
+| | |
+|---|---|
+| ![Next week's US natural-gas storage change: reported changes against the model's forecasts made a week earlier, with its 80% range, the forecast and the backtest verdict](docs/screenshots/gas-storage-forecast.jpg) | ![EIA weekly commercial crude and motor gasoline stocks over the last year against their five-year average and range](docs/screenshots/energy-inventories.jpg) |
+| **Gas storage, next week**: the five-year seasonal norm plus a share of last week's departure from it. Over 561 weekly forecasts (2016–2026) its average miss was 29.3 Bcf against 30.9 Bcf for the seasonal norm (HAC Diebold–Mariano p = 0.004), and its 80% range held 81.4% of outcomes | **Energy inventories**: EIA weekly crude, gasoline, distillate, SPR and gas stocks against the same week's five-year average and range, the data the gas forecast is built on |
 
 ## An AI that reads the analytics
 
@@ -45,12 +56,10 @@ The analyst (any OpenRouter model, free by default) gets the comparison currentl
 
 > *Which countries spend far more on defence than their wealth predicts, and what explains the top two?*
 
-| | |
-|---|---|
-| ![Scatter of military spending against GDP per capita with Ukraine as an extreme outlier](docs/screenshots/defence-analytics.jpg) | ![Claude's answer quoting the analytics numbers, with its own explanations labelled as such](docs/screenshots/ai-claude-panel.jpg) |
-| **The data**: ρ = 0.16, wealth predicts almost nothing. Ukraine is +10.7 σ above the trend | **The answer**: every figure matches the panel (Ukraine 34.5% vs 2.2% expected, Israel 8.8% vs 2.5%, Algeria 8.0%…). It says the wealth link is negligible and labels its explanations "my context, not from the panel" |
+- **The data**: ρ = 0.16, wealth predicts almost nothing. Ukraine is +10.7 σ above the trend.
+- **The answer**: every figure matched the panel (Ukraine 34.5% vs 2.2% expected, Israel 8.8% vs 2.5%, Algeria 8.0%…). It said the wealth link is negligible and labelled its explanations "my context, not from the panel".
 
-The screenshot shows the World Bank's 2024 values as published then. They have since been revised (as of 2026-10-15: Ukraine 2024 34.0%, Israel 8.5%), and 2025 values now exist (Ukraine 39.6%), so the live panel shows different numbers.
+Those were the World Bank's 2024 values as published then. They have since been revised (as of 2026-10-15: Ukraine 2024 34.0%, Israel 8.5%), and 2025 values now exist (Ukraine 39.6%), so the live panel shows different numbers.
 
 It also drove the map (flew to Ukraine, switched layers on). One question, one run per model: an illustration, not a benchmark.
 
