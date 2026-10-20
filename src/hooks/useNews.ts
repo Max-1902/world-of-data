@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { searchAllSources, fetchTopHeadlines } from '../services/news'
 import type { NewsArticle } from '../types'
 
@@ -9,42 +9,30 @@ export function useNews() {
   const [loading, setLoading] = useState(false)
   const [query, setQuery] = useState('')
   const [error, setError] = useState<string | null>(null)
+  // only the newest request may write, so a slow headlines poll can't overwrite search results
+  const reqRef = useRef(0)
 
-  const search = useCallback(async (q: string) => {
-    setQuery(q)
+  const run = useCallback(async (q: string) => {
+    const id = ++reqRef.current
     setLoading(true)
     setError(null)
     try {
-      const results = q.trim()
-        ? await searchAllSources(q)
-        : await fetchTopHeadlines()
-      setArticles(results)
+      const results = q.trim() ? await searchAllSources(q) : await fetchTopHeadlines()
+      if (id === reqRef.current) setArticles(results)
     } catch (e) {
-      setError(String(e))
+      if (id === reqRef.current) setError(String(e))
     } finally {
-      setLoading(false)
+      if (id === reqRef.current) setLoading(false)
     }
   }, [])
 
-  const loadHeadlines = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const results = await fetchTopHeadlines()
-      setArticles(results)
-    } catch (e) {
-      setError(String(e))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const search = useCallback((q: string) => { setQuery(q); return run(q) }, [run])
+  const loadHeadlines = useCallback(() => run(''), [run])
 
-  // Load headlines on mount and keep them fresh in the background, so features
-  // like the Regional Outlook can cross-check crisis trends against hot news
-  // without requiring the user to have opened the news tab first.
+  // Headlines load on mount and stay fresh so the Regional Outlook can cross-check them without the news tab open.
   useEffect(() => {
     if (query.trim()) return
-    loadHeadlines()
+    void loadHeadlines()
     const timer = window.setInterval(loadHeadlines, HEADLINES_REFRESH_MS)
     return () => clearInterval(timer)
   }, [query, loadHeadlines])

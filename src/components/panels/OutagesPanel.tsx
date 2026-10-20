@@ -1,11 +1,11 @@
 /**
  * Panel implementations. Split out of the former PanelContent.tsx; wired up in src/panels/registry.tsx.
  */
-import { useState, useCallback, useEffect } from 'react'
+import { useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { fetchOutageEvents, SEVERITY_LABEL, OUTAGE_SOURCES, type OutageEvent } from '../../services/outages'
-import { onGlobalReload } from '../../utils/reloadBus'
+import { usePolling } from '../../hooks/usePolling'
 
 // ── Outages panel ──────────────────────────────────────────────────────────────
 const OUTAGE_TABS = ['Ongoing', 'All', 'Country', 'Region', 'ASN'] as const
@@ -42,33 +42,9 @@ function formatOutageTime(epoch: number): string {
 export function OutagesPanel({ onGeoSearch }: { onGeoSearch?: (q: string) => void }) {
   const [tab, setTab]             = useState<OutageTab>('Ongoing')
   const [lookback, setLookback]   = useState(24)
-  const [events, setEvents]       = useState<OutageEvent[]>([])
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState<string | null>(null)
-  const [lastFetch, setLastFetch] = useState<number | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const data = await fetchOutageEvents(lookback)
-      setEvents(data)
-      setLastFetch(Date.now())
-    } catch (e) {
-      setError(String(e))
-    } finally {
-      setLoading(false)
-    }
-  }, [lookback])
-
-  useEffect(() => { load() }, [load])
-
-  // Auto-refresh every 5 minutes
-  useEffect(() => {
-    const t = window.setInterval(load, 5 * 60_000)
-    const unsub = onGlobalReload(load)
-    return () => { clearInterval(t); unsub() }
-  }, [load])
+  const { data: events, loading, error, lastUpdated: lastFetch, refresh: load } = usePolling<OutageEvent[]>(
+    () => fetchOutageEvents(lookback), { initial: [], intervalMs: 5 * 60_000, key: lookback, globalReload: true },
+  )
 
   const filtered = tab === 'All'
     ? events

@@ -1,13 +1,13 @@
 /**
  * Panel implementations. Split out of the former PanelContent.tsx; wired up in src/panels/registry.tsx.
  */
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { ExternalLink, Languages, RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { CrisisEvent, NewsArticle, Flight } from '../../types'
 import { fetchRSSFeed, searchGDELTNews, searchGoogleNewsHeadlines, searchNYT, searchNewsAPI, fetchAllCrisisWatch, CRISISWATCH_FEEDS, type CrisisWatchEntry, COUNTRY_NEWS_SOURCES, fetchCountryNews } from '../../services/news'
 import { fetchOutageEvents, type OutageEvent } from '../../services/outages'
-import { onGlobalReload } from '../../utils/reloadBus'
+import { usePolling } from '../../hooks/usePolling'
 import { useAutoTranslate, useTranslatedArticle } from '../../hooks/useTranslation'
 import { SEV_COLORS } from './OverviewPanels'
 import { outageColor, outageBadge, tint } from './OutagesPanel'
@@ -83,17 +83,9 @@ export function ArticleRow({ a }: { a: NewsArticle }) {
 
 export function NewsPanel() {
   const [country, setCountry]     = useState('US')
-  const [articles, setArticles]   = useState<NewsArticle[]>([])
-  const [loading, setLoading]     = useState(false)
+  const { data: articles, loading, refresh } = usePolling<NewsArticle[]>(() => fetchCountryNews(country), { initial: [], key: country })
   const [autoTranslate, setAutoTranslate] = useAutoTranslate()
   const sourceCount = COUNTRY_NEWS_SOURCES.find(c => c.code === country)?.sources.length ?? 0
-
-  const loadCountry = useCallback(async (code: string) => {
-    setLoading(true); setArticles([])
-    try { setArticles(await fetchCountryNews(code)) } finally { setLoading(false) }
-  }, [])
-
-  useEffect(() => { loadCountry(country) }, [country, loadCountry])
 
   return (
     <>
@@ -120,7 +112,7 @@ export function NewsPanel() {
             border: `1px solid ${autoTranslate ? 'var(--accent)' : 'var(--border)'}`, padding: '1px 5px' }}>
           <Languages size={9} /> {autoTranslate ? 'EN' : 'ORIGINAL'}
         </button>
-        <button onClick={() => loadCountry(country)} disabled={loading}
+        <button onClick={refresh} disabled={loading}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: loading ? 0.3 : 1 }}>
           <RefreshCw size={9} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -128,7 +120,7 @@ export function NewsPanel() {
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {loading && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.12em' }}>// LOADING…</div>}
         {!loading && articles.length === 0 && <div style={{ padding: '8px 10px', fontSize: '11.5px', color: 'var(--text3)', letterSpacing: '.1em' }}>// NO DATA</div>}
-        {articles.map(a => <ArticleRow key={a.id} a={a} />)}
+        {!loading && articles.map(a => <ArticleRow key={a.id} a={a} />)}
       </div>
     </>
   )
@@ -148,30 +140,12 @@ const CW_REGIONS = ['All', ...CRISISWATCH_FEEDS.map(f => f.region)] as const
 type CWRegion = typeof CW_REGIONS[number]
 
 export function CrisisWatchPanel() {
-  const [entries, setEntries]     = useState<CrisisWatchEntry[]>([])
-  const [loading, setLoading]     = useState(false)
+  // ICG publishes monthly, so hourly is plenty
+  const { data: entries, loading, lastUpdated: lastFetch, refresh: load } = usePolling<CrisisWatchEntry[]>(
+    fetchAllCrisisWatch, { initial: [], intervalMs: 60 * 60_000, globalReload: true },
+  )
   const [region, setRegion]       = useState<CWRegion>('All')
   const [filter, setFilter]       = useState<CrisisWatchEntry['trend'] | 'All'>('All')
-  const [lastFetch, setLastFetch] = useState<number | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    try {
-      const data = await fetchAllCrisisWatch()
-      setEntries(data)
-      setLastFetch(Date.now())
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { load() }, [load])
-  // Refresh every 60 min (ICG publishes monthly)
-  useEffect(() => {
-    const t = window.setInterval(load, 60 * 60_000)
-    const unsub = onGlobalReload(load)
-    return () => { clearInterval(t); unsub() }
-  }, [load])
 
   const filtered = entries.filter(e => {
     if (region !== 'All' && e.region !== region) return false
@@ -289,9 +263,10 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
       )
     : flights
 
-  // Fetch news from all sources in parallel, filtered by query
+  // Fetch news from all sources in parallel, filtered by query; a newer query discards older results
   useEffect(() => {
     if (!q) return
+    let alive = true
     setNewsLoading(true)
     setNews([])
     Promise.allSettled([
@@ -308,6 +283,7 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
       fetchRSSFeed('https://www.crisisgroup.org/rss/56', 'ICG Europe'),
       fetchRSSFeed('https://www.crisisgroup.org/rss/81', 'ICG MENA'),
     ]).then(results => {
+      if (!alive) return
       const seen = new Set<string>()
       const all: NewsArticle[] = []
       for (const r of results) {
@@ -321,15 +297,18 @@ export function IntelBriefPanel({ query, crises, flights }: { query: string; cri
       }
       all.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
       setNews(all)
-    }).finally(() => setNewsLoading(false))
+    }).finally(() => { if (alive) setNewsLoading(false) })
+    return () => { alive = false }
   }, [q])
 
   // Fetch outages filtered by query
   useEffect(() => {
     if (!q) return
+    let alive = true
     fetchOutageEvents(48).then(data => {
-      setOutages(data.filter(e => e.entityName.toLowerCase().includes(q)))
+      if (alive) setOutages(data.filter(e => e.entityName.toLowerCase().includes(q)))
     }).catch(() => {})
+    return () => { alive = false }
   }, [q])
 
   if (!q) {
