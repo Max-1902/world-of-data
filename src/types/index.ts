@@ -100,3 +100,6 @@ export interface SelectedPlace {
   lat: number
   lng: number
 }
+
+/** Live conflict events as fetched (no baseline markers, no map thinning) and whether the poll hit its row cap. */
+export interface ConflictFeed { events: CrisisEvent[]; capped: boolean }

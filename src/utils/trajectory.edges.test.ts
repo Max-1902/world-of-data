@@ -4,8 +4,8 @@
  * (trajectory.test.ts covers the happy-path behaviours.)
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { computeTrajectories } from './trajectory'
-import type { CrisisEvent, Flight, NewsArticle } from '../types'
+import { computeTrajectories, isFlaggedUp, SAMPLED_NOTE } from './trajectory'
+import type { CrisisEvent, NewsArticle } from '../types'
 
 const NOW = Date.parse('2025-06-15T12:00:00Z')
 const HOUR = 3_600_000
@@ -23,17 +23,11 @@ function crisis(o: Partial<CrisisEvent> & { ageMs?: number } = {}): CrisisEvent 
     ...rest,
   }
 }
-const flight = (lat: number | null, lng: number | null): Flight => ({
-  icao24: `f${seq++}`, callsign: '', origin_country: '', latitude: lat, longitude: lng,
-  altitude: null, velocity: null, heading: null, on_ground: false,
-})
 const article = (o: Partial<NewsArticle>): NewsArticle => ({
   id: `a${seq++}`, title: '', description: '', url: '', source: 'Wire', publishedAt: new Date(NOW - HOUR).toISOString(), ...o,
 })
-const one = (crises: CrisisEvent[], ...rest: [Flight[]?, number?, NewsArticle[]?, (string | null)?]) => {
-  const [flights = [], limit = 6, articles = [], focus] = rest
-  return computeTrajectories(crises, flights, limit, articles, focus)[0]
-}
+const one = (crises: CrisisEvent[], limit = 6, articles: NewsArticle[] = [], focus?: string | null) =>
+  computeTrajectories(crises, { limit, articles, focusCountry: focus })[0]
 
 describe('window boundaries', () => {
   it('counts an event at exactly 3 days as recent, and 1ms older as prior', () => {
@@ -43,36 +37,34 @@ describe('window boundaries', () => {
 
   it('includes events up to exactly 10 days old and excludes anything older (7-day prior bucket)', () => {
     expect(one([crisis({ ageMs: 10 * DAY })])).toMatchObject({ priorCount: 1 })
-    expect(computeTrajectories([crisis({ ageMs: 10 * DAY + 1 })], [], 6)).toEqual([])
+    expect(computeTrajectories([crisis({ ageMs: 10 * DAY + 1 })])).toEqual([])
   })
 
   it('ignores events dated in the future', () => {
-    expect(computeTrajectories([crisis({ ageMs: -1 })], [], 6)).toEqual([])
+    expect(computeTrajectories([crisis({ ageMs: -1 })])).toEqual([])
   })
 
   it('drops an unparseable date instead of counting it as a brand-new event', () => {
-    expect(computeTrajectories([crisis({ date: 'not-a-date' })], [], 6)).toEqual([])
+    expect(computeTrajectories([crisis({ date: 'not-a-date' })])).toEqual([])
   })
 
-  it('regression: news and flight boosts never word a falling country as "up from"', () => {
-    // 3 recent vs a prior pace of 12 * 3/7 ≈ 5.1 → delta −2.1 (falling); +2 news +2 flights lifts it above 0
+  it('a news mention cannot lift a falling country: delta stays negative and the reason says "down from"', () => {
+    // 3 recent vs a prior pace of 12 * 3/7 ≈ 5.1 → delta −2.1 (falling); news used to add +2 and lift it above 0
     const crises = [crisis({ ageMs: HOUR }), ...Array.from({ length: 4 }, () => crisis({ ageMs: 5 * DAY }))]
-    const flights = Array.from({ length: 16 }, () => flight(0, 0))
-    const news = [article({ title: 'Testland unrest' })]
-    const entry = one(crises, flights, 6, news)
+    const entry = one(crises, 6, [article({ title: 'Testland unrest' })])
     expect(entry.trend).toBe('falling')
-    expect(entry.delta).toBeGreaterThan(0)
+    expect(entry.delta).toBeCloseTo(-2.1, 6)
     expect(entry.reason).toMatch(/^1 event in 72h, down from 4/)
   })
 
   it('skips events with no country', () => {
-    expect(computeTrajectories([crisis({ country: '' })], [], 6)).toEqual([])
+    expect(computeTrajectories([crisis({ country: '' })])).toEqual([])
   })
 
   it('excludes synthetic baseline entries by source and by id prefix', () => {
     const result = computeTrajectories([
       crisis({ source: 'Baseline' }), crisis({ id: 'baseline-x', country: 'Other' }),
-    ], [], 6)
+    ])
     expect(result).toEqual([])
   })
 })
@@ -131,12 +123,11 @@ describe('velocity', () => {
     expect(one(steady).velocity).toBe(50)
   })
 
-  it('always stays within 0..100, including with both boosts applied', () => {
-    const near = Array.from({ length: 20 }, () => flight(0.5, 0.5))
+  it('always stays within 0..100', () => {
     const news = [article({ title: 'Testland in turmoil' })]
     const cases = [
-      one([crisis({ severity: 'critical' })], near, 6, news),
-      one([crisis({ severity: 'critical', ageMs: 5 * DAY })], near, 6, news),
+      one([crisis({ severity: 'critical' })], 6, news),
+      one([crisis({ severity: 'critical', ageMs: 5 * DAY })], 6, news),
       one([crisis({ severity: 'low' })]),
     ]
     for (const c of cases) {
@@ -147,61 +138,29 @@ describe('velocity', () => {
   })
 })
 
-describe('flight cross-check', () => {
-  const base = [crisis({ latitude: 10, longitude: 10 })]
-  const cluster = (n: number, lat = 10.5, lng = 10.5) => Array.from({ length: n }, () => flight(lat, lng))
-
-  it('needs MORE than 15 nearby flights to trigger the boost', () => {
-    expect(one(base, cluster(15)).reason).not.toContain('air traffic')
-    expect(one(base, cluster(16)).reason).toContain('elevated air traffic nearby')
-  })
-
-  it('adds +2 to delta when triggered', () => {
-    expect(one(base, cluster(16)).delta - one(base, []).delta).toBe(2)
-  })
-
-  it('only counts flights strictly within 2 degrees on both axes', () => {
-    expect(one(base, cluster(16, 12.0, 10)).reason).not.toContain('air traffic')   // exactly 2° away
-    expect(one(base, cluster(16, 11.99, 10)).reason).toContain('air traffic')
-    expect(one(base, cluster(16, 10, 12.5)).reason).not.toContain('air traffic')
-  })
-
-  it('ignores flights with a null position', () => {
-    const nulls = Array.from({ length: 30 }, () => flight(null, null))
-    expect(one(base, nulls).reason).not.toContain('air traffic')
-  })
-})
-
 describe('news cross-check', () => {
   const base = [crisis({ country: 'Freedonia' })]
 
   it('matches case-insensitively in title or description', () => {
-    expect(one(base, [], 6, [article({ title: 'FREEDONIA votes' })]).newsHit).toBe('FREEDONIA votes')
-    expect(one(base, [], 6, [article({ title: 'x', description: 'about freedonia today' })]).newsHit).toBe('x')
+    expect(one(base, 6, [article({ title: 'FREEDONIA votes' })]).newsHit).toBe('FREEDONIA votes')
+    expect(one(base, 6, [article({ title: 'x', description: 'about freedonia today' })]).newsHit).toBe('x')
   })
 
   it('ignores articles older than 48h but keeps those just inside the window', () => {
-    expect(one(base, [], 6, [article({ title: 'Freedonia', publishedAt: new Date(NOW - 48 * HOUR - 1).toISOString() })]).newsHit).toBeUndefined()
-    expect(one(base, [], 6, [article({ title: 'Freedonia', publishedAt: new Date(NOW - 48 * HOUR).toISOString() })]).newsHit).toBe('Freedonia')
+    expect(one(base, 6, [article({ title: 'Freedonia', publishedAt: new Date(NOW - 48 * HOUR - 1).toISOString() })]).newsHit).toBeUndefined()
+    expect(one(base, 6, [article({ title: 'Freedonia', publishedAt: new Date(NOW - 48 * HOUR).toISOString() })]).newsHit).toBe('Freedonia')
   })
 
   it('does not discard an article whose date cannot be parsed', () => {
-    expect(one(base, [], 6, [article({ title: 'Freedonia', publishedAt: 'garbage' })]).newsHit).toBe('Freedonia')
+    expect(one(base, 6, [article({ title: 'Freedonia', publishedAt: 'garbage' })]).newsHit).toBe('Freedonia')
   })
 
-  it('uses the first matching article and adds +2 to delta', () => {
+  it('uses the first matching article as context only: delta, velocity, trend and reason are unchanged', () => {
     const arts = [article({ title: 'Unrelated' }), article({ title: 'Freedonia one' }), article({ title: 'Freedonia two' })]
-    const e = one(base, [], 6, arts)
+    const e = one(base, 6, arts)
+    const plain = one(base)
     expect(e.newsHit).toBe('Freedonia one')
-    expect(e.delta - one(base).delta).toBe(2)
-  })
-
-  it('stacks with the flight boost', () => {
-    const b = [crisis({ country: 'Freedonia', latitude: 1, longitude: 1 })]
-    const flights = Array.from({ length: 16 }, () => flight(1, 1))
-    const e = one(b, flights, 6, [article({ title: 'Freedonia' })])
-    expect(e.delta - one(b).delta).toBe(4)
-    expect(e.reason).toContain('elevated air traffic nearby; hot in recent news')
+    expect({ ...e, newsHit: undefined }).toEqual({ ...plain, newsHit: undefined })
   })
 })
 
@@ -227,9 +186,9 @@ describe('reason text', () => {
     expect(one(steady).reason).toBe('Steady at ~3 events in 72h')
   })
 
-  it('a focus country mentioned in the news gets a distinct quiet-entry reason', () => {
-    const e = one([], [], 6, [article({ title: 'Quietland reopens border' })], 'Quietland')
-    expect(e.reason).toBe('No tracked crisis activity in the last 10 days; mentioned in recent news')
+  it('a quiet focus country keeps its headline as context, but the reason is about tracked events only', () => {
+    const e = one([], 6, [article({ title: 'Quietland reopens border' })], 'Quietland')
+    expect(e.reason).toBe('No tracked crisis activity in the last 10 days')
     expect(e.newsHit).toBe('Quietland reopens border')
     expect(e).toMatchObject({ trend: 'flat', velocity: 50, delta: 0, recentCount: 0, priorCount: 0 })
   })
@@ -238,31 +197,59 @@ describe('reason text', () => {
 describe('ranking & limits', () => {
   it('defaults to 6 results, ranked by delta', () => {
     const crises = Array.from({ length: 9 }, (_, i) => crisis({ country: `C${i}`, severity: 'critical' }))
-    expect(computeTrajectories(crises, [])).toHaveLength(6)
+    expect(computeTrajectories(crises)).toHaveLength(6)
   })
 
   it('limit 0 returns nothing and a limit above the count returns everything', () => {
     const crises = [crisis({ country: 'A' }), crisis({ country: 'B' })]
-    expect(computeTrajectories(crises, [], 0)).toEqual([])
-    expect(computeTrajectories(crises, [], 50)).toHaveLength(2)
+    expect(computeTrajectories(crises, { limit: 0 })).toEqual([])
+    expect(computeTrajectories(crises, { limit: 50 })).toHaveLength(2)
   })
 
   it('returns [] for no input', () => {
-    expect(computeTrajectories([], [])).toEqual([])
+    expect(computeTrajectories([])).toEqual([])
   })
 
   it('never mutates its inputs', () => {
     const crises = [crisis({ country: 'A' }), crisis({ country: 'B', severity: 'critical' })]
-    const flights = [flight(0, 0)]
-    const snapshot = JSON.stringify([crises, flights])
-    computeTrajectories(crises, flights, 6, [article({ title: 'A' })], null)
-    expect(JSON.stringify([crises, flights])).toBe(snapshot)
+    const snapshot = JSON.stringify(crises)
+    computeTrajectories(crises, { articles: [article({ title: 'A' })] })
+    expect(JSON.stringify(crises)).toBe(snapshot)
   })
 
   it('focusCountry is matched exactly (case-sensitive) against tracked countries', () => {
     const crises = [crisis({ country: 'Alpha', severity: 'critical' })]
-    const [e] = computeTrajectories(crises, [], 6, [], 'alpha')
+    const [e] = computeTrajectories(crises, { focusCountry: 'alpha' })
     expect(e.recentCount).toBe(0)         // fell through to the quiet entry
     expect(e.country).toBe('alpha')
+  })
+})
+
+describe('capped feed', () => {
+  // 20 days of one event a day, then a burst: with full history this is "unusually high"
+  const history = Array.from({ length: 20 }, (_, d) => crisis({ ageMs: 3 * DAY + (d + 0.5) * DAY }))
+  const burst = Array.from({ length: 12 }, () => crisis({ ageMs: HOUR }))
+
+  it('uncapped, a burst against the country\'s own normal is flagged', () => {
+    const e = computeTrajectories([...history, ...burst])[0]
+    expect(e.unusual).toBe('high')
+    expect(e.sampled).toBe(false)
+    expect(isFlaggedUp(e)).toBe(true)
+  })
+
+  it('capped, the same rows get no baseline, no flag, and a reason that says they are a sample', () => {
+    const e = computeTrajectories([...history, ...burst], { capped: true })[0]
+    expect(e.baseline).toBeNull()
+    expect(e.unusual).toBeNull()
+    expect(e.sampled).toBe(true)
+    expect(e.trend).toBe('rising')
+    expect(isFlaggedUp(e)).toBe(false)
+    expect(e.reason).toContain(SAMPLED_NOTE)
+  })
+
+  it('no percentage is shown for an unusual country: the tail value is a rough flag, not a probability', () => {
+    const e = computeTrajectories([...history, ...burst])[0]
+    expect(e.reason).toContain('a rough flag from a short history, not a measured probability')
+    expect(e.reason).not.toMatch(/%/)
   })
 })

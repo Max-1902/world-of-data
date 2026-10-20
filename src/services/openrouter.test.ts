@@ -318,7 +318,7 @@ describe('buildDashboardContext', () => {
   it('includes locally computed trajectory signals when provided', () => {
     const t = (o: Partial<TrajectoryEntry>): TrajectoryEntry => ({
       country: 'Ruritania', recentScore: 10, priorScore: 0, delta: 10, trend: 'rising', velocity: 90,
-      recentCount: 1, priorCount: 0, reason: 'because', baseline: null, unusual: null, ...o,
+      recentCount: 1, priorCount: 0, reason: 'because', baseline: null, unusual: null, sampled: false, ...o,
     })
     const ctx = buildDashboardContext([], [], [t({}), t({ country: 'Genovia', trend: 'falling', velocity: 20 })])
     expect(ctx).toContain('TRAJECTORY SIGNALS')
@@ -326,6 +326,16 @@ describe('buildDashboardContext', () => {
     expect(ctx).toContain('Own-normal comparison: NOT MEASURED')
     expect(ctx).toContain('Ruritania: RISING (velocity 90/100) — because')
     expect(ctx).toContain('Genovia: FALLING (velocity 20/100)')
+  })
+
+  it('tells the model when the conflict feed was capped, and never asks it to quote a chance', () => {
+    const t: TrajectoryEntry = {
+      country: 'Ruritania', recentScore: 10, priorScore: 0, delta: 10, trend: 'rising', velocity: 90,
+      recentCount: 1, priorCount: 0, reason: 'because', baseline: null, unusual: null, sampled: true,
+    }
+    const ctx = buildDashboardContext([], [], [t])
+    expect(ctx).toContain('the conflict feed hit its row cap, so these counts are a sample')
+    expect(ctx).not.toMatch(/chance under its normal/)
   })
 
   it('reports the airborne flight count', () => {

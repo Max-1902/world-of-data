@@ -694,8 +694,9 @@ export const INTERVAL_MIN_ERRORS = 19
 /**
  * Replaces a forecast's interval with one measured from the method's own track record on this series: rerun it from
  * every past origin (≥ INTERVAL_MIN_TRAIN years, data before the origin only), collect the absolute h-step errors and
- * take the ⌈0.95 (n + 1)⌉-th smallest as the half-width (the split-conformal rule, which holds ≥ 95% coverage when past
- * and future errors are exchangeable). Unlike the textbook interval it needs no distributional assumption and includes
+ * take the ⌈0.95 (n + 1)⌉-th smallest as the half-width (the split-conformal rule). That rule guarantees ≥ 95% coverage
+ * only if past and future errors are exchangeable; rolling-origin errors overlap and regimes shift, so they are not, and
+ * real coverage has to be measured (forecastPolicy.ts reports it). Unlike the textbook interval it needs no distributional assumption and includes
  * the model's own estimation error. Below INTERVAL_MIN_ERRORS errors at a horizon there are too few to read a 95%
  * quantile from, and that horizon's interval is NaN (not shown) rather than guessed.
  */

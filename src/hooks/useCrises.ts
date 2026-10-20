@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchACLEDEvents, fetchACLEDArchive, type AcledArchive } from '../services/crises'
-import type { CrisisEvent } from '../types'
+import { fetchACLEDEvents, fetchACLEDArchive, lastAcledPoll, type AcledArchive } from '../services/crises'
+import type { ConflictFeed, CrisisEvent } from '../types'
 
 // ── Baseline: major ongoing conflicts (always visible even if APIs fail) ─────
 const today = new Date().toISOString().split('T')[0]
@@ -54,6 +54,9 @@ export function useCrises(enabled: boolean) {
   const [liveCount, setLiveCount] = useState(0)
   // Year-old ACLED events, set only while the live window is empty. Kept apart from `crises` on purpose.
   const [archive, setArchive] = useState<AcledArchive | null>(null)
+  // The live events as fetched, before the map's same-place thinning, and whether the poll hit its row cap: the
+  // input trend scoring needs (utils/trajectory.ts), since thinning lowers counts and a capped poll is only a sample.
+  const [feed, setFeed] = useState<ConflictFeed>({ events: [], capped: false })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -63,6 +66,7 @@ export function useCrises(enabled: boolean) {
       // dropped — its GEO API is gone and its raw event codes are too noisy to plot (see services/crises.ts).
       const live   = await fetchACLEDEvents(14)
       setLiveCount(live.length)
+      setFeed({ events: live, capped: lastAcledPoll()?.capped ?? false })
       setCrises(mergeWithBaseline(live))
       // An empty live window on an account whose tier lags ~12 months: offer last year's window for the map only.
       setArchive(live.length ? null : await fetchACLEDArchive(14))
@@ -81,5 +85,5 @@ export function useCrises(enabled: boolean) {
     return () => clearInterval(timer)
   }, [enabled, load])
 
-  return { crises, archive, loading, error, liveCount, refresh: load }
+  return { crises, feed, archive, loading, error, liveCount, refresh: load }
 }

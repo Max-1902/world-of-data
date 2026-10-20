@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { computeTrajectories, countTails, isFlaggedUp, BASELINE_MAX_DAYS } from './trajectory'
-import type { CrisisEvent, Flight, NewsArticle } from '../types'
+import type { CrisisEvent, NewsArticle } from '../types'
 
 function crisis(overrides: Partial<CrisisEvent>): CrisisEvent {
   return {
@@ -31,7 +31,7 @@ describe('computeTrajectories as-of time', () => {
       crisis({ country: 'Past', severity: 'critical', date: day(20) }),
       crisis({ country: 'Future', severity: 'critical', date: day(25) }),   // after asOf: must not count
     ]
-    const entries = computeTrajectories(crises, [], 6, [], null, asOf)
+    const entries = computeTrajectories(crises, { now: asOf })
     expect(entries.map(e => e.country)).toEqual(['Past'])
     expect(entries[0]).toMatchObject({ trend: 'rising', recentCount: 2, priorCount: 0 })
   })
@@ -43,7 +43,7 @@ describe('computeTrajectories', () => {
       crisis({ country: 'Ruritania', severity: 'critical', date: daysAgo(1) }),
       crisis({ country: 'Ruritania', severity: 'critical', date: daysAgo(2) }),
     ]
-    const [entry] = computeTrajectories(crises, [], 6)
+    const [entry] = computeTrajectories(crises)
     expect(entry.country).toBe('Ruritania')
     expect(entry.trend).toBe('rising')
     expect(entry.recentCount).toBe(2)
@@ -56,7 +56,7 @@ describe('computeTrajectories', () => {
       crisis({ country: 'Genovia', severity: 'critical', date: daysAgo(8) }),
       crisis({ country: 'Genovia', severity: 'low', date: daysAgo(1) }),
     ]
-    const [entry] = computeTrajectories(crises, [], 6)
+    const [entry] = computeTrajectories(crises)
     expect(entry.country).toBe('Genovia')
     expect(entry.trend).toBe('falling')
   })
@@ -66,7 +66,7 @@ describe('computeTrajectories', () => {
       crisis({ country: 'Freedonia', severity: 'medium', date: daysAgo(1) }),
       crisis({ country: 'Freedonia', severity: 'medium', date: daysAgo(6) }),
     ]
-    const [entry] = computeTrajectories(crises, [], 6)
+    const [entry] = computeTrajectories(crises)
     expect(entry.trend).toBe('flat')
   })
 
@@ -74,7 +74,7 @@ describe('computeTrajectories', () => {
     const crises = [
       crisis({ id: 'baseline-1', country: 'Sylvania', source: 'Baseline', severity: 'critical' }),
     ]
-    const result = computeTrajectories(crises, [], 6)
+    const result = computeTrajectories(crises)
     expect(result.find(e => e.country === 'Sylvania')).toBeUndefined()
   })
 
@@ -84,39 +84,24 @@ describe('computeTrajectories', () => {
     const asOf = Date.UTC(2026, 9, 7, 15)
     const crises = Array.from({ length: 14 }, (_, d) =>
       crisis({ country: 'Steady', severity: 'high', date: new Date(asOf - d * 86_400_000).toISOString().slice(0, 10) }))
-    const [entry] = computeTrajectories(crises, [], 6, [], null, asOf)
+    const [entry] = computeTrajectories(crises, { now: asOf })
     expect(entry).toMatchObject({ trend: 'flat', recentCount: 3, priorCount: 7, delta: 0 })
   })
 
   it('drops events older than 10 days', () => {
     const crises = [crisis({ country: 'Edge', severity: 'critical', date: daysAgo(11) })]
-    expect(computeTrajectories(crises, [], 6).find(e => e.country === 'Edge')).toBeUndefined()
+    expect(computeTrajectories(crises).find(e => e.country === 'Edge')).toBeUndefined()
   })
 
   it('ignores events outside the tracked 10-day window', () => {
     const crises = [
       crisis({ country: 'OldNews', severity: 'critical', date: daysAgo(30) }),
     ]
-    const result = computeTrajectories(crises, [], 6)
+    const result = computeTrajectories(crises)
     expect(result.find(e => e.country === 'OldNews')).toBeUndefined()
   })
 
-  it('boosts velocity when flights cluster near a country\'s crisis coordinates', () => {
-    const crises = [
-      crisis({ country: 'Aeropolis', severity: 'low', date: daysAgo(1), latitude: 10, longitude: 10 }),
-      crisis({ country: 'Aeropolis', severity: 'low', date: daysAgo(6), latitude: 10, longitude: 10 }),
-    ]
-    const nearbyFlights: Flight[] = Array.from({ length: 20 }, (_, i) => ({
-      icao24: `abc${i}`, callsign: `FL${i}`, origin_country: 'x',
-      latitude: 10.1, longitude: 10.1, altitude: 1000, velocity: 200, heading: 0, on_ground: false,
-    }))
-    const withFlights = computeTrajectories(crises, nearbyFlights, 6)
-    const withoutFlights = computeTrajectories(crises, [], 6)
-    expect(withFlights[0].velocity).toBeGreaterThan(withoutFlights[0].velocity)
-    expect(withFlights[0].reason).toContain('elevated air traffic nearby')
-  })
-
-  it('boosts and annotates when a country is mentioned in recent news', () => {
+  it('annotates a country mentioned in recent news without changing its score', () => {
     const crises = [
       crisis({ country: 'Newsland', severity: 'high', date: daysAgo(1) }),
     ]
@@ -124,13 +109,14 @@ describe('computeTrajectories', () => {
       id: 'a1', title: 'Crisis deepens in Newsland', description: '', url: '',
       source: 'Test Wire', publishedAt: new Date().toISOString(),
     }]
-    const [entry] = computeTrajectories(crises, [], 6, articles)
+    const [entry] = computeTrajectories(crises, { articles })
     expect(entry.newsHit).toBe('Crisis deepens in Newsland')
-    expect(entry.reason).toContain('hot in recent news')
+    expect(entry.reason).not.toContain('news')
+    expect(entry.delta).toBe(computeTrajectories(crises)[0].delta)
   })
 
   it('returns an explicit quiet entry for a focusCountry with no tracked activity', () => {
-    const result = computeTrajectories([], [], 6, [], 'Quietland')
+    const result = computeTrajectories([], { focusCountry: 'Quietland' })
     expect(result).toHaveLength(1)
     expect(result[0].country).toBe('Quietland')
     expect(result[0].trend).toBe('flat')
@@ -142,7 +128,7 @@ describe('computeTrajectories', () => {
       crisis({ country: 'Alpha', severity: 'critical', date: daysAgo(1) }),
       crisis({ country: 'Beta', severity: 'critical', date: daysAgo(1) }),
     ]
-    const result = computeTrajectories(crises, [], 6, [], 'Beta')
+    const result = computeTrajectories(crises, { focusCountry: 'Beta' })
     expect(result).toHaveLength(1)
     expect(result[0].country).toBe('Beta')
   })
@@ -153,7 +139,7 @@ describe('computeTrajectories', () => {
       crisis({ country: 'Big', severity: 'critical', date: daysAgo(1) }),
       crisis({ country: 'Medium', severity: 'medium', date: daysAgo(1) }),
     ]
-    const result = computeTrajectories(crises, [], 2)
+    const result = computeTrajectories(crises, { limit: 2 })
     expect(result).toHaveLength(2)
     expect(result[0].country).toBe('Big')
     expect(result[0].delta).toBeGreaterThanOrEqual(result[1].delta)
@@ -181,7 +167,7 @@ describe('own-normal surprise', () => {
   it('ranks a quiet country jumping 0 → 4 above a large conflict moving within its normal range', () => {
     const big = series('Bigland', d => d < 3 ? 103 + (d === 0.5 ? 5 : 0) : 100 + ((d * 2) % 7) - 3)
     const small = series('Smallland', d => d < 3 && d !== 2.5 ? 2 : 0)
-    const [first, second] = computeTrajectories([...big, ...small], [], 6, [], null, now)
+    const [first, second] = computeTrajectories([...big, ...small], { now })
     expect(first.country).toBe('Smallland')
     expect(first.unusual).toBe('high')
     expect(first.baseline?.days).toBe(21)
@@ -194,7 +180,7 @@ describe('own-normal surprise', () => {
 
   it('flags an unusually quiet country as low', () => {
     const quiet = series('Hushland', d => d < 3 ? 0 : 6)
-    const [entry] = computeTrajectories(quiet, [], 6, [], null, now)
+    const [entry] = computeTrajectories(quiet, { now })
     expect(entry.unusual).toBe('low')
     expect(entry.reason).toContain('unusually quiet')
   })
@@ -202,21 +188,21 @@ describe('own-normal surprise', () => {
   it('does not flag a bursty country for a count its own swings already cover', () => {
     // mean ~3/day, but in bursts of 30 every tenth day
     const bursty = series('Burstia', d => d < 3 ? (d === 1.5 ? 18 : 0) : Math.round(d) % 10 === 5 ? 30 : 0)
-    const [entry] = computeTrajectories(bursty, [], 6, [], null, now)
+    const [entry] = computeTrajectories(bursty, { now })
     expect(entry.baseline!.expected).toBeGreaterThan(5)
     expect(entry.unusual).toBeNull()
   })
 
   it('has no normal when the feed reaches back less than MIN_BASELINE_DAYS before the 72h window', () => {
     const short = [crisis({ country: 'Newland', date: at(1) }), crisis({ country: 'Newland', date: at(8) })]
-    const [entry] = computeTrajectories(short, [], 6, [], null, now)
+    const [entry] = computeTrajectories(short, { now })
     expect(entry.baseline).toBeNull()
     expect(entry.unusual).toBeNull()
   })
 
   it('takes history length from the oldest event in the feed, capped at BASELINE_MAX_DAYS', () => {
     const old = [crisis({ country: 'Elsewhere', date: at(60) }), crisis({ country: 'Here', date: at(1) })]
-    const [entry] = computeTrajectories(old, [], 6, [], null, now)
+    const [entry] = computeTrajectories(old, { now })
     expect(entry.baseline?.days).toBe(BASELINE_MAX_DAYS)
   })
 

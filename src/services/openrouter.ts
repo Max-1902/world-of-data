@@ -356,7 +356,8 @@ ${conflicts}
 ${reference}${trajectories.length > 0 ? `
 TRAJECTORY SIGNALS (rule-based, last 3d vs prior 7d — computed locally, not model-generated)
   ${risingTrend.length} of ${trajectories.length} tracked regions trending upward${ownNormal ? `
-  Each country is also compared with its own last ${ownNormal.days} days of event counts (its own normal, allowing for its usual day-to-day swings); ${unusualHigh.length} ${unusualHigh.length === 1 ? 'is' : 'are'} unusually high (chance under its normal < 1%). The list is ordered by how unusual, not by size. This is a statistical flag, not a validated forecast.` : `
+  Each country is also compared with its own last ${ownNormal.days} days of event counts (its own normal, allowing for its usual day-to-day swings); ${unusualHigh.length} ${unusualHigh.length === 1 ? 'is' : 'are'} unusually high. That is a rough flag from a short history, not a calibrated probability — do not quote it as a percentage chance. The list is ordered by how unusual, not by size. This is a statistical flag, not a validated forecast.` : trajectories[0]?.sampled ? `
+  Own-normal comparison: NOT MEASURED — the conflict feed hit its row cap, so these counts are a sample, not totals, and no country is flagged.` : `
   Own-normal comparison: NOT MEASURED — the feed does not reach back far enough to know each country's normal.`}
 ${trajectoryLines}` : ''}
 

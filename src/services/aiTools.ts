@@ -37,7 +37,7 @@ import { PORTS } from './ports'
 import { TOP_HOSTING, TOP_ORIGINS } from './unhcr'
 import { EIA_SERIES, fetchEiaSeries } from './eia'
 import { arForecast, trendTest, backtestForecast, type Pt } from '../utils/econAnalysis'
-import { headlineForecast } from '../utils/forecastPolicy'
+import { coverageLabel, headlineForecast } from '../utils/forecastPolicy'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -472,7 +472,7 @@ const TOOLS: ToolDef[] = [
         title: `${meta.short} forecast — ${c.name}`, source: `Computed locally from World Bank data: ${headline === 'ar' ? 'AR(2) by OLS on the latest unbroken run' : 'no-change (random walk)'}; model choice from a cross-country backtest`,
         text: [
           `${c.name} ${meta.short}: last observed ${f(last.y)} (${last.x}), n=${fc.n}.`,
-          `${label}: ${fc.points.map(p => `${p.year} ${f(p.value)} [95% ${f(p.lo)} to ${f(p.hi)}]`).join('; ')}${headline === 'ar' && ar.longRun != null ? `; long-run level ${f(ar.longRun)}` : ''}.`,
+          `${label}: ${fc.points.map((p, i) => `${p.year} ${f(p.value)} [${coverageLabel(policy, i + 1)}: ${f(p.lo)} to ${f(p.hi)}]`).join('; ')}${headline === 'ar' && ar.longRun != null ? `; long-run level ${f(ar.longRun)}` : ''}.`,
           why,
           `Skill on this country: ${verdict}. A model that does not beat naive out of sample should not be presented as informative.`,
         ].join('\n'),
@@ -482,7 +482,7 @@ const TOOLS: ToolDef[] = [
             { label: `${c.name} (observed)`, points: pts.slice(-25).map(p => ({ t: p.x, v: p.y })) },
             { label, dashed: true, points: [{ t: last.x, v: last.y }, ...fc.points.map(p => ({ t: p.year, v: p.value }))] },
           ],
-          area: { label: '95% interval', points: fc.points.filter(p => Number.isFinite(p.lo)).map(p => ({ t: p.year, lo: p.lo, hi: p.hi })) },
+          area: { label: coverageLabel(policy, 3), points: fc.points.filter(p => Number.isFinite(p.lo)).map(p => ({ t: p.year, lo: p.lo, hi: p.hi })) },
         },
       }
     },

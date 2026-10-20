@@ -1,5 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
-import type { CrisisEvent, Flight, NewsArticle } from '../types'
+import type { ConflictFeed, CrisisEvent, NewsArticle } from '../types'
 import { watchStore, type WatchAlert } from '../services/watchlist'
 import { computeTrajectories } from '../utils/trajectory'
 
@@ -15,14 +15,15 @@ function notifyBrowser(alerts: WatchAlert[]) {
 }
 
 /** Mounted once in App: re-checks the watchlist whenever the live data changes. */
-export function useWatchEvaluator(crises: CrisisEvent[], flights: Flight[], articles: NewsArticle[]) {
-  // flights/articles only feed the trajectory's secondary signals; don't re-evaluate on every 15s flight poll
-  const latest = useRef({ flights, articles })
-  latest.current = { flights, articles }
+export function useWatchEvaluator(crises: CrisisEvent[], feed: ConflictFeed, articles: NewsArticle[]) {
+  // articles only attach context to trend entries; don't re-evaluate on every news refresh
+  const latest = useRef({ feed, articles })
+  latest.current = { feed, articles }
 
   useEffect(() => {
     if (crises.length === 0) return
-    const trajectories = computeTrajectories(crises, latest.current.flights, 200, latest.current.articles)
+    const { feed: f, articles: a } = latest.current
+    const trajectories = computeTrajectories(f.events.length ? f.events : crises, { limit: 200, articles: a, capped: f.capped })
     const fresh = watchStore.evaluate(crises, trajectories)
     if (fresh.length > 0 && watchStore.getState().notify) notifyBrowser(fresh)
   }, [crises])
