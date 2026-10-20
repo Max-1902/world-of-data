@@ -158,7 +158,7 @@ export default function App() {
   }, [windows.actions, focusInDock])
 
   const { flights, refresh: refreshFlights }         = useFlights(panelState.flights)
-  const { crises, archive: crisisArchive, refresh: refreshCrises } = useCrises(panelState.crises)
+  const { crises, feed: conflictFeed, archive: crisisArchive, refresh: refreshCrises } = useCrises(panelState.crises)
   // Year-old ACLED events go to the map only; everything else (alerts, history, analyst) gets `crises`.
   const mapCrises = useMemo(() => crisisArchive ? [...crises, ...crisisArchive.events] : crises, [crises, crisisArchive])
   const { articles, loadHeadlines: refreshNews }     = useNews()
@@ -174,7 +174,7 @@ export default function App() {
   const newsPins = useGeoNews(keyEvents.events, panelState.news)
 
   useHistoryRecorder(crises, flights, panelState.flights)
-  useWatchEvaluator(crises, flights, articles)
+  useWatchEvaluator(crises, conflictFeed, articles)
 
   const [reloading, setReloading] = useState(false)
   const handleReloadAll = useCallback(async () => {
@@ -272,14 +272,14 @@ export default function App() {
   const toggleDeepstate = useCallback(() => setDeepstateMode(v => !v), [])
   // memoised so floating windows only re-render their panel when the data actually changes
   const cornerProps = useMemo(() => ({
-    crises, flights, panelState,
+    crises, conflictFeed, flights, panelState,
     onToggleLayer: toggleLayer,
     deepstateMode,
     onDeepstateToggle: toggleDeepstate,
     onGeoSearch: handleGeoSearch,
     onCountryClick: selectCountry,
     searchQuery,
-  }), [crises, flights, panelState, toggleLayer, deepstateMode, toggleDeepstate, handleGeoSearch, selectCountry, searchQuery])
+  }), [crises, conflictFeed, flights, panelState, toggleLayer, deepstateMode, toggleDeepstate, handleGeoSearch, selectCountry, searchQuery])
 
   if (!TOKEN) {
     return (
@@ -400,7 +400,7 @@ export default function App() {
           </Suspense>
           <AlertToasts onSelectCountry={selectCountry} />
           {dismissedCard !== cardKey && (
-            <OutlookCard crises={crises} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={briefCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />
+            <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={briefCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />
           )}
           <Suspense fallback={null}>
           <SettingsModal

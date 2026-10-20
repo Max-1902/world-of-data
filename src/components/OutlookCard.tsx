@@ -8,13 +8,15 @@ import PlaceBrief from './PlaceBrief'
 import CloseButton from './CloseButton'
 import type { Earthquake } from '../services/earthquakes'
 import type { FirePoint } from '../services/wildfires'
-import type { CrisisEvent, Flight, NewsArticle, SelectedPlace } from '../types'
+import type { ConflictFeed, CrisisEvent, Flight, NewsArticle, SelectedPlace } from '../types'
 
 /** Don't report "since last visit" for a reload a few minutes after the previous one. */
 const MIN_AWAY_MS = 30 * 60 * 1000
 
 interface Props {
   crises: CrisisEvent[]
+  /** unthinned live events with the cap flag, for trend scoring; falls back to `crises` */
+  conflictFeed?: ConflictFeed
   flights: Flight[]
   articles: NewsArticle[]
   earthquakes?: Earthquake[]
@@ -26,9 +28,9 @@ interface Props {
   onClose: () => void
 }
 
-export default function OutlookCard({ crises, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, onSelectCountry, onClose }: Props) {
+export default function OutlookCard({ crises, conflictFeed, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, onSelectCountry, onClose }: Props) {
   const subject = selectedPlace ? null : selectedCountry
-  const entries = computeTrajectories(crises, flights, 6, articles, subject)
+  const entries = computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { limit: 6, articles, focusCountry: subject, capped: conflictFeed?.capped })
   const rising = entries.filter(isFlaggedUp)
   const snaps = useHistory()
   const since = PREVIOUS_VISIT !== null && Date.now() - PREVIOUS_VISIT >= MIN_AWAY_MS

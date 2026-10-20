@@ -86,7 +86,8 @@ describe('PredictionsPanel', () => {
     expect(card.textContent).toContain('flat by construction')
     expect(card.textContent).not.toContain('AR(2) forecast')
     expect(card.textContent).not.toContain('Unstable fit.')
-    expect(card.textContent).toMatch(/held the real value only 89%/)
+    expect(card.textContent).toMatch(/unscaled it held only 89%/)
+    expect(card.textContent).toContain('95% interval (held 94.7% of outcomes in backtests since 2010)')
   })
 
   it('inflation after a hyperinflation: forecasts "no change", and states the huge interval instead of drawing it', () => {

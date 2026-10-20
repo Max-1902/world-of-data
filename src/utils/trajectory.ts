@@ -1,4 +1,4 @@
-import type { CrisisEvent, Flight, NewsArticle } from '../types'
+import type { CrisisEvent, NewsArticle } from '../types'
 import { mentionsCountry } from './countryBrief'
 
 export interface TrajectoryEntry {
@@ -11,7 +11,13 @@ export interface TrajectoryEntry {
   recentCount: number
   priorCount: number
   reason: string
+  /** a headline from the last 48h naming this country — context for the reader only; it does not move the score or the flag */
   newsHit?: string
+  /**
+   * The conflict feed hit its row cap, so these counts are a sample of the window, not totals: no own-normal is
+   * computed and the entry is never flagged (see `TrajectoryOptions.capped`).
+   */
+  sampled: boolean
   /**
    * The country measured against its own recent history (see `ownBaseline`). null when the feed doesn't reach
    * back MIN_BASELINE_DAYS before the 72h window, so there is no "normal" to compare with.
@@ -44,6 +50,21 @@ const DAY_MS = 24 * 60 * 60 * 1000
 export const BASELINE_MAX_DAYS = 28   // a country's normal is read from at most this many days before the 72h window
 export const MIN_BASELINE_DAYS = 7    // with less history than this there is no normal to compare against
 /**
+ * Where the counts come from. Pass the live events *before* any same-place thinning done for the map, and whether the
+ * poll hit its row cap. A capped feed can stop anywhere inside the window it asked for, and reading history from its
+ * oldest row would make a sample look like a complete record, so a capped feed gets no baseline and raises no flags.
+ */
+export interface TrajectoryOptions {
+  limit?: number
+  /** recent headlines: only used to attach a `newsHit` for context, never in the score */
+  articles?: NewsArticle[]
+  focusCountry?: string | null
+  /** the "as of" instant; defaults to now, and exists so the rule can be replayed on past days without look-ahead */
+  now?: number
+  capped?: boolean
+}
+
+/**
  * Flag threshold. Strict on purpose: the Watchlist tests every country at once, so at 0.05 a quiet day would
  * still flag a few countries by chance; at 0.01 it is about one per 100 countries tested.
  */
@@ -63,7 +84,7 @@ export function isBaseline(c: CrisisEvent): boolean {
  */
 export function classifyTrend(recentScore: number, priorScore: number): { delta: number; priorPace: number; trend: TrajectoryEntry['trend'] } {
   // The windows differ in length (3 days vs 7), so comparing raw sums would read steady activity as a ~57%
-  // drop. `delta` stays in "score points per 72h", so the flat band and the +2 boosts keep their meaning.
+  // drop. `delta` stays in "score points per 72h", so the flat band keeps its meaning.
   const priorPace = priorScore * (RECENT_WINDOW_MS / (PRIOR_WINDOW_MS - RECENT_WINDOW_MS))
   const delta = Math.round((recentScore - priorPace) * 10) / 10
   const trend: TrajectoryEntry['trend'] = delta > FLAT_DEADZONE ? 'rising' : delta < -FLAT_DEADZONE ? 'falling' : 'flat'
@@ -145,24 +166,26 @@ export function unusualness(b: OwnBaseline | null): TrajectoryEntry['unusual'] {
  * Whether an entry should be flagged as "up": unusually high for that country when its normal is known, and the
  * plain rising rule otherwise (feed too short to have a normal).
  */
-export function isFlaggedUp(t: Pick<TrajectoryEntry, 'trend' | 'baseline' | 'unusual'>): boolean {
+export function isFlaggedUp(t: Pick<TrajectoryEntry, 'trend' | 'baseline' | 'unusual'> & { sampled?: boolean }): boolean {
+  if (t.sampled) return false
   return t.baseline ? t.unusual === 'high' : t.trend === 'rising'
 }
 
 const fmtExpected = (x: number) => x < 10 ? String(Math.round(x * 10) / 10) : String(Math.round(x))
-const fmtChance = (p: number) => p < 0.001 ? '<0.1%' : `${Math.round(p * 1000) / 10}%`
 
+// No percentage is shown. pHigh/pLow come from 7–28 days of counts and treat the three days as independent, so they
+// rank countries and set the flag but are not calibrated probabilities; no replay has measured how often a flag is right.
 function baselineClause(b: OwnBaseline, unusual: TrajectoryEntry['unusual']): string {
   const vs = `~${fmtExpected(b.expected)} expected from its own last ${b.days} days`
-  if (unusual === 'high') return `unusually high for this country (${vs}; chance of this many or more ≈ ${fmtChance(b.pHigh)})`
-  if (unusual === 'low') return `unusually quiet for this country (${vs}; chance of this few or fewer ≈ ${fmtChance(b.pLow)})`
+  if (unusual === 'high') return `unusually high for this country (${vs}; a rough flag from a short history, not a measured probability)`
+  if (unusual === 'low') return `unusually quiet for this country (${vs}; a rough flag from a short history, not a measured probability)`
   return `within this country's normal range (${vs})`
 }
 
-// Wording follows the unboosted trend, so a news or flight boost can't make a drop read as "up from".
-function reasonFor(recentCount: number, priorCount: number, trend: TrajectoryEntry['trend'], flightBoost: boolean, newsHit: boolean, own: string | null = null): string {
-  const suffix = [own, flightBoost && 'elevated air traffic nearby', newsHit && 'hot in recent news']
-    .filter(Boolean).join('; ')
+export const SAMPLED_NOTE = 'sample only: the conflict feed hit its row cap, so these are not totals and no flag is raised'
+
+function reasonFor(recentCount: number, priorCount: number, trend: TrajectoryEntry['trend'], own: string | null, sampled: boolean): string {
+  const suffix = [own, sampled && SAMPLED_NOTE].filter(Boolean).join('; ')
   if (trend === 'rising') {
     const base = priorCount === 0
       ? `${recentCount} new event${recentCount === 1 ? '' : 's'} in 72h, no prior activity`
@@ -190,24 +213,22 @@ function findNewsHit(country: string, articles: NewsArticle[], now: number): New
 }
 
 /**
- * Rule-based trajectory scoring: compares each country's crisis activity in the
- * last 3 days against the pace of the 3–10 day-prior window (using each event's own date).
- * Where the feed reaches back far enough, each country is also measured against its own normal (`baseline`) and
- * the list is ranked by how unusual the last 72h are for that country, not by raw size. Without that history it
- * falls back to ranking the fastest-rising regions. Pure function, no network calls.
- *
- * `now` is the "as of" instant; it defaults to the present and exists so the same rule can be replayed
- * on past days without any look-ahead.
+ * Rule-based trajectory scoring: compares each country's conflict activity in the last 3 days against the pace of
+ * the 3–10 day-prior window (using each event's own date). Where the feed reaches back far enough, each country is
+ * also measured against its own normal (`baseline`) and the list is ranked by how unusual the last 72h are for that
+ * country, not by raw size. Without that history it falls back to ranking the fastest-rising regions. Only dated
+ * conflict events enter the score: air traffic and news coverage used to add +2 boosts and no longer do. Pure function.
  */
-export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], limit = 6, articles: NewsArticle[] = [], focusCountry?: string | null, now: number = Date.now()): TrajectoryEntry[] {
+export function computeTrajectories(crises: CrisisEvent[], opts: TrajectoryOptions = {}): TrajectoryEntry[] {
+  const { limit = 6, articles = [], focusCountry, now = Date.now(), capped = false } = opts
   const byCountry: Record<string, { recent: CrisisEvent[]; prior: CrisisEvent[] }> = {}
 
   // Including baseline markers would make every long-running conflict misread as "rising, no prior activity".
   const dated = crises.filter(c => !isBaseline(c))
 
-  // How far back the feed reaches is read from its oldest event (any country), because a feed capped at N rows
-  // can stop short of the window it asked for. Reading it this way can only shorten the history, never pad it
-  // with days that weren't fetched — a missing day counted as zero would make every country look surging.
+  // How far back the feed reaches is read from its oldest event (any country): reading it this way can only shorten
+  // the history, never pad it with days that weren't fetched — a missing day counted as zero would make every country
+  // look surging. It cannot tell a capped feed from a complete one, which is why `capped` turns the baseline off.
   let oldest = Infinity
   const ages: number[] = []
   for (const c of dated) {
@@ -217,7 +238,7 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
     if (c.country && age >= 0 && t < oldest) oldest = t
   }
   const historyDays = Math.min(BASELINE_MAX_DAYS, Math.floor((now - RECENT_WINDOW_MS - oldest) / DAY_MS))
-  const hasHistory = historyDays >= MIN_BASELINE_DAYS
+  const hasHistory = !capped && historyDays >= MIN_BASELINE_DAYS
   const daily: Record<string, number[]> = {}
 
   dated.forEach((c, i) => {
@@ -245,38 +266,24 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
     const priorScore   = score(prior)
     const { delta, priorPace, trend } = classifyTrend(recentScore, priorScore)
 
-    // Cross-check: flight density near this country's crisis coordinates
-    const points = [...recent, ...prior].map(e => ({ lat: e.latitude, lng: e.longitude }))
-    const nearbyFlights = points.length > 0
-      ? flights.filter(f => f.latitude != null && f.longitude != null && points.some(p =>
-          Math.abs(f.latitude! - p.lat) < 2 && Math.abs(f.longitude! - p.lng) < 2
-        )).length
-      : 0
-    const flightBoost = nearbyFlights > 15
-
-    // Cross-check: is this country mentioned in recent (48h) news coverage?
     const newsHit = findNewsHit(country, articles, now)
-
     const baseline = hasHistory ? ownBaseline(daily[country] ?? new Array(historyDays).fill(0), recent.length) : null
     const unusual = unusualness(baseline)
-
-    const adjustedDelta = Math.round((delta + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)) * 10) / 10
-
-    const maxPossible = Math.max(recentScore, priorPace, 1) + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)
-    const velocity = Math.max(0, Math.min(100, Math.round((adjustedDelta / maxPossible) * 50 + 50)))
+    const velocity = Math.max(0, Math.min(100, Math.round((delta / Math.max(recentScore, priorPace, 1)) * 50 + 50)))
 
     return {
       country,
       recentScore, priorScore,
-      delta: adjustedDelta,
+      delta,
       trend,
       velocity,
       recentCount: recent.length,
       priorCount: prior.length,
-      reason: reasonFor(recent.length, prior.length, trend, flightBoost, !!newsHit, baseline && baselineClause(baseline, unusual)),
+      reason: reasonFor(recent.length, prior.length, trend, baseline && baselineClause(baseline, unusual), capped),
       newsHit: newsHit?.title,
       baseline,
       unusual,
+      sampled: capped,
     }
   })
 
@@ -297,10 +304,11 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
       trend: 'flat',
       velocity: 50,
       recentCount: 0, priorCount: 0,
-      reason: newsHit ? 'No tracked crisis activity in the last 10 days; mentioned in recent news' : 'No tracked crisis activity in the last 10 days',
+      reason: `No tracked crisis activity in the last 10 days${capped ? `; ${SAMPLED_NOTE}` : ''}`,
       newsHit: newsHit?.title,
       baseline: null,
       unusual: null,
+      sampled: capped,
     }]
   }
 

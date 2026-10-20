@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { POLICY, INTERVAL_RECENT, headlineForecast } from './forecastPolicy'
+import { POLICY, INTERVAL_RECENT, coverageLabel, headlineForecast } from './forecastPolicy'
 import { arForecast, naiveForecast, type Pt } from './econAnalysis'
 
 const series = (ys: number[], x0 = 1970): Pt[] => ys.map((y, i) => ({ x: x0 + i, y }))
@@ -17,7 +17,12 @@ describe('forecast policy', () => {
     for (const id of ['FP.CPI.TOTL.ZG', 'SL.UEM.TOTL.ZS']) {
       const h = headlineForecast(id, series(ys), 3)!
       expect(h.headline).toBe('naive')
-      expect(h.forecast).toEqual(naiveForecast(series(ys), 3))
+      const nv = naiveForecast(series(ys), 3)!
+      h.forecast.points.forEach((p, i) => {
+        expect(p.value).toBe(nv.points[i].value)
+        // the naive interval, its half-width scaled by the per-horizon factor
+        expect(p.hi - p.value).toBeCloseTo((nv.points[i].hi - nv.points[i].value) * POLICY[id].scale[i], 10)
+      })
       expect(h.ar).toEqual(arForecast(series(ys), 2, 3)) // still computed, for the per-country report
     }
   })
@@ -39,7 +44,9 @@ describe('forecast policy', () => {
     const short = series(ys.slice(0, 30))
     const h = headlineForecast('NY.GDP.MKTP.KD.ZG', short, 3)!
     expect(h.fallbackHorizons).toEqual([3])
-    expect(h.forecast.points[2]).toEqual(arForecast(short, 2, 3)!.points[2])
+    const tb = arForecast(short, 2, 3)!.points[2]
+    expect(h.forecast.points[2].value).toBe(tb.value)
+    expect(h.forecast.points[2].hi - tb.value).toBeCloseTo((tb.hi - tb.value) * POLICY['NY.GDP.MKTP.KD.ZG'].scale[2], 10)
   })
 
   it('an unevaluated series keeps AR(2) with its textbook interval and no policy', () => {
@@ -47,6 +54,13 @@ describe('forecast policy', () => {
     expect(h.headline).toBe('ar')
     expect(h.policy).toBeNull()
     expect(h.forecast).toEqual(arForecast(series(ys), 2, 3))
+  })
+
+  it('unemployment intervals are widened, inflation ones narrowed, and each is labelled with what it actually held', () => {
+    expect(POLICY['SL.UEM.TOTL.ZS'].scale.every(k => k > 1)).toBe(true)
+    expect(POLICY['FP.CPI.TOTL.ZG'].scale.every(k => k < 1)).toBe(true)
+    expect(coverageLabel(POLICY['SL.UEM.TOTL.ZS'], 3)).toBe('95% interval (held 94.9% of outcomes in backtests since 2010)')
+    expect(coverageLabel(null, 1)).toContain('coverage not measured')
   })
 
   it('is null when not even a naive forecast is possible', () => {

@@ -3,7 +3,7 @@ import { AlertTriangle, MoveRight, RefreshCw, TrendingDown, TrendingUp } from 'l
 import { useCountryLookup } from '../../hooks/useCountryLookup'
 import { pointsOf } from '../../services/countryLookup'
 import { arForecast, backtestForecast, median, naiveForecast, trendTest, type DieboldMariano, type Forecast, type Pt } from '../../utils/econAnalysis'
-import { INTERVAL_RECENT, headlineForecast } from '../../utils/forecastPolicy'
+import { INTERVAL_RECENT, coverageLabel, headlineForecast } from '../../utils/forecastPolicy'
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart, type LinePoint } from '../charts/LineChart'
 import { Kpi, Method, PERIODS, inPeriod, plain, toLine, type Period } from './countryLookup/shared'
@@ -80,13 +80,15 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
   const intervalHow = isAr && policy?.interval === 'empirical'
     ? `set from AR(${AR_ORDER})'s own last ${INTERVAL_RECENT} out-of-sample errors on this country${fallbackHorizons.length ? ` (${fallbackHorizons.map(h => `${h}-year`).join(', ')}: too few past errors, textbook interval shown instead)` : ''}`
     : isAr ? 'the textbook AR interval' : "from the spread of this country's past year-to-year changes"
+  const scaled = policy ? `, then ${policy.scale.map(k => `×${k.toFixed(2)}`).join(' / ')} at 1 / 2 / 3 years so it held 95% of outcomes on forecasts made before 2010` : ''
+  const ciLabel = (h: number) => coverageLabel(policy, h)
 
   return (
     <ChartFrame
       title={target.label}
       subtitle={isAr ? `${fc.method} forecast vs. a "no change" baseline, next ${HORIZON} years` : `"No change" forecast, next ${HORIZON} years — it beat the AR(${AR_ORDER}) model in the cross-country backtest`}
       table={{
-        columns: isAr ? ['Year', 'Actual', fcLabel, '95% interval', 'Naive (last value)'] : ['Year', 'Actual', fcLabel, '95% interval'],
+        columns: isAr ? ['Year', 'Actual', fcLabel, 'Interval', 'Naive (last value)'] : ['Year', 'Actual', fcLabel, 'Interval'],
         rows: [
           ...[...fc.points].reverse().map(p => [String(p.year), '—', `${plain(p.value)}${u}`, `${plain(p.lo)} to ${plain(p.hi)}${u}`, ...(isAr ? [`${plain(naive.points[p.year - last.x - 1].value)}${u}`] : [])]),
           ...[...series].reverse().map(p => [String(p.x), `${plain(p.y)}${u}`, '', '', ...(isAr ? [''] : [])]),
@@ -95,7 +97,7 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
       footer={<>
         <div className="viz-kpis">
           <Kpi label={`${last.x} (latest)`} value={`${plain(last.y)}${target.unit}`} detail={`n = ${fc.n} years`} />
-          <Kpi label={`${fc.points[0].year} forecast`} value={`${plain(fc.points[0].value)}${target.unit}`} detail={`95% interval ${plain(fc.points[0].lo)} to ${plain(fc.points[0].hi)}${target.unit}`} />
+          <Kpi label={`${fc.points[0].year} forecast`} value={`${plain(fc.points[0].value)}${target.unit}`} detail={`${ciLabel(1)}: ${plain(fc.points[0].lo)} to ${plain(fc.points[0].hi)}${target.unit}`} />
           <Kpi label={`Backtest MAE, AR(${AR_ORDER}) here`} value={backtest?.mae != null ? `${plain(backtest.mae, 2)} pp` : '—'} detail={backtest ? `${backtest.folds} one-year-ahead folds` : 'not enough folds'} />
           <Kpi label="Backtest MAE, no change here" value={backtest?.baselineMae != null ? `${plain(backtest.baselineMae, 2)} pp` : '—'} detail="repeat last known value" />
         </div>
@@ -107,10 +109,10 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
               ? <>{plain(last.y)}{u} ({last.x}) → {plain(end.value)}{u} ({end.year}), {delta >= 0 ? '+' : '−'}{plain(Math.abs(delta))} pp.{' '}</>
               : <>{plain(last.y)}{u} ({last.x}) → {plain(end.value)}{u} ({end.year}): flat by construction. This is the honest default, not a claim that nothing will change.{' '}</>}
             {isAr && (noChangeInside
-              ? <>The {end.year} 95% interval ({plain(end.lo)} to {plain(end.hi)}{u}) includes the {last.x} value, so "no change" is still inside the model's own range.</>
-              : <>The {end.year} 95% interval ({plain(end.lo)} to {plain(end.hi)}{u}) excludes the {last.x} value — a clear direction under the model's assumptions, which the backtest below qualifies.</>)}
-            {!isAr && <>{end.year} 95% interval: {plain(end.lo)} to {plain(end.hi)}{u}.</>}
-            {' '}Interval {intervalHow}.
+              ? <>The {end.year} {ciLabel(HORIZON)} ({plain(end.lo)} to {plain(end.hi)}{u}) includes the {last.x} value, so "no change" is still inside the model's own range.</>
+              : <>The {end.year} {ciLabel(HORIZON)} ({plain(end.lo)} to {plain(end.hi)}{u}) excludes the {last.x} value — a clear direction under the model's assumptions, which the backtest below qualifies.</>)}
+            {!isAr && <>{end.year} {ciLabel(HORIZON)}: {plain(end.lo)} to {plain(end.hi)}{u}.</>}
+            {' '}Interval {intervalHow}{scaled}.
             {!drawBand && <> It is too wide to draw against this history{isAr ? '' : ' (it is set by the whole record, including any hyperinflation or crisis years)'}, so it is stated here instead.</>}
           </p>
           <p>
@@ -137,15 +139,15 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
         {policy && <p className="viz-verdict">{policy.evidence}</p>}
         <Method caveats={`A forecast ${HORIZON} years out on an annual series this short carries a wide, genuine interval — shown, not hidden. The backtests only ever fit on data before the year they are scored against (no look-ahead), but they use today's revised World Bank figures, not the data as first published, so they are more favourable than a real-time test. The choice of headline model was written down before the cross-country backtest was run, but that data had been studied before, so it is not a test on unseen data; only forecasts scored against years that have not happened yet are.`}>
           {isAr
-            ? <>Low-order autoregression (AR{AR_ORDER}) fit by ordinary least squares on the most recent unbroken run of years; forecast iterated forward using the model's own prior steps. 95% interval: rerun the same model from every past year with at least 10 years before it, keep its last {INTERVAL_RECENT} absolute errors at each horizon, and use the largest that leaves 95% of them inside (the split-conformal rule) — it needs no assumption about the error distribution and includes the model's own estimation error. Baseline: next year equals the last observed value.</>
-            : <>Forecast: next years equal the last observed value (a random walk). 95% interval: t-quantile × the standard deviation of past year-to-year changes × √horizon. AR({AR_ORDER}) is still fitted, only to report how it did on this country's record.</>}
+            ? <>Low-order autoregression (AR{AR_ORDER}) fit by ordinary least squares on the most recent unbroken run of years; forecast iterated forward using the model's own prior steps. 95% interval: rerun the same model from every past year with at least 10 years before it, keep its last {INTERVAL_RECENT} absolute errors at each horizon, and use the largest that leaves 95% of them inside (the split-conformal rule), then scale it by a per-horizon factor fitted on forecasts made before 2010. It needs no assumption about the error distribution and includes the model's own estimation error, but the past errors overlap, so its coverage is measured (shown on the interval), not guaranteed. Baseline: next year equals the last observed value.</>
+            : <>Forecast: next years equal the last observed value (a random walk). Interval: t-quantile × the standard deviation of past year-to-year changes × √horizon, scaled by a per-horizon factor fitted so it held 95% of outcomes on forecasts made before 2010; the label shows what it held on forecasts made since. AR({AR_ORDER}) is still fitted, only to report how it did on this country's record.</>}
           {' '}Per-country backtest: for every cutoff year with at least {MIN_HISTORY} years before it, refit on data up to that year only and score the 1-year-ahead forecast against what happened next.
         </Method>
       </>}>
       <LineChart ariaLabel={`${target.label}, ${shown[0]?.x ?? last.x}–${last.x}, with a ${HORIZON}-year ${isAr ? '' : 'no-change '}forecast ${fcDir === 'up' ? 'rising' : fcDir === 'down' ? 'falling' : 'flat'} to ${plain(end.value)}${u}.`}
         xKind="year" height={250} fmtY={v => `${plain(v, 1)}${u}`} refLines={u === '%' ? [{ v: 0, label: '0' }] : undefined}
         bands={[{ from: fc.points[0].year, to: end.year, label: 'Forecast period' }]}
-        areas={drawBand ? [{ key: 'ci', label: '95% interval', color: 'var(--series-2)', points: [{ t: last.x, lo: last.y, hi: last.y }, ...fc.points.map(p => ({ t: p.year, lo: p.lo, hi: p.hi }))] }] : []}
+        areas={drawBand ? [{ key: 'ci', label: ciLabel(HORIZON), color: 'var(--series-2)', points: [{ t: last.x, lo: last.y, hi: last.y }, ...fc.points.map(p => ({ t: p.year, lo: p.lo, hi: p.hi }))] }] : []}
         series={[
           { key: 'hist', label: 'Actual', color: 'var(--series-1)', points: toLine(shown), markers: true },
           ...(trend && trend.direction !== 'flat' && trend.from >= (shown[0]?.x ?? -Infinity)

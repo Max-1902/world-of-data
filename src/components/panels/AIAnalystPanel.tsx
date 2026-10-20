@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { lastAcledPoll } from '../../services/crises'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare, ChevronDown, Maximize2, ExternalLink } from 'lucide-react'
-import { CrisisEvent, PanelState, Flight } from '../../types'
+import { CrisisEvent, PanelState, Flight, type ConflictFeed } from '../../types'
 import { buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
@@ -103,8 +103,8 @@ function turnsOf(s: ChatSession): ChatTurn[] {
   return out
 }
 
-export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, onToggleLayer, panelState }: {
-  crises: CrisisEvent[]; flights: Flight[]
+export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onCountryClick, onToggleLayer, panelState }: {
+  crises: CrisisEvent[]; conflictFeed?: ConflictFeed; flights: Flight[]
   onGeoSearch?: (q: string) => void
   onCountryClick?: (country: string) => void
   onToggleLayer?: (id: keyof PanelState) => void
@@ -147,7 +147,7 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
 
   // Rule-based trajectory scoring — recomputes automatically as crises/flights refresh.
   // No prompt required; this is what makes the panel proactive rather than ask-only.
-  const trajectories = useMemo(() => computeTrajectories(crises, flights), [crises, flights])
+  const trajectories = useMemo(() => computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { capped: conflictFeed?.capped }), [crises, conflictFeed])
   // Same rule as the AI context: an unmeasured feed reads "not measured", never 0 (and baseline markers aren't incidents).
   const missing = notMeasured(crises, flights, { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises })
   const incidentsLabel = missing.some(m => m.what === 'Live conflict events') ? 'not measured' : crises.filter(c => !isBaseline(c)).length.toLocaleString()

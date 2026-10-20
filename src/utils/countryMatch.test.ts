@@ -163,11 +163,11 @@ describe('trajectory news hit', () => {
     ['Sudan', 'South Sudan peace talks resume'],
     ['Mali', 'Somalia drought deepens'],
   ])('a story about another country is not a news hit for %s', (country, headline) => {
-    const [entry] = computeTrajectories([event(country)], [], 6, [article(headline)], null, now)
+    const [entry] = computeTrajectories([event(country)], { articles: [article(headline)], now })
     expect(entry.newsHit).toBeUndefined()
   })
   it('a story naming the country is a hit', () => {
-    const [entry] = computeTrajectories([event('Niger')], [], 6, [article('Niger junta expels envoy')], null, now)
+    const [entry] = computeTrajectories([event('Niger')], { articles: [article('Niger junta expels envoy')], now })
     expect(entry.newsHit).toBeDefined()
   })
 })

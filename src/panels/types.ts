@@ -1,11 +1,13 @@
 /**
  * Shared panel types — the foundation of the panel registry system.
  */
-import type { CrisisEvent, PanelState, Flight } from '../types'
+import type { ConflictFeed, CrisisEvent, PanelState, Flight } from '../types'
 
 /** Every prop a panel might need. Panels destructure only what they use. */
 export interface PanelProps {
   crises: CrisisEvent[]
+  /** what trend scoring reads instead of `crises` (unthinned, with the cap flag); absent → fall back to `crises` */
+  conflictFeed?: ConflictFeed
   flights: Flight[]
   panelState: PanelState
   onToggleLayer: (id: keyof PanelState) => void
