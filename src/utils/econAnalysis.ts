@@ -575,20 +575,6 @@ export function naiveForecast(pts: Pt[], horizon: number): Forecast | null {
   }
 }
 
-/** The series' own historical mean, flat into the future: the baseline for a level that reverts rather than drifts. */
-export function meanForecast(pts: Pt[], horizon: number): Forecast | null {
-  const s = lastRun(pts)
-  if (s.length < 5) return null
-  const m = mean(s.map(p => p.y))
-  const se = sd(s.map(p => p.y))
-  const lastYear = s[s.length - 1].x
-  const spread = Number.isFinite(se) ? tCrit95(s.length - 1) * se : NaN
-  return {
-    method: 'historical mean', n: s.length,
-    points: Array.from({ length: horizon }, (_, i) => ({ year: lastYear + i + 1, value: m, lo: m - spread, hi: m + spread })),
-  }
-}
-
 /** OLS fit of an AR(p) model by the normal equations (p small, solved directly — no iteration). */
 function fitAr(y: number[], p: number): { coef: number[]; intercept: number; resid: number[] } | null {
   const n = y.length - p

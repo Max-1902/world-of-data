@@ -100,37 +100,3 @@ describe('fetchQuote / fetchMultipleQuotes', () => {
     expect((await p).map(s => s.symbol)).toEqual(['GOOD'])
   })
 })
-
-describe('searchSymbol', () => {
-  beforeEach(() => quietConsole())
-
-  it('maps results, caps at 10, and URL-encodes the query', async () => {
-    const fetchMock = mockFetch(() => jsonResponse({ result: Array.from({ length: 15 }, (_, i) => ({ symbol: `S${i}`, description: `Name ${i}` })) }))
-    const { searchSymbol } = await load()
-    const results = await searchSymbol('a&b c')
-    expect(results).toHaveLength(10)
-    expect(results[0]).toEqual({ symbol: 'S0', name: 'Name 0' })
-    expect(String(fetchMock.mock.calls[0][0])).toContain('q=a%26b%20c')
-  })
-
-  it('returns [] on failure or when result is absent', async () => {
-    const { searchSymbol } = await load()
-    mockFetch(() => jsonResponse({}))
-    expect(await searchSymbol('x')).toEqual([])
-    mockFetch(() => jsonResponse({}, { status: 500 }))
-    expect(await searchSymbol('x')).toEqual([])
-    mockFetch(() => { throw new Error('offline') })
-    expect(await searchSymbol('x')).toEqual([])
-  })
-})
-
-describe('MARKET_HUBS', () => {
-  it('has valid, unique coordinates and symbols', async () => {
-    const { MARKET_HUBS } = await load()
-    expect(new Set(MARKET_HUBS.map(h => h.symbol)).size).toBe(MARKET_HUBS.length)
-    for (const h of MARKET_HUBS) {
-      expect(Math.abs(h.lat)).toBeLessThanOrEqual(90)
-      expect(Math.abs(h.lng)).toBeLessThanOrEqual(180)
-    }
-  })
-})

@@ -12,9 +12,7 @@
  */
 import snapshot from '../data/wb-economies.json'
 
-export const WB_SNAPSHOT_DATE = snapshot.fetched
 export const WB_ECONOMY_ISO3: ReadonlySet<string> = new Set(snapshot.economies.map(e => e[0]))
-export const WB_ECONOMY_ISO2: ReadonlySet<string> = new Set(snapshot.economies.map(e => e[1]))
 /** Every aggregate code the snapshot lists, plus retired ones the API used to return. */
 export const WB_AGGREGATE_ISO3: ReadonlySet<string> = new Set([...snapshot.aggregates.map(a => a[0]), ...snapshot.retired.map(a => a[0])])
 

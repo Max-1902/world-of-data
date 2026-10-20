@@ -39,7 +39,6 @@ export interface Port {
   notes?: string
 }
 
-export const PORTS_SOURCE = { name: 'IMF PortWatch', url: portwatch.url, year: portwatch.year } as const
 
 export const PORT_TYPE_COLORS: Record<PortType, string> = {
   container: '#00ccff',

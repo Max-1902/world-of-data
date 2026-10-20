@@ -4,7 +4,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 /** Only the endpoints src/services/stocks.ts calls, so the deployed key can't be spent on anything else. */
-export const ALLOWED_PATHS = new Set(['quote', 'search'])
+export const ALLOWED_PATHS = new Set(['quote'])
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const key = process.env.FINNHUB_KEY
