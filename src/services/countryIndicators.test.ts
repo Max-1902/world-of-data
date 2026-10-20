@@ -126,6 +126,24 @@ describe('fetchIndicatorAll', () => {
     vi.useRealTimers()
   })
 
+  it('retries a blocked response (CORS shows up as a network error) on a different URL for the same data', async () => {
+    vi.useFakeTimers()
+    let n = 0
+    const fetchMock = mockFetch(() => {
+      if (n++ === 0) throw new TypeError('Failed to fetch')
+      return jsonResponse([{}, [row('US', 'USA', 5)]])
+    })
+    const { fetchIndicatorAll } = await load()
+    const p = fetchIndicatorAll('C.O')
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(await p).toHaveLength(1)
+    const [first, second] = fetchMock.mock.calls.map(c => new URL(String(c[0])))
+    expect(second.href).not.toBe(first.href)
+    expect(second.pathname).toBe(first.pathname)
+    expect(Object.fromEntries(second.searchParams)).toEqual(Object.fromEntries(first.searchParams))
+    vi.useRealTimers()
+  })
+
   it('gives up after one retry, and never retries a client error or a malformed body', async () => {
     vi.useFakeTimers()
     const always500 = mockFetch(() => new Response('x', { status: 500 }))
