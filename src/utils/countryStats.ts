@@ -253,7 +253,7 @@ export type MapMode = 'value' | 'trend'
 
 export interface CountryColors {
   mode: MapMode
-  /** ISO-3166-1 alpha-2 → CSS colour */
+  /** ISO-3166-1 alpha-3 → CSS colour */
   colors: Record<string, string>
   /** legend end values in data units (value mode only) */
   lo: number | null
