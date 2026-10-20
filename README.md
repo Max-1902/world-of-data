@@ -122,7 +122,7 @@ Not a decision tool: correlation is not causation, and many series are years old
 npm install
 cp .env.example .env   # only VITE_MAPBOX_TOKEN is required; every other key is optional
 npm run dev            # Vite + the small /api functions that keep secrets out of the bundle
-npm test               # 1,700+ tests, fully offline
+npm test               # about 1,700 tests, fully offline
 ```
 
 ![Terminal: the full test suite passing offline, 1716 tests in 114 files in under 10 seconds](docs/screenshots/tests-offline.jpg)
