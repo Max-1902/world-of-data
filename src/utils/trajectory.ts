@@ -44,22 +44,18 @@ export function classifyTrend(recentScore: number, priorScore: number): { delta:
   return { delta, priorPace, trend }
 }
 
-function parseDate(d: string): number {
-  const t = Date.parse(d)
-  return Number.isNaN(t) ? Date.now() : t
-}
-
-function reasonFor(country: string, recentCount: number, priorCount: number, delta: number, flightBoost: boolean, newsHit: boolean): string {
+// Wording follows the unboosted trend, so a news or flight boost can't make a drop read as "up from".
+function reasonFor(recentCount: number, priorCount: number, trend: TrajectoryEntry['trend'], flightBoost: boolean, newsHit: boolean): string {
   const suffix = [flightBoost && 'elevated air traffic nearby', newsHit && 'hot in recent news']
     .filter(Boolean).join('; ')
-  if (delta > 0) {
+  if (trend === 'rising') {
     const base = priorCount === 0
       ? `${recentCount} new event${recentCount === 1 ? '' : 's'} in 72h, no prior activity`
       : `${recentCount} events in 72h, up from ${priorCount} in the prior week`
     return suffix ? `${base}; ${suffix}` : base
   }
   const plural = (n: number) => n === 1 ? 'event' : 'events'
-  if (delta < 0) {
+  if (trend === 'falling') {
     const base = `${recentCount} ${plural(recentCount)} in 72h, down from ${priorCount} in the prior week`
     return suffix ? `${base}; ${suffix}` : base
   }
@@ -94,7 +90,10 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
 
   for (const c of dated) {
     if (!c.country) continue
-    const age = now - parseDate(c.date)
+    // an undated event can't be placed in either window (it used to count as "now" and inflate the recent one)
+    const t = Date.parse(c.date)
+    if (Number.isNaN(t)) continue
+    const age = now - t
     // PRIOR_WINDOW_MS is the outer cutoff, so the prior bucket spans 7 days — the length classifyTrend
     // normalises by. (It used to be RECENT + PRIOR = 13 days, a 10-day bucket scaled as 7, which read every
     // steady country as "falling"; found while building the research backtest.)
@@ -136,7 +135,7 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
       velocity,
       recentCount: recent.length,
       priorCount: prior.length,
-      reason: reasonFor(country, recent.length, prior.length, adjustedDelta, flightBoost, !!newsHit),
+      reason: reasonFor(recent.length, prior.length, trend, flightBoost, !!newsHit),
       newsHit: newsHit?.title,
     }
   })
