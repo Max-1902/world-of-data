@@ -75,7 +75,6 @@ export interface PanelState {
   oil:            boolean
   gas:            boolean
   gpsjam:         boolean
-  darkVessels:    boolean
   ports:          boolean
   pipelines:      boolean
   chokepoints:    boolean

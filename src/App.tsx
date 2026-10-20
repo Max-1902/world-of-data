@@ -9,7 +9,6 @@ import { useStocks }      from './hooks/useStocks'
 import { useEarthquakes } from './hooks/useEarthquakes'
 import { useWildfires }   from './hooks/useWildfires'
 import { useGPSJam }      from './hooks/useGPSJam'
-import { useGfwEvents }  from './hooks/useGfwEvents'
 import { useVessels }    from './hooks/useVessels'
 import { useOutages }    from './hooks/useOutages'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
@@ -49,7 +48,7 @@ const DEFAULT_PANEL_STATE: PanelState = {
   flights: true, crises: true, news: false, stocks: true, wildfires: true,
   military: false, nuclear: false, sanctions: false, cameras: false,
   infrastructure: false, airspace: false, humanitarian: false, vessels: false,
-  oil: false, gas: false, gpsjam: false, darkVessels: false, ports: false, pipelines: false,
+  oil: false, gas: false, gpsjam: false, ports: false, pipelines: false,
   chokepoints: false, supplychain: false, shippingDensity: false,
   outages: false, disasters: true, resources: false, tradeStats: false,
   militaryPersonnel: false, datacenters: false, infraIndicators: false,
@@ -167,7 +166,6 @@ export default function App() {
   const { earthquakes, refresh: refreshEarthquakes } = useEarthquakes(panelState.crises)
   const { fires, refresh: refreshFires }             = useWildfires(panelState.wildfires)
   const { data: gpsJam }                             = useGPSJam(panelState.gpsjam)
-  const { gfwEvents }                                = useGfwEvents(panelState.darkVessels)
   const { vessels, refresh: refreshVessels }         = useVessels(panelState.vessels)
   const { outages, refresh: refreshOutages }         = useOutages(panelState.outages)
   const { alerts: disasterAlerts } = useDisasterAlerts()
@@ -353,8 +351,6 @@ export default function App() {
             showOil={panelState.oil}
             showGas={panelState.gas}
             showGPSJam={panelState.gpsjam}
-            gfwEvents={gfwEvents}
-            showDarkVessels={panelState.darkVessels}
             gpsJam={gpsJam}
             showPorts={panelState.ports}
             showPipelines={panelState.pipelines}

@@ -20,7 +20,6 @@ import { addDatacenterLayers } from './datacenters'
 import { addHumanitarianLayers } from './humanitarian'
 import { addVesselLayers } from './vessels'
 import { addGpsJamLayers } from './gpsjam'
-import { addDarkVesselLayers } from './darkVessels'
 import { addCountryAnalyticsLayers } from './countryAnalytics'
 import { addHazardHexLayers } from './hazardHex'
 import { addOilGasLayers } from './oilgas'
@@ -56,7 +55,6 @@ export function addAllLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   addHumanitarianLayers(map, ctx)
   addVesselLayers(map, ctx)
   addGpsJamLayers(map, ctx)
-  addDarkVesselLayers(map, ctx)
   addCountryAnalyticsLayers(map, ctx)
   addHazardHexLayers(map, ctx)
   addOilGasLayers(map, ctx)
@@ -71,7 +69,6 @@ export { useCameraMarkers } from './cameras'
 export { useChokepointData } from './chokepoints'
 export { useCountryAnalyticsLayer } from './countryAnalytics'
 export { useCountryIndicatorData } from './countryIndicators'
-export { useDarkVesselData } from './darkVessels'
 export { useDatacenterData } from './datacenters'
 export { useDisasterData } from './disasters'
 export { useFlightData } from './flights'

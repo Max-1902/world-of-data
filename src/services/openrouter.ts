@@ -377,7 +377,6 @@ DASHBOARD LAYERS (what the map can show — their data is NOT in this context un
   Live flight positions (OpenSky ADS-B)
   Conflict events (ACLED)
   Internet outage detection (IODA) and verified outages with stated causes (Cloudflare Radar)
-  AIS-off ("dark") vessel events and encounters at sea (Global Fishing Watch, batch-processed, days old)
   News feeds (RSS from public broadcasters and newspapers, Google News, NYT)
   Market data (ETF and stock quotes via Finnhub; crypto via CoinGecko; FX via open.er-api.com)
   Earthquakes (USGS), wildfire hotspots (NASA FIRMS), disaster alerts (GDACS)

@@ -20,7 +20,6 @@ import { fetchWildfires } from './wildfires'
 import { fetchDisasterAlerts, DISASTER_LABELS } from './gdacs'
 import { fetchOutageEvents } from './outages'
 import { fetchRadarOutages, radarCauseLabel } from './radarOutages'
-import { fetchGfwAll, type GfwEvent, type GfwResult } from './gfw'
 import { fetchGPSJam } from './gpsjam'
 import { searchAllSources, fetchTopHeadlines } from './news'
 import { fetchMultipleQuotes, MARKET_HUBS } from './stocks'
@@ -358,44 +357,6 @@ const TOOLS: ToolDef[] = [
       return {
         title: `GPS interference, ${d.date}`, source: 'GPSJAM.org (aircraft reporting degraded GPS accuracy, ~22 km cells)',
         text: `${d.cells.length} cells with interference (${d.cells.filter(c => c.severity === 'high').length} high >10%). Worst cells (lat, lng): ${worst.map(c => `${n1(c.lat)}, ${n1(c.lng)} ${n0(c.percentBad)}% of ${c.good + c.bad} aircraft`).join('; ')}.`,
-      }
-    },
-  },
-  {
-    name: 'darkships',
-    usage: '[DATA:darkships] or [DATA:darkships|ISO3 flag, e.g. CHN]',
-    describe: 'Global Fishing Watch, last 30 days: vessels that switched AIS off (likely intentional per GFW\'s model) and encounters at sea (possible transshipment), with GFW\'s potential-risk flag. Optional filter by vessel flag (ISO3).',
-    async run(args) {
-      const flag = (args[0] ?? '').trim().toUpperCase()
-      if (flag && !/^[A-Z]{3}$/.test(flag)) throw new ToolError('the flag filter must be an ISO3 code, e.g. CHN, RUS, PAN')
-      const { gaps, encounters } = await fetchGfwAll(30)
-      const pick = (r: GfwResult) => (r.status === 'ok' ? r.events.filter(e => !flag || e.vessel.flag === flag || e.other?.flag === flag) : [])
-      const g = pick(gaps), en = pick(encounters), risky = en.filter(e => e.potentialRisk)
-      const status = (r: GfwResult, what: string) => r.status === 'not_configured' ? `${what}: NOT AVAILABLE (no GFW token configured).`
-        : r.status === 'error' ? `${what}: NOT AVAILABLE (${r.message}).`
-        : r.capped ? `${what}: only the first ${r.events.length} of ${r.total ?? 'more'} events loaded, so counts below are a sample, not totals.` : ''
-      const flags = (ev: GfwEvent[]) => {
-        const by = new Map<string, number>()
-        for (const e of ev) if (e.vessel.flag) by.set(e.vessel.flag, (by.get(e.vessel.flag) ?? 0) + 1)
-        return [...by].sort((a, b) => b[1] - a[1]).slice(0, 8)
-      }
-      const line = (e: GfwEvent) => `  • ${e.vessel.name || 'unnamed'}${e.vessel.flag ? ` (${e.vessel.flag}${e.vessel.type ? `, ${e.vessel.type}` : ''})` : ''}${e.other ? ` met ${e.other.name || 'unnamed'}${e.other.flag ? ` (${e.other.flag}${e.other.type ? `, ${e.other.type}` : ''})` : ''}` : ''} at ${n1(e.lat)}, ${n1(e.lon)} — ${iso(e.start)}, ${n0(e.durationHours)} h, ${e.highSeas ? 'high seas' : 'inside an EEZ'}${e.potentialRisk ? ', GFW potential-risk flag' : ''}`
-      const newest = [gaps, encounters].map(r => (r.status === 'ok' ? r.newest : null)).filter((t): t is number => t !== null)
-      const gapFlags = flags(g)
-      const text = [
-        status(gaps, 'AIS-off events'), status(encounters, 'Encounters'),
-        gaps.status === 'ok' ? `AIS-off events${flag ? ` involving ${flag}-flagged vessels` : ''}: ${g.length}. Most common flags: ${gapFlags.map(([f, c]) => `${f} ${c}`).join(', ') || '—'}.` : '',
-        encounters.status === 'ok' ? `Encounters: ${en.length}, of which ${risky.length} carry GFW's potential-risk flag (no matching public authorisation, checked only outside EEZs).` : '',
-        newest.length ? `Newest event in GFW's data: ${iso(Math.max(...newest))} (GFW processes AIS in batches, so this is not live).` : '',
-        'Caveats: an AIS gap is GFW\'s model of likely intentional disabling, not proof of illegal activity; GFW calls the dataset a prototype.',
-        risky.length ? `Flagged encounters (latest first):\n${risky.slice(0, 8).map(line).join('\n')}` : '',
-        g.length ? `Longest AIS-off events:\n${[...g].sort((a, b) => b.durationHours - a.durationHours).slice(0, 8).map(line).join('\n')}` : '',
-      ].filter(Boolean).join('\n')
-      return {
-        title: flag ? `Dark ships & encounters — ${flag} flag` : 'Dark ships & encounters, last 30 days',
-        source: 'Global Fishing Watch Events API (AIS off, encounters), last 30 days',
-        text,
-        chart: gapFlags.length > 1 ? { kind: 'rank', unit: 'AIS-off events', items: gapFlags.map(([f, c]) => ({ label: f, value: c, text: n0(c) })) } : undefined,
       }
     },
   },
