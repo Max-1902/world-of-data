@@ -14,8 +14,6 @@ Computed in the browser, each with the backtest that decides whether it is shown
 
 **Gas storage, next week.** The five-year seasonal norm plus a share of last week's departure from it, refit every week on earlier data only. Over 561 out-of-sample weekly forecasts (2016–2026) its average miss was 29.3 Bcf against 30.9 Bcf for the seasonal norm (Diebold–Mariano with a 52-week HAC correction, p = 0.004), it beat the norm in both 2016–2020 and 2021–2026, and its 80% range held 81.4% of outcomes. A 5% gain, shown as one: weather is left out, and market consensus estimates are not compared.
 
-![Predictions panel, United States: AR(2) backtest error 1.44 pp against 1.78 pp for "no change" over 50 one-year-ahead folds, with the Diebold–Mariano verdict that the difference is not significant](docs/screenshots/predictions-backtest.jpg)
-
 **GDP, inflation and unemployment for 217 economies.** The headline model for each series was picked by a rolling-origin backtest across every World Bank economy: AR(2) for GDP growth (8% below "no change" one year ahead on average; the IMF still beats it in 142 of 185 economies), "no change" for inflation and unemployment, where no model tested beat it. Intervals were calibrated on forecasts made before 2010, and the label shows what they held since. Each card also backtests the model on the selected country and says when it doesn't win: for the US, AR(2)'s one-year error was 1.44 pp against 1.78 pp for "no change", not a significant difference (p = 0.09).
 
 | | |
