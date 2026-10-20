@@ -69,6 +69,15 @@ describe('backtestGasStorage', () => {
     expect(forecastGasStorage(levels, bt)!.headline).toBe('seasonal')
   })
 
+  it('measures interval coverage against the forecast each interval surrounds', () => {
+    const bt = backtestGasStorage(synthetic(52 * 16, 0))!
+    expect(bt.coverageByMethod.seasonal.coverage80.n).toBeGreaterThan(0)
+    const seasonalCovered = bt.folds.filter(f => f.seasonalLo80 != null && f.seasonalHi80 != null && f.actual >= f.seasonalLo80 && f.actual <= f.seasonalHi80)
+    expect(bt.coverageByMethod.seasonal.coverage80.held).toBe(seasonalCovered.length)
+    const modelCovered = bt.folds.filter(f => f.lo80 != null && f.hi80 != null && f.actual >= f.lo80 && f.actual <= f.hi80)
+    expect(bt.coverageByMethod.model.coverage80.held).toBe(modelCovered.length)
+  })
+
   it('never looks ahead: changing later reports leaves earlier forecasts untouched', () => {
     const levels = synthetic(52 * 12, 0.5)
     const altered = levels.map((p, i) => i > 500 ? { ...p, value: p.value + (i - 500) * 37 } : p)
