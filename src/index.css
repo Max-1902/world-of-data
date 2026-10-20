@@ -833,10 +833,8 @@ input::placeholder { color: #647883; opacity: 1; }
 .ai-md-gap { height: 4px; }
 .ai-response-line.numbered { display: flex; gap: 8px; padding-left: 1px; }
 .ai-num-mark { flex: 0 0 auto; min-width: 14px; color: var(--accent); font-weight: 650; font-variant-numeric: tabular-nums; }
-.ai-src-tag { display: inline-block; margin: 0 2px; padding: 0 5px; border-radius: var(--r-pill); font-size: 9px; font-weight: 600; line-height: 15px; vertical-align: 1px; letter-spacing: .02em; }
-.ai-src-tag.dashboard { color: var(--green); background: var(--green-soft); }
-.ai-src-tag.background { color: var(--text3); background: var(--surface2); }
-.ai-src-tag.inference { color: var(--amber); background: var(--amber-soft); }
+.ai-src-tag { display: inline; margin: 0 1px 0 3px; color: var(--text3); font-size: 9px; font-weight: 500; letter-spacing: .03em; vertical-align: super; line-height: 0; cursor: help; }
+.ai-src-tag.inference { color: var(--amber); opacity: .75; }
 .ai-ref-group { display: inline-flex; gap: 2px; margin: 0 2px; vertical-align: 1px; }
 .ai-ref { padding: 0 4px; border: 0; border-radius: 4px; color: var(--accent); background: var(--accent-soft); font: inherit; font-size: 9.5px; font-weight: 650; line-height: 15px; cursor: pointer; }
 .ai-ref:hover { background: var(--accent); color: var(--bg); }
