@@ -111,6 +111,9 @@ describe('runTool — fetched sources', () => {
     expect(r.text).toMatch(/backtest over \d+ one-year-ahead folds/)
     expect(r.chart).toMatchObject({ kind: 'line', series: [{ label: 'Germany (observed)' }, { label: 'AR(2) forecast', dashed: true }] })
     expect(r.chart!.kind === 'line' && r.chart!.area?.points).toHaveLength(3)
+    // 30 years give 18 three-year-ahead errors, one short of an empirical interval: that horizon's coverage is not claimed
+    expect(r.text).toMatch(/2025 [^;]*\[95% interval \(held 93\.1%/)
+    expect(r.text).toMatch(/2027 [^;]*\[95% interval \(coverage not measured/)
   })
 
   it('forecast: for inflation the headline is "no change", with no AR(2) forecast given, and the model choice is explained', async () => {
