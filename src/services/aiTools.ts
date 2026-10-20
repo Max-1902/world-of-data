@@ -77,6 +77,8 @@ export interface ToolDef {
   name: string
   usage: string
   describe: string
+  /** overrides MAX_TEXT for a result that is useless when cut short */
+  maxText?: number
   run: (args: string[], ctx: ToolContext) => Promise<ToolOutput>
 }
 
@@ -133,7 +135,7 @@ function bestMatch<T>(query: string, items: T[], id: (t: T) => string, text: (t:
 const findSeries = (q: string): WbSeriesMeta | null => bestMatch(q, ALL_SERIES, s => s.id, s => s.short)
 const findIndicator = (q: string): IndicatorMeta | null => bestMatch(q, INDICATORS, i => i.id, i => `${i.label} ${i.short}`)
 
-const clip = (s: string) => (s.length > MAX_TEXT ? s.slice(0, MAX_TEXT - 20) + '\n… (truncated)' : s)
+const clip = (s: string, max = MAX_TEXT) => (s.length > max ? s.slice(0, max - 20) + '\n… (truncated)' : s)
 
 /** Daily counts over the last `days` days, oldest first, as chart points at UTC midnight. */
 function dailyCounts(times: number[], days: number, now: number): { t: number; v: number }[] {
@@ -157,6 +159,8 @@ const TOOLS: ToolDef[] = [
     name: 'catalog',
     usage: '[DATA:catalog]',
     describe: 'List every World Bank series (for series/forecast/profile) and every cross-country indicator (for rank).',
+    // ~7k chars; at the default cap the model never saw the rank indicators or half the series
+    maxText: 9000,
     async run() {
       const series = CATEGORIES.map(c => `${c.title}: ${c.series.map(s => `${s.short} [${s.id}]`).join('; ')}`).join('\n')
       const ranks = INDICATORS.map(i => `${i.label} [${i.id}]`).join('; ')
@@ -701,7 +705,7 @@ export async function runTool(call: ToolCall, id: string, ctx: ToolContext): Pro
   if (!def) return { ...base, ok: false, title: call.tool, source: '', text: `Unknown tool "${call.tool}".` }
   try {
     const out = await def.run(call.args, ctx)
-    return { ...base, ...out, text: clip(out.text), ok: true }
+    return { ...base, ...out, text: clip(out.text, def.maxText), ok: true }
   } catch (e) {
     const why = e instanceof ToolError ? e.message : `request failed (${e instanceof Error ? e.message.slice(0, 120) : 'unknown error'})`
     return { ...base, ok: false, title: `${call.tool}${call.args.length ? ` · ${call.args.join(' · ')}` : ''}`, source: '', text: `NOT AVAILABLE: ${why}. Treat this as unknown, not as zero or absent.` }
