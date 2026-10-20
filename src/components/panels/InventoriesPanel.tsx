@@ -6,7 +6,6 @@ import { seasonal5y, summarize } from '../../utils/inventory'
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart } from '../charts/LineChart'
 import { Kpi, Method } from './countryLookup/shared'
-import { GasStorageForecast } from './GasStorageForecast'
 
 type Range = '1y' | '2y' | '5y'
 const RANGES: { id: Range; label: string; years: number }[] = [
@@ -103,8 +102,7 @@ export function InventoriesPanel() {
             </div>
           )
         }
-        const card = <SeriesCard key={def.id} def={def} points={r.points} unitRaw={r.unit ?? def.unit} range={range} />
-        return def.key === 'gas' ? [card, <GasStorageForecast key={`${def.id}-forecast`} points={r.points} />] : card
+        return <SeriesCard key={def.id} def={def} points={r.points} unitRaw={r.unit ?? def.unit} range={range} />
       })}
       <Method caveats="The 5-year average and range are computed here from EIA's own history, matching each week to the same calendar week in each of the five previous years; EIA's printed 5-year figures align weeks by its own report calendar and can differ slightly. Recent weeks are sometimes revised by EIA after first release.">
         Weekly levels from the US Energy Information Administration (Open Data API v2): commercial crude oil excluding the Strategic Petroleum Reserve, total motor gasoline and distillate fuel oil (Weekly Petroleum Status Report), working natural gas in underground storage for the Lower 48 (Weekly Natural Gas Storage Report), and the SPR. A rise from one week to the next is a build, a fall a draw.

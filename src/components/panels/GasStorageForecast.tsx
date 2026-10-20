@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
-import type { WeeklyPoint } from '../../services/eia'
+import { useEffect, useMemo, useState } from 'react'
+import { RefreshCw } from 'lucide-react'
+import { EIA_SERIES, fetchEiaSeries, type EiaResult, type WeeklyPoint } from '../../services/eia'
 import { backtestGasStorage, forecastGasStorage, SEASON_WINDOW_DAYS, MIN_PAIRS, type GasBacktest } from '../../utils/gasStorage'
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart } from '../charts/LineChart'
@@ -47,7 +48,7 @@ function Verdict({ bt }: { bt: GasBacktest }) {
 
 /**
  * Next week's change in US gas storage, with the backtest that decides whether the model or the seasonal norm is shown.
- * Rendered by InventoriesPanel under the natural-gas series; computes everything from the levels it is given.
+ * Computes everything from the levels it is given; `GasStorageForecastPanel` loads them.
  */
 export function GasStorageForecast({ points }: { points: WeeklyPoint[] }) {
   const bt = useMemo(() => backtestGasStorage(points), [points])
@@ -94,5 +95,38 @@ export function GasStorageForecast({ points }: { points: WeeklyPoint[] }) {
           { key: 'model', label: 'Model (made a week earlier)', color: 'var(--series-2)', dashed: true, points: recent.map(f => ({ t: f.t, v: f.forecast.model })) },
         ]} />
     </ChartFrame>
+  )
+}
+
+const GAS = EIA_SERIES.find(s => s.key === 'gas')!
+
+/** Forecasts-section panel: loads EIA's weekly gas storage (shared cache with Energy Inventories) and shows the forecast. */
+export function GasStorageForecastPanel() {
+  const [attempt, setAttempt] = useState(0)
+  const [r, setR] = useState<EiaResult | null>(null)
+  useEffect(() => {
+    let alive = true
+    setR(null)
+    fetchEiaSeries(GAS.id).then(res => { if (alive) setR(res) })
+    return () => { alive = false }
+  }, [attempt])
+
+  return (
+    <div className="viz-root">
+      {r === null && <div className="viz-note" role="status">Loading EIA weekly gas storage…</div>}
+      {r?.status === 'not_configured' && (
+        <div className="viz-note" role="status">
+          <b>Not measured: no EIA API key on this deployment.</b> This forecast needs EIA's weekly gas storage data, which needs a free key
+          (no billing exists). Register at <a href="https://www.eia.gov/opendata/register.php" target="_blank" rel="noreferrer">eia.gov/opendata/register.php</a>,
+          put the emailed key in <code>.env</code> as <code>EIA_API_KEY=…</code>, then restart the dev server.
+        </div>
+      )}
+      {r?.status === 'error' && (
+        <div className="viz-note" role="status">
+          {GAS.label}: {r.message} <button className="cy-btn" onClick={() => setAttempt(a => a + 1)}><RefreshCw size={11} /> Retry</button>
+        </div>
+      )}
+      {r?.status === 'ok' && <GasStorageForecast points={r.points} />}
+    </div>
   )
 }

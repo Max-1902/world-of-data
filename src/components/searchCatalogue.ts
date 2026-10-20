@@ -18,6 +18,7 @@ export const PANEL_ALIASES: Record<string, string> = {
   watchlist: 'watch follow alerts trends',
   markets: 'stocks etf indices prices',
   inventories: 'eia oil crude gas stockpiles energy',
+  gasForecast: 'natural gas storage forecast injection withdrawal eia weekly bcf backtest prediction',
   economy: 'gdp world bank macro',
   owid: 'trends our world in data',
   countryAnalytics: 'correlation compare indicators scatter',
