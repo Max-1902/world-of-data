@@ -65,6 +65,11 @@ export interface WindowActions {
   toggleMaximize: (id: string) => void
   setExternal: (id: string, external: boolean) => void
   arrange: (mode: TileMode | 'cascade') => void
+  /**
+   * Switch to a whole layout (a screen). Windows in separate browser windows are left alone — they live on
+   * another monitor — and every other window not in `entries` returns to the dock.
+   */
+  replace: (entries: { id: string; rect: Rect; minimized?: boolean }[]) => void
 }
 
 export interface WindowLayout {
@@ -167,10 +172,24 @@ export function useWindowLayout(): WindowLayout {
     })
   }, [])
 
+  const replace = useCallback((entries: { id: string; rect: Rect; minimized?: boolean }[]) => {
+    setWins(prev => {
+      const external = prev.filter(w => w.external)
+      const keep = new Set(external.map(w => w.id))
+      const b = workspaceBounds()
+      const seen = new Set<string>()
+      const next = entries
+        .filter(e => PANEL_MAP.has(e.id) && !keep.has(e.id) && !seen.has(e.id) && seen.add(e.id))
+        .slice(0, MAX_WINDOWS - external.length)
+        .map(e => ({ id: e.id, rect: clampRect(e.rect, b), minimized: e.minimized === true, maximized: false, external: false }))
+      return [...external, ...next]
+    })
+  }, [])
+
   const ids = useMemo(() => new Set(wins.map(w => w.id)), [wins])
   const actions = useMemo<WindowActions>(
-    () => ({ open, openMany, close, closeAll, focus, setRects, toggleMinimize, toggleMaximize, setExternal, arrange }),
-    [open, openMany, close, closeAll, focus, setRects, toggleMinimize, toggleMaximize, setExternal, arrange],
+    () => ({ open, openMany, close, closeAll, focus, setRects, toggleMinimize, toggleMaximize, setExternal, arrange, replace }),
+    [open, openMany, close, closeAll, focus, setRects, toggleMinimize, toggleMaximize, setExternal, arrange, replace],
   )
   return { wins, ids, full: wins.length >= MAX_WINDOWS, actions }
 }

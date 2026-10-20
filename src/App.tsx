@@ -19,8 +19,11 @@ import MapView      from './components/Map/MapView'
 import TopBar       from './components/TopBar'
 import Sidebar      from './components/Sidebar'
 import PanelDock    from './components/PanelDock/PanelDock'
-import WindowLayer, { WindowTaskbar } from './components/Windows/WindowLayer'
+import WindowLayer from './components/Windows/WindowLayer'
+import Taskbar from './components/Windows/Taskbar'
+import PanelLibrary from './components/Windows/PanelLibrary'
 import { useWindowLayout } from './components/Windows/useWindowLayout'
+import { useScreens } from './components/Windows/useScreens'
 import CommandPalette from './components/CommandPalette'
 import NewsTicker   from './components/NewsTicker'
 import OutlookCard from './components/OutlookCard'
@@ -107,8 +110,9 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [focusPanel, setFocusPanel] = useState<{ id: string; n: number } | null>(null)
-  // Search bar / command palette picked a panel: switch to its workspace and scroll to it.
-  const openPanel = useCallback((id: string) => {
+  const [libraryOpen, setLibraryOpen] = useState(false)
+  // Switch to a panel's workspace and scroll the dock to it.
+  const focusInDock = useCallback((id: string) => {
     const group = PANEL_MAP.get(id)?.group
     if (!group) return
     setActiveGroup(group)
@@ -143,6 +147,15 @@ export default function App() {
   // Panels popped out of the dock into floating windows (Windows/WindowLayer)
   const windows = useWindowLayout()
   const poppedOut = windows.ids
+  // Search bar / command palette picked a panel: bring its window forward if it has one, else find it in the dock.
+  const openPanel = useCallback((id: string) => {
+    if (windows.ids.has(id)) windows.actions.open(id)
+    else focusInDock(id)
+  }, [windows.ids, windows.actions, focusInDock])
+  const showInDock = useCallback((id: string) => {
+    windows.actions.close(id)
+    focusInDock(id)
+  }, [windows.actions, focusInDock])
 
   const { flights, refresh: refreshFlights }         = useFlights(panelState.flights)
   const { crises, refresh: refreshCrises } = useCrises(panelState.crises)
@@ -222,6 +235,17 @@ export default function App() {
     })
   }, [])
 
+  // A screen switched: saved screens restore their exact layer set, built-in ones add the layers their panels draw.
+  const applyLayers = useCallback((layers: (keyof PanelState)[], exact: boolean) => {
+    setPanelState(prev => {
+      const next = { ...prev }
+      if (exact) for (const k of Object.keys(next) as (keyof PanelState)[]) next[k] = false
+      for (const l of layers) if (l in next) next[l] = true
+      return next
+    })
+  }, [])
+  const screens = useScreens(windows, panelState, applyLayers)
+
   const clearLayers = useCallback(() => {
     setPanelState((prev) => Object.fromEntries(Object.keys(prev).map(k => [k, false])) as unknown as PanelState)
   }, [])
@@ -232,6 +256,7 @@ export default function App() {
     onToggleLayer: toggleLayer,
     onSettingsOpen: () => setSettingsOpen(true),
     onCloseDrawer: () => { setSelectedCountry(null); setSelectedPlace(null); setSettingsOpen(false) },
+    onOpenLibrary: () => setLibraryOpen(true),
   }), [toggleLayer])
   useKeyboardShortcuts(shortcutHandlers)
 
@@ -277,6 +302,7 @@ export default function App() {
         searchQuery={searchQuery}
         onSearch={setSearchQuery}
         onOpenPanel={openPanel}
+        onOpenLibrary={() => setLibraryOpen(true)}
         onToggleLayer={toggleLayer}
         onSettingsOpen={() => setSettingsOpen(true)}
         onReloadAll={handleReloadAll}
@@ -390,10 +416,20 @@ export default function App() {
             onToggleLayer={toggleLayer}
             onViewMode={setViewMode}
             onGeoSearch={handleGeoSearch}
+            screens={screens.screens}
+            onLoadScreen={screens.load}
+            onOpenLibrary={() => setLibraryOpen(true)}
+          />
+          <PanelLibrary
+            open={libraryOpen}
+            onClose={() => setLibraryOpen(false)}
+            openIds={windows.ids}
+            onOpenWindow={windows.actions.open}
+            onShowInDock={showInDock}
           />
 
-          {/* ── Bottom strip: open windows and the layout tools ──────── */}
-          <WindowTaskbar layout={windows} />
+          {/* ── Bottom strip: screens, the panel library, open windows ──────── */}
+          <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
         </div>
 
         {/* ── Right command panel ──────────────────────────────────── */}

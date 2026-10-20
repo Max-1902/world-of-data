@@ -23,6 +23,10 @@ src/
       PanelWindow.tsx             #   one window: drag, 8-way resize, minimise/maximise, move to a separate browser window
       geometry.ts                 #   pure: edge/corner snapping, split-by-drop, magnetic edges, linked resize, tile layouts
       useWindowLayout.ts          #   window state + persistence (localStorage `ws-windows`)
+      screens.ts, useScreens.ts   #   named layouts ("Crisis", "Markets", your own): taskbar tabs, Alt+1–9, Cmd+K;
+                                  #   stored as workspace fractions (`ws-screens`) so they fit any monitor
+      Taskbar.tsx                 #   bottom strip: screen tabs, save/manage screens, Panels, open windows + arrange
+      PanelLibrary.tsx            #   every panel searchable by what it shows (P, top-bar search, Cmd+K)
       FloatingPanel.tsx           # legacy single floating panel (pre-registry)
     charts/                       # SVG chart primitives (TimeSeries, Bars, Magnitude, Heatmap, Scatter, Rank, CorrMatrix, ChartFrame)
     panels/                       # panel implementations, grouped by theme (NewsPanels, SecurityPanels,

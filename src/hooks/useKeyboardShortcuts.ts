@@ -6,6 +6,8 @@ interface ShortcutHandlers {
   onToggleLayer: (id: keyof PanelState) => void
   onSettingsOpen: () => void
   onCloseDrawer: () => void
+  /** P: the panel library */
+  onOpenLibrary?: () => void
 }
 
 const LAYER_KEYS: Record<string, keyof PanelState> = {
@@ -26,6 +28,7 @@ const VIEW_KEYS: Record<string, MapViewMode> = { g: 'earth', d: 'dark', s: 'sate
 const HELP = [
   '1-0: Toggle layers (flights, crises, military, nuclear, sanctions, vessels, humanitarian, ports, chokepoints, shipping)',
   'G: Globe view | D: Dark | S: Satellite | N: Nightvision',
+  'P: Find a panel | Alt+1-9: Switch screen',
   'ESC: Close panel | ,: Settings | ?: This help',
 ].join('\n')
 
@@ -42,6 +45,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
 
       if (e.key === 'Escape') { handlers.onCloseDrawer(); return }
       if (e.key === ',') { handlers.onSettingsOpen(); return }
+      if (e.key.toLowerCase() === 'p' && handlers.onOpenLibrary) { e.preventDefault(); handlers.onOpenLibrary(); return }
       if (e.key === '?') {
         console.log('%c World of Data keyboard shortcuts', 'color:#d5a85f;font-weight:bold;font-size:14px', `\n\n${HELP}`)
         return

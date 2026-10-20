@@ -11,12 +11,14 @@ interface Props {
   onOpenPanel: (id: string) => void
   onToggleLayer: (id: keyof PanelState) => void
   onViewMode: (m: MapViewMode) => void
+  /** the panel library — offered as the last "Jump to" row */
+  onOpenLibrary?: () => void
 }
 
 type Row = PaletteItem & { sub?: string }
 
 const KIND_LABEL: Record<PaletteItem['kind'], string> = {
-  panel: 'Panel', layer: 'Layer', view: 'Map style', chokepoint: 'Place', search: 'Location',
+  panel: 'Panel', layer: 'Layer', view: 'Map style', chokepoint: 'Place', search: 'Location', screen: 'Screen', action: 'Browse',
 }
 
 /** Shown before anything is typed, so it's obvious the box finds more than places. */
@@ -28,7 +30,7 @@ const MAX_ROWS = 7
  * map layers, map styles and chokepoints, plus "Fly to …" for anything else, which goes to the map geocoder.
  * Only a picked/entered location is committed — typing no longer geocodes on every keystroke.
  */
-export default function SmartSearch({ searchQuery, onSearch, onOpenPanel, onToggleLayer, onViewMode }: Props) {
+export default function SmartSearch({ searchQuery, onSearch, onOpenPanel, onToggleLayer, onViewMode, onOpenLibrary }: Props) {
   const { catalogue, groupOfPanel } = useMemo(buildSearchCatalogue, [])
   const [expanded, setExpanded] = useState(false)
   const [draft, setDraft] = useState('')
@@ -43,13 +45,16 @@ export default function SmartSearch({ searchQuery, onSearch, onOpenPanel, onTogg
       return item.kind === 'panel' ? { ...item, sub: GROUP_LABEL[groupOfPanel.get(key) ?? ''] } : item
     }
     const q = draft.trim()
-    if (!q) return SUGGESTED.map(id => catalogue.find(c => c.id === id)).filter((c): c is PaletteItem => !!c).map(withSub)
+    if (!q) {
+      const suggested = SUGGESTED.map(id => catalogue.find(c => c.id === id)).filter((c): c is PaletteItem => !!c).map(withSub)
+      return onOpenLibrary ? [...suggested, { id: 'action:library', kind: 'action', label: 'All panels…', sub: 'Browse every panel by what it shows (P)' }] : suggested
+    }
     const scored = scoreItems(catalogue, q, MAX_ROWS - 1)
     const fly: Row = { id: `search:${q}`, kind: 'search', label: `Fly to “${q}”`, sub: 'country, city, address or “lat, lon”' }
     const matches = scored.map(s => withSub(s.item))
     // A query that names a panel/layer (or a typo of one) lists those first; anything else is most likely a place.
     return scored[0]?.strong ? [...matches, fly] : [fly, ...matches]
-  }, [catalogue, groupOfPanel, draft])
+  }, [catalogue, groupOfPanel, draft, onOpenLibrary])
 
   useEffect(() => { setCursor(0) }, [draft])
   useEffect(() => {
@@ -66,6 +71,7 @@ export default function SmartSearch({ searchQuery, onSearch, onOpenPanel, onTogg
   function run(row: Row) {
     const key = row.id.slice(row.id.indexOf(':') + 1)
     if (row.kind === 'panel') onOpenPanel(key)
+    else if (row.kind === 'action') onOpenLibrary?.()
     else if (row.kind === 'layer') onToggleLayer(key as keyof PanelState)
     else if (row.kind === 'view') onViewMode(key as MapViewMode)
     else onSearch(key) // chokepoint or free-text location

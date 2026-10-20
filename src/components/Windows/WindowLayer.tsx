@@ -4,10 +4,9 @@
  * dropping onto it, tiled, minimised to the taskbar, or moved to a separate browser window for a second monitor.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Columns3, ExternalLink, Layers, LayoutGrid, PictureInPicture2, Rows3 } from 'lucide-react'
 import { PANEL_MAP } from '../../panels/registry'
 import type { PanelProps } from '../../panels/types'
-import PanelWindow, { popups } from './PanelWindow'
+import PanelWindow from './PanelWindow'
 import { snapZone, type Placed, type SnapZone } from './geometry'
 import { MAX_WINDOWS, workspaceBounds, type WindowLayout } from './useWindowLayout'
 
@@ -91,59 +90,5 @@ export default function WindowLayer({ layout, panelProps }: { layout: WindowLayo
         </div>
       )}
     </>
-  )
-}
-
-/** The strip along the bottom of the map: every open window, plus the layout tools. */
-export function WindowTaskbar({ layout }: { layout: WindowLayout }) {
-  const { wins, actions } = layout
-  const topId = [...wins].reverse().find(w => !w.minimized && !w.external)?.id
-
-  function onChip(id: string) {
-    const w = wins.find(x => x.id === id)
-    if (!w) return
-    // like an OS taskbar: restore, else bring forward, else (already in front) minimise
-    if (w.external) popups.get(id)?.focus()
-    else if (w.minimized || id === topId) actions.toggleMinimize(id)
-    else actions.focus(id)
-  }
-
-  return (
-    <div className="pw-taskbar" role="toolbar" aria-label="Windows">
-      <span className="pw-taskbar-label">WINDOWS</span>
-      <span className="pw-taskbar-count">{wins.length}/{MAX_WINDOWS}</span>
-      {wins.length === 0 ? (
-        <span className="pw-taskbar-hint">
-          Pop out any panel with <PictureInPicture2 size={11} style={{ verticalAlign: '-2px' }} /> in its header, or drag its header onto the map
-        </span>
-      ) : (
-        <div className="pw-chips">
-          {wins.map(w => {
-            const def = PANEL_MAP.get(w.id)
-            if (!def) return null
-            return (
-              <button
-                key={w.id}
-                className={`pw-chip${w.id === topId ? ' active' : ''}${w.minimized ? ' min' : ''}`}
-                onClick={() => onChip(w.id)}
-                title={w.external ? `${def.title} — in a separate window` : w.minimized ? `Restore ${def.title}` : def.title}
-              >
-                {w.external && <ExternalLink size={10} />}
-                {def.title}
-              </button>
-            )
-          })}
-        </div>
-      )}
-      {wins.length > 0 && (
-        <span className="pw-tools">
-          <button className="pw-btn" onClick={() => actions.arrange('grid')} aria-label="Tile in a grid" title="Tile in a grid"><LayoutGrid size={13} /></button>
-          <button className="pw-btn" onClick={() => actions.arrange('columns')} aria-label="Side by side" title="Side by side"><Columns3 size={13} /></button>
-          <button className="pw-btn" onClick={() => actions.arrange('rows')} aria-label="Stacked" title="Stacked"><Rows3 size={13} /></button>
-          <button className="pw-btn" onClick={() => actions.arrange('cascade')} aria-label="Cascade" title="Cascade"><Layers size={13} /></button>
-          <button className="pw-btn wide" onClick={actions.closeAll} title="Return every window to the dock">Dock all</button>
-        </span>
-      )}
-    </div>
   )
 }
