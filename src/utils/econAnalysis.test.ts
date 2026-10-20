@@ -4,6 +4,7 @@ import {
   cagr, growthDecomposition, okun, phillips, persistence, sectoralBalances, debtDynamics, anomalyScan, meanBreak,
   benjaminiHochberg, diffs, lastRun, spreadSeries, annualAverage, SUPF_CRIT_5, type Pt,
   naiveForecast, arForecast, backtestForecast, dieboldMariano,
+  sesForecast, guardedArForecast, comboForecast, empiricalInterval, COMBO_AR_WINDOW, INTERVAL_MIN_ERRORS, INTERVAL_MIN_TRAIN, type Forecast,
 } from './econAnalysis'
 
 const series = (ys: number[], x0 = 2000): Pt[] => ys.map((y, i) => ({ x: x0 + i, y }))
@@ -366,6 +367,96 @@ describe('forecast', () => {
   })
   it('backtestForecast returns null with no eligible folds', () => {
     expect(backtestForecast(series([1, 2, 3]), s => arForecast(s, 1, 1), 10)).toBeNull()
+  })
+})
+
+describe('forecast candidates and the empirical interval', () => {
+  it('sesForecast: a step series is tracked fully (α = 1) and forecast flat at the last value', () => {
+    const f = sesForecast(series([1, 1, 1, 1, 1, 5, 5, 5, 5, 5]), 3)!
+    expect(f.method).toBe('SES (α = 1.00)')
+    expect(f.points.map(p => p.value)).toEqual([5, 5, 5])
+  })
+  it('sesForecast: on noise around a constant it smooths (α < 1) and its interval follows σ̂√(1 + (h−1)α²)', () => {
+    const y = Array.from({ length: 40 }, (_, i) => 3 + noise(i))
+    const f = sesForecast(series(y), 3)!
+    const alpha = Number(f.method.match(/α = ([\d.]+)/)![1])
+    expect(alpha).toBeLessThan(1)
+    expect(Math.abs(f.points[0].value - 3)).toBeLessThan(0.3)
+    const half = f.points.map(p => (p.hi - p.lo) / 2)
+    expect(half[2] / half[0]).toBeCloseTo(Math.sqrt(1 + 2 * alpha * alpha), 8)
+  })
+  it('sesForecast is null below 5 points', () => {
+    expect(sesForecast(series([1, 2, 3, 4]), 1)).toBeNull()
+  })
+
+  it('guardedArForecast fits only the last COMBO_AR_WINDOW years', () => {
+    // 30 years at a level of 100, then a 20-year AR(1) settling towards 5: a full-history fit would be pulled to ~100's regime
+    const y = Array.from({ length: 30 }, () => 100 + 0)
+    let v = 8
+    for (let i = 0; i < COMBO_AR_WINDOW; i++) { v = 2.5 + 0.5 * v + 0.01 * noise(i); y.push(v) }
+    const g = guardedArForecast(series(y), 1)!
+    expect(g.method).toBe('AR(2)')
+    expect(g.n).toBe(COMBO_AR_WINDOW)
+    expect(Math.abs(g.points[0].value - 5)).toBeLessThan(0.5)
+  })
+  it('guardedArForecast falls back to naive when the fit is non-stationary', () => {
+    const y = [1]
+    for (let i = 1; i < 25; i++) y.push(1.3 * y[i - 1] + noise(i))
+    const g = guardedArForecast(series(y), 3)!
+    expect(g.method).toBe('naive (random walk)')
+    expect(g.points[2].value).toBe(y[y.length - 1])
+  })
+
+  it('comboForecast is the equal-weight mean of naive, SES and guarded AR(2), with no interval of its own', () => {
+    const y = Array.from({ length: 35 }, (_, i) => 2 + 0.5 * Math.sin(i / 3) + noise(i))
+    const s = series(y)
+    const c = comboForecast(s, 3)!
+    const members = [naiveForecast(s, 3)!, sesForecast(s, 3)!, guardedArForecast(s, 3)!]
+    c.points.forEach((p, i) => {
+      expect(p.value).toBeCloseTo((members[0].points[i].value + members[1].points[i].value + members[2].points[i].value) / 3, 10)
+      expect(p.lo).toBeNaN()
+    })
+  })
+
+  /** A fake model whose h-step error at origin `cut` is known exactly: it forecasts the truth plus `err(cut)`. */
+  const truth = (n: number) => series(Array.from({ length: n }, (_, i) => i))
+  const offBy = (err: (cut: number) => number) => (train: Pt[], H: number): Forecast => ({
+    method: 'fake', n: train.length,
+    points: Array.from({ length: H }, (_, h) => { const v = train.length + h + err(train.length); return { year: 0, value: v, lo: NaN, hi: NaN } }),
+  })
+
+  it('empiricalInterval: half-width is the ⌈0.95 (n + 1)⌉-th smallest past absolute error (split-conformal rule)', () => {
+    // origins 10..39 → 30 one-step errors of size 1..30; ⌈0.95 · 31⌉ = 30 → half-width 30
+    const pts = truth(40)
+    const f: Forecast = { method: 'x', n: 40, points: [{ year: 2040, value: 0, lo: NaN, hi: NaN }] }
+    const e = empiricalInterval(pts, f, offBy(cut => cut - INTERVAL_MIN_TRAIN + 1))
+    expect(e.calibration).toEqual([30])
+    expect(e.points[0].hi).toBe(30)
+    expect(e.points[0].lo).toBe(-30)
+    // errors shrinking over time (30 → 1): keeping the most recent 20 (20 → 1), ⌈0.95 · 21⌉ = 20 → the largest of those, 20
+    const shrinking = empiricalInterval(pts, f, offBy(cut => 40 - cut), 20)
+    expect(shrinking.calibration).toEqual([20])
+    expect(shrinking.points[0].hi).toBe(20)
+  })
+  it('empiricalInterval: below INTERVAL_MIN_ERRORS past errors a horizon gets no interval rather than a guessed one', () => {
+    // 30 points: origins 10..29 → 20 one-step errors, but only 18 three-step ones
+    const pts = truth(30)
+    const f: Forecast = { method: 'x', n: 30, points: [1, 2, 3].map(h => ({ year: 2029 + h, value: 0, lo: NaN, hi: NaN })) }
+    const e = empiricalInterval(pts, f, offBy(() => 1))
+    expect(e.calibration).toEqual([20, 19, 18])
+    expect(INTERVAL_MIN_ERRORS).toBe(19)
+    expect(e.points[0].hi).toBe(1)
+    expect(e.points[1].hi).toBe(1)
+    expect(e.points[2].lo).toBeNaN()
+  })
+  it('empiricalInterval: each past forecast sees only data before its origin (no look-ahead)', () => {
+    const pts = truth(32)
+    const seen: number[] = []
+    empiricalInterval(pts, { method: 'x', n: 32, points: [{ year: 0, value: 0, lo: NaN, hi: NaN }] }, (train, H) => {
+      seen.push(Math.max(...train.map(p => p.y)))
+      return offBy(() => 0)(train, H)
+    })
+    seen.forEach((maxSeen, i) => expect(maxSeen).toBe(INTERVAL_MIN_TRAIN + i - 1))
   })
 })
 

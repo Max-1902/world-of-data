@@ -3,6 +3,7 @@ import { AlertTriangle, MoveRight, RefreshCw, TrendingDown, TrendingUp } from 'l
 import { useCountryLookup } from '../../hooks/useCountryLookup'
 import { pointsOf } from '../../services/countryLookup'
 import { arForecast, backtestForecast, median, naiveForecast, trendTest, type DieboldMariano, type Forecast, type Pt } from '../../utils/econAnalysis'
+import { INTERVAL_RECENT, headlineForecast } from '../../utils/forecastPolicy'
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart, type LinePoint } from '../charts/LineChart'
 import { Kpi, Method, PERIODS, inPeriod, plain, toLine, type Period } from './countryLookup/shared'
@@ -10,21 +11,18 @@ import { Kpi, Method, PERIODS, inPeriod, plain, toLine, type Period } from './co
 const AR_ORDER = 2
 const HORIZON = 3
 const MIN_HISTORY = 15
+/** An interval band wider than this many times the charted series' own range is stated in words, not drawn. */
+const MAX_BAND_RATIO = 4
 
-/** `evidence`: what the cross-country evaluation found for this target (research/FINDINGS.md, 2026-10-14). */
-interface Target { id: string; label: string; unit: string; evidence: string }
+interface Target { id: string; label: string; unit: string }
 const TARGETS: Target[] = [
-  { id: 'NY.GDP.MKTP.KD.ZG', label: 'Real GDP growth', unit: '%',
-    evidence: 'Tested on 52 European and Asian economies (forecasts for 1990–2025): this model beat "repeat last year" in 42 of 52, but the IMF\'s October World Economic Outlook beat this model in 44 of 52 — average next-year error 1.9 pp vs 2.3 pp, even with the model given the full current year the IMF did not yet have.' },
-  { id: 'FP.CPI.TOTL.ZG', label: 'Inflation (CPI)', unit: '%',
-    evidence: 'Tested on 50 European and Asian economies (forecasts for 1990–2025): this model beat "repeat last year" in only 13 of 50 (average 1-year error 4.1 pp vs 2.0 pp). The IMF\'s October forecasts did about as well as "repeat last year" (2.1 pp each). For inflation, treat this forecast as weaker than assuming no change.' },
-  { id: 'SL.UEM.TOTL.ZS', label: 'Unemployment', unit: '%',
-    evidence: 'Tested on 52 European and Asian economies (forecasts for 2006–2025): this model beat "repeat last year" in 20 of 52; three years ahead its average error was about twice the naive one (3.8 vs 1.8 pp for forecasts made 2006–2014, 2.4 vs 1.2 pp since), mostly from non-stationary fits. No historical IMF unemployment forecasts were available to compare.' },
+  { id: 'NY.GDP.MKTP.KD.ZG', label: 'Real GDP growth', unit: '%' },
+  { id: 'FP.CPI.TOTL.ZG', label: 'Inflation (CPI)', unit: '%' },
+  { id: 'SL.UEM.TOTL.ZS', label: 'Unemployment', unit: '%' },
 ]
 
 const tolerance = 1e-9
 
-/** Recent-trend line: Sen slope through the median intercept, over the trend test's own window. */
 /** One sentence on whether the backtest gap could be chance: Diebold–Mariano with the HLN small-sample correction. */
 export function significance(dm: DieboldMariano | null): string {
   if (!dm) return 'Too few folds to test whether the difference is more than chance.'
@@ -34,6 +32,7 @@ export function significance(dm: DieboldMariano | null): string {
     : `The difference is not statistically significant (Diebold–Mariano test, small-sample corrected, p ${p}, ${dm.n} folds): on this record the two cannot be told apart.`
 }
 
+/** Recent-trend line: Sen slope through the median intercept, over the trend test's own window. */
 function trendLine(series: Pt[], t: { from: number; to: number; slope: number }): LinePoint[] {
   const w = series.filter(p => p.x >= t.from && p.x <= t.to)
   const b0 = median(w.map(p => p.y - t.slope * p.x))
@@ -50,12 +49,12 @@ function forecastLine(last: Pt, f: Forecast, pick: 'value' | 'lo' | 'hi'): LineP
 }
 
 function Section({ target, series, period }: { target: Target; series: Pt[]; period: Period }) {
-  const ar = useMemo(() => arForecast(series, AR_ORDER, HORIZON), [series])
+  const hf = useMemo(() => headlineForecast(target.id, series, HORIZON), [target.id, series])
   const naive = useMemo(() => naiveForecast(series, HORIZON), [series])
   const trend = useMemo(() => trendTest(series), [series])
   const backtest = useMemo(() => backtestForecast(series, s => arForecast(s, AR_ORDER, 1), MIN_HISTORY), [series])
 
-  if (series.length < MIN_HISTORY || !ar || !naive) {
+  if (series.length < MIN_HISTORY || !hf || !hf.ar || !naive) {
     return (
       <div className="viz-note">
         {target.label}: fewer than {MIN_HISTORY} years of data ({series.length} available) — not enough history for an honest forecast.
@@ -63,42 +62,56 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
     )
   }
 
+  const { forecast: fc, headline, ar, policy, fallbackHorizons } = hf
+  const isAr = headline === 'ar'
+  const fcLabel = isAr ? `AR(${AR_ORDER}) forecast` : 'No-change forecast'
   const last = series[series.length - 1]
   const beatsBaseline = backtest?.mae != null && backtest.baselineMae != null && backtest.mae < backtest.baselineMae
-  const end = ar.points[ar.points.length - 1]
+  const end = fc.points[fc.points.length - 1]
   const delta = Math.round(end.value * 10) / 10 - Math.round(last.y * 10) / 10 // from the shown 1-dp values, so the sentence adds up
   const fcDir = Math.abs(delta) < tolerance ? 'flat' : delta > 0 ? 'up' : 'down'
   const noChangeInside = last.y >= end.lo && last.y <= end.hi
-  const unstable = ar.longRun == null
+  const unstable = isAr && ar!.longRun == null
   const shown = inPeriod(series, period)
   const u = target.unit
+  const shownYs = shown.map(p => p.y)
+  const range = Math.max(Math.max(...shownYs, last.y) - Math.min(...shownYs, last.y), 1)
+  const drawBand = fc.points.every(p => Number.isFinite(p.lo) && p.hi - p.lo <= MAX_BAND_RATIO * range)
+  const intervalHow = isAr && policy?.interval === 'empirical'
+    ? `set from AR(${AR_ORDER})'s own last ${INTERVAL_RECENT} out-of-sample errors on this country${fallbackHorizons.length ? ` (${fallbackHorizons.map(h => `${h}-year`).join(', ')}: too few past errors, textbook interval shown instead)` : ''}`
+    : isAr ? 'the textbook AR interval' : "from the spread of this country's past year-to-year changes"
 
   return (
     <ChartFrame
       title={target.label}
-      subtitle={`${ar.method} forecast vs. a "no change" baseline, next ${HORIZON} years`}
+      subtitle={isAr ? `${fc.method} forecast vs. a "no change" baseline, next ${HORIZON} years` : `"No change" forecast, next ${HORIZON} years — it beat the AR(${AR_ORDER}) model in the cross-country backtest`}
       table={{
-        columns: ['Year', 'Actual', `AR(${AR_ORDER}) forecast`, '95% interval', 'Naive (last value)'],
+        columns: isAr ? ['Year', 'Actual', fcLabel, '95% interval', 'Naive (last value)'] : ['Year', 'Actual', fcLabel, '95% interval'],
         rows: [
-          ...[...ar.points].reverse().map(p => [String(p.year), '—', `${plain(p.value)}${u}`, `${plain(p.lo)} to ${plain(p.hi)}${u}`, `${plain(naive.points[p.year - last.x - 1].value)}${u}`]),
-          ...[...series].reverse().map(p => [String(p.x), `${plain(p.y)}${u}`, '', '', '']),
+          ...[...fc.points].reverse().map(p => [String(p.year), '—', `${plain(p.value)}${u}`, `${plain(p.lo)} to ${plain(p.hi)}${u}`, ...(isAr ? [`${plain(naive.points[p.year - last.x - 1].value)}${u}`] : [])]),
+          ...[...series].reverse().map(p => [String(p.x), `${plain(p.y)}${u}`, '', '', ...(isAr ? [''] : [])]),
         ],
       }}
       footer={<>
         <div className="viz-kpis">
-          <Kpi label={`${last.x} (latest)`} value={`${plain(last.y)}${target.unit}`} detail={`n = ${ar.n} years`} />
-          <Kpi label={`${ar.points[0].year} forecast`} value={`${plain(ar.points[0].value)}${target.unit}`} detail={`95% CI ${plain(ar.points[0].lo)} to ${plain(ar.points[0].hi)}${target.unit}`} />
-          <Kpi label="Backtest MAE, this model" value={backtest?.mae != null ? `${plain(backtest.mae, 2)} pp` : '—'} detail={backtest ? `${backtest.folds} one-year-ahead folds` : 'not enough folds'} />
-          <Kpi label="Backtest MAE, naive baseline" value={backtest?.baselineMae != null ? `${plain(backtest.baselineMae, 2)} pp` : '—'} detail="repeat last known value" />
+          <Kpi label={`${last.x} (latest)`} value={`${plain(last.y)}${target.unit}`} detail={`n = ${fc.n} years`} />
+          <Kpi label={`${fc.points[0].year} forecast`} value={`${plain(fc.points[0].value)}${target.unit}`} detail={`95% interval ${plain(fc.points[0].lo)} to ${plain(fc.points[0].hi)}${target.unit}`} />
+          <Kpi label={`Backtest MAE, AR(${AR_ORDER}) here`} value={backtest?.mae != null ? `${plain(backtest.mae, 2)} pp` : '—'} detail={backtest ? `${backtest.folds} one-year-ahead folds` : 'not enough folds'} />
+          <Kpi label="Backtest MAE, no change here" value={backtest?.baselineMae != null ? `${plain(backtest.baselineMae, 2)} pp` : '—'} detail="repeat last known value" />
         </div>
         <div className="pred-dirs">
           <p>
             <span className="pred-dir-k">Forecast direction</span>
             <Direction dir={fcDir} label={fcDir === 'up' ? 'Rising' : fcDir === 'down' ? 'Falling' : 'Flat'} />{' '}
-            {plain(last.y)}{u} ({last.x}) → {plain(end.value)}{u} ({end.year}), {delta >= 0 ? '+' : '−'}{plain(Math.abs(delta))} pp.{' '}
-            {noChangeInside
+            {isAr
+              ? <>{plain(last.y)}{u} ({last.x}) → {plain(end.value)}{u} ({end.year}), {delta >= 0 ? '+' : '−'}{plain(Math.abs(delta))} pp.{' '}</>
+              : <>{plain(last.y)}{u} ({last.x}) → {plain(end.value)}{u} ({end.year}): flat by construction. This is the honest default, not a claim that nothing will change.{' '}</>}
+            {isAr && (noChangeInside
               ? <>The {end.year} 95% interval ({plain(end.lo)} to {plain(end.hi)}{u}) includes the {last.x} value, so "no change" is still inside the model's own range.</>
-              : <>The {end.year} 95% interval ({plain(end.lo)} to {plain(end.hi)}{u}) excludes the {last.x} value — a clear direction under the model's assumptions, which the backtest below qualifies.</>}
+              : <>The {end.year} 95% interval ({plain(end.lo)} to {plain(end.hi)}{u}) excludes the {last.x} value — a clear direction under the model's assumptions, which the backtest below qualifies.</>)}
+            {!isAr && <>{end.year} 95% interval: {plain(end.lo)} to {plain(end.hi)}{u}.</>}
+            {' '}Interval {intervalHow}.
+            {!drawBand && <> It is too wide to draw against this history{isAr ? '' : ' (it is set by the whole record, including any hyperinflation or crisis years)'}, so it is stated here instead.</>}
           </p>
           <p>
             <span className="pred-dir-k">Recent trend</span>
@@ -110,43 +123,45 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
         </div>
         {unstable && (
           <p className="viz-verdict pred-warn" role="note">
-            <AlertTriangle size={14} aria-hidden /> <b>Unstable fit.</b> The fitted AR({AR_ORDER}) is non-stationary: iterated forward its forecast runs away instead of settling, so the multi-year numbers are not meaningful. In the cross-country backtest such fits were off by about 32 pp on average three years ahead (unemployment).
+            <AlertTriangle size={14} aria-hidden /> <b>Unstable fit.</b> The fitted AR({AR_ORDER}) is non-stationary: iterated forward its forecast runs away instead of settling, so the multi-year numbers are not meaningful.
           </p>
         )}
         <p className="viz-verdict">
           {backtest == null
             ? `Not enough history to backtest this series out of sample.`
             : beatsBaseline
-              ? <>On {backtest.folds} historical one-year-ahead tests, the AR({AR_ORDER}) model's average error ({plain(backtest.mae!, 2)} pp) was lower than just repeating the last known value ({plain(backtest.baselineMae!, 2)} pp). {significance(backtest.dm)}</>
-              : <>On {backtest.folds} historical one-year-ahead tests, the AR({AR_ORDER}) model did <b>not</b> beat the naive baseline of repeating the last known value ({plain(backtest.mae ?? NaN, 2)} pp vs {plain(backtest.baselineMae ?? NaN, 2)} pp). {significance(backtest.dm)} The forecast above is shown anyway, for transparency — but the honest reading is that recent history predicts next year about as well as any model tried here.</>}
-          {ar.longRun != null && <> Iterated forward, the forecast converges toward {plain(ar.longRun)}{target.unit}, a level set by the whole {last.x - ar.n + 1}–{last.x} history. If the economy has changed structurally since (e.g. a boom-era growth rate that no longer applies), that pull is an assumption of the model, not evidence.</>}
+              ? <>On this country's own record, in {backtest.folds} historical one-year-ahead tests, AR({AR_ORDER})'s average error ({plain(backtest.mae!, 2)} pp) was lower than repeating the last known value ({plain(backtest.baselineMae!, 2)} pp). {significance(backtest.dm)}{!isAr && <> One country's record is not used to switch models — across economies the no-change forecast won, so it stays the headline.</>}</>
+              : <>On this country's own record, in {backtest.folds} historical one-year-ahead tests, AR({AR_ORDER}) did <b>not</b> beat repeating the last known value ({plain(backtest.mae ?? NaN, 2)} pp vs {plain(backtest.baselineMae ?? NaN, 2)} pp). {significance(backtest.dm)}{isAr && <> The forecast is shown anyway, because across economies AR({AR_ORDER}) won for this series; for this country, recent history predicts next year about as well.</>}</>}
+          {isAr && ar!.longRun != null && <> Iterated forward, the forecast converges toward {plain(ar!.longRun)}{target.unit}, a level set by the whole {last.x - ar!.n + 1}–{last.x} history. If the economy has changed structurally since (e.g. a boom-era growth rate that no longer applies), that pull is an assumption of the model, not evidence.</>}
         </p>
-        <p className="viz-verdict">{target.evidence}</p>
-        <Method caveats={`A point forecast ${HORIZON} years out on an annual series this short carries a wide, genuine interval — shown, not hidden. The backtest only ever fits on data before the year it is scored against (no look-ahead), but it uses today's revised World Bank figures, not the data as first published, so it is more favourable than a real-time test; and it reuses the same historical events the live model will have also seen, so a model that merely fits recent history well can still look good here without truly generalising. The 95% interval assumes past error spread holds and ignores uncertainty in the fitted coefficients, so it can hold the real outcome less often than 95%: for real GDP growth across 52 European and Asian economies, forecasts made for 2005–2025 landed inside it about 90% of the time one year ahead (research/FINDINGS.md).`}>
-          Low-order autoregression (AR{AR_ORDER}) fit by ordinary least squares on the most recent unbroken run of years; forecast iterated forward using the model's own prior steps; 95% interval from the residual standard error (n − p − 1 degrees of freedom), widened with the horizon by the model's own ψ-weights (the standard AR forecast-error variance). Baseline: next year equals the last observed value (random walk). Backtest: for every possible cutoff year with at least {MIN_HISTORY} years before it, refit on data up to that year only and score the 1-year-ahead forecast against what actually happened next.
+        {policy && <p className="viz-verdict">{policy.evidence}</p>}
+        <Method caveats={`A forecast ${HORIZON} years out on an annual series this short carries a wide, genuine interval — shown, not hidden. The backtests only ever fit on data before the year they are scored against (no look-ahead), but they use today's revised World Bank figures, not the data as first published, so they are more favourable than a real-time test. The choice of headline model was written down before the cross-country backtest was run, but that data had been studied before, so it is not a test on unseen data; only forecasts scored against years that have not happened yet are.`}>
+          {isAr
+            ? <>Low-order autoregression (AR{AR_ORDER}) fit by ordinary least squares on the most recent unbroken run of years; forecast iterated forward using the model's own prior steps. 95% interval: rerun the same model from every past year with at least 10 years before it, keep its last {INTERVAL_RECENT} absolute errors at each horizon, and use the largest that leaves 95% of them inside (the split-conformal rule) — it needs no assumption about the error distribution and includes the model's own estimation error. Baseline: next year equals the last observed value.</>
+            : <>Forecast: next years equal the last observed value (a random walk). 95% interval: t-quantile × the standard deviation of past year-to-year changes × √horizon. AR({AR_ORDER}) is still fitted, only to report how it did on this country's record.</>}
+          {' '}Per-country backtest: for every cutoff year with at least {MIN_HISTORY} years before it, refit on data up to that year only and score the 1-year-ahead forecast against what happened next.
         </Method>
       </>}>
-      <LineChart ariaLabel={`${target.label}, ${shown[0]?.x ?? last.x}–${last.x}, with a ${HORIZON}-year forecast ${fcDir === 'up' ? 'rising' : fcDir === 'down' ? 'falling' : 'flat'} to ${plain(end.value)}${u}.`}
+      <LineChart ariaLabel={`${target.label}, ${shown[0]?.x ?? last.x}–${last.x}, with a ${HORIZON}-year ${isAr ? '' : 'no-change '}forecast ${fcDir === 'up' ? 'rising' : fcDir === 'down' ? 'falling' : 'flat'} to ${plain(end.value)}${u}.`}
         xKind="year" height={250} fmtY={v => `${plain(v, 1)}${u}`} refLines={u === '%' ? [{ v: 0, label: '0' }] : undefined}
-        bands={[{ from: ar.points[0].year, to: end.year, label: 'Forecast period' }]}
-        areas={[{ key: 'ci', label: '95% interval', color: 'var(--series-2)', points: [{ t: last.x, lo: last.y, hi: last.y }, ...ar.points.map(p => ({ t: p.year, lo: p.lo, hi: p.hi }))] }]}
+        bands={[{ from: fc.points[0].year, to: end.year, label: 'Forecast period' }]}
+        areas={drawBand ? [{ key: 'ci', label: '95% interval', color: 'var(--series-2)', points: [{ t: last.x, lo: last.y, hi: last.y }, ...fc.points.map(p => ({ t: p.year, lo: p.lo, hi: p.hi }))] }] : []}
         series={[
           { key: 'hist', label: 'Actual', color: 'var(--series-1)', points: toLine(shown), markers: true },
           ...(trend && trend.direction !== 'flat' && trend.from >= (shown[0]?.x ?? -Infinity)
             ? [{ key: 'trend', label: `Trend ${trend.from}–${trend.to}`, color: 'var(--series-3)', points: trendLine(series, trend), dashed: true }]
             : []),
-          { key: 'fc', label: `AR(${AR_ORDER}) forecast`, color: 'var(--series-2)', points: forecastLine(last, ar, 'value'), dashed: true, markers: true },
-          { key: 'naive', label: 'Naive baseline', color: 'var(--series-4)', points: forecastLine(last, naive, 'value'), dashed: true },
+          { key: 'fc', label: fcLabel, color: 'var(--series-2)', points: forecastLine(last, fc, 'value'), dashed: true, markers: true },
+          ...(isAr ? [{ key: 'naive', label: 'Naive baseline', color: 'var(--series-4)', points: forecastLine(last, naive, 'value'), dashed: true }] : []),
         ]} />
     </ChartFrame>
   )
 }
 
 /**
- * Predictions: statistical forecasts of a country's own macro series from its own history — AR(p) against a
- * random-walk baseline, each backtested out of sample before being shown. A home for this and future
- * forecasting work; see research/README.md for the parallel comparison on the Watchlist's crisis-trend flag
- * (src/research/mlTrend.ts), which runs as an offline research script rather than in this panel.
+ * Predictions: statistical forecasts of a country's own macro series from its own history. Which model is the headline
+ * for each series (AR(2) or "no change") and which interval it carries is set in utils/forecastPolicy.ts from a
+ * cross-country backtest; each card also backtests AR(2) against "no change" on the selected country.
  */
 export function PredictionsPanel() {
   const c = useCountryLookup()
@@ -194,8 +209,9 @@ export function PredictionsPanel() {
       {c.data && TARGETS.map(t => <Section key={t.id} target={t} series={pointsOf(c.data, t.id)} period={period} />)}
 
       <p className="viz-foot">
-        Every forecast here is backtested out of sample against a naive baseline before you see it, and the comparison is shown whether the
-        model wins or loses. This is a projection of a time series from its own past, computed entirely in your browser — not a prediction
+        Each headline model was picked by a backtest across every World Bank economy, and every card also backtests AR(2) against
+        "no change" on this country — the comparison is shown whether the model wins or loses. Where no model beat "no change", that is
+        what is shown. This is a projection of a time series from its own past, computed entirely in your browser — not a prediction
         informed by news, policy, or anything the AI Analyst has said. Source: World Bank Open Data, free and keyless.
       </p>
     </div>

@@ -630,6 +630,97 @@ function arStationary(phi: number[]): boolean {
   return false
 }
 
+/**
+ * Simple exponential smoothing, ETS(A,N,N): a level that moves a fraction α of each surprise. α is picked on
+ * this series only (grid 0.05–1.00, least in-sample one-step squared error; level starts at the first value).
+ * The forecast is flat at the last level; interval σ̂ · √(1 + (h−1)α²) (Hyndman & Athanasopoulos, FPP3 §8.7).
+ * It has no long-run level to pull towards, which is why it can't drag 2020s inflation back to 1980s levels.
+ */
+export function sesForecast(pts: Pt[], horizon: number): Forecast | null {
+  const y = lastRun(pts).map(p => p.y)
+  if (y.length < 5) return null
+  let best: { alpha: number; sse: number; level: number } | null = null
+  for (let k = 1; k <= 20; k++) {
+    const alpha = k / 20
+    let level = y[0], sse = 0
+    for (let t = 1; t < y.length; t++) { const e = y[t] - level; sse += e * e; level += alpha * e }
+    if (!best || sse < best.sse - 1e-12) best = { alpha, sse, level }
+  }
+  const { alpha, sse, level } = best!
+  const df = y.length - 2
+  const se = Math.sqrt(sse / df)
+  const lastYear = lastRun(pts)[y.length - 1].x
+  return {
+    method: `SES (α = ${alpha.toFixed(2)})`, n: y.length,
+    points: Array.from({ length: horizon }, (_, i) => {
+      const spread = tCrit95(df) * se * Math.sqrt(1 + i * alpha * alpha)
+      return { year: lastYear + i + 1, value: level, lo: level - spread, hi: level + spread }
+    }),
+  }
+}
+
+export const COMBO_AR_WINDOW = 20
+
+/** AR(2) on the last COMBO_AR_WINDOW years; a non-stationary fit has no finite forecast to iterate, so it falls back to naive. */
+export function guardedArForecast(pts: Pt[], horizon: number): Forecast | null {
+  const s = lastRun(pts)
+  const ar = arForecast(s.slice(-COMBO_AR_WINDOW), 2, horizon)
+  return ar && ar.longRun != null ? ar : naiveForecast(s, horizon)
+}
+
+/**
+ * Equal-weight combination of three forecasts that fail differently: naive (no change), SES (adaptive level) and a
+ * guarded AR(2) on the last 20 years (short-run dynamics without the full-history mean pull). Equal weights, not
+ * fitted ones, on purpose: estimated combination weights are noisy enough on series this short that they usually lose
+ * to the plain average (Stock & Watson 2004, Smith & Wallis 2009 — the "forecast combination puzzle").
+ * Interval: none of its own; see `empiricalInterval`.
+ */
+export function comboForecast(pts: Pt[], horizon: number): Forecast | null {
+  const members = [naiveForecast(pts, horizon), sesForecast(pts, horizon), guardedArForecast(pts, horizon)]
+  if (members.some(m => !m)) return null
+  const [first] = members as Forecast[]
+  return {
+    method: 'Combination (naive + SES + AR(2) last 20y)', n: first.n,
+    points: first.points.map((p, i) => {
+      const value = mean((members as Forecast[]).map(m => m.points[i].value))
+      return { year: p.year, value, lo: NaN, hi: NaN }
+    }),
+  }
+}
+
+export const INTERVAL_MIN_TRAIN = 10
+export const INTERVAL_MIN_ERRORS = 19
+
+/**
+ * Replaces a forecast's interval with one measured from the method's own track record on this series: rerun it from
+ * every past origin (≥ INTERVAL_MIN_TRAIN years, data before the origin only), collect the absolute h-step errors and
+ * take the ⌈0.95 (n + 1)⌉-th smallest as the half-width (the split-conformal rule, which holds ≥ 95% coverage when past
+ * and future errors are exchangeable). Unlike the textbook interval it needs no distributional assumption and includes
+ * the model's own estimation error. Below INTERVAL_MIN_ERRORS errors at a horizon there are too few to read a 95%
+ * quantile from, and that horizon's interval is NaN (not shown) rather than guessed.
+ */
+export function empiricalInterval(pts: Pt[], f: Forecast, make: (train: Pt[], horizon: number) => Forecast | null, recent = Infinity): Forecast & { calibration: number[] } {
+  const s = lastRun(pts)
+  const H = f.points.length
+  const errs: number[][] = Array.from({ length: H }, () => [])
+  for (let cut = INTERVAL_MIN_TRAIN; cut < s.length; cut++) {
+    const g = make(s.slice(0, cut), H)
+    if (!g) continue
+    for (let h = 0; h < H && cut + h < s.length; h++) errs[h].push(Math.abs(g.points[h].value - s[cut + h].y))
+  }
+  for (let h = 0; h < H; h++) errs[h] = errs[h].slice(-recent)
+  const half = errs.map(e => {
+    if (e.length < INTERVAL_MIN_ERRORS) return NaN
+    const sorted = [...e].sort((a, b) => a - b)
+    return sorted[Math.min(sorted.length, Math.ceil(0.95 * (sorted.length + 1))) - 1]
+  })
+  return {
+    ...f,
+    points: f.points.map((p, h) => ({ ...p, lo: p.value - half[h], hi: p.value + half[h] })),
+    calibration: errs.map(e => e.length),
+  }
+}
+
 export interface ForecastBacktest {
   model: string
   /** rolling-origin folds: fit on data up to each cutoff year, score the 1-year-ahead forecast only */

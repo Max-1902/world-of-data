@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import type { Pt } from '../../utils/econAnalysis'
 
@@ -18,11 +18,16 @@ for (let i = 2; i < 40; i++) gdp.push(0.8 + 0.5 * gdp[i - 1] + 0.1 * gdp[i - 2] 
 const unemp: number[] = [1, 1.3]
 for (let i = 2; i < 25; i++) unemp.push(1.2 * unemp[i - 1] + noise(i))
 
-const data = { iso2: 'DE', name: 'Germany', series: {
+// 1980s hyperinflation, then decades of low single digits: the shape that made AR(2) forecast Peru at 215%
+const hyper: number[] = [60, 75, 110, 160, 1700, 7500, 400, 50, 20, 12, 8]
+for (let i = 0; i < 30; i++) hyper.push(2.5 + noise(i))
+
+const base = {
   'NY.GDP.MKTP.KD.ZG': { points: pts(gdp, 1986) },
   'FP.CPI.TOTL.ZG': { points: pts([1, 2, 3], 2023) },
   'SL.UEM.TOTL.ZS': { points: pts(unemp, 2001) },
-} }
+}
+const data = { iso2: 'DE', name: 'Germany', series: { ...base } as Record<string, { points: Pt[] }> }
 vi.mock('../../hooks/useCountryLookup', () => ({
   useCountryLookup: () => ({ iso2: 'DE', setIso2: () => {}, countries: [], listError: null, data, status: 'ready', error: null, europe: null, europeStatus: 'idle', retry: () => {} }),
 }))
@@ -30,6 +35,8 @@ vi.mock('../../hooks/useCountryLookup', () => ({
 const { PredictionsPanel, significance } = await import('./PredictionsPanel')
 
 describe('PredictionsPanel', () => {
+  beforeEach(() => { data.series = { ...base } })
+
   it('states the forecast direction with start and end values, and whether "no change" is inside the interval', () => {
     render(<PredictionsPanel />)
     const gdpCard = screen.getByRole('region', { name: 'Real GDP growth' })
@@ -55,12 +62,41 @@ describe('PredictionsPanel', () => {
     expect(card.querySelectorAll('tbody tr')).toHaveLength(40 + 3)
   })
 
-  it('warns when the fitted model is non-stationary, and does not claim a long-run level', () => {
+  it('warns when the headline AR(2) fit is non-stationary, and does not claim a long-run level', () => {
+    data.series['NY.GDP.MKTP.KD.ZG'] = { points: pts(unemp, 2001) }
     render(<PredictionsPanel />)
-    const card = screen.getByRole('region', { name: 'Unemployment' })
+    const card = screen.getByRole('region', { name: 'Real GDP growth' })
     expect(card.textContent).toContain('Unstable fit.')
     expect(card.textContent).not.toContain('converges toward')
-    expect(screen.getByRole('region', { name: 'Real GDP growth' }).textContent).not.toContain('Unstable fit.')
+  })
+
+  it('GDP keeps AR(2) with a naive comparison line and an interval from its own past errors', () => {
+    render(<PredictionsPanel />)
+    const card = screen.getByRole('region', { name: 'Real GDP growth' })
+    expect(card.textContent).toContain('AR(2) forecast')
+    expect(card.textContent).toContain('Naive baseline')
+    expect(card.textContent).toMatch(/Interval set from AR\(2\)'s own last 20 out-of-sample errors/)
+    expect(card.textContent).toContain('Backtested on 192 World Bank economies')
+  })
+
+  it('unemployment headlines "no change", with no AR(2) forecast or instability warning even when AR(2) would explode', () => {
+    render(<PredictionsPanel />)
+    const card = screen.getByRole('region', { name: 'Unemployment' })
+    expect(card.textContent).toContain('No-change forecast')
+    expect(card.textContent).toContain('flat by construction')
+    expect(card.textContent).not.toContain('AR(2) forecast')
+    expect(card.textContent).not.toContain('Unstable fit.')
+    expect(card.textContent).toMatch(/held the real value only 89%/)
+  })
+
+  it('inflation after a hyperinflation: forecasts "no change", and states the huge interval instead of drawing it', () => {
+    data.series['FP.CPI.TOTL.ZG'] = { points: pts(hyper, 1985) }
+    render(<PredictionsPanel />)
+    const card = screen.getByRole('region', { name: 'Inflation (CPI)' })
+    const last = hyper[hyper.length - 1]
+    expect(card.textContent).toContain(`${last.toFixed(1)}% (2025) → ${last.toFixed(1)}% (2028): flat by construction`)
+    expect(card.textContent).toContain('too wide to draw against this history')
+    expect(card.textContent).not.toContain('AR(2) forecast')
   })
 
   it('declines to forecast a series that is too short', () => {
