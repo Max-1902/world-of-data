@@ -28,7 +28,6 @@ export function addCountryAnalyticsLayers(map: mapboxgl.Map, ctx: LayerCtx): voi
     const iso3 = feat?.properties?.iso_3166_1_alpha_3 as string | undefined
     const info = countryAnalyticsRef.current
     if (!iso3 || !info) return
-    const esc = (v: unknown) => String(v).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch] as string))
     const yRow = info.yRows.get(iso3)
     const pt = info.points.get(iso3)
     const name = yRow?.name ?? pt?.name ?? (feat?.properties?.name_en as string | undefined) ?? iso3

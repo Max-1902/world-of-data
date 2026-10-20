@@ -80,7 +80,6 @@ export function addPipelineLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     const p = e.features[0].properties as Record<string, unknown>
     const sub = p.substance === 'oil' ? 'oil' : 'gas'
     const color = PIPELINE_COLORS[sub]
-    const esc = (v: unknown) => String(v ?? '').replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`)
     const rows = [
       p.operator ? `<div><span style="color:#9ca3af;">Operator:</span> ${esc(p.operator)}</div>` : '',
       p.diameter ? `<div><span style="color:#9ca3af;">Diameter:</span> ${esc(p.diameter)} mm</div>` : '',

@@ -11,8 +11,9 @@ const CATEGORY_LABEL: Record<KeyEventCategory, string> = {
   political: 'Political', economic: 'Economic', humanitarian: 'Humanitarian', other: 'Security / disaster',
 }
 
-export const esc = (s: string) =>
-  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+/** HTML-escapes any value for popup markup; null and undefined become ''. */
+export const esc = (v: unknown) =>
+  String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 
 /** Only http(s) links are allowed through; anything else (javascript:, data:) is dropped. */
 export function safeUrl(url: string | undefined): string | null {
