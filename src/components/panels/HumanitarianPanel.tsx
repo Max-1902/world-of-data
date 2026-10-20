@@ -7,8 +7,7 @@ import { CrisisEvent, Flight } from '../../types'
 import { onGlobalReload } from '../../utils/reloadBus'
 import { UNHCR_GLOBAL_2023, TOP_HOSTING, TOP_ORIGINS, UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS, fetchUNHCRPopulation, type UNHCRStat } from '../../services/unhcr'
 import { MIN_CORRIDOR, TREND_THRESHOLD, changeLabel, trendOf, type Trend } from '../../services/displacement'
-import type { DtmResult } from '../../services/dtm'
-import { useDisplacement, useDtm, type DisplacementState } from '../../hooks/useDisplacement'
+import { useDisplacement, type DisplacementState } from '../../hooks/useDisplacement'
 
 // ── Humanitarian Panel (UNHCR) ─────────────────────────────────────────────────
 const HUM_TABS = ['OVERVIEW', 'NEXUS', 'FLOWS', 'IDPS', 'OFFICES', 'CROSSINGS', 'CAMPS'] as const
@@ -31,53 +30,6 @@ function DisplacementStatus({ state }: { state: DisplacementState }) {
   )
 }
 
-function DtmDetail({ result, onLocate }: { result: DtmResult | null; onLocate: () => void }) {
-  const box: React.CSSProperties = { margin: '4px 0 6px 15px', padding: '6px 8px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: 10 }
-  if (!result) return <div style={box}><span style={{ color: 'var(--text3)' }}>Loading IOM DTM…</span></div>
-  if (result.status === 'not_configured') return (
-    <div style={box}>
-      <div style={{ color: 'var(--text2)', marginBottom: 2 }}>IOM DTM rounds need a free API key.</div>
-      <div style={{ color: 'var(--text3)', fontSize: 9.5 }}>Register at dtm.iom.int → DTM API, subscribe to API-V3, then set <code>DTM_API_KEY</code> in .env / Vercel.</div>
-    </div>
-  )
-  if (result.status === 'error') return <div style={box}><span style={{ color: 'var(--red)' }}>{result.message}</span></div>
-  if (!result.operations.length) return <div style={box}><span style={{ color: 'var(--text3)' }}>No IOM DTM rounds for this country in the last two years.</span></div>
-  return (
-    <div style={box}>
-      {result.operations.slice(0, 4).map(op => (
-        <div key={op.operation} style={{ marginBottom: 4 }}>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
-            <span style={{ color: 'var(--text1)', fontWeight: 700, flex: 1 }}>{op.operation}</span>
-            <span style={{ color: 'var(--amber)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{op.idps.toLocaleString()}</span>
-          </div>
-          <div style={{ color: 'var(--text3)', fontSize: 9.5 }}>
-            {op.round != null ? `Round ${op.round} · ` : ''}{op.reportingDate}
-            {op.prevIdps != null && op.prevDate && <> · {changeLabel(op.idps, op.prevIdps)} since {op.prevDate}</>}
-          </div>
-          {op.reasons.length > 1 && (
-            <div style={{ color: 'var(--text3)', fontSize: 9.5 }}>{op.reasons.slice(0, 3).map(r => `${r.reason} ${fmt(r.idps)}`).join(' · ')}</div>
-          )}
-        </div>
-      ))}
-      {result.regions.length > 0 && result.regionsFrom && (
-        <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginBottom: 2 }}>WHERE IDPS ARE NOW · {result.regionsFrom.reportingDate}</div>
-          {result.regions.slice(0, 8).map(r => (
-            <div key={r.pcode ?? r.name} style={{ display: 'flex', gap: 6 }}>
-              <span style={{ flex: 1, color: 'var(--text2)' }}>{r.name}</span>
-              <span style={{ color: 'var(--text1)', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.idps)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-      <div style={{ display: 'flex', marginTop: 4, fontSize: 9, color: 'var(--text3)' }}>
-        <span style={{ flex: 1 }}>SOURCE: IOM DTM API v3</span>
-        <span onClick={onLocate} style={{ color: 'var(--accent)', cursor: 'pointer' }}>SHOW ON MAP</span>
-      </div>
-    </div>
-  )
-}
-
 export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEvent[]; flights: Flight[]; onGeoSearch?: (q: string) => void }) {
   const [tab, setTab]         = useState<HumTab>('OVERVIEW')
   const [stats, setStats]     = useState<UNHCRStat[]>(TOP_HOSTING)
@@ -86,10 +38,8 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
   const [crossFilter, setCrossFilter]   = useState<'all'|'open'|'restricted'|'closed'>('all')
   const [campSearch, setCampSearch]     = useState('')
   const [flowFilter, setFlowFilter]     = useState<'all' | 'rising' | 'falling'>('all')
-  const [dtmIso, setDtmIso]             = useState<string | null>(null)
   const disp = useDisplacement()
   const snap = disp.status === 'ok' ? disp.snap : null
-  const dtm = useDtm(dtmIso)
 
   useEffect(() => {
     const load = () => { fetchUNHCRPopulation().then(data => { if (data.length) setStats(data) }) }
@@ -361,7 +311,7 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
         )
       })()}
 
-      {/* ─ IDPS: internal displacement (UNHCR) + latest IOM DTM rounds ─ */}
+      {/* ─ IDPS: internal displacement (UNHCR) ─ */}
       {tab === 'IDPS' && (() => {
         if (!snap) return <DisplacementStatus state={disp} />
         const rows = snap.countries.filter(c => c.idps > 0).sort((a, b) => b.idps - a.idps).slice(0, 20)
@@ -369,30 +319,26 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
         return (
           <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
             <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.12em', marginBottom: 6 }}>
-              // DISPLACED INSIDE THEIR OWN COUNTRY · UNHCR {snap.year} · TAP FOR IOM DTM
+              // DISPLACED INSIDE THEIR OWN COUNTRY · UNHCR {snap.year}
             </div>
             {rows.map(c => {
-              const open = dtmIso === c.iso3
               return (
                 <div key={c.iso3} style={{ marginBottom: 5 }}>
-                  <div onClick={() => setDtmIso(open ? null : c.iso3)} style={{ cursor: 'pointer' }}>
+                  <div onClick={() => onGeoSearch?.(`${c.point[1]},${c.point[0]}`)} style={{ cursor: onGeoSearch ? 'pointer' : 'default' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                      <span style={{ fontSize: 9, color: 'var(--text3)', width: 10 }}>{open ? '▾' : '▸'}</span>
                       <span style={{ fontSize: 10.5, color: 'var(--text1)', fontWeight: 700, flex: 1 }}>{c.name}</span>
                       <span style={{ fontSize: 10.5, color: 'var(--amber)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(c.idps)}</span>
                       <span style={{ fontSize: 9.5, color: TREND_VAR[trendOf(c.idps, c.idpsPrev)], width: 42, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{changeLabel(c.idps, c.idpsPrev)}</span>
                     </div>
-                    <div style={{ marginLeft: 15, height: 2, background: 'var(--border)', borderRadius: 1 }}>
+                    <div style={{ marginLeft: 0, height: 2, background: 'var(--border)', borderRadius: 1 }}>
                       <div style={{ width: `${(c.idps / max) * 100}%`, height: '100%', background: 'var(--amber)', opacity: 0.55, borderRadius: 1 }} />
                     </div>
                   </div>
-                  {open && <DtmDetail result={dtm} onLocate={() => onGeoSearch?.(`${c.point[1]},${c.point[0]}`)} />}
                 </div>
               )
             })}
             <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', letterSpacing: '.05em', lineHeight: 1.7 }}>
-              UNHCR IDP FIGURES ARE CONFLICT-RELATED · IOM DTM: SURVEY ROUNDS WHERE IOM OPERATES<br />
-              DTM OPERATIONS IN ONE COUNTRY CAN OVERLAP, SO THEY ARE SHOWN SEPARATELY, NOT ADDED
+              SOURCE: UNHCR REFUGEE DATA FINDER · IDP FIGURES ARE CONFLICT-RELATED
             </div>
           </div>
         )

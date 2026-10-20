@@ -35,7 +35,6 @@ export const SOURCE_RULES: SourceRule[] = [
   { id: 'markets',   label: 'Markets (Finnhub)',         match: has('/api/finnhub') },
   { id: 'eia',       label: 'Energy inventories (EIA)',  match: has('/api/eia') },
   { id: 'unhcr',     label: 'Displacement (UNHCR)',      match: has('api.unhcr.org') },
-  { id: 'dtm',       label: 'Internal displacement (IOM DTM)', match: has('/api/dtm') },
   { id: 'worldbank', label: 'Economy (World Bank)',      match: has('api.worldbank.org') },
   { id: 'owid',      label: 'Our World in Data',         match: has('ourworldindata.org') },
   { id: 'ecb',       label: 'ECB Data Portal',           match: has('data-api.ecb.europa.eu') },

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { fetchDisplacement, type DisplacementSnapshot } from '../services/displacement'
-import { fetchDtm, type DtmResult } from '../services/dtm'
 import { onGlobalReload } from '../utils/reloadBus'
 
 export type DisplacementState =
@@ -22,17 +21,4 @@ export function useDisplacement(enabled = true): DisplacementState {
     return () => { alive = false; unsub() }
   }, [enabled])
   return state
-}
-
-/** IOM DTM rounds for one country; `null` while loading or when no country is given. */
-export function useDtm(iso3: string | null): DtmResult | null {
-  const [result, setResult] = useState<DtmResult | null>(null)
-  useEffect(() => {
-    setResult(null)
-    if (!iso3) return
-    let alive = true
-    fetchDtm(iso3).then(r => { if (alive) setResult(r) })
-    return () => { alive = false }
-  }, [iso3])
-  return result
 }
