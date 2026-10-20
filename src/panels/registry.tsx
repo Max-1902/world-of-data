@@ -43,6 +43,7 @@ const CountryAnalyticsPanel = lazy(() => import('../components/panels/CountryAna
 const AnalyticsPanel = lazy(() => import('../components/panels/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })))
 const CountryLookupPanel = lazy(() => import('../components/panels/CountryLookupPanel').then(m => ({ default: m.CountryLookupPanel })))
 const PredictionsPanel = lazy(() => import('../components/panels/PredictionsPanel').then(m => ({ default: m.PredictionsPanel })))
+const GasStorageForecastPanel = lazy(() => import('../components/panels/GasStorageForecast').then(m => ({ default: m.GasStorageForecastPanel })))
 const InventoriesPanel = lazy(() => import('../components/panels/InventoriesPanel').then(m => ({ default: m.InventoriesPanel })))
 const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
@@ -121,6 +122,11 @@ const PANELS: PanelDef[] = [
     id: 'predictions', title: 'Predictions', group: 'analysis', section: 'forecasts', map: 'none', minHeight: 900,
     dotColor: 'green', desc: 'GDP growth, inflation and unemployment forecast from a country’s own history — AR model vs. a naive baseline, backtested out of sample (World Bank)',
     render: () => <PredictionsPanel />,
+  },
+  {
+    id: 'gasForecast', title: 'Gas Storage Forecast', group: 'analysis', section: 'forecasts', map: 'none', minHeight: 700,
+    dotColor: 'green', desc: 'Next week’s change in US natural-gas storage — a seasonal model vs. the 5-year norm and last week, backtested week by week in time order (EIA, free key)',
+    render: () => <GasStorageForecastPanel />,
   },
   {
     id: 'analyst', title: 'Analyst chat', group: 'analysis', section: 'ai', map: 'none',
