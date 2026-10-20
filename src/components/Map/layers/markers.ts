@@ -37,13 +37,17 @@ export function useCrisisMarkers({ mapRef, markersRef }: MapHandle, { crises, ea
       const color = CRISIS_COLORS[c.type] || '#ff6600'
       const size  = SEV_SIZE[c.severity]  || 8
       const el    = document.createElement('div')
-      el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:${color};border:1px solid rgba(255,255,255,0.3);cursor:pointer;box-shadow:0 0 ${size + 4}px ${color}66;`
+      // Archived (year-old) ACLED events: a dashed, faded ring with no glow, so they never read as live events.
+      el.style.cssText = c.archived
+        ? `width:${size}px;height:${size}px;border-radius:50%;background:${color}22;border:1.5px dashed ${color};opacity:.7;cursor:pointer;`
+        : `width:${size}px;height:${size}px;border-radius:50%;background:${color};border:1px solid rgba(255,255,255,0.3);cursor:pointer;box-shadow:0 0 ${size + 4}px ${color}66;`
       const popup = `<div style="padding:9px;font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;line-height:1.5;">
-        <b style="color:${color};font-size:13px;">${c.title}</b><br>
-        <span style="color:#6b7280;font-size:10px;letter-spacing:.1em;">${c.country} · ${new Date(c.date).toLocaleDateString()}</span>
+        ${c.archived ? `<span style="display:inline-block;margin-bottom:4px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#4b5563;font-size:9px;font-weight:600;letter-spacing:.08em;">ARCHIVE · ABOUT 1 YEAR OLD</span><br>` : ''}
+        <b style="color:${color};font-size:13px;">${esc(c.title)}</b><br>
+        <span style="color:#6b7280;font-size:10px;letter-spacing:.1em;">${esc(c.country)} · ${new Date(c.date).toLocaleDateString()}</span>
         ${c.fatalities ? `<br><span style="color:#dc2626;">⚠ ${c.fatalities} fatalities</span>` : ''}
-        ${c.description ? `<br><span style="opacity:.85;font-size:10px;">${c.description.slice(0,140)}…</span>` : ''}
-        <br><span style="color:#9ca3af;font-size:10px;">src: ${c.source}</span></div>`
+        ${c.description ? `<br><span style="opacity:.85;font-size:10px;">${esc(c.description.slice(0,140))}…</span>` : ''}
+        <br><span style="color:#9ca3af;font-size:10px;">src: ${esc(c.source)}${c.archived ? ' (current events not available on this account)' : ''}</span></div>`
       el.addEventListener('click', () => onCrisisClick(c))
       addMarker(el, c.longitude, c.latitude, popup)
     })

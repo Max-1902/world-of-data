@@ -505,6 +505,26 @@ html, body, #root {
   border: 1px solid #263843;
 }
 
+/* Shown while the map draws year-old ACLED events (useCrises archive fallback) */
+.map-archive-note {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: min(560px, calc(100% - 32px));
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  border: 1px dashed var(--amber);
+  color: var(--text2);
+  font-size: 11px;
+  line-height: 1.4;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+  z-index: 5;
+}
+
 /* ── Worldview command surface ───────────────────── */
 ::selection { background: rgba(213,168,95,.28); color: var(--text1); }
 button { font: inherit; }

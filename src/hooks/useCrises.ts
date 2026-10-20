@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchACLEDEvents } from '../services/crises'
+import { fetchACLEDEvents, fetchACLEDArchive, type AcledArchive } from '../services/crises'
 import type { CrisisEvent } from '../types'
 
 // ── Baseline: major ongoing conflicts (always visible even if APIs fail) ─────
@@ -52,6 +52,8 @@ export function useCrises(enabled: boolean) {
   // Events that came from a live feed (not the hand-entered BASELINE). 0 means the map is showing
   // only the long-running-conflict baseline — callers should say so rather than imply live coverage.
   const [liveCount, setLiveCount] = useState(0)
+  // Year-old ACLED events, set only while the live window is empty. Kept apart from `crises` on purpose.
+  const [archive, setArchive] = useState<AcledArchive | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -62,6 +64,8 @@ export function useCrises(enabled: boolean) {
       const live   = await fetchACLEDEvents(14)
       setLiveCount(live.length)
       setCrises(mergeWithBaseline(live))
+      // An empty live window on an account whose tier lags ~12 months: offer last year's window for the map only.
+      setArchive(live.length ? null : await fetchACLEDArchive(14))
     } catch (e) {
       setError(String(e))
       // keep existing data (baseline or previously loaded)
@@ -77,5 +81,5 @@ export function useCrises(enabled: boolean) {
     return () => clearInterval(timer)
   }, [enabled, load])
 
-  return { crises, loading, error, liveCount, refresh: load }
+  return { crises, archive, loading, error, liveCount, refresh: load }
 }

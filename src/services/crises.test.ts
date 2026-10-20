@@ -157,3 +157,40 @@ describe('ACLED login persistence across reloads', () => {
     } finally { vi.useRealTimers() }
   })
 })
+
+describe('ACLED archive fallback (account tiers that lag ~12 months)', () => {
+  beforeEach(() => { quietConsole(); installLocalStorage() })
+
+  it('targets the same-length window ending one calendar year before now', async () => {
+    const { acledArchiveWindow } = await load()
+    expect(acledArchiveWindow(14, Date.parse('2026-10-19T12:00:00Z'))).toEqual({ from: '2025-10-05', to: '2025-10-19' })
+  })
+
+  it('queries that window and flags every event as archived', async () => {
+    const fetchMock = mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [acledRow({ event_date: '2025-10-12' })] }))
+    const { fetchACLEDArchive } = await load()
+    const archive = await fetchACLEDArchive(14, Date.parse('2026-10-19T12:00:00Z'))
+    expect(archive).toMatchObject({ from: '2025-10-05', to: '2025-10-19' })
+    expect(archive!.events).toHaveLength(1)
+    expect(archive!.events[0]).toMatchObject({ id: 'UKR1', archived: true, date: '2025-10-12' })
+    const [url] = fetchMock.mock.calls.find(c => String(c[0]).startsWith('/api/acled/read'))!
+    expect(new URL(String(url), 'http://x').searchParams.get('event_date')).toBe('2025-10-05|2025-10-19')
+  })
+
+  it('does not touch the live poll stats the analyst reads', async () => {
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [acledRow()] }))
+    const { fetchACLEDArchive, lastAcledPoll } = await load()
+    await fetchACLEDArchive()
+    expect(lastAcledPoll()).toBeNull()
+  })
+
+  it('returns null when the archive is empty, the request fails, or there is no token', async () => {
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [] }))
+    expect(await (await load()).fetchACLEDArchive()).toBeNull()
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({}, { status: 500 }))
+    expect(await (await load()).fetchACLEDArchive()).toBeNull()
+    installLocalStorage() // forget the token stored above
+    mockFetch(() => jsonResponse({ access_token: null }))
+    expect(await (await load()).fetchACLEDArchive()).toBeNull()
+  })
+})
