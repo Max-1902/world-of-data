@@ -6,6 +6,7 @@ import { ExternalLink, TrendingUp, TrendingDown } from 'lucide-react'
 import { Stock } from '../../types'
 import { fetchMultipleQuotes } from '../../services/stocks'
 import { onGlobalReload } from '../../utils/reloadBus'
+import { usePolling } from '../../hooks/usePolling'
 import { SECTORS } from './OverviewPanels'
 
 function StockRow({ s }: { s: Stock }) {
@@ -31,19 +32,10 @@ function StockRow({ s }: { s: Stock }) {
 }
 
 function StockList({ symbols }: { symbols: string[] }) {
-  const [stocks, setStocks] = useState<Stock[]>([])
-  const [loading, setLoading] = useState(true)
-  const [retryCount, setRetryCount] = useState(0)
   const key = symbols.join(',')
-
-  useEffect(() => {
-    const list = key.split(',')
-    const load = () => { setLoading(true); fetchMultipleQuotes(list).then(setStocks).finally(() => setLoading(false)) }
-    load()
-    const timer = window.setInterval(load, 60_000)
-    const unsub = onGlobalReload(load)
-    return () => { clearInterval(timer); unsub() }
-  }, [key, retryCount])
+  const { data: stocks, loading, refresh } = usePolling<Stock[]>(
+    () => fetchMultipleQuotes(key.split(',')), { initial: [], intervalMs: 60_000, key, globalReload: true },
+  )
 
   const noData = !loading && stocks.length === 0
   if (noData) return (
@@ -82,7 +74,7 @@ function StockList({ symbols }: { symbols: string[] }) {
         Market data temporarily unavailable.<br />Finnhub may be rate-limiting.
       </div>
       <button
-        onClick={() => setRetryCount(c => c + 1)}
+        onClick={refresh}
         style={{
           background: 'var(--accent-soft)', border: '1px solid var(--accent)33',
           color: 'var(--accent)', cursor: 'pointer', fontSize: 10, padding: '3px 12px',
@@ -210,15 +202,9 @@ function ExchangesPanel() {
 
 // small hook used by ExchangesPanel only
 function useStockQuotes(symbols: string[]) {
-  const [stocks, setStocks] = useState<Stock[]>([])
-  const [loading, setLoading] = useState(false)
-  // Keyed on the joined symbols so a new array with the same tickers doesn't refetch.
+  // keyed on the joined symbols so a new array with the same tickers doesn't refetch
   const key = symbols.join(',')
-  useEffect(() => {
-    if (!key) return
-    setLoading(true)
-    fetchMultipleQuotes(key.split(',')).then(s => { setStocks(s); setLoading(false) }).catch(() => setLoading(false))
-  }, [key])
+  const { data: stocks, loading } = usePolling<Stock[]>(() => fetchMultipleQuotes(key.split(',')), { initial: [], key, enabled: !!key })
   return { stocks, loading }
 }
 

@@ -1,7 +1,7 @@
 /**
  * Panel implementations. Split out of the former PanelContent.tsx; wired up in src/panels/registry.tsx.
  */
-import { useState, useCallback, useEffect } from 'react'
+import { useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { NewsArticle } from '../../types'
@@ -9,7 +9,8 @@ import { searchGDELTNews, fetchSanctionsNews } from '../../services/news'
 import { SANCTIONED_COUNTRIES, SANCTION_COLORS, type SanctionedCountry } from '../../services/sanctions'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, PLANT_STATUS_COLORS } from '../../services/military'
 import { analyzeAirspace, FIR_STATUS_LABEL, type NOTAMAlert, type FIRStatus } from '../../services/notam'
-import { onGlobalReload } from '../../utils/reloadBus'
+import { usePolling } from '../../hooks/usePolling'
+import { useDebounced } from '../../hooks/useDebounced'
 import { ArticleRow } from './NewsPanels'
 
 // ── Drug Trafficking Panel ─────────────────────────────────────────────────────
@@ -25,36 +26,15 @@ const DRUG_TABS = [
 type DrugTab = typeof DRUG_TABS[number]['id']
 
 export function DrugTrafficPanel() {
-  const [tab, setTab]         = useState<DrugTab>('Global')
-  const [articles, setArticles] = useState<NewsArticle[]>([])
-  const [loading, setLoading]   = useState(false)
-  const [error, setError]       = useState<string | null>(null)
-  const [lastFetch, setLastFetch] = useState<number | null>(null)
-
-  const load = useCallback(async (t: DrugTab) => {
-    const entry = DRUG_TABS.find(d => d.id === t)
-    if (!entry) return
-    setLoading(true); setError(null)
-    try {
-      // searchGDELTNews goes through our /api/gdelt proxy (GDELT sends no CORS headers, so a direct
-      // browser call fails) and handles GDELT's 1-req/5s limit with queueing, caching and a 429 cooldown.
-      const mapped = await searchGDELTNews(entry.q)
-      setArticles(mapped.map((a, i) => ({ ...a, id: `drug-${t}-${i}` })))
-      // searchGDELTNews returns [] when rate-limited/failed — don't stamp that as a live update
-      setLastFetch(mapped.length > 0 ? Date.now() : null)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load')
-    } finally { setLoading(false) }
-  }, [])
-
-  useEffect(() => { load(tab) }, [tab, load])
-
-  // Auto-refresh 30 min
-  useEffect(() => {
-    const t = window.setInterval(() => load(tab), 30 * 60_000)
-    const unsub = onGlobalReload(() => load(tab))
-    return () => { clearInterval(t); unsub() }
-  }, [tab, load])
+  const [tab, setTab] = useState<DrugTab>('Global')
+  const query = DRUG_TABS.find(d => d.id === tab)!.q
+  // searchGDELTNews goes through /api/gdelt (no CORS upstream) and handles GDELT's 1-req/5s limit itself
+  const { data: articles, loading, error, lastUpdated, refresh } = usePolling<NewsArticle[]>(
+    async () => (await searchGDELTNews(query)).map((a, i) => ({ ...a, id: `drug-${tab}-${i}` })),
+    { initial: [], intervalMs: 30 * 60_000, key: tab, globalReload: true },
+  )
+  // an empty result means rate-limited or failed, so don't stamp it as live
+  const lastFetch = articles.length ? lastUpdated : null
 
   return (
     <>
@@ -66,7 +46,7 @@ export function DrugTrafficPanel() {
             {t.id.toUpperCase()}
           </button>
         ))}
-        <button onClick={() => load(tab)} disabled={loading}
+        <button onClick={refresh} disabled={loading}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', opacity: loading ? 0.3 : 1, marginLeft: 'auto', display: 'flex', alignItems: 'center' }}>
           <RefreshCw size={9} className={loading ? 'animate-spin' : ''} />
         </button>
@@ -87,40 +67,26 @@ export function DrugTrafficPanel() {
   )
 }
 
+type SanctionsNewsItem = { title: string; url: string; domain: string; seendate: string }
+
 // ── Sanctions Panel ────────────────────────────────────────────────────────────
 const SEV_ORDER: SanctionedCountry['severity'][] = ['critical', 'high', 'medium', 'low']
 
 export function SanctionsPanel() {
   const [filter, setFilter] = useState('')
   const [sevFilter, setSevFilter] = useState<string>('all')
-  const [news, setNews] = useState<{ title: string; url: string; domain: string; seendate: string }[]>([])
-  const [newsLoading, setNewsLoading] = useState(false)
-  const [lastFetch, setLastFetch] = useState<number | null>(null)
   const q = filter.trim().toLowerCase()
   const rows = SANCTIONED_COUNTRIES
     .filter(c => sevFilter === 'all' || c.severity === sevFilter)
     .filter(c => !q || c.name.toLowerCase().includes(q) || c.summary.toLowerCase().includes(q) || c.regimes.some(r => r.toLowerCase().includes(q)))
     .sort((a, b) => SEV_ORDER.indexOf(a.severity) - SEV_ORDER.indexOf(b.severity))
 
-  const loadNews = useCallback(() => {
-    setNewsLoading(true)
-    fetchSanctionsNews(q || undefined)
-      .then(articles => { setNews(articles); setLastFetch(Date.now()) })
-      .finally(() => setNewsLoading(false))
-  }, [q])
-
-  // Debounced: the filter box changes `q` per keystroke, and each distinct query is a GDELT request (1 per 5 s).
-  useEffect(() => {
-    const t = window.setTimeout(loadNews, 600)
-    return () => clearTimeout(t)
-  }, [loadNews])
-
-  // Auto-refresh 30 min
-  useEffect(() => {
-    const t = window.setInterval(loadNews, 30 * 60_000)
-    const unsub = onGlobalReload(loadNews)
-    return () => { clearInterval(t); unsub() }
-  }, [loadNews])
+  // debounced: every distinct query is a GDELT request, and GDELT allows one per 5 s
+  const newsQuery = useDebounced(q, 600)
+  const { data: news, loading: newsLoading, lastUpdated: lastFetch, refresh: loadNews } = usePolling(
+    () => fetchSanctionsNews(newsQuery || undefined),
+    { initial: [] as SanctionsNewsItem[], intervalMs: 30 * 60_000, key: newsQuery, globalReload: true },
+  )
 
   return (
     <>
