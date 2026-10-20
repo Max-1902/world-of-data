@@ -120,7 +120,8 @@ export function regress(x: number[], y: number[]): Regression | null {
   const intercept = my - slope * mx
   const sse = Math.max(0, syy - slope * sxy)
   const se = Math.sqrt(sse / (n - 2) / sxx)
-  const t = se === 0 ? Infinity : slope / se
+  // a perfect fit is significant unless y never moves; constant y used to come out as p = 0
+  const t = se === 0 ? (slope === 0 ? 0 : Infinity) : slope / se
   const tc = tCrit95(n - 2)
   return { n, slope, intercept, se, p: tPValue(t, n - 2), ci: [slope - tc * se, slope + tc * se], r2: syy === 0 ? 0 : 1 - sse / syy }
 }
