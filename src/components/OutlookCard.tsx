@@ -1,5 +1,5 @@
 import { ArrowDownRight, ArrowUpRight, Minus, Radar } from 'lucide-react'
-import { computeTrajectories } from '../utils/trajectory'
+import { computeTrajectories, isFlaggedUp } from '../utils/trajectory'
 import { formatDistanceToNow } from 'date-fns'
 import { useHistory, PREVIOUS_VISIT } from '../hooks/useHistory'
 import { changesSince, scoreByCountry } from '../services/history'
@@ -29,7 +29,7 @@ interface Props {
 export default function OutlookCard({ crises, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, onSelectCountry, onClose }: Props) {
   const subject = selectedPlace ? null : selectedCountry
   const entries = computeTrajectories(crises, flights, 6, articles, subject)
-  const rising = entries.filter(entry => entry.trend === 'rising')
+  const rising = entries.filter(isFlaggedUp)
   const snaps = useHistory()
   const since = PREVIOUS_VISIT !== null && Date.now() - PREVIOUS_VISIT >= MIN_AWAY_MS
     ? changesSince(snaps, PREVIOUS_VISIT, scoreByCountry(crises))
@@ -71,6 +71,7 @@ export default function OutlookCard({ crises, flights, articles, earthquakes = [
                 <div className="outlook-detail">
                   <div className="outlook-country">
                     {entry.country}
+                    {entry.unusual && <span className="outlook-news-badge" title={`Unusually ${entry.unusual} for this country, measured against its own last ${entry.baseline?.days} days`}>UNUSUAL</span>}
                     {entry.newsHit && <span className="outlook-news-badge" title={entry.newsHit}>NEWS</span>}
                   </div>
                   <div className="outlook-reason">{entry.reason}</div>

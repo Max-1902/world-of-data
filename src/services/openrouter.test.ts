@@ -318,11 +318,12 @@ describe('buildDashboardContext', () => {
   it('includes locally computed trajectory signals when provided', () => {
     const t = (o: Partial<TrajectoryEntry>): TrajectoryEntry => ({
       country: 'Ruritania', recentScore: 10, priorScore: 0, delta: 10, trend: 'rising', velocity: 90,
-      recentCount: 1, priorCount: 0, reason: 'because', ...o,
+      recentCount: 1, priorCount: 0, reason: 'because', baseline: null, unusual: null, ...o,
     })
     const ctx = buildDashboardContext([], [], [t({}), t({ country: 'Genovia', trend: 'falling', velocity: 20 })])
     expect(ctx).toContain('TRAJECTORY SIGNALS')
     expect(ctx).toContain('1 of 2 tracked regions trending upward')
+    expect(ctx).toContain('Own-normal comparison: NOT MEASURED')
     expect(ctx).toContain('Ruritania: RISING (velocity 90/100) — because')
     expect(ctx).toContain('Genovia: FALLING (velocity 20/100)')
   })
