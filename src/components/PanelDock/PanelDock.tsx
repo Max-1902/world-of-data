@@ -5,6 +5,7 @@ import type { PanelGroup, PanelProps } from '../../panels/types'
 import PanelHost from '../PanelHost'
 import PanelMapToggle from '../PanelMapToggle'
 import CloseButton from '../CloseButton'
+import { PictureInPicture2 } from 'lucide-react'
 
 interface Props {
   crises: CrisisEvent[]
@@ -16,9 +17,11 @@ interface Props {
   onGeoSearch?: (q: string) => void
   onCountryClick?: (country: string) => void
   searchQuery?: string
+  /** panels open as floating windows — not shown in the dock */
   poppedOut: Set<string>
   onPopOut: (id: string) => void
-  onPopIn:  (id: string) => void
+  /** pop every panel of the workspace out and tile them */
+  onPopOutAll: (ids: string[]) => void
   activeGroup: PanelGroup
   /** Scroll to (and re-show, if closed) this panel; `n` changes on every request so picking the same panel twice still scrolls. */
   focusPanel?: { id: string; n: number } | null
@@ -43,7 +46,7 @@ function loadWidth(): number {
   return Math.round(window.innerWidth * 0.28)
 }
 
-export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, activeGroup, focusPanel }: Props) {
+export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, onPopOut, onPopOutAll, activeGroup, focusPanel }: Props) {
   const [panelW, setPanelW] = useState(loadWidth)
   const resizeRef = useRef<{ startX: number; startW: number } | null>(null)
   // Panels the user closed with ✕; remembered across reloads and restorable from the workspace heading.
@@ -128,6 +131,11 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             {visibleDefs.length} {visibleDefs.length === 1 ? 'panel' : 'panels'}
+            {visibleDefs.length > 1 && (
+              <button className="dock-restore" onClick={() => onPopOutAll(visibleDefs.map(d => d.id))} title="Open every panel of this workspace as a window, tiled across the screen">
+                Pop out all
+              </button>
+            )}
             {closedInGroup.length > 0 && (
               <button className="dock-restore" onClick={restoreGroup} title="Show the panels you closed in this workspace">
                 Restore {closedInGroup.length} closed
@@ -174,6 +182,16 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
                 {isAI ? <span className="ai-pulse-dot" /> : def.dotColor && <span className={`live-dot ${def.dotColor}`} />}
                 <span className="panel-title" style={{ flex: 1 }}>{def.title}</span>
                 <PanelMapToggle map={def.map} panelState={panelState} onToggleLayer={onToggleLayer} />
+                <button
+                  type="button"
+                  className="close-x"
+                  aria-label={`Pop out ${def.title} as a window`}
+                  title="Pop out as a window — or drag this header onto the map"
+                  onMouseDown={e => e.stopPropagation()}
+                  onClick={() => onPopOut(def.id)}
+                >
+                  <PictureInPicture2 size={13} strokeWidth={2.25} />
+                </button>
                 <CloseButton onClick={() => closePanel(def.id)} label={`Close ${def.title} panel`} />
               </div>
               <div className="dock-body" style={{ flex: '1 1 0', minHeight: 0, overflow: 'auto' }}>
@@ -188,7 +206,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
           <div style={{ padding: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 6 }}>
             <span style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 600 }}>No panels visible</span>
             <span style={{ fontSize: 10, color: 'var(--text3)' }}>
-              {closedInGroup.length > 0 ? 'Use “Restore closed” above to bring them back' : 'Drag from the observe tray to restore'}
+              {closedInGroup.length > 0 ? 'Use “Restore closed” above to bring them back' : 'Panels open as windows are listed in the taskbar under the map'}
             </span>
           </div>
         )}

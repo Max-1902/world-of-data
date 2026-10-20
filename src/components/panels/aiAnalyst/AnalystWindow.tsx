@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom'
 import { ExternalLink, Maximize2, Minimize2, Minus, Plus, Shrink, Expand, MessageSquare } from 'lucide-react'
 import PanelHost from '../../PanelHost'
 import type { PanelProps } from '../../../panels/types'
+import { prepareWindow, watchPopup } from '../../../utils/popupWindow'
 
 const AIAnalystPanel = lazy(() => import('../AIAnalystPanel').then(m => ({ default: m.AIAnalystPanel })))
 
@@ -67,28 +68,6 @@ function loadScale(): number {
   return 1
 }
 
-/** Make a blank pop-up look like the dashboard: same stylesheets, same root attributes. */
-function prepareWindow(w: Window) {
-  const d = w.document
-  d.head.replaceChildren()
-  d.body.replaceChildren()
-  const meta = d.createElement('meta')
-  meta.setAttribute('charset', 'utf-8')
-  d.head.append(meta)
-  d.title = 'Analyst — Macroeconomic Forecasting System'
-  for (const el of document.querySelectorAll('link[rel="stylesheet"], style')) {
-    if (el instanceof HTMLLinkElement) {
-      const l = d.createElement('link')
-      l.rel = 'stylesheet'
-      l.href = el.href // absolute: the pop-up's base URL is not guaranteed to match
-      d.head.append(l)
-    } else d.head.append(d.importNode(el, true))
-  }
-  d.documentElement.className = document.documentElement.className
-  for (const a of Array.from(document.documentElement.attributes)) if (a.name.startsWith('data-')) d.documentElement.setAttribute(a.name, a.value)
-  d.body.className = 'ai-window-body'
-}
-
 export function AnalystWindowProvider({ panelProps, children }: { panelProps: PanelProps; children: ReactNode }) {
   // The one element the Analyst lives in; it is moved, never re-rendered elsewhere.
   const [host] = useState(() => { const d = document.createElement('div'); d.className = 'ai-host'; return d })
@@ -115,17 +94,7 @@ export function AnalystWindowProvider({ panelProps, children }: { panelProps: Pa
   // The separate window: dock back when the user closes it; close it when the dashboard goes away or we dock.
   useEffect(() => {
     if (!win) return
-    const back = () => { setWin(null); setMode(m => (m === 'window' ? 'dock' : m)) }
-    const poll = window.setInterval(() => { if (win.closed) back() }, 700)
-    const closeWin = () => win.close()
-    win.addEventListener('pagehide', back)
-    window.addEventListener('pagehide', closeWin)
-    return () => {
-      window.clearInterval(poll)
-      win.removeEventListener('pagehide', back)
-      window.removeEventListener('pagehide', closeWin)
-      if (!win.closed) win.close()
-    }
+    return watchPopup(win, () => { setWin(null); setMode(m => (m === 'window' ? 'dock' : m)) })
   }, [win])
 
   const popOut = useCallback(() => { setNotice(''); setWin(null); setMode('float') }, [])
@@ -138,7 +107,7 @@ export function AnalystWindowProvider({ panelProps, children }: { panelProps: Pa
       setMode('float')
       return
     }
-    prepareWindow(w)
+    prepareWindow(w, 'Analyst — Macroeconomic Forecasting System')
     setNotice('')
     setWin(w)
     setMode('window')

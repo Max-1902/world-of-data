@@ -18,7 +18,11 @@ src/
     SettingsModal.tsx            # layers / data sources / API key status / display prefs
     PanelDock/
       PanelDock.tsx               # right-hand panel stack — resizable, drag-to-reorder
-      ObserveTray.tsx             # bottom tray for panels popped out of the dock (up to 6)
+    Windows/                      # floating panel windows (multi-window terminal layout), up to 12:
+      WindowLayer.tsx             #   renders the windows + snap preview + dock-drag drop target; WindowTaskbar under the map
+      PanelWindow.tsx             #   one window: drag, 8-way resize, minimise/maximise, move to a separate browser window
+      geometry.ts                 #   pure: edge/corner snapping, split-by-drop, magnetic edges, linked resize, tile layouts
+      useWindowLayout.ts          #   window state + persistence (localStorage `ws-windows`)
       FloatingPanel.tsx           # legacy single floating panel (pre-registry)
     charts/                       # SVG chart primitives (TimeSeries, Bars, Magnitude, Heatmap, Scatter, Rank, CorrMatrix, ChartFrame)
     panels/                       # panel implementations, grouped by theme (NewsPanels, SecurityPanels,
@@ -56,7 +60,7 @@ Every panel in the right-hand dock is one entry in `src/panels/registry.tsx`:
   desc: 'ICG conflict tracking — 70+ states', render: () => <CrisisWatchPanel /> }
 ```
 
-`group` is the workspace (`overview | markets | analysis | country | security | geo | news`). `GROUP_ORDER` sets the order of workspaces in the left `Sidebar`, and `SIDEBAR_SECTIONS` sets the headings that group them: Start, Economy & forecasting, Context, Sources. `section` names a banner from `GROUP_SECTIONS[group]`. The dock shows panels section by section, each section under a numbered banner with a header and a one-line explanation, ordered from the most immediate or aggregated view to the detail behind it. `src/panels/registry.test.ts` checks that every panel's section exists and that no section is empty. Adding a panel means adding one entry here — `PanelDock`, `ObserveTray`, and `SettingsModal`'s layer list all read from this registry, so nothing else needs to change. Panels receive a shared `PanelProps` bag (`crises`, `flights`, `panelState`, `onToggleLayer`, `onGeoSearch`, `onCountryClick`, ...) and destructure only what they use.
+`group` is the workspace (`overview | markets | analysis | country | security | geo | news`). `GROUP_ORDER` sets the order of workspaces in the left `Sidebar`, and `SIDEBAR_SECTIONS` sets the headings that group them: Start, Economy & forecasting, Context, Sources. `section` names a banner from `GROUP_SECTIONS[group]`. The dock shows panels section by section, each section under a numbered banner with a header and a one-line explanation, ordered from the most immediate or aggregated view to the detail behind it. `src/panels/registry.test.ts` checks that every panel's section exists and that no section is empty. Adding a panel means adding one entry here — `PanelDock`, the floating windows (`Windows/`), and `SettingsModal`'s layer list all read from this registry, so nothing else needs to change. Panels receive a shared `PanelProps` bag (`crises`, `flights`, `panelState`, `onToggleLayer`, `onGeoSearch`, `onCountryClick`, ...) and destructure only what they use.
 
 ## Data flow: service → hook → panel
 
@@ -115,7 +119,7 @@ Everything downstream is pure and tested: `utils/dataAnalytics.ts` and `utils/he
 
 ## State ownership
 
-`App.tsx` is the single owner of cross-cutting state: `viewMode`, `panelState` (21 layer toggles, persisted to `localStorage`), `activeGroup` (which sidebar group is open), `selectedCountry` (drives `CountryDrawer`), and the observe-tray pop-out set. Everything else is local to its own hook or component. There is no global store (Redux/Zustand/Context) — prop drilling through `App.tsx` → `PanelDock`/`MapView` is deliberate and has stayed manageable at this size; revisit if panel count or prop surface grows significantly.
+`App.tsx` is the single owner of cross-cutting state: `viewMode`, `panelState` (21 layer toggles, persisted to `localStorage`), `activeGroup` (which sidebar group is open), `selectedCountry` (drives `CountryDrawer`), and the floating-window layout (`useWindowLayout`: which panels are popped out of the dock, and where). Everything else is local to its own hook or component. There is no global store (Redux/Zustand/Context) — prop drilling through `App.tsx` → `PanelDock`/`MapView` is deliberate and has stayed manageable at this size; revisit if panel count or prop surface grows significantly.
 
 
 ## Local history, alerts and source health
