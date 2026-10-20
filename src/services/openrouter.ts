@@ -254,13 +254,11 @@ export async function streamAIWithFallback(
 
 // ── Context builder ────────────────────────────────────────────────────────
 export interface ContextOptions {
-  /** "As of" time printed in the context; fixed in tests and frozen research contexts. */
+  /** "As of" time printed in the context; fixed in tests. */
   now?: Date
   /** Whether the flights / crises layers are switched on. Omitted = on. */
   flightsLayer?: boolean
   crisesLayer?: boolean
-  /** Set when flights are not measured for another reason (e.g. the research recorder does not poll OpenSky). */
-  flightsUnmeasuredReason?: string
   /** The last ACLED poll hit its row cap, so event counts are a sample of the window, not totals. */
   conflictCapped?: boolean
 }
@@ -291,8 +289,7 @@ export interface NotMeasured { what: string; why: string }
  */
 export function notMeasured(crises: CrisisEvent[], flights: Flight[], opts: ContextOptions = {}): NotMeasured[] {
   const out: NotMeasured[] = []
-  if (opts.flightsUnmeasuredReason) out.push({ what: 'Air traffic', why: opts.flightsUnmeasuredReason })
-  else if (opts.flightsLayer === false) out.push({ what: 'Air traffic', why: 'flights layer switched off' })
+  if (opts.flightsLayer === false) out.push({ what: 'Air traffic', why: 'flights layer switched off' })
   else if (flights.length === 0) out.push({ what: 'Air traffic', why: 'no flight data received from OpenSky' })
   if (opts.crisesLayer === false) out.push({ what: 'Live conflict events', why: 'crises layer switched off' })
   else if (!crises.some(c => !isBaseline(c))) out.push({ what: 'Live conflict events', why: 'no events received from ACLED' })

@@ -37,7 +37,7 @@ const near = (a: CrisisEvent, b: CrisisEvent) =>
  * events vanished from every count that skips the baseline.)
  *
  * Live events are still thinned against each other (same type within 0.5° keeps the first). That is unchanged
- * here but it lowers every downstream count; see research/AUDIT_2026-10-15.md (open methodology question).
+ * here but it lowers every downstream count (open methodology question).
  */
 export function mergeWithBaseline(live: CrisisEvent[]): CrisisEvent[] {
   const thinned = live.filter((ev, i) => !live.slice(0, i).some(prev => near(prev, ev)))

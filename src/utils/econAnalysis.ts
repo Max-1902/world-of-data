@@ -212,7 +212,7 @@ export const ALPHA = 0.05
  * inflated for lag-1 autocorrelation (Yue & Wang 2004 effective sample size). r1 is estimated on the Sen-detrended
  * series and bias-corrected, (n·r1 + 1)/(n − 4), because short samples underestimate it badly.
  *
- * Chosen by simulation (see README, research notes): on trendless AR(1) series with ρ = 0.6 and n = 15 the plain test
+ * Chosen by simulation: on trendless AR(1) series with ρ = 0.6 and n = 15 the plain test
  * calls ~24% "significant", trend-free pre-whitening ~29%, this correction ~9%. The price is lower power. "flat"
  * means no trend at the 5% level, not that the series is constant.
  */

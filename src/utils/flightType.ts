@@ -27,7 +27,7 @@ export const FLIGHT_TYPE_LABELS: Record<FlightType, string> = {
 // Added 2026-10-15 from ICAO Doc 8585 designators: BOX AeroLogic, GEC Lufthansa Cargo, DHK DHL Air UK,
 // DAE DHL Aero Expreso, CAO Air China Cargo, CKK China Cargo Airlines, CSS SF Airlines, MPH Martinair,
 // ABW AirBridgeCargo, NCA Nippon Cargo Airlines, SWN West Atlantic, TAY ASL Airlines Belgium.
-// The first three rows predate that and were not individually re-checked (see research/AUDIT_2026-10-15.md).
+// The first three rows predate that and were not individually re-checked.
 const CARGO_OPS = new Set([
   'UPS','FDX','FXE','GTI','ABX','ATN','CLX','CKS','FTH','POL',
   'NCR','WGN','KMI','MCF','SDO','TRK','BCS','AAO','DHL','TNT',
