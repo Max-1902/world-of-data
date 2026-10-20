@@ -37,23 +37,6 @@ function StockList({ symbols }: { symbols: string[] }) {
     () => fetchMultipleQuotes(key.split(',')), { initial: [], intervalMs: 60_000, key, globalReload: true },
   )
 
-  const noData = !loading && stocks.length === 0
-  if (noData) return (
-    <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-      <div style={{ fontSize: 10.5, color: 'var(--text3)', letterSpacing: '.1em', textAlign: 'center' }}>MARKET DATA UNAVAILABLE</div>
-      <div style={{ fontSize: 9.5, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.6 }}>
-        Set FINNHUB_KEY on the server<br />to enable live market feeds
-      </div>
-      {/* Skeleton rows */}
-      {symbols.slice(0, 4).map((sym, i) => (
-        <div key={i} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', opacity: 0.3 }}>
-          <div style={{ fontSize: 10.5, color: 'var(--text3)', width: 36, fontWeight: 700 }}>{sym}</div>
-          <div style={{ flex: 1, height: 3, background: 'var(--border)', borderRadius: 2 }} />
-          <div style={{ width: 40, height: 8, background: 'var(--border)', borderRadius: 2 }} />
-        </div>
-      ))}
-    </div>
-  )
   if (loading && stocks.length === 0) return (
     <div style={{ padding: '8px 10px' }}>
       {symbols.slice(0, 6).map((sym, i) => (
@@ -67,11 +50,12 @@ function StockList({ symbols }: { symbols: string[] }) {
       ))}
     </div>
   )
-  if (!loading && stocks.length === 0) return (
+  // an unset FINNHUB_KEY and a rate limit both arrive as an empty list, so the message names both
+  if (stocks.length === 0) return (
     <div style={{ padding: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-      <div style={{ fontSize: 10.5, color: 'var(--text3)', letterSpacing: '.1em' }}>DATA FEED INTERRUPTED</div>
+      <div style={{ fontSize: 10.5, color: 'var(--text3)', letterSpacing: '.1em' }}>MARKET DATA UNAVAILABLE</div>
       <div style={{ fontSize: 9.5, color: 'var(--text3)', textAlign: 'center', lineHeight: 1.5 }}>
-        Market data temporarily unavailable.<br />Finnhub may be rate-limiting.
+        FINNHUB_KEY is not set on the server,<br />or Finnhub is rate-limiting.
       </div>
       <button
         onClick={refresh}
