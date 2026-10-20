@@ -7,7 +7,7 @@ import type { PanelState } from '../types'
 export const LAYER_SECTIONS = [
   { title: 'LIVE TRACKING',        keys: ['flights'] },
   { title: 'EVENTS & HAZARDS',     keys: ['crises', 'analyticsHex', 'news', 'wildfires', 'humanitarian', 'gpsjam', 'outages', 'disasters'] },
-  { title: 'SECURITY & DEFENSE',   keys: ['military', 'militaryPersonnel', 'nuclear', 'sanctions', 'darkVessels', 'airspace'] },
+  { title: 'SECURITY & DEFENSE',   keys: ['military', 'militaryPersonnel', 'nuclear', 'sanctions', 'airspace'] },
   { title: 'ECONOMY',              keys: ['stocks', 'tradeStats', 'resources', 'oil', 'gas', 'countryAnalytics'] },
   { title: 'INFRASTRUCTURE',       keys: ['infrastructure', 'infraIndicators', 'ports', 'chokepoints'] },
   // Layers whose data is only drawn: no brief, trend, ranking, hex, drawer lookup or analyst tool reads it (checked

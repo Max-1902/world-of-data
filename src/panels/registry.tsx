@@ -22,7 +22,6 @@ const DrugTrafficPanel = lazy(() => import('../components/panels/SecurityPanels'
 const SanctionsPanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.SanctionsPanel })))
 const MilitaryPanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.MilitaryPanel })))
 const NuclearPanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.NuclearPanel })))
-const DarkVesselsPanel = lazy(() => import('../components/panels/DarkVesselsPanel').then(m => ({ default: m.DarkVesselsPanel })))
 const AirspacePanel = lazy(() => import('../components/panels/SecurityPanels').then(m => ({ default: m.AirspacePanel })))
 const USWebcamsPanel = lazy(() => import('../components/panels/WebcamPanels').then(m => ({ default: m.USWebcamsPanel })))
 const LiveFeedPanel = lazy(() => import('../components/panels/WebcamPanels').then(m => ({ default: m.LiveFeedPanel })))
@@ -163,11 +162,6 @@ const PANELS: PanelDef[] = [
     render: () => <DrugTrafficPanel />,
   },
   {
-    id: 'darkVessels', title: 'Dark ships', group: 'security', section: 'pressure', map: ['darkVessels'],
-    dotColor: 'red', desc: 'AIS switched off & encounters at sea (Global Fishing Watch)',
-    render: (p) => <DarkVesselsPanel onGeoSearch={p.onGeoSearch} />,
-  },
-  {
     id: 'militaryPersonnel', title: 'Force Size', group: 'security', section: 'military', map: 'inline',
     dotColor: 'red', desc: 'Armed forces personnel ranked by country (World Bank)',
     render: (p) => <MilitaryPersonnelPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
@@ -283,7 +277,7 @@ export const GROUP_SECTIONS: Record<PanelGroup, PanelSection[]> = {
   ],
   security: [
     { id: 'live', title: 'Live alerts', desc: 'Low air traffic against hand-set references, updated continuously. Not NOTAMs.' },
-    { id: 'pressure', title: 'Sanctions & illicit trade', desc: 'Economic pressure and criminal flows: sanctions registries, narcotics trafficking, and ships that switch off their transponders.' },
+    { id: 'pressure', title: 'Sanctions & illicit trade', desc: 'Economic pressure and criminal flows: sanctions registries and narcotics trafficking.' },
     { id: 'military', title: 'Military posture', desc: 'How large each armed force is, and where its installations are.' },
     { id: 'nuclear', title: 'Nuclear', desc: 'Reactors and weapons storage sites, worldwide and by country.' },
   ],

@@ -17,7 +17,6 @@ import {
   useDatacenterData,
   useFlightData,
   useGpsJamData,
-  useDarkVesselData,
   useHazardHexLayer,
   useHumanitarianData,
   useInfrastructureData,
@@ -62,7 +61,7 @@ export default function MapView({
   fires, showWildfires,
   showMilitary, showNuclear, showSanctions,
   showCameras, showInfrastructure, showDatacenters, showAirspace, showHumanitarian,
-  vessels, showVessels, showOil, showGas, showGPSJam, gpsJam, gfwEvents, showDarkVessels, showPorts, showPipelines,
+  vessels, showVessels, showOil, showGas, showGPSJam, gpsJam, showPorts, showPipelines,
   showChokepoints, showSupplyChain, showShippingDensity,
   outages, showOutages, disasterAlerts, showDisasters, showResources, showTradeStats, showMilitaryPersonnel,
   showInfraIndicators, showAnalyticsHex, showCountryAnalytics,
@@ -198,7 +197,6 @@ export default function MapView({
   useHumanitarianData(handle, { showHumanitarian })
   useOilGasData(handle, { showOil, showGas })
   useGpsJamData(handle, { showGPSJam, gpsJam })
-  useDarkVesselData(handle, { gfwEvents, showDarkVessels })
   const { countryData, countryShading } = useCountryAnalyticsLayer(handle, { showCountryAnalytics })
   const { analytics, hexSlice } = useHazardHexLayer(handle, { showAnalyticsHex })
   useMapResize(handle, { deepstateMode })
