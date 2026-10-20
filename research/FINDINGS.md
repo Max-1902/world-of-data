@@ -202,6 +202,15 @@ The default model (LFM 2.6B) again returned no usable answer in most cases: 30 o
 
 Limits: one context, 23 questions, 2 repeats, pattern grading checked by the same agent that tuned it. The 11 `needs: conflict` questions and the analyst's data-tool loop are still unmeasured.
 
+## Trend wording and undated events, 2026-10-19
+
+Found during a code cleanup, verified in code, fixed with regression tests (`trajectory.edges.test.ts`):
+
+1. **Watchlist reason text could contradict the trend flag.** The flag came from the raw delta, but the wording ("up from" / "down from") came from the delta *after* the +2 news and +2 flight boosts. A falling country with news coverage and nearby traffic could read "falling — 1 event in 72h, up from 4 in the prior week". The same text goes to the Analyst as `Trend rule: …`. The wording now follows the flag. The flag, the ranking and the backtest rule (`classifyTrend`) are unchanged.
+2. **An unparseable event date counted as "now".** It landed in the 72h bucket and pushed the country towards "rising". In backtest replays, with a past `now`, the same event counted as being in the future and was dropped, so live and replay disagreed. Undated events are now skipped in both. ACLED dates are plain `YYYY-MM-DD`, so this is unlikely to have fired in practice; not measured.
+
+No recorded eval context contains trajectory reasons (ACLED was unavailable on every recorded day), so no stored result changes.
+
 ## Not done
 
 - **Trend-flag backtest:** the code is built and tested (it reproduces the dashboard's flag exactly), but it hasn't run on real data. The ACLED account returned `flood_user_blocked` (locked after failed logins) and was left alone so the lock wouldn't be extended. Run `npm run research:backtest -- --fetch-days 180` once access is back.

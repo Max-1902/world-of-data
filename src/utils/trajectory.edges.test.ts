@@ -50,8 +50,19 @@ describe('window boundaries', () => {
     expect(computeTrajectories([crisis({ ageMs: -1 })], [], 6)).toEqual([])
   })
 
-  it('treats an unparseable date as "now" (recent) rather than dropping or crashing', () => {
-    expect(one([crisis({ date: 'not-a-date' })])).toMatchObject({ recentCount: 1 })
+  it('drops an unparseable date instead of counting it as a brand-new event', () => {
+    expect(computeTrajectories([crisis({ date: 'not-a-date' })], [], 6)).toEqual([])
+  })
+
+  it('regression: news and flight boosts never word a falling country as "up from"', () => {
+    // 3 recent vs a prior pace of 12 * 3/7 ≈ 5.1 → delta −2.1 (falling); +2 news +2 flights lifts it above 0
+    const crises = [crisis({ ageMs: HOUR }), ...Array.from({ length: 4 }, () => crisis({ ageMs: 5 * DAY }))]
+    const flights = Array.from({ length: 16 }, () => flight(0, 0))
+    const news = [article({ title: 'Testland unrest' })]
+    const entry = one(crises, flights, 6, news)
+    expect(entry.trend).toBe('falling')
+    expect(entry.delta).toBeGreaterThan(0)
+    expect(entry.reason).toMatch(/^1 event in 72h, down from 4/)
   })
 
   it('skips events with no country', () => {
