@@ -87,9 +87,9 @@ Panels add what isn't a map layer, e.g. weekly energy inventories (EIA). Curated
 
 Split view: the satellite map beside the embedded DeepState Ukraine battlefield monitor, with a live news feed in the dock.
 
-![The Americas shaded red and blue by how much electricity each country generates compared with what its GDP per capita predicts, with the Power Output ranking in the dock](docs/screenshots/power-output-vs-trend.jpg)
+![The Americas shaded by electricity generated per year, from the Power Output panel, with the country ranking in the dock](docs/screenshots/power-output-map.jpg)
 
-Infrastructure workspace, Power Output shown on the map in *Vs trend* mode: each country is shaded by the electricity it generates against what its GDP per capita predicts (red above, blue below), and the dock ranks countries by electricity generated (Ember via Our World in Data).
+Infrastructure workspace, Power Output shown on the map: each country is shaded by the electricity it generates per year (lighter = more), and the dock ranks them (China 10,583 TWh, United States 4,520 TWh, India 2,082 TWh) with each one's low-carbon share (Ember via Our World in Data). *Vs trend* switches the map to generation against what GDP per capita predicts.
 
 ## Analytics
 
