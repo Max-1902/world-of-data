@@ -83,11 +83,6 @@ const PANELS: PanelDef[] = [
     render: () => <MarketsPanel />,
   },
   {
-    id: 'inventories', title: 'Energy Inventories', group: 'markets', section: 'inventories', map: 'none', minHeight: 900,
-    dotColor: 'amber', desc: 'Weekly US crude, gasoline, distillate and natural-gas stocks against the same week in the previous five years (EIA, free key)',
-    render: () => <InventoriesPanel />,
-  },
-  {
     id: 'economy', title: 'Economy', group: 'markets', section: 'macro', map: 'inline',
     dotColor: 'blue', desc: 'Global trade profiles & World Bank data',
     render: (p) => <GlobalEconomyPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
@@ -127,6 +122,11 @@ const PANELS: PanelDef[] = [
     id: 'gasForecast', title: 'Gas Storage Forecast', group: 'analysis', section: 'forecasts', map: 'none', minHeight: 700,
     dotColor: 'green', desc: 'Next week’s change in US natural-gas storage — a seasonal model vs. the 5-year norm and last week, backtested week by week in time order (EIA, free key)',
     render: () => <GasStorageForecastPanel />,
+  },
+  {
+    id: 'inventories', title: 'Energy Inventories', group: 'analysis', section: 'forecasts', map: 'none', minHeight: 900,
+    dotColor: 'amber', desc: 'Weekly US crude, gasoline, distillate and natural-gas stocks against the same week in the previous five years (EIA, free key)',
+    render: () => <InventoriesPanel />,
   },
   {
     id: 'analyst', title: 'Analyst chat', group: 'analysis', section: 'ai', map: 'none',
@@ -268,13 +268,12 @@ export const GROUP_SECTIONS: Record<PanelGroup, PanelSection[]> = {
   ],
   markets: [
     { id: 'live', title: 'Markets today', desc: 'The fastest-moving signal: index and asset prices from the live feed.' },
-    { id: 'inventories', title: 'Inventories', desc: 'Weekly US stockpiles of crude oil, fuels and natural gas (EIA), against the same week in the previous five years.' },
     { id: 'macro', title: 'Macro indicators', desc: 'Slower, structural data per country: World Bank economic profiles and long-run global trends.' },
     { id: 'trade', title: 'Trade', desc: 'Who each country trades with, and what it exports and imports.' },
     { id: 'resources', title: 'Resources', desc: 'Critical minerals and commodities: reserves and production by country.' },
   ],
   analysis: [
-    { id: 'forecasts', title: 'Forecasts', desc: 'Statistical projections computed in your browser and backtested out of sample. Evidence first: these numbers are measured, not generated.' },
+    { id: 'forecasts', title: 'Forecasts', desc: 'Statistical projections computed in your browser and backtested out of sample, plus the weekly EIA stock data the gas forecast is built on. Evidence first: these numbers are measured, not generated.' },
     { id: 'ai', title: 'AI analyst', desc: 'A language model reasoning over the dashboard\'s live data. Inference, not evidence: its answers have not been systematically evaluated.' },
     { id: 'explore', title: 'Explore the data', desc: 'Open-ended analysis: compare any two country indicators, or study earthquake and wildfire patterns.' },
   ],
