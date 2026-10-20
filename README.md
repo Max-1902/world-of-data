@@ -50,18 +50,18 @@ flowchart LR
   R --> A["Answer cites R ids; CHART:R2 is drawn by the panel from R2's data"]
 ```
 
-## An AI that reads the analytics
+## An AI analyst that shows its evidence
 
-The analyst (any OpenRouter model, free by default) gets the comparison currently on screen as computed numbers, not as text to recall. I asked **Claude Sonnet 5.5** a data question:
+The analyst (any OpenRouter model, free by default) answers by requesting the dashboard's own data, not from memory. Asked:
 
-> *Which countries spend far more on defence than their wealth predicts, and what explains the top two?*
+> *Which economies have inflation rising fastest relative to GDP growth, and what does the forecast say for Germany? Show the chart.*
 
-- **The data**: ρ = 0.16, wealth predicts almost nothing. Ukraine is +10.7 σ above the trend.
-- **The answer**: every figure matched the panel (Ukraine 34.5% vs 2.2% expected, Israel 8.8% vs 2.5%, Algeria 8.0%…). It said the wealth link is negligible and labelled its explanations "my context, not from the panel".
+| | |
+|---|---|
+| ![The investigation trail: six datasets queried, R1 inflation highest 15 and R2 GDP growth lowest 15 from the World Bank, with R2 expanded into a bar chart and the raw text the model received](docs/screenshots/ai-analyst-trail.jpg) | ![The answer: the R1 inflation chart, then a table of four economies on both lists with their inflation, growth and the gap between them, the gap labelled as the model's own arithmetic](docs/screenshots/ai-analyst-answer.jpg) |
+| **The investigation trail**: every query the model made, with an id (R1, R2…) and its source. R2's chart is drawn by the panel from the World Bank rows; the model only chose where to place it | **The answer** cites R1 and R2 in its table, tags the gap column as its own arithmetic (*inference*), and flags that South Sudan's growth figure is from 2015, so it can't be compared with 2024 inflation |
 
-Those were the World Bank's 2024 values as published then. They have since been revised (as of 2026-10-15: Ukraine 2024 34.0%, Israel 8.5%), and 2025 values now exist (Ukraine 39.6%), so the live panel shows different numbers.
-
-It also drove the map (flew to Ukraine, switched layers on). One question, one run per model: an illustration, not a benchmark.
+One question, one run: an illustration, not a benchmark. It also shows a limit: the question asked where inflation is *rising*, and the model answered with current levels (highest inflation, lowest growth), not changes.
 
 ### It can investigate on its own
 
