@@ -103,11 +103,6 @@ export function acledDashboardQuery(days: number, now: number = Date.now()): URL
   })
 }
 
-/** Severity the dashboard assigns to an ACLED event type. */
-export function acledSeverity(eventType: string): CrisisEvent['severity'] {
-  return SEVERITY_MAP[TYPE_MAP[eventType] ?? 'conflict'] ?? 'medium'
-}
-
 export function acledToCrisisEvent(e: Record<string, string>): CrisisEvent {
   const type = TYPE_MAP[e.event_type] ?? 'conflict'
   return {
@@ -158,7 +153,8 @@ export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
 
     const rows: Record<string, string>[] = Array.isArray(json.data) ? json.data : []
     lastPoll = { rows: rows.length, capped: rows.length >= ACLED_LIMIT }
-    return rows.map(acledToCrisisEvent)
+    // a row without coordinates can't be placed and would draw at NaN
+    return rows.map(acledToCrisisEvent).filter(e => Number.isFinite(e.latitude) && Number.isFinite(e.longitude))
   } catch (err) {
     console.warn('[ACLED] fetch error:', err)
     return []
