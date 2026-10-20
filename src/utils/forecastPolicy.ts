@@ -18,7 +18,7 @@ export interface Policy {
   interval: 'empirical' | 'parametric'
   /**
    * Half-width multiplier per horizon (1, 2, 3 years), set so the interval held the real value 95% of the time on
-   * forecasts made before 2010; checked on forecasts made from 2010 on (addendum 2 of the 2026-10-19 backtest).
+   * forecasts made before 2010; checked on forecasts made from 2010 on.
    */
   scale: [number, number, number]
   /** what the scaled interval actually held on forecasts made 2010–2024, per horizon — shown instead of "95%" */

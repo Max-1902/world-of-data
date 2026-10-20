@@ -318,7 +318,7 @@ const TOOLS: ToolDef[] = [
       return {
         title: c ? `Disaster alerts — ${c.name}` : 'GDACS disaster alerts, last 14 days', source: 'GDACS (orange/red only)',
         text: set.length
-          ? `${set.length} alerts (${set.filter(a => a.alert === 'Red').length} red):\n${set.slice(0, 12).map(a => `  • ${a.alert} ${DISASTER_LABELS[a.type]} — ${a.name.length > 90 ? a.name.slice(0, 89) + "…" : a.name}, ${a.country}${a.isCurrent ? ' (ongoing)' : ''}: ${a.severityText}`).join('\n')}`
+          ? `${set.length} alerts (${set.filter(a => a.alert === 'Red').length} red):\n${set.slice(0, 12).map(a => `  • ${a.alert} ${DISASTER_LABELS[a.type]} — ${a.name.length > 90 ? a.name.slice(0, 89) + '…' : a.name}, ${a.country}${a.isCurrent ? ' (ongoing)' : ''}: ${a.severityText}`).join('\n')}`
           : `No orange/red GDACS alerts${c ? ` for ${c.name}` : ''} in the last 14 days.`,
       }
     },
@@ -735,5 +735,5 @@ export function formatToolResults(results: ToolResult[], dropped = 0): string {
   ].filter(Boolean).join('\n\n')
 }
 
-/** Series catalogue entries matching an indicator query — exported for tests. */
+/** Internals exported for tests. */
 export const _test = { findSeries, findIndicator, dailyCounts, INDICATOR_BY_ID }
