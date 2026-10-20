@@ -3,7 +3,7 @@ import { useMemo, useState, useEffect } from 'react'
 import type { CrisisEvent, Flight } from '../../types'
 import type { Earthquake } from '../../services/earthquakes'
 import type { FirePoint } from '../../services/wildfires'
-import { REFUGEE_FLOWS, REFUGEE_CAMPS, BORDER_CROSSINGS, UNHCR_OFFICES } from '../../services/unhcr'
+import { REFUGEE_CAMPS, BORDER_CROSSINGS, UNHCR_OFFICES } from '../../services/unhcr'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS } from '../../services/military'
 import { SANCTIONED_COUNTRIES } from '../../services/sanctions'
 import { ALL_INFRA_POINTS, fetchPowerPlantsForCountry, type InfraPoint } from '../../services/infrastructure'
@@ -14,9 +14,11 @@ import { fetchMilitaryPersonnelRanking, type MilitaryPersonnelEntry } from '../.
 import { fetchInfraIndicatorRanking, type CountryInfraEntry } from '../../services/infraIndicators'
 import { fetchCivilFacilities, type CivilFacility } from '../../services/civilFacilities'
 import { matchCountry } from './parts'
+import { useDisplacement } from '../../hooks/useDisplacement'
 import { quakesInCountry } from '../../utils/countryBrief'
 
 export function useCountryDrawerData(country: string, crises: CrisisEvent[], flights: Flight[], earthquakes?: Earthquake[], fires?: FirePoint[]) {
+  const displacement = useDisplacement()
   return useMemo(() => {
     const lc = country.toLowerCase()
 
@@ -27,14 +29,25 @@ export function useCountryDrawerData(country: string, crises: CrisisEvent[], fli
     const allRisks = computeCountryRisk(crises)
     const risk = allRisks.find(r => matchCountry(r.country, lc))
 
-    // Refugee flows
-    const outflows = REFUGEE_FLOWS.filter(f => matchCountry(f.label.split(' → ')[0], lc))
-    const inflows = REFUGEE_FLOWS.filter(f => {
-      const d = f.label.split(' → ')[1]
-      return d ? matchCountry(d, lc) : false
-    })
-    const hosting = inflows.reduce((s, f) => s + f.count, 0)
-    const origin = outflows.reduce((s, f) => s + f.count, 0)
+    // Refugee corridors (live UNHCR, ≥ MIN_CORRIDOR people), matched by ISO code where the name resolves
+    const iso2 = resolveISO2(country)
+    const isCountry = (code: string, name: string) => (iso2 && code ? code === iso2 : matchCountry(name, lc))
+    const flows = displacement.status === 'ok'
+      ? displacement.snap.corridors.map(c => ({
+          label: `${c.fromName} → ${c.toName}`, origin: c.fromPoint, dest: c.toPoint, count: c.count, prev: c.prev,
+          fromIso2: c.fromIso2, toIso2: c.toIso2, fromName: c.fromName, toName: c.toName,
+        }))
+      : []
+    const outflows = flows.filter(f => isCountry(f.fromIso2, f.fromName))
+    const inflows = flows.filter(f => isCountry(f.toIso2, f.toName))
+    // Country totals include every corridor, not only the mapped ones
+    const totals = displacement.status === 'ok'
+      ? displacement.snap.countries.find(c => isCountry(c.iso2, c.name)) ?? null
+      : null
+    const hosting = totals?.hosted ?? 0
+    const origin = totals?.abroad ?? 0
+    const idps = totals?.idps ?? 0
+    const displacementYear = displacement.status === 'ok' ? displacement.snap.year : null
 
     // Camps, crossings, offices
     const camps = REFUGEE_CAMPS.filter(c => matchCountry(c.country, lc))
@@ -98,9 +111,9 @@ export function useCountryDrawerData(country: string, crises: CrisisEvent[], fli
       milBases, nukes, sanction, infra,
       nearbyFlights, flightTypes, countryFlights: countryFlights.length,
       nearbyQuakes, nearbyFires,
-      hosting, origin,
+      hosting, origin, idps, displacementYear,
     }
-  }, [country, crises, flights, earthquakes, fires])
+  }, [country, crises, flights, earthquakes, fires, displacement])
 }
 
 /** Per-country fetches (World Bank, WRI, OSM Overpass); each resets when the country changes. */

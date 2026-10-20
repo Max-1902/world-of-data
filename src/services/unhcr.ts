@@ -84,7 +84,7 @@ export const TOP_HOSTING: UNHCRStat[] = [
   { iso3:'SDN', iso2:'SD', country:'Sudan',            refugees:1_100_000, asylum_seekers:14_000,  idps:8_200_000,  stateless:0, total:9_314_000, role:'hosting' },
   { iso3:'KEN', iso2:'KE', country:'Kenya',            refugees:760_000,   asylum_seekers:14_000,  idps:0,          stateless:0, total:774_000,   role:'hosting' },
   { iso3:'TZA', iso2:'TZ', country:'Tanzania',         refugees:302_000,   asylum_seekers:9_000,   idps:0,          stateless:0, total:311_000,   role:'hosting' },
-  { iso3:'CHD', iso2:'TD', country:'Chad',             refugees:1_000_000, asylum_seekers:3_000,   idps:430_000,    stateless:0, total:1_433_000, role:'hosting' },
+  { iso3:'TCD', iso2:'TD', country:'Chad',             refugees:1_000_000, asylum_seekers:3_000,   idps:430_000,    stateless:0, total:1_433_000, role:'hosting' },
   { iso3:'USA', iso2:'US', country:'United States',    refugees:340_000,   asylum_seekers:1_450_000,idps:0,         stateless:0, total:1_790_000, role:'hosting' },
   { iso3:'FRA', iso2:'FR', country:'France',           refugees:380_000,   asylum_seekers:184_000, idps:0,          stateless:0, total:564_000,   role:'hosting' },
   { iso3:'CAN', iso2:'CA', country:'Canada',           refugees:310_000,   asylum_seekers:202_000, idps:0,          stateless:0, total:512_000,   role:'hosting' },
@@ -356,90 +356,4 @@ export const OFFICE_TYPE_COLORS: Record<OfficeType, string> = {
   liaison:    '#aaccff',
 }
 
-// ── Refugee Flow Corridors (major origin → host arcs) ───────────────────────
-export interface RefugeeFlow {
-  origin:  [number, number]  // [lng, lat]
-  dest:    [number, number]
-  label:   string
-  count:   number
-}
-
-export const REFUGEE_FLOWS: RefugeeFlow[] = [
-  // Syria → neighbours & Europe
-  { origin: [38.99, 34.80], dest: [35.24, 38.96], label: 'Syria → Turkey',       count: 3_600_000 },
-  { origin: [38.99, 34.80], dest: [35.86, 33.85], label: 'Syria → Lebanon',      count: 1_500_000 },
-  { origin: [38.99, 34.80], dest: [36.23, 31.95], label: 'Syria → Jordan',       count: 670_000 },
-  { origin: [38.99, 34.80], dest: [44.36, 33.31], label: 'Syria → Iraq',         count: 310_000 },
-  { origin: [38.99, 34.80], dest: [10.45, 51.16], label: 'Syria → Germany',      count: 800_000 },
-  // Ukraine → Europe
-  { origin: [31.16, 48.38], dest: [19.14, 51.91], label: 'Ukraine → Poland',     count: 960_000 },
-  { origin: [31.16, 48.38], dest: [10.45, 51.16], label: 'Ukraine → Germany',    count: 1_100_000 },
-  { origin: [31.16, 48.38], dest: [25.01, 45.94], label: 'Ukraine → Romania',    count: 100_000 },
-  { origin: [31.16, 48.38], dest: [28.86, 47.01], label: 'Ukraine → Moldova',    count: 110_000 },
-  // Afghanistan → neighbours
-  { origin: [67.71, 33.94], dest: [69.35, 30.38], label: 'Afghanistan → Pakistan',  count: 2_100_000 },
-  { origin: [67.71, 33.94], dest: [53.69, 32.43], label: 'Afghanistan → Iran',      count: 3_800_000 },
-  // Venezuela → Latin America
-  { origin: [-66.59, 6.42], dest: [-74.30, 4.57], label: 'Venezuela → Colombia',    count: 2_900_000 },
-  { origin: [-66.59, 6.42], dest: [-75.02,-9.19], label: 'Venezuela → Peru',        count: 1_500_000 },
-  { origin: [-66.59, 6.42], dest: [-78.18,-1.83], label: 'Venezuela → Ecuador',     count: 500_000 },
-  { origin: [-66.59, 6.42], dest: [-51.93,-14.24],label: 'Venezuela → Brazil',      count: 400_000 },
-  // South Sudan → neighbours
-  { origin: [31.57, 6.88], dest: [32.29, 1.37],  label: 'S. Sudan → Uganda',       count: 950_000 },
-  { origin: [31.57, 6.88], dest: [37.91, 8.62],  label: 'S. Sudan → Ethiopia',     count: 400_000 },
-  { origin: [31.57, 6.88], dest: [15.83, 12.13], label: 'S. Sudan → Chad',         count: 120_000 },
-  // Myanmar → Bangladesh
-  { origin: [96.68, 21.91], dest: [90.36, 23.68], label: 'Myanmar → Bangladesh',    count: 980_000 },
-  // Somalia → Kenya/Ethiopia
-  { origin: [46.20, 5.15], dest: [36.82, -1.29], label: 'Somalia → Kenya',         count: 300_000 },
-  { origin: [46.20, 5.15], dest: [38.75, 9.03],  label: 'Somalia → Ethiopia',      count: 250_000 },
-  // Sudan → Chad
-  { origin: [30.22, 12.86], dest: [18.73, 15.45], label: 'Sudan → Chad',            count: 1_000_000 },
-  // DRC → neighbours
-  { origin: [21.76, -4.04], dest: [32.58, 0.35],  label: 'DRC → Uganda',            count: 500_000 },
-  { origin: [21.76, -4.04], dest: [30.06, -1.94], label: 'DRC → Rwanda',            count: 80_000 },
-]
-
-// ── ISO3 → country totals for choropleth (combined hosting + origin) ────────
-// Maps ISO3 codes used in Mapbox country-boundaries tileset to displacement totals
-export const COUNTRY_DISPLACEMENT: Record<string, { hosting: number; origin: number; iso2: string }> = {
-  IRN: { hosting: 3_800_000, origin: 0, iso2: 'IR' },
-  TUR: { hosting: 3_800_000, origin: 0, iso2: 'TR' },
-  COL: { hosting: 7_300_000, origin: 0, iso2: 'CO' },
-  DEU: { hosting: 2_951_000, origin: 0, iso2: 'DE' },
-  PAK: { hosting: 2_100_000, origin: 0, iso2: 'PK' },
-  UGA: { hosting: 1_749_000, origin: 0, iso2: 'UG' },
-  ETH: { hosting: 4_918_000, origin: 4_048_000, iso2: 'ET' },
-  BGD: { hosting: 1_380_000, origin: 1_262_000, iso2: 'BD' },
-  POL: { hosting: 978_000, origin: 0, iso2: 'PL' },
-  SDN: { hosting: 9_314_000, origin: 9_128_000, iso2: 'SD' },
-  KEN: { hosting: 774_000, origin: 0, iso2: 'KE' },
-  TZA: { hosting: 311_000, origin: 0, iso2: 'TZ' },
-  TCD: { hosting: 1_433_000, origin: 0, iso2: 'TD' },
-  USA: { hosting: 1_790_000, origin: 0, iso2: 'US' },
-  SSD: { hosting: 2_469_000, origin: 4_460_000, iso2: 'SS' },
-  RUS: { hosting: 1_265_000, origin: 0, iso2: 'RU' },
-  VEN: { hosting: 0, origin: 7_900_000, iso2: 'VE' },
-  SYR: { hosting: 0, origin: 14_260_000, iso2: 'SY' },
-  AFG: { hosting: 0, origin: 13_000_000, iso2: 'AF' },
-  UKR: { hosting: 0, origin: 10_700_000, iso2: 'UA' },
-  MMR: { hosting: 0, origin: 4_580_000, iso2: 'MM' },
-  COD: { hosting: 0, origin: 7_958_000, iso2: 'CD' },
-  SOM: { hosting: 0, origin: 4_642_000, iso2: 'SO' },
-  ERI: { hosting: 0, origin: 633_000, iso2: 'ER' },
-  NGA: { hosting: 0, origin: 3_847_000, iso2: 'NG' },
-  IRQ: { hosting: 0, origin: 1_438_000, iso2: 'IQ' },
-  CAF: { hosting: 0, origin: 1_449_000, iso2: 'CF' },
-  LBN: { hosting: 1_500_000, origin: 0, iso2: 'LB' },
-  JOR: { hosting: 670_000, origin: 0, iso2: 'JO' },
-  RWA: { hosting: 130_000, origin: 0, iso2: 'RW' },
-  CMR: { hosting: 400_000, origin: 0, iso2: 'CM' },
-  FRA: { hosting: 564_000, origin: 0, iso2: 'FR' },
-  SWE: { hosting: 337_000, origin: 0, iso2: 'SE' },
-  PER: { hosting: 1_500_000, origin: 0, iso2: 'PE' },
-  ECU: { hosting: 500_000, origin: 0, iso2: 'EC' },
-  BRA: { hosting: 400_000, origin: 0, iso2: 'BR' },
-  GRC: { hosting: 100_000, origin: 0, iso2: 'GR' },
-  MDA: { hosting: 110_000, origin: 0, iso2: 'MD' },
-  ROM: { hosting: 100_000, origin: 0, iso2: 'RO' },
-}
+// Origin → asylum corridors and per-country totals are live from UNHCR: see ./displacement.ts.
