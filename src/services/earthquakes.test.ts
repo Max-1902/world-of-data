@@ -25,6 +25,17 @@ describe('fetchEarthquakes', () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain('4.5_week.geojson')
   })
 
+  it('skips malformed features instead of dropping the whole feed', async () => {
+    mockFetch(() => jsonResponse({
+      features: [
+        { id: 'bad1', properties: { mag: 5 }, geometry: null },
+        { id: 'bad2', properties: { mag: null, place: 'x' }, geometry: { coordinates: [1, 2, 3] } },
+        { id: 'ok', properties: { mag: 4.8, place: null, time: 5, url: 'u' }, geometry: { coordinates: [10, 20, 30] } },
+      ],
+    }))
+    expect(await fetchEarthquakes()).toEqual([{ id: 'ok', magnitude: 4.8, place: 'Unknown location', time: 5, latitude: 20, longitude: 10, depth: 30, url: 'u' }])
+  })
+
   it('returns [] when features is missing', async () => {
     mockFetch(() => jsonResponse({}))
     expect(await fetchEarthquakes()).toEqual([])
