@@ -24,6 +24,8 @@ export interface CrisisEvent {
   description: string
   source: string
   fatalities?: number
+  /** Year-old ACLED fallback (services/crises.ts fetchACLEDArchive): map display only, never in the live list. */
+  archived?: boolean
 }
 
 export interface NewsArticle {

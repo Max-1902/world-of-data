@@ -158,7 +158,9 @@ export default function App() {
   }, [windows.actions, focusInDock])
 
   const { flights, refresh: refreshFlights }         = useFlights(panelState.flights)
-  const { crises, refresh: refreshCrises } = useCrises(panelState.crises)
+  const { crises, archive: crisisArchive, refresh: refreshCrises } = useCrises(panelState.crises)
+  // Year-old ACLED events go to the map only; everything else (alerts, history, analyst) gets `crises`.
+  const mapCrises = useMemo(() => crisisArchive ? [...crises, ...crisisArchive.events] : crises, [crises, crisisArchive])
   const { articles, loadHeadlines: refreshNews }     = useNews()
   const { stocks, refresh: refreshStocks }           = useStocks(panelState.stocks)
   const { earthquakes, refresh: refreshEarthquakes } = useEarthquakes(panelState.crises)
@@ -321,7 +323,7 @@ export default function App() {
           <MapView
             viewMode={viewMode}
             flights={flights}
-            crises={crises}
+            crises={mapCrises}
             newsPins={newsPins}
             stocks={stocks}
             earthquakes={earthquakes}
@@ -376,6 +378,11 @@ export default function App() {
             onToggleLayer={toggleLayer}
             onClearLayers={clearLayers}
           />
+          {crisisArchive && panelState.crises && (
+            <div className="map-archive-note" role="status">
+              Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.
+            </div>
+          )}
           </div>
           <Suspense fallback={null}>
             {selectedCountry && (

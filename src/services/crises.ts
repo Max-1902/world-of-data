@@ -94,9 +94,13 @@ export const ACLED_LIMIT = 500
 export function acledDashboardQuery(days: number, now: number = Date.now()): URLSearchParams {
   const since = new Date(now - days * 86400000).toISOString().split('T')[0]
   const today = new Date(now).toISOString().split('T')[0]
+  return acledWindowQuery(since, today)
+}
+
+function acledWindowQuery(since: string, until: string): URLSearchParams {
   return new URLSearchParams({
     _format: 'json',
-    event_date: `${since}|${today}`,
+    event_date: `${since}|${until}`,
     event_date_where: 'BETWEEN',
     limit: String(ACLED_LIMIT),
     fields: ACLED_FIELDS,
@@ -132,11 +136,52 @@ export function lastAcledPoll(): { rows: number; capped: boolean } | null {
 }
 
 export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
+  const rows = await fetchACLEDRows(acledDashboardQuery(days))
+  if (!rows) return []
+  lastPoll = { rows: rows.length, capped: rows.length >= ACLED_LIMIT }
+  return toEvents(rows)
+}
+
+// ── Archive fallback ─────────────────────────────────────────────────────────
+// Some myACLED access tiers only serve events older than ~12 months (measured Oct 2026 on the owner's account:
+// newest event 2025-10-20, so the 14-day query comes back empty). When that happens the map can show the same
+// window one year earlier instead, flagged `archived` so it is drawn and labelled as history. Archive events
+// must never be merged into the live crisis list: that list feeds alerts, snapshots, trends and the analyst,
+// which all treat it as current.
+
+export interface AcledArchive {
+  events: CrisisEvent[]
+  /** Inclusive date range of the archive window, YYYY-MM-DD. */
+  from: string
+  to: string
+}
+
+/** The `days`-long window ending exactly one calendar year before `now`. */
+export function acledArchiveWindow(days: number, now: number = Date.now()): { from: string; to: string } {
+  const end = new Date(now)
+  end.setUTCFullYear(end.getUTCFullYear() - 1)
+  const start = new Date(end.getTime() - days * 86400000)
+  return { from: start.toISOString().split('T')[0], to: end.toISOString().split('T')[0] }
+}
+
+export async function fetchACLEDArchive(days = 14, now: number = Date.now()): Promise<AcledArchive | null> {
+  const { from, to } = acledArchiveWindow(days, now)
+  const rows = await fetchACLEDRows(acledWindowQuery(from, to))
+  if (!rows?.length) return null
+  return { from, to, events: toEvents(rows).map(e => ({ ...e, archived: true })) }
+}
+
+// a row without coordinates can't be placed and would draw at NaN
+const toEvents = (rows: Record<string, string>[]): CrisisEvent[] =>
+  rows.map(acledToCrisisEvent).filter(e => Number.isFinite(e.latitude) && Number.isFinite(e.longitude))
+
+/** Raw rows for one query, or null when there is no token or the request failed. */
+async function fetchACLEDRows(query: URLSearchParams): Promise<Record<string, string>[] | null> {
   const token = await getACLEDToken()
-  if (!token) return []
+  if (!token) return null
 
   try {
-    const res = await fetch(`${ACLED_API}?${acledDashboardQuery(days)}`, {
+    const res = await fetch(`${ACLED_API}?${query}`, {
       headers: {
         Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
@@ -148,16 +193,13 @@ export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
 
     if (json.status !== 200) {
       console.warn('[ACLED] API error:', json.error)
-      return []
+      return null
     }
 
-    const rows: Record<string, string>[] = Array.isArray(json.data) ? json.data : []
-    lastPoll = { rows: rows.length, capped: rows.length >= ACLED_LIMIT }
-    // a row without coordinates can't be placed and would draw at NaN
-    return rows.map(acledToCrisisEvent).filter(e => Number.isFinite(e.latitude) && Number.isFinite(e.longitude))
+    return Array.isArray(json.data) ? json.data : []
   } catch (err) {
     console.warn('[ACLED] fetch error:', err)
-    return []
+    return null
   }
 }
 
