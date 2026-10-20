@@ -6,11 +6,12 @@
  * Two alert kinds, for countries the user watches:
  *  - event: a previously unseen live high/critical event appeared (incl. while the app was closed,
  *           because seen ids persist)
- *  - trend: the country's trajectory flipped to "rising"
+ *  - trend: the country's activity became unusually high for that country (or, when the feed is too short to
+ *           know its normal, its trajectory flipped to "rising")
  * Baseline entries are hand-entered "always ongoing" markers, never alerts.
  */
 import type { CrisisEvent } from '../types'
-import type { TrajectoryEntry } from '../utils/trajectory'
+import { isFlaggedUp, type TrajectoryEntry } from '../utils/trajectory'
 
 export interface WatchAlert {
   id: string
@@ -81,11 +82,13 @@ export function evaluateWatch(
   for (const t of trajectories) {
     const name = watched.get(norm(t.country))
     if (!name) continue
-    trends[name] = t.trend
-    if (prevSeen !== null && t.trend === 'rising' && memory.trends[name] !== 'rising') {
+    // memory keeps 'rising' for "flagged up", so a flag already raised isn't re-raised on the next poll
+    const flagged = isFlaggedUp(t)
+    trends[name] = flagged ? 'rising' : t.trend === 'rising' ? 'flat' : t.trend
+    if (prevSeen !== null && flagged && memory.trends[name] !== 'rising') {
       alerts.push({
         id: `tr-${name}-${new Date(now).toISOString().slice(0, 10)}`, t: now, country: name, kind: 'trend',
-        severity: 'high', title: `${name} activity is rising`, detail: t.reason, read: false,
+        severity: 'high', title: t.baseline ? `${name} activity is unusually high` : `${name} activity is rising`, detail: t.reason, read: false,
       })
     }
   }

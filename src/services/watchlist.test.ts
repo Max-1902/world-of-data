@@ -7,9 +7,11 @@ const ev = (id: string, country: string, severity: CrisisEvent['severity'] = 'hi
   id, title: `Event ${id}`, type: 'conflict', severity, latitude: 1, longitude: 1, country,
   date: '2026-09-30', description: '', source: 'ACLED', ...o,
 })
-const traj = (country: string, trend: TrajectoryEntry['trend'], reason = 'r'): TrajectoryEntry => ({
+const traj = (country: string, trend: TrajectoryEntry['trend'], reason = 'r', o: Partial<TrajectoryEntry> = {}): TrajectoryEntry => ({
   country, recentScore: 0, priorScore: 0, delta: 0, trend, velocity: 0, recentCount: 0, priorCount: 0, reason,
+  baseline: null, unusual: null, ...o,
 })
+const normal = { days: 20, expected: 3, pHigh: 0.4, pLow: 0.7 }
 const empty = { seen: null, trends: {} }
 
 describe('evaluateWatch', () => {
@@ -64,6 +66,16 @@ describe('evaluateWatch', () => {
     r = evaluateWatch(['Mali'], [], [traj('Mali', 'rising')], r.memory, 5)
     expect(r.alerts).toHaveLength(1)
     expect(r.memory.trends.Mali).toBe('rising')
+  })
+
+  it('with a known normal, alerts on "unusually high" rather than on a plain rise', () => {
+    let r = evaluateWatch(['Mali'], [], [traj('Mali', 'rising', 'r', { baseline: normal })], { seen: [], trends: {} }, 1)
+    expect(r.alerts).toEqual([])
+    r = evaluateWatch(['Mali'], [], [traj('Mali', 'rising', 'r', { baseline: { ...normal, pHigh: 0.001 }, unusual: 'high' })], r.memory, 2)
+    expect(r.alerts).toHaveLength(1)
+    expect(r.alerts[0].title).toBe('Mali activity is unusually high')
+    r = evaluateWatch(['Mali'], [], [traj('Mali', 'rising', 'r', { baseline: { ...normal, pHigh: 0.001 }, unusual: 'high' })], r.memory, 3)
+    expect(r.alerts).toEqual([])
   })
 
   it('does not re-fire a trend alert when a watched country briefly drops out of the trajectory list', () => {

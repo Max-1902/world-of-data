@@ -9,7 +9,7 @@ import { buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, QUI
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
-import { computeTrajectories, isBaseline, type TrajectoryEntry } from '../../utils/trajectory'
+import { computeTrajectories, isBaseline, isFlaggedUp, type TrajectoryEntry } from '../../utils/trajectory'
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
 import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
 import { summarizeForAI } from '../../utils/countryStats'
@@ -33,6 +33,11 @@ function WatchlistCard({ entry, onExplain, disabled = false }: { entry: Trajecto
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
         <Icon size={14} color={color} style={{ flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)', flex: 1 }}>{entry.country}</span>
+        {entry.unusual && (
+          <span className={`ai-trend-badge ${entry.unusual === 'high' ? 'rising' : 'falling'}`} title={`Measured against ${entry.country}'s own last ${entry.baseline?.days} days`}>
+            unusual
+          </span>
+        )}
         <span className={`ai-trend-badge ${entry.trend}`}>
           {entry.trend}
         </span>
@@ -566,14 +571,15 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
       {trajectories.length > 0 && (
         <div className="ai-watchlist" style={{ padding: showOutlook ? '12px 14px' : '7px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0, maxHeight: showOutlook ? '38%' : undefined, overflowY: 'auto' }}>
           <button className="ai-section-heading ai-outlook-toggle" onClick={() => setShowOutlook(v => !v)} aria-expanded={showOutlook} style={{ marginBottom: showOutlook ? 9 : 0 }}>
-            <span>Regional outlook · {trajectories.filter(t => t.trend === 'rising').length} rising</span>
+            <span>Regional outlook · {trajectories.filter(isFlaggedUp).length} {trajectories[0]?.baseline ? 'unusually high' : 'rising'}</span>
             <span>72-hour activity trends <ChevronDown size={11} style={{ transform: showOutlook ? 'rotate(180deg)' : undefined, verticalAlign: -2 }} /></span>
           </button>
           {showOutlook && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {trajectories.map(t => (
                 <WatchlistCard key={t.country} entry={t} disabled={!hasKey} onExplain={() => {
-                  ask(`Investigate the ${t.trend} trend for ${t.country}: ${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore}). What's driving this, what does the wider data (outages, disasters, news, economy) say, and what should I watch for next?`)
+                  const own = t.baseline ? ` Against its own last ${t.baseline.days} days it would normally see ~${Math.round(t.baseline.expected * 10) / 10} events in 72h (${t.unusual ? `unusually ${t.unusual}` : 'within its normal range'}).` : ''
+                  ask(`Investigate the ${t.trend} trend for ${t.country}: ${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore}).${own} What's driving this, what does the wider data (outages, disasters, news, economy) say, and what should I watch for next?`)
                 }} />
               ))}
             </div>

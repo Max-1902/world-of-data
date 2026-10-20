@@ -12,6 +12,24 @@ export interface TrajectoryEntry {
   priorCount: number
   reason: string
   newsHit?: string
+  /**
+   * The country measured against its own recent history (see `ownBaseline`). null when the feed doesn't reach
+   * back MIN_BASELINE_DAYS before the 72h window, so there is no "normal" to compare with.
+   */
+  baseline: OwnBaseline | null
+  /** 'high' / 'low' when the 72h count is that unlikely under the country's own normal (p < UNUSUAL_P), else null. */
+  unusual: 'high' | 'low' | null
+}
+
+export interface OwnBaseline {
+  /** whole days of history the normal was measured over (the days just before the 72h window) */
+  days: number
+  /** events this country's own normal predicts for a 72h window */
+  expected: number
+  /** P(a 72h count at least this high | the country's normal) */
+  pHigh: number
+  /** P(a 72h count at most this low | the country's normal) */
+  pLow: number
 }
 
 export const SEV_WEIGHT: Record<CrisisEvent['severity'], number> = {
@@ -21,6 +39,15 @@ export const SEV_WEIGHT: Record<CrisisEvent['severity'], number> = {
 export const RECENT_WINDOW_MS = 3 * 24 * 60 * 60 * 1000   // last 3 days
 export const PRIOR_WINDOW_MS  = 10 * 24 * 60 * 60 * 1000  // outer cutoff: events up to 10 days old count; 3–10 days old is the "prior" bucket
 export const FLAT_DEADZONE    = 2                          // |delta| below this reads as "flat"
+
+const DAY_MS = 24 * 60 * 60 * 1000
+export const BASELINE_MAX_DAYS = 28   // a country's normal is read from at most this many days before the 72h window
+export const MIN_BASELINE_DAYS = 7    // with less history than this there is no normal to compare against
+/**
+ * Flag threshold. Strict on purpose: the Watchlist tests every country at once, so at 0.05 a quiet day would
+ * still flag a few countries by chance; at 0.01 it is about one per 100 countries tested.
+ */
+export const UNUSUAL_P = 0.01
 
 /**
  * Baseline entries (src/hooks/useCrises.ts) are synthetic "always ongoing" markers stamped with
@@ -43,9 +70,98 @@ export function classifyTrend(recentScore: number, priorScore: number): { delta:
   return { delta, priorPace, trend }
 }
 
+// ── Own-normal surprise ─────────────────────────────────────────────────────
+// A raw point delta always ranks the biggest wars first (300 → 310 events beats 0 → 4). Instead each country's
+// 72h event count is compared with the count its *own* history predicts, and the question asked is how unlikely
+// that count is. Counts, not severity scores, because the tail probabilities below are defined on counts.
+
+// Lanczos approximation (g = 7), accurate to ~1e-13 for x > 0.
+const LANCZOS = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313,
+  -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7]
+export function logGamma(x: number): number {
+  if (x < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * x))) - logGamma(1 - x)
+  x -= 1
+  let a = LANCZOS[0]
+  const t = x + 7.5
+  for (let i = 1; i < 9; i++) a += LANCZOS[i] / (x + i)
+  return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a)
+}
+
+/**
+ * Count distribution with the given mean and variance: Poisson when variance ≤ mean, otherwise negative
+ * binomial. Conflict events come in bursts, so a country's day-to-day spread is usually far wider than Poisson's;
+ * using its own measured spread keeps a bursty country's ordinary swings from reading as surprises.
+ */
+function countLogPmf(mean: number, variance: number): (k: number) => number {
+  if (variance <= mean * 1.0001) return k => k * Math.log(mean) - mean - logGamma(k + 1)
+  const r = (mean * mean) / (variance - mean)
+  const p = mean / variance
+  const c = r * Math.log(p) - logGamma(r)
+  const lq = Math.log1p(-p)
+  return k => logGamma(k + r) - logGamma(k + 1) + c + k * lq
+}
+
+/** P(X ≥ k) and P(X ≤ k) for a count with this mean and variance. Exported for tests. */
+export function countTails(k: number, mean: number, variance: number): { pHigh: number; pLow: number } {
+  if (mean <= 0) return { pHigh: k <= 0 ? 1 : 0, pLow: 1 }
+  const logPmf = countLogPmf(mean, variance)
+  let pLow = 0
+  for (let j = 0; j <= k; j++) pLow += Math.exp(logPmf(j))
+  // summed upward from k rather than 1 − P(X < k), which loses tiny tail probabilities to rounding
+  let pHigh = 0
+  const limit = Math.max(k, mean) + 60 * Math.sqrt(Math.max(variance, mean)) + 100
+  for (let j = k; j < limit; j++) {
+    const term = Math.exp(logPmf(j))
+    pHigh += term
+    if (j > mean && term < pHigh * 1e-15) break
+  }
+  return { pHigh: Math.min(1, pHigh), pLow: Math.min(1, pLow) }
+}
+
+/**
+ * A country's normal 72h count, from its daily counts over the `days` before the window (zero days included).
+ * Half a pseudo-event keeps a country with no history from having a rate of exactly zero, where any single
+ * event would be "impossible"; with it, one event against a silent history is not flagged, two or more are.
+ */
+export function ownBaseline(dailyCounts: number[], recentCount: number): OwnBaseline {
+  const days = dailyCounts.length
+  const windowDays = RECENT_WINDOW_MS / DAY_MS
+  const total = dailyCounts.reduce((s, n) => s + n, 0)
+  const rate = (total + 0.5) / days
+  const raw = dailyCounts.reduce((s, n) => s + n * n, 0) / days - (total / days) ** 2
+  const dayVar = Math.max(rate, days > 1 ? raw * days / (days - 1) : 0)
+  // treats the three days as independent, which understates a sustained surge's rarity a little (conservative)
+  const expected = rate * windowDays
+  const { pHigh, pLow } = countTails(recentCount, expected, dayVar * windowDays)
+  return { days, expected, pHigh, pLow }
+}
+
+export function unusualness(b: OwnBaseline | null): TrajectoryEntry['unusual'] {
+  if (!b) return null
+  return b.pHigh < UNUSUAL_P ? 'high' : b.pLow < UNUSUAL_P ? 'low' : null
+}
+
+/**
+ * Whether an entry should be flagged as "up": unusually high for that country when its normal is known, and the
+ * plain rising rule otherwise (feed too short to have a normal).
+ */
+export function isFlaggedUp(t: Pick<TrajectoryEntry, 'trend' | 'baseline' | 'unusual'>): boolean {
+  return t.baseline ? t.unusual === 'high' : t.trend === 'rising'
+}
+
+const fmtExpected = (x: number) => x < 10 ? String(Math.round(x * 10) / 10) : String(Math.round(x))
+const fmtChance = (p: number) => p < 0.001 ? '<0.1%' : `${Math.round(p * 1000) / 10}%`
+
+function baselineClause(b: OwnBaseline, unusual: TrajectoryEntry['unusual']): string {
+  const vs = `~${fmtExpected(b.expected)} expected from its own last ${b.days} days`
+  if (unusual === 'high') return `unusually high for this country (${vs}; chance of this many or more ≈ ${fmtChance(b.pHigh)})`
+  if (unusual === 'low') return `unusually quiet for this country (${vs}; chance of this few or fewer ≈ ${fmtChance(b.pLow)})`
+  return `within this country's normal range (${vs})`
+}
+
 // Wording follows the unboosted trend, so a news or flight boost can't make a drop read as "up from".
-function reasonFor(recentCount: number, priorCount: number, trend: TrajectoryEntry['trend'], flightBoost: boolean, newsHit: boolean): string {
-  const suffix = [flightBoost && 'elevated air traffic nearby', newsHit && 'hot in recent news']
+function reasonFor(recentCount: number, priorCount: number, trend: TrajectoryEntry['trend'], flightBoost: boolean, newsHit: boolean, own: string | null = null): string {
+  const suffix = [own, flightBoost && 'elevated air traffic nearby', newsHit && 'hot in recent news']
     .filter(Boolean).join('; ')
   if (trend === 'rising') {
     const base = priorCount === 0
@@ -75,8 +191,10 @@ function findNewsHit(country: string, articles: NewsArticle[], now: number): New
 
 /**
  * Rule-based trajectory scoring: compares each country's crisis activity in the
- * last 3 days against the pace of the 3–10 day-prior window (using each event's own date),
- * ranking the fastest-rising regions. Pure function, no network calls.
+ * last 3 days against the pace of the 3–10 day-prior window (using each event's own date).
+ * Where the feed reaches back far enough, each country is also measured against its own normal (`baseline`) and
+ * the list is ranked by how unusual the last 72h are for that country, not by raw size. Without that history it
+ * falls back to ranking the fastest-rising regions. Pure function, no network calls.
  *
  * `now` is the "as of" instant; it defaults to the present and exists so the same rule can be replayed
  * on past days without any look-ahead.
@@ -87,20 +205,38 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
   // Including baseline markers would make every long-running conflict misread as "rising, no prior activity".
   const dated = crises.filter(c => !isBaseline(c))
 
+  // How far back the feed reaches is read from its oldest event (any country), because a feed capped at N rows
+  // can stop short of the window it asked for. Reading it this way can only shorten the history, never pad it
+  // with days that weren't fetched — a missing day counted as zero would make every country look surging.
+  let oldest = Infinity
+  const ages: number[] = []
   for (const c of dated) {
-    if (!c.country) continue
-    // an undated event can't be placed in either window (it used to count as "now" and inflate the recent one)
     const t = Date.parse(c.date)
-    if (Number.isNaN(t)) continue
     const age = now - t
+    ages.push(age)
+    if (c.country && age >= 0 && t < oldest) oldest = t
+  }
+  const historyDays = Math.min(BASELINE_MAX_DAYS, Math.floor((now - RECENT_WINDOW_MS - oldest) / DAY_MS))
+  const hasHistory = historyDays >= MIN_BASELINE_DAYS
+  const daily: Record<string, number[]> = {}
+
+  dated.forEach((c, i) => {
+    if (!c.country) return
+    // an undated event can't be placed in either window (it used to count as "now" and inflate the recent one)
+    const age = ages[i]
+    if (Number.isNaN(age)) return
+    if (hasHistory && age > RECENT_WINDOW_MS) {
+      const bin = Math.floor((age - RECENT_WINDOW_MS) / DAY_MS)
+      if (bin < historyDays) (daily[c.country] ??= new Array(historyDays).fill(0))[bin]++
+    }
     // PRIOR_WINDOW_MS is the outer cutoff, so the prior bucket spans 7 days — the length classifyTrend
     // normalises by. (It used to be RECENT + PRIOR = 13 days, a 10-day bucket scaled as 7, which read every
     // steady country as "falling".)
-    if (age < 0 || age > PRIOR_WINDOW_MS) continue
+    if (age < 0 || age > PRIOR_WINDOW_MS) return
     if (!byCountry[c.country]) byCountry[c.country] = { recent: [], prior: [] }
     if (age <= RECENT_WINDOW_MS) byCountry[c.country].recent.push(c)
     else byCountry[c.country].prior.push(c)
-  }
+  })
 
   const score = (events: CrisisEvent[]) => events.reduce((s, e) => s + (SEV_WEIGHT[e.severity] ?? 1), 0)
 
@@ -121,6 +257,9 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
     // Cross-check: is this country mentioned in recent (48h) news coverage?
     const newsHit = findNewsHit(country, articles, now)
 
+    const baseline = hasHistory ? ownBaseline(daily[country] ?? new Array(historyDays).fill(0), recent.length) : null
+    const unusual = unusualness(baseline)
+
     const adjustedDelta = Math.round((delta + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)) * 10) / 10
 
     const maxPossible = Math.max(recentScore, priorPace, 1) + (flightBoost ? 2 : 0) + (newsHit ? 2 : 0)
@@ -134,8 +273,10 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
       velocity,
       recentCount: recent.length,
       priorCount: prior.length,
-      reason: reasonFor(recent.length, prior.length, trend, flightBoost, !!newsHit),
+      reason: reasonFor(recent.length, prior.length, trend, flightBoost, !!newsHit, baseline && baselineClause(baseline, unusual)),
       newsHit: newsHit?.title,
+      baseline,
+      unusual,
     }
   })
 
@@ -158,10 +299,13 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
       recentCount: 0, priorCount: 0,
       reason: newsHit ? 'No tracked crisis activity in the last 10 days; mentioned in recent news' : 'No tracked crisis activity in the last 10 days',
       newsHit: newsHit?.title,
+      baseline: null,
+      unusual: null,
     }]
   }
 
+  // With a known normal: most unusual first (smallest chance of a count this high), size only breaks ties.
   return withActivity
-    .sort((a, b) => b.delta - a.delta)
+    .sort((a, b) => a.baseline && b.baseline ? a.baseline.pHigh - b.baseline.pHigh || b.delta - a.delta : b.delta - a.delta)
     .slice(0, limit)
 }

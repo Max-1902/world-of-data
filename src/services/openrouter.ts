@@ -323,8 +323,10 @@ export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], 
     .join(', ')
 
   const risingTrend = trajectories.filter(t => t.trend === 'rising')
+  const unusualHigh = trajectories.filter(t => t.unusual === 'high')
+  const ownNormal = trajectories.find(t => t.baseline)?.baseline
   const trajectoryLines = trajectories.map(t =>
-    `  • ${t.country}: ${t.trend.toUpperCase()} (velocity ${t.velocity}/100) — ${t.reason}`
+    `  • ${t.country}: ${t.trend.toUpperCase()}${t.unusual ? ` · UNUSUALLY ${t.unusual.toUpperCase()} FOR THIS COUNTRY` : ''} (velocity ${t.velocity}/100) — ${t.reason}`
   ).join('\n')
 
   const conflicts = crisesMeasured ? `\
@@ -353,7 +355,9 @@ ${notMeasuredBlock}
 ${conflicts}
 ${reference}${trajectories.length > 0 ? `
 TRAJECTORY SIGNALS (rule-based, last 3d vs prior 7d — computed locally, not model-generated)
-  ${risingTrend.length} of ${trajectories.length} tracked regions trending upward
+  ${risingTrend.length} of ${trajectories.length} tracked regions trending upward${ownNormal ? `
+  Each country is also compared with its own last ${ownNormal.days} days of event counts (its own normal, allowing for its usual day-to-day swings); ${unusualHigh.length} ${unusualHigh.length === 1 ? 'is' : 'are'} unusually high (chance under its normal < 1%). The list is ordered by how unusual, not by size. This is a statistical flag, not a validated forecast.` : `
+  Own-normal comparison: NOT MEASURED — the feed does not reach back far enough to know each country's normal.`}
 ${trajectoryLines}` : ''}
 
 ${countryAnalytics ? `
@@ -372,7 +376,7 @@ AIR TRAFFIC
 DASHBOARD LAYERS (what the map can show — their data is NOT in this context unless it appears in a block above)
   Live flight positions (OpenSky ADS-B)
   Conflict events (ACLED)
-  Internet outage detection (IODA)
+  Internet outage detection (IODA) and verified outages with stated causes (Cloudflare Radar)
   News feeds (RSS from public broadcasters and newspapers, Google News, NYT)
   Market data (ETF and stock quotes via Finnhub; crypto via CoinGecko; FX via open.er-api.com)
   Earthquakes (USGS), wildfire hotspots (NASA FIRMS), disaster alerts (GDACS)

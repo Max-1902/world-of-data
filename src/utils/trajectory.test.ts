@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeTrajectories } from './trajectory'
+import { computeTrajectories, countTails, isFlaggedUp, BASELINE_MAX_DAYS } from './trajectory'
 import type { CrisisEvent, Flight, NewsArticle } from '../types'
 
 function crisis(overrides: Partial<CrisisEvent>): CrisisEvent {
@@ -157,5 +157,73 @@ describe('computeTrajectories', () => {
     expect(result).toHaveLength(2)
     expect(result[0].country).toBe('Big')
     expect(result[0].delta).toBeGreaterThanOrEqual(result[1].delta)
+  })
+})
+
+describe('own-normal surprise', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const now = Date.UTC(2026, 9, 19, 12)
+  const at = (daysBack: number) => new Date(now - daysBack * DAY).toISOString()
+  /** `perDay(d)` events for each day d (days back) from 0.5 to 24.5. */
+  const series = (country: string, perDay: (d: number) => number) =>
+    Array.from({ length: 25 }, (_, i) => i + 0.5).flatMap(d =>
+      Array.from({ length: perDay(d) }, (_, j) => crisis({ id: `${country}-${d}-${j}`, country, date: at(d) })))
+
+  it('countTails matches the Poisson tail and widens under overdispersion', () => {
+    // P(X ≥ 2 | Poisson(1)) = 1 − 2/e
+    expect(countTails(2, 1, 1).pHigh).toBeCloseTo(1 - 2 / Math.E, 10)
+    expect(countTails(0, 1, 1).pLow).toBeCloseTo(1 / Math.E, 10)
+    expect(countTails(10, 3, 30).pHigh).toBeGreaterThan(countTails(10, 3, 3).pHigh * 50)
+    // tiny tails are summed directly, not lost to 1 − cdf rounding
+    expect(countTails(60, 5, 5).pHigh).toBeGreaterThan(0)
+  })
+
+  it('ranks a quiet country jumping 0 → 4 above a large conflict moving within its normal range', () => {
+    const big = series('Bigland', d => d < 3 ? 103 + (d === 0.5 ? 5 : 0) : 100 + ((d * 2) % 7) - 3)
+    const small = series('Smallland', d => d < 3 && d !== 2.5 ? 2 : 0)
+    const [first, second] = computeTrajectories([...big, ...small], [], 6, [], null, now)
+    expect(first.country).toBe('Smallland')
+    expect(first.unusual).toBe('high')
+    expect(first.baseline?.days).toBe(21)
+    expect(first.reason).toContain('unusually high for this country')
+    expect(second.country).toBe('Bigland')
+    expect(second.unusual).toBeNull()
+    expect(second.delta).toBeGreaterThan(first.delta)   // bigger raw move, yet ranked second
+    expect(second.reason).toContain("within this country's normal range")
+  })
+
+  it('flags an unusually quiet country as low', () => {
+    const quiet = series('Hushland', d => d < 3 ? 0 : 6)
+    const [entry] = computeTrajectories(quiet, [], 6, [], null, now)
+    expect(entry.unusual).toBe('low')
+    expect(entry.reason).toContain('unusually quiet')
+  })
+
+  it('does not flag a bursty country for a count its own swings already cover', () => {
+    // mean ~3/day, but in bursts of 30 every tenth day
+    const bursty = series('Burstia', d => d < 3 ? (d === 1.5 ? 18 : 0) : Math.round(d) % 10 === 5 ? 30 : 0)
+    const [entry] = computeTrajectories(bursty, [], 6, [], null, now)
+    expect(entry.baseline!.expected).toBeGreaterThan(5)
+    expect(entry.unusual).toBeNull()
+  })
+
+  it('has no normal when the feed reaches back less than MIN_BASELINE_DAYS before the 72h window', () => {
+    const short = [crisis({ country: 'Newland', date: at(1) }), crisis({ country: 'Newland', date: at(8) })]
+    const [entry] = computeTrajectories(short, [], 6, [], null, now)
+    expect(entry.baseline).toBeNull()
+    expect(entry.unusual).toBeNull()
+  })
+
+  it('takes history length from the oldest event in the feed, capped at BASELINE_MAX_DAYS', () => {
+    const old = [crisis({ country: 'Elsewhere', date: at(60) }), crisis({ country: 'Here', date: at(1) })]
+    const [entry] = computeTrajectories(old, [], 6, [], null, now)
+    expect(entry.baseline?.days).toBe(BASELINE_MAX_DAYS)
+  })
+
+  it('isFlaggedUp uses the own-normal flag when known, else the rising rule', () => {
+    const b = { days: 10, expected: 1, pHigh: 0.5, pLow: 0.5 }
+    expect(isFlaggedUp({ trend: 'rising', baseline: null, unusual: null })).toBe(true)
+    expect(isFlaggedUp({ trend: 'rising', baseline: b, unusual: null })).toBe(false)
+    expect(isFlaggedUp({ trend: 'flat', baseline: b, unusual: 'high' })).toBe(true)
   })
 })
