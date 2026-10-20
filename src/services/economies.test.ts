@@ -3,7 +3,6 @@
  * that turns third-party rows into countries is fed every aggregate code the World Bank publishes, plus OWID's region
  * and former-state codes, and must emit none of them, while still keeping every real economy. tests/policy.test.ts
  * checks that no service keeps its own aggregate list again (three hand-copied lists drifted together once).
- * Live drift against the APIs themselves: `npm run research:coverage`.
  */
 import { describe, it, expect, vi } from 'vitest'
 import snapshot from '../data/wb-economies.json'

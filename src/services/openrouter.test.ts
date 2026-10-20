@@ -310,7 +310,7 @@ describe('buildDashboardContext', () => {
     expect(ctx).not.toContain('Total events')
   })
 
-  it('prints the given as-of time, so frozen research contexts are reproducible', () => {
+  it('prints the given as-of time', () => {
     const ctx = buildDashboardContext([], [], [], '', '', '', { now: new Date(Date.UTC(2026, 9, 7, 12)) })
     expect(ctx).toContain('Timestamp (UTC): Wed, 07 Oct 2026 12:00:00 GMT')
   })

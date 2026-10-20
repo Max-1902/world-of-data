@@ -5,9 +5,8 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { lastAcledPoll } from '../../services/crises'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare, ChevronDown, Maximize2, ExternalLink } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight } from '../../types'
-import { buildDashboardContext, buildSystemPrompt, notMeasured, CHAT_PARAMS, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
+import { buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
-import { runLog, downloadRuns } from '../../services/aiRuns'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
 import { computeTrajectories, isBaseline, type TrajectoryEntry } from '../../utils/trajectory'
@@ -311,17 +310,13 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     const sysMsg: DSMessage = { role: 'system', content: buildSystemPrompt(context, { tools: toolCatalogue() }) }
     const messages: DSMessage[] = [sysMsg, ...historyOf(turns), { role: 'user', content: prompt }]
 
-    const startedAt = Date.now()
-    let transcript = messages
     let raw = ''
     let answeredBy: string | null = null
     let results: ToolResult[] = []
-    let steps = 0
     // what this question has gathered so far, kept here (not read back from state) so a stop or error can still save it
     const notes: string[] = []
     const gathered: ToolResult[] = []
     let stepText = ''
-    let outcome: 'ok' | 'empty' | 'error' | 'aborted' = 'ok'
     let runError: string | undefined
     const executedCmds = new Set<string>()
     try {
@@ -349,14 +344,11 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
           }
         },
       })
-      transcript = run.transcript
       raw = run.answer
       answeredBy = run.answeredBy
       results = run.results
-      steps = run.steps
       const answer = visibleText(raw).trim()
       if (!answer) {
-        outcome = 'empty'
         setError('The selected model did not return a briefing. Try a different model.')
       } else {
         setFollowUps(deriveFollowUps(answer, loggedActions, results))
@@ -364,10 +356,9 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
       setTurns(prev => [...prev, { id: turnId, question: prompt, answer, results, notes, model: answeredBy ?? model }])
     } catch (err) {
       if ((err as Error).name !== 'AbortError') {
-        outcome = 'error'
         runError = describeAIError(err)
         setError(runError)
-      } else outcome = 'aborted'
+      }
       // keep what was gathered so the question and its data are not lost
       results = gathered
       if (gathered.length || stepText.trim()) {
@@ -376,15 +367,6 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
     } finally {
       setLive(null)
       setStreaming(false)
-      // Research log: freeze exactly what was sent and what came back (see services/aiRuns.ts).
-      void runLog.record({
-        v: 1, id: `${startedAt}-${Math.random().toString(36).slice(2, 8)}`, startedAt, finishedAt: Date.now(),
-        modelRequested: model, modelAnswered: answeredBy, params: { ...CHAT_PARAMS },
-        messages: transcript, response: raw, outcome, error: runError,
-        notMeasured: notMeasured(crises, flights, layers),
-        toolCalls: results.map(r => ({ id: r.id, call: r.call, ok: r.ok, title: r.title, source: r.source })),
-        steps,
-      })
     }
   }
 
@@ -538,13 +520,6 @@ export function AIAnalystPanel({ crises, flights, onGeoSearch, onCountryClick, o
           }}>
             <div style={{ padding: '8px 11px', fontSize: 11, color: 'var(--text2)', letterSpacing: '.06em', borderBottom: '1px solid var(--border)' }}>
               Past conversations · {pastSessions.length}
-              <button
-                onClick={() => { void downloadRuns().then(n => setNotice(n ? `Exported ${n} logged AI run${n === 1 ? '' : 's'} (JSONL).` : 'No AI runs logged yet.')) }}
-                title="Download every logged AI run — exact context sent, data fetched, model, settings and answer — as JSONL"
-                style={{ float: 'right', background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 11, padding: 0, fontFamily: 'inherit' }}
-              >
-                Export runs
-              </button>
             </div>
             {pastSessions.length === 0 && (
               <div style={{ padding: '12px 11px', fontSize: 12.5, color: 'var(--text3)' }}>No saved conversations yet</div>

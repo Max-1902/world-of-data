@@ -32,8 +32,7 @@ export function isBaseline(c: CrisisEvent): boolean {
 
 /**
  * The trend rule itself: the last 72h's severity score against what the prior week's pace predicts
- * for 72h. Shared by computeTrajectories and the research backtest (src/research/backtest.ts) so the
- * flag that is tested is exactly the flag that is shown.
+ * for 72h.
  */
 export function classifyTrend(recentScore: number, priorScore: number): { delta: number; priorPace: number; trend: TrajectoryEntry['trend'] } {
   // The windows differ in length (3 days vs 7), so comparing raw sums would read steady activity as a ~57%
@@ -96,7 +95,7 @@ export function computeTrajectories(crises: CrisisEvent[], flights: Flight[], li
     const age = now - t
     // PRIOR_WINDOW_MS is the outer cutoff, so the prior bucket spans 7 days — the length classifyTrend
     // normalises by. (It used to be RECENT + PRIOR = 13 days, a 10-day bucket scaled as 7, which read every
-    // steady country as "falling"; found while building the research backtest.)
+    // steady country as "falling".)
     if (age < 0 || age > PRIOR_WINDOW_MS) continue
     if (!byCountry[c.country]) byCountry[c.country] = { recent: [], prior: [] }
     if (age <= RECENT_WINDOW_MS) byCountry[c.country].recent.push(c)

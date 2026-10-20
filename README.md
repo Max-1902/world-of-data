@@ -1,6 +1,6 @@
 # Macroeconomic Forecasting System
 
-A monitoring and analysis system for macroeconomic, political and industrial data — trade, sanctions, debt dynamics, conflict, hazards — on a 3D globe, with one-year-ahead forecasts of GDP growth, inflation and unemployment that are backtested out of sample against a naive baseline and the IMF (and mostly do not beat them; see [research/FINDINGS.md](research/FINDINGS.md)). It is a research case around two questions: **what does data become when you visualise it, and what happens when an LLM is wired into a system that can evaluate all of it?**
+A monitoring and analysis system for macroeconomic, political and industrial data — trade, sanctions, debt dynamics, conflict, hazards — on a 3D globe, with one-year-ahead forecasts of GDP growth, inflation and unemployment that are backtested out of sample against a naive baseline and the IMF (and mostly do not beat them).
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6) ![React](https://img.shields.io/badge/React-18-61dafb) ![Mapbox](https://img.shields.io/badge/Mapbox_GL-v3-000000) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
 
@@ -60,17 +60,13 @@ Since 2026-10-16 the analyst does more than read the summary it is given. It can
 
 Charts follow the same rule. The model writes `[CHART:R2]` to place a chart, and the panel draws it from that result's data, so the model can't supply or change a plotted value. Every answer shows an **investigation trail** listing each query, its source, success or failure, and the exact text the model received. Clicking a reference such as (R2) in the answer opens that evidence.
 
-**Not measured:** whether the tool-using analyst is more accurate, better grounded or more useful than the single-shot version. The offline eval harness replays only the system context, so it can't yet score answers whose evidence arrived as tool results (see [`research/FINDINGS.md`](research/FINDINGS.md)).
+**Not measured:** whether the tool-using analyst is more accurate, better grounded or more useful than the single-shot version.
 
-## Research notes
+## Country Lookup
 
-- **Controls:** real data only, nothing fabricated; numbers are computed locally and the model explains them; evidence is kept separate from inference; free sources only ([`CLAUDE.md`](CLAUDE.md), [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md)).
-- **Found along the way:** a World Bank query silently dropped most countries (42 of 245 for internet use); the trend heuristic flagged steady countries as "falling", first through a 3-vs-7-day scaling error and then, after that fix, through a 10-day prior window still scaled as 7 days (found by the backtest work, fixed Oct 2026); with ACLED down, the AI was told "Total events: 16" (the hand-entered baseline) and "Airborne flights tracked: 0"; the default free model answers with tool-call markup only and never writes a briefing; the World Bank renamed its fragile-states aggregate from `FCS` to `FCV`, so "Fragility, Conflict, and Violence situations" ranked 5th among "countries" on military spending (found by the analyst's first live tool run, fixed 2026-10-16). Details: [`research/FINDINGS.md`](research/FINDINGS.md).
-- **Apparatus:** every AI run is logged with its exact context and can be exported, there's an offline eval harness (number fidelity, NOT MEASURED violations), a daily recorder, and a backtest of the trend flag ([`research/`](research/README.md)).
-- **Country Lookup** (new workspace): one country's full World Bank record since 1960 by category, ECB/Eurostat/BIS series for Europe, and a single-country analysis (trend tests, cycle, Okun, Phillips, debt dynamics, anomalies), each with method, n and caveats.
-- **Found while building it:** trend-free pre-whitening, a common fix for autocorrelation in Mann–Kendall trend tests, made false positives *worse* on short annual series (simulated, ρ = 0.6, n = 15: 29% vs 24% uncorrected, nominal 5%). An effective-sample-size correction with a bias-corrected autocorrelation holds it near 9%, at the cost of power. The calibration is pinned in tests.
-- **Not yet done:** the trend flag has not been backtested on real data, because the ACLED account was locked when the code was ready. The eval covers one recorded state and two free models, with a pattern-based scorer.
-- Not a decision tool: correlation is not causation, and many series are years old for some countries.
+One country's full World Bank record since 1960 by category, ECB/Eurostat/BIS series for Europe, and a single-country analysis (trend tests, cycle, Okun, Phillips, debt dynamics, anomalies), each with method, n and caveats.
+
+Not a decision tool: correlation is not causation, and many series are years old for some countries.
 
 ## Run it
 
@@ -81,6 +77,6 @@ npm run dev            # Vite + the small /api functions that keep secrets out o
 npm test               # ~1,100 tests, fully offline
 ```
 
-Keys that only the owner can register (EIA, GitHub Actions secrets for the research recorder) are tracked in [`TODO.md`](TODO.md).
+Keys that only the owner can register (EIA) are tracked in [`TODO.md`](TODO.md).
 
 Stack: Vite, React 18, TypeScript (strict), Mapbox GL v3, plain SVG charts. No database; state lives in the browser. A few serverless functions in `api/` keep API keys off the client and forward requests (ACLED, OpenSky, Finnhub, EIA, NYT, GPSJAM, RSS, OpenRouter). Architecture and conventions are in [`ARCHITECTURE.md`](ARCHITECTURE.md).

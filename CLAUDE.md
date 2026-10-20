@@ -2,14 +2,10 @@
 
 This file exists so any agent (Claude or otherwise) picks up context fast and doesn't repeat mistakes already made and corrected in this repo's history.
 
-## Purpose — this is a research case, not a hobby project
+## Honesty about what the app shows
 
-The Macroeconomic Forecasting System is a working apparatus for studying (1) what happens to data once it is visualised, and (2) what happens when an AI model is wired into a system that can evaluate all of it. The owner treats it as research. The README's "Purpose and research questions" section states the questions, the controls, what the build has shown and what has *not* been measured.
-
-What this means for agents:
-- **Never overstate.** Do not present AI output, forecasts or correlations as validated; say what was and wasn't measured. The AI layer has not been systematically evaluated, and the README says so — keep it true.
-- **Keep the controls intact:** real data only, computed-locally-then-explained, evidence separated from inference, free sources. Weakening one (e.g. letting the model state numbers it wasn't given) changes the experiment.
-- **Record findings honestly,** including bugs the analysis exposed in the project's own heuristics and gaps in AI grounding. Prefer documenting a limitation over hiding it.
+- **Never overstate.** Do not present AI output, forecasts or correlations as validated; say what was and wasn't measured.
+- Numbers are computed locally and the model explains them; keep evidence separate from inference. Don't let the model state numbers it wasn't given.
 - Don't describe the project as a "personal engineering project" or "side project" in docs.
 
 ## Secrets — non-negotiable

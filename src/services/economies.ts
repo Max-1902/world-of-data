@@ -6,7 +6,6 @@
  * `region: "Aggregates"`. A World Bank row counts only if its ISO3 is one of the snapshot's economies. That is an
  * allowlist, so a new or renamed aggregate code (FCS became FCV, which ranked 5th on military spending) is dropped
  * rather than shown. The cost: an economy the World Bank adds after the snapshot is missing until it is refreshed.
- * `npm run research:coverage` re-fetches the metadata and reports any drift.
  *
  * OWID / Ember: aggregates and former states carry `OWID_…` or `WB_…` codes or none; real countries carry ISO 3166
  * alpha-3. Kosovo (`OWID_KOS`) is the one OWID-coded current country.

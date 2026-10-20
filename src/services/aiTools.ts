@@ -670,7 +670,7 @@ export const CHART_LINE = /^\[CHART:(R\d+)\]$/i
 /**
  * Data requests in a model turn: `[DATA:tool|arg|arg]` lines, plus model-native tool-call blocks
  * (`<|tool_call_start|>[news(query='Sudan')]<|tool_call_end|>`) when they name one of our tools — the default
- * free model emits those instead of our syntax (research/FINDINGS.md). Unknown tools are ignored; duplicates collapse.
+ * free model emits those instead of our syntax. Unknown tools are ignored; duplicates collapse.
  */
 export function parseToolCalls(text: string): ToolCall[] {
   const out: ToolCall[] = []

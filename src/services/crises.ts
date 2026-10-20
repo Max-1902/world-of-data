@@ -87,10 +87,10 @@ const SEVERITY_MAP: Record<CrisisEvent['type'], CrisisEvent['severity']> = {
 
 /** Fields the dashboard requests from ACLED's read API. */
 export const ACLED_FIELDS = 'event_id_cnty|event_date|event_type|country|admin1|location|latitude|longitude|notes|fatalities'
-/** The dashboard caps each poll at this many events (see the research notes: the cap can truncate the window). */
+/** The dashboard caps each poll at this many events (the cap can truncate the window). */
 export const ACLED_LIMIT = 500
 
-/** The exact query the dashboard sends — exported so the research recorder replays it verbatim. */
+/** The exact query the dashboard sends. */
 export function acledDashboardQuery(days: number, now: number = Date.now()): URLSearchParams {
   const since = new Date(now - days * 86400000).toISOString().split('T')[0]
   const today = new Date(now).toISOString().split('T')[0]

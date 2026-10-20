@@ -119,7 +119,7 @@ describe('calibration under the null (Monte Carlo, 400 draws)', () => {
       for (let i = 1; i < 15; i++) y.push(0.6 * y[i - 1] + e[i])
       if (trendTest(series(y))!.direction !== 'flat') pw++
     }
-    // plain Mann–Kendall rejects ~24% of such series and trend-free pre-whitening ~29% (simulated; README research notes)
+    // plain Mann–Kendall rejects ~24% of such series and trend-free pre-whitening ~29% (simulated)
     expect(pw / 400).toBeLessThan(0.13)
     let rawRej = 0
     const r2 = rng(11)
