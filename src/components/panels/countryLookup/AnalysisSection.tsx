@@ -14,10 +14,15 @@ import { Kpi, Method, fmtP, plain, pp, pct, toLine } from './shared'
 
 const THIS_YEAR = new Date().getUTCFullYear()
 
-/** Two dashed segments at the mean before and after a significant break (one line, stepping at the break). */
-function regimeLine(b: MeanBreak | null): Pt[] {
+/**
+ * Two dashed segments at the mean before and after a significant break (one line, stepping at the break). One point per
+ * year: LineChart breaks a line at any step much longer than its typical one (a missing year), so a four-corner line
+ * lost its whole second segment whenever the regimes differed in length.
+ */
+export function regimeLine(b: MeanBreak | null): Pt[] {
   if (!b?.significant) return []
-  return [{ x: b.before.from, y: b.before.mean }, { x: b.before.to, y: b.before.mean }, { x: b.after.from, y: b.after.mean }, { x: b.after.to, y: b.after.mean }]
+  const flat = (r: MeanBreak['before']) => Array.from({ length: r.to - r.from + 1 }, (_, i) => ({ x: r.from + i, y: r.mean }))
+  return [...flat(b.before), ...flat(b.after)]
 }
 
 function breakSentence(b: MeanBreak | null, what: string, unit = '%'): string {
