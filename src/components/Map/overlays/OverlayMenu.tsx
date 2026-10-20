@@ -27,6 +27,7 @@ const OVERLAY_ITEMS: Record<keyof PanelState, { label: string; icon: string; col
   ports: { label: 'PORTS', icon: '⎈', color: '#00ccff' },
   pipelines: { label: 'PIPELINES', icon: '═', color: PIPELINE_COLORS.gas },
   gpsjam: { label: 'GPS JAM', icon: '◌', color: '#ff3344' },
+  darkVessels: { label: 'DARK SHIPS', icon: '◍', color: '#8b5cf6' },
   chokepoints: { label: 'CHOKEPOINTS', icon: '⊘', color: '#ff4466' },
   supplychain: { label: 'SUPPLY CHAIN', icon: '◆', color: '#00ccff' },
   shippingDensity: { label: 'SHIPPING', icon: '≋', color: '#ff4466' },

@@ -7,6 +7,7 @@ import type { Vessel } from '../../services/aisstream'
 import type { OutageEvent } from '../../services/outages'
 import type { DisasterAlert } from '../../services/gdacs'
 import type { GPSJamData } from '../../services/gpsjam'
+import type { GfwEvent } from '../../services/gfw'
 import type { GeoNewsPin } from '../../utils/geoNews'
 import type { MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
 import type { CountryInfraEntry } from '../../services/infraIndicators'
@@ -46,6 +47,8 @@ export interface MapViewProps {
   showGas:            boolean
   showGPSJam:         boolean
   gpsJam:             GPSJamData | null
+  gfwEvents:          GfwEvent[]
+  showDarkVessels:    boolean
   showPorts:          boolean
   showPipelines:      boolean
   showChokepoints:    boolean
