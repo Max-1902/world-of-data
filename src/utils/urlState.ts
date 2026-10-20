@@ -13,6 +13,9 @@ const VIEW_MODE_SET: Record<MapViewMode, true> = {
   bw: true, infrared: true, snow: true, thermal: true, city3d: true,
 }
 
+export const isViewMode = (v: string | null | undefined): v is MapViewMode =>
+  !!v && Object.prototype.hasOwnProperty.call(VIEW_MODE_SET, v)
+
 export interface SharedState {
   viewMode: MapViewMode
   /** Keys of every layer that is switched on. */
@@ -47,7 +50,7 @@ export function decodeHash(
   const p = new URLSearchParams(hash.replace(/^#/, ''))
 
   const v = p.get('v')
-  if (v && Object.prototype.hasOwnProperty.call(VIEW_MODE_SET, v)) out.viewMode = v as MapViewMode
+  if (isViewMode(v)) out.viewMode = v
 
   const l = p.get('l')
   if (l !== null) {

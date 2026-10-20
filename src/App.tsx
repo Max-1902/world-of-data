@@ -29,7 +29,7 @@ import { clearNewsCaches } from './services/news'
 import { summarizeKeyEvents } from './utils/keyEvents'
 import { useDisasterAlerts } from './hooks/useDisasterAlerts'
 import { GROUP_ORDER, PANEL_MAP } from './panels/registry'
-import { decodeHash, encodeHash, enabledLayers, layersToPanelState, type DecodedState } from './utils/urlState'
+import { decodeHash, encodeHash, enabledLayers, isViewMode, layersToPanelState, type DecodedState } from './utils/urlState'
 
 // Rarely-open surfaces: keep their code (and the datasets CountryDrawer pulls in) out of the first load.
 const SettingsModal = lazy(() => import('./components/SettingsModal'))
@@ -70,8 +70,9 @@ function loadViewMode(): MapViewMode {
   const fromLink = readHash().viewMode
   if (fromLink) return fromLink
   try {
+    // a stale or hand-edited value would otherwise reach Mapbox as a style name
     const v = localStorage.getItem('ws-view-mode')
-    if (v) return v as MapViewMode
+    if (isViewMode(v)) return v
   } catch {}
   return 'earth'
 }
@@ -157,7 +158,7 @@ export default function App() {
   const { data: gpsJam }                             = useGPSJam(panelState.gpsjam)
   const { vessels, refresh: refreshVessels }         = useVessels(panelState.vessels)
   const { outages, refresh: refreshOutages }         = useOutages(panelState.outages)
-  const { alerts: disasterAlerts, refresh: refreshDisasterAlerts } = useDisasterAlerts()
+  const { alerts: disasterAlerts } = useDisasterAlerts()
   const keyEvents = useMemo(() => summarizeKeyEvents(articles), [articles])
 
   const newsPins = useGeoNews(keyEvents.events, panelState.news)
@@ -170,13 +171,14 @@ export default function App() {
     setReloading(true)
     // Cached news responses live for 5–10 min; a manual reload must bypass them or it re-serves old headlines.
     clearNewsCaches()
+    // disaster alerts listen on the reload bus themselves, so they aren't in this list
     triggerGlobalReload()
     await Promise.allSettled([
       refreshFlights, refreshCrises, refreshNews, refreshStocks,
-      refreshEarthquakes, refreshFires, refreshVessels, refreshOutages, refreshDisasterAlerts,
+      refreshEarthquakes, refreshFires, refreshVessels, refreshOutages,
     ].map(refresh => Promise.resolve(refresh())))
     setReloading(false)
-  }, [refreshFlights, refreshCrises, refreshNews, refreshStocks, refreshEarthquakes, refreshFires, refreshVessels, refreshOutages, refreshDisasterAlerts])
+  }, [refreshFlights, refreshCrises, refreshNews, refreshStocks, refreshEarthquakes, refreshFires, refreshVessels, refreshOutages])
 
   // Persist preferences
   useEffect(() => { try { localStorage.setItem('ws-panel-state', JSON.stringify(panelState)) } catch {} }, [panelState])
@@ -229,12 +231,14 @@ export default function App() {
     setPanelState((prev) => Object.fromEntries(Object.keys(prev).map(k => [k, false])) as unknown as PanelState)
   }, [])
 
-  useKeyboardShortcuts({
+  // memoised so the key listener isn't re-registered on every render
+  const shortcutHandlers = useMemo(() => ({
     onViewMode: setViewMode,
     onToggleLayer: toggleLayer,
     onSettingsOpen: () => setSettingsOpen(true),
     onCloseDrawer: () => { setSelectedCountry(null); setSelectedPlace(null); setSettingsOpen(false) },
-  })
+  }), [toggleLayer])
+  useKeyboardShortcuts(shortcutHandlers)
 
   const handleFlightSelect = useCallback((_f: Flight) => {}, [])
   const handleCrisisSelect = useCallback((_c: CrisisEvent) => {}, [])
