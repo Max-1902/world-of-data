@@ -19,7 +19,7 @@ import { SANCTIONED_COUNTRIES, SANCTION_COLORS } from './sanctions'
 import { OIL_GAS_DATA } from './oilgas'
 import { RESOURCE_PROFILES } from './resources'
 import { TRADE_PROFILES } from './tradeStats'
-import { UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, REFUGEE_FLOWS, COUNTRY_DISPLACEMENT, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS, TOP_HOSTING, TOP_ORIGINS } from './unhcr'
+import { UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS, TOP_HOSTING, TOP_ORIGINS } from './unhcr'
 import { COUNTRY_NEWS_SOURCES, RSS_FEEDS, CRISISWATCH_FEEDS } from './news'
 
 const HEX = /^#[0-9a-f]{6}$/i
@@ -305,19 +305,14 @@ describe('UNHCR datasets', () => {
     for (const c of REFUGEE_CAMPS) expect(c.population, c.id).toBeGreaterThan(0)
   })
 
-  it('refugee flows have valid [lng, lat] endpoints and positive counts', () => {
-    for (const f of REFUGEE_FLOWS) {
-      expectRing(`flow ${f.label}`, [f.origin, f.dest])
-      expect(f.count, f.label).toBeGreaterThan(0)
-    }
-  })
-
-  it('country displacement rows are keyed by ISO3 with a matching-format ISO2', () => {
-    for (const [iso3, v] of Object.entries(COUNTRY_DISPLACEMENT)) {
+  it('country anchors (Natural Earth label points) are valid, unique ISO3 keys with names', async () => {
+    const { anchors } = (await import('../data/country-anchors.json')).default as unknown as { anchors: Record<string, [number, number, string, string]> }
+    expect(Object.keys(anchors).length).toBeGreaterThan(200)
+    for (const [iso3, [lng, lat, name, iso2]] of Object.entries(anchors)) {
       expect(iso3).toMatch(/^[A-Z]{3}$/)
-      expect(v.iso2, iso3).toMatch(/^[A-Z]{2}$/)
-      expect(v.hosting, iso3).toBeGreaterThanOrEqual(0)
-      expect(v.origin, iso3).toBeGreaterThanOrEqual(0)
+      expect(validLng(lng) && validLat(lat) && !(lng === 0 && lat === 0), `anchor ${iso3}: [${lng}, ${lat}]`).toBe(true)
+      expect(name, iso3).toBeTruthy()
+      if (iso2) expect(iso2, iso3).toMatch(/^[A-Z]{2}$/)
     }
   })
 

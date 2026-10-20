@@ -33,7 +33,7 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
     milBases, nukes, sanction, infra,
     nearbyFlights, flightTypes, countryFlights,
     nearbyQuakes, nearbyFires,
-    hosting, origin,
+    hosting, origin, idps, displacementYear,
   } = useCountryDrawerData(country, crises, flights, earthquakes, fires)
 
   const {
@@ -107,13 +107,19 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
         )}
 
         {/* ── Displacement ──────────────────────────────────── */}
-        {(hosting > 0 || origin > 0) && (
-          <Section title="DISPLACEMENT" color="var(--amber)">
+        {(hosting > 0 || origin > 0 || idps > 0) && (
+          <Section title={`DISPLACEMENT · UNHCR ${displacementYear ?? ''}`} color="var(--amber)">
             <div style={{ display: 'flex', gap: 6 }}>
               {origin > 0 && (
                 <div style={{ flex: 1, padding: '4px 6px', background: soft('var(--amber)', 8), borderRadius: 'var(--r-sm)' }}>
-                  <div style={{ fontSize: 9, color: 'var(--amber)', letterSpacing: '.1em' }}>ORIGIN</div>
+                  <div style={{ fontSize: 9, color: 'var(--amber)', letterSpacing: '.1em' }}>FLED ABROAD</div>
                   <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--amber)' }}>{fmt(origin)}</div>
+                </div>
+              )}
+              {idps > 0 && (
+                <div style={{ flex: 1, padding: '4px 6px', background: soft('var(--red)', 8), borderRadius: 'var(--r-sm)' }}>
+                  <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }}>IDPS</div>
+                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)' }}>{fmt(idps)}</div>
                 </div>
               )}
               {hosting > 0 && (

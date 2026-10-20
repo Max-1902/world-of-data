@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
-import { UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS, REFUGEE_FLOWS, COUNTRY_DISPLACEMENT } from '../../../services/unhcr'
+import { UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS } from '../../../services/unhcr'
+import { addDisplacementLayers, useDisplacementLayerData } from './displacement'
 import { destinationPoint } from '../flightLayer'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
@@ -130,51 +131,6 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     paint: { 'text-color': ['get', 'color'], 'text-halo-color': 'rgba(0,0,0,0.9)', 'text-halo-width': 1.2 },
   } as Parameters<typeof map.addLayer>[0])
 
-  // ── Choropleth: country fill by displacement total ──────────────────
-  // Use Mapbox's built-in country-boundaries source (part of composite)
-  // Build a match expression from COUNTRY_DISPLACEMENT keyed by iso_3166_1_alpha_3
-  const isoEntries = Object.entries(COUNTRY_DISPLACEMENT)
-  const maxDisp = Math.max(...isoEntries.map(([, d]) => d.hosting + d.origin))
-  const matchExpr: (string | number | string[])[] = ['match', ['get', 'iso_3166_1_alpha_3']]
-  for (const [iso3, d] of isoEntries) {
-    const total = d.hosting + d.origin
-    // Normalize 0..1 then map to color stops
-    const t = Math.min(1, total / maxDisp)
-    // blue(low) → yellow → red(high)
-    const r = Math.round(t < 0.5 ? t * 2 * 255 : 255)
-    const g = Math.round(t < 0.5 ? 200 + t * 110 : 255 * (1 - (t - 0.5) * 2))
-    const b = Math.round(t < 0.5 ? 255 * (1 - t * 2) : 0)
-    matchExpr.push(iso3, `rgba(${r},${g},${b},0.45)`)
-  }
-  matchExpr.push('rgba(0,0,0,0)')  // default — transparent
-  if (!map.getSource('humanitarian-boundaries')) {
-    map.addSource('humanitarian-boundaries', {
-      type: 'vector',
-      url:  'mapbox://mapbox.country-boundaries-v1',
-    })
-  }
-  map.addLayer({
-    id: 'humanitarian-choropleth',
-    type: 'fill',
-    source: 'humanitarian-boundaries',
-    'source-layer': 'country_boundaries',
-    paint: { 'fill-color': matchExpr as unknown as mapboxgl.Expression },
-    layout: { visibility: 'none' },
-  } as Parameters<typeof map.addLayer>[0], 'humanitarian-offices')  // insert below existing humanitarian layers
-
-  // Choropleth country border outlines
-  const outlineMatch: (string | number | string[])[] = ['match', ['get', 'iso_3166_1_alpha_3']]
-  for (const [iso3] of isoEntries) { outlineMatch.push(iso3, 'rgba(255,100,50,0.5)') }
-  outlineMatch.push('rgba(0,0,0,0)')
-  map.addLayer({
-    id: 'humanitarian-choropleth-line',
-    type: 'line',
-    source: 'humanitarian-boundaries',
-    'source-layer': 'country_boundaries',
-    paint: { 'line-color': outlineMatch as unknown as mapboxgl.Expression, 'line-width': 1 },
-    layout: { visibility: 'none' },
-  } as Parameters<typeof map.addLayer>[0], 'humanitarian-offices')
-
   // ── Heatmap: displacement intensity from camp populations ──────────
   map.addSource('humanitarian-heatmap', {
     type: 'geojson',
@@ -202,44 +158,6 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     },
     layout: { visibility: 'none' },
   }, 'humanitarian-offices')
-
-  // ── Flow lines: animated refugee corridors ─────────────────────────
-  map.addSource('humanitarian-flows', {
-    type: 'geojson',
-    data: { type: 'FeatureCollection', features: [] },
-  })
-  // The flow arcs — dashed animated lines
-  map.addLayer({
-    id: 'humanitarian-flows',
-    type: 'line',
-    source: 'humanitarian-flows',
-    paint: {
-      'line-color':     ['get', 'color'],
-      'line-width':     ['interpolate', ['linear'], ['get', 'count'], 100_000, 1.5, 4_000_000, 4],
-      'line-opacity':   0.7,
-      'line-dasharray': [2, 2],
-    },
-    layout: { 'line-cap': 'round', visibility: 'none' },
-  })
-  // Flow labels (on hover only — show on the line)
-  map.addLayer({
-    id: 'humanitarian-flows-labels',
-    type: 'symbol',
-    source: 'humanitarian-flows',
-    layout: {
-      'symbol-placement': 'line-center',
-      'text-field':       ['get', 'label'],
-      'text-font':        ['Open Sans Bold', 'Arial Unicode MS Bold'],
-      'text-size':        9,
-      'text-allow-overlap': false,
-      visibility:         'none',
-    },
-    paint: {
-      'text-color':      '#ffcc00',
-      'text-halo-color': 'rgba(0,0,0,0.9)',
-      'text-halo-width': 1.5,
-    },
-  } as Parameters<typeof map.addLayer>[0])
 
   // ── Clustered camps/offices with pulsing ──────────────────────────
   map.addSource('humanitarian-clusters', {
@@ -314,45 +232,6 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     },
     paint: { 'text-color': '#ffffff', 'text-halo-color': 'rgba(0,0,0,0.8)', 'text-halo-width': 1 },
   } as Parameters<typeof map.addLayer>[0])
-
-  // Click handlers — flow lines
-  map.on('click', 'humanitarian-flows', (e) => {
-    if (!e.features?.[0]) return
-    const p = e.features[0].properties as Record<string, unknown>
-    const fmtN = (n: number) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(0) + 'K' : n.toString()
-    const html = `<div style="padding:8px 10px;font-family:'Inter',-apple-system,sans-serif;">
-      <div style="font-size:11px;font-weight:800;color:#d97706;margin-bottom:4px;">${p.label}</div>
-      <div style="font-size:11px;color:#16a34a;font-weight:700;">${fmtN(Number(p.count))} displaced</div>
-      <div style="margin-top:4px;font-size:9px;color:#9ca3af;">SOURCE: UNHCR GLOBAL TRENDS 2023</div>
-    </div>`
-    if (popupRef.current) popupRef.current.remove()
-    popupRef.current = new mapboxgl.Popup({ maxWidth: '240px', className: 'cy-popup' })
-      .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    markFeatureClick(map)
-  })
-  map.on('mouseenter', 'humanitarian-flows', () => { map.getCanvas().style.cursor = 'pointer' })
-  map.on('mouseleave', 'humanitarian-flows', () => { map.getCanvas().style.cursor = '' })
-
-  // Click handlers — choropleth
-  map.on('click', 'humanitarian-choropleth', (e) => {
-    if (!e.features?.[0]) return
-    const iso3 = (e.features[0].properties as Record<string, string>).iso_3166_1_alpha_3
-    const d = COUNTRY_DISPLACEMENT[iso3]
-    if (!d) return
-    const fmtN = (n: number) => n >= 1_000_000 ? (n / 1_000_000).toFixed(1) + 'M' : n >= 1_000 ? (n / 1_000).toFixed(0) + 'K' : n.toString()
-    const html = `<div style="padding:8px 10px;font-family:'Inter',-apple-system,sans-serif;">
-      <div style="font-size:11px;font-weight:800;color:#14161a;margin-bottom:4px;">${iso3}</div>
-      ${d.hosting ? `<div style="font-size:10px;color:#2563eb;">HOSTING: <b>${fmtN(d.hosting)}</b></div>` : ''}
-      ${d.origin ? `<div style="font-size:10px;color:#ea580c;">ORIGIN: <b>${fmtN(d.origin)}</b></div>` : ''}
-      <div style="font-size:10px;color:#d97706;font-weight:700;">TOTAL: ${fmtN(d.hosting + d.origin)}</div>
-    </div>`
-    if (popupRef.current) popupRef.current.remove()
-    popupRef.current = new mapboxgl.Popup({ maxWidth: '220px', className: 'cy-popup' })
-      .setLngLat(e.lngLat).setHTML(html).addTo(map)
-    markFeatureClick(map)
-  })
-  map.on('mouseenter', 'humanitarian-choropleth', () => { map.getCanvas().style.cursor = 'pointer' })
-  map.on('mouseleave', 'humanitarian-choropleth', () => { map.getCanvas().style.cursor = '' })
 
   // Click handlers — clusters (zoom in on click)
   map.on('click', 'humanitarian-cluster-circles', (e) => {
@@ -467,10 +346,15 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   })
   map.on('mouseenter', 'humanitarian-camps', () => { map.getCanvas().style.cursor = 'crosshair' })
   map.on('mouseleave', 'humanitarian-camps', () => { map.getCanvas().style.cursor = '' })
+
+  // Live UNHCR corridors, origin/host circles and the country fill, drawn beneath the point markers.
+  addDisplacementLayers(map, ctx, 'humanitarian-offices')
 }
 
 /** Humanitarian (UNHCR) layers */
-export function useHumanitarianData({ mapRef, layersReadyRef, mapReady }: MapHandle, { showHumanitarian }: Pick<MapViewProps, 'showHumanitarian'>) {
+export function useHumanitarianData(handle: MapHandle, { showHumanitarian }: Pick<MapViewProps, 'showHumanitarian'>) {
+  const { mapRef, layersReadyRef, mapReady } = handle
+  useDisplacementLayerData(handle, showHumanitarian)
   // ── Humanitarian (UNHCR) layers ───────────────────────────────────────────
   useEffect(() => {
     const map = mapRef.current
@@ -480,9 +364,7 @@ export function useHumanitarianData({ mapRef, layersReadyRef, mapReady }: MapHan
       'humanitarian-crossing-path-glow', 'humanitarian-crossing-path', 'humanitarian-crossing-gate',
       'humanitarian-crossings', 'humanitarian-crossings-labels',
       'humanitarian-camps', 'humanitarian-camps-labels',
-      'humanitarian-choropleth', 'humanitarian-choropleth-line',
       'humanitarian-heatmap',
-      'humanitarian-flows', 'humanitarian-flows-labels',
       'humanitarian-cluster-circles', 'humanitarian-cluster-pulse',
       'humanitarian-cluster-count',
     ]
@@ -490,7 +372,7 @@ export function useHumanitarianData({ mapRef, layersReadyRef, mapReady }: MapHan
     HUM_LAYERS.forEach(id => { if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', vis) })
     if (!showHumanitarian) {
       ;(['humanitarian-offices', 'humanitarian-crossings', 'humanitarian-crossing-paths', 'humanitarian-crossing-gates', 'humanitarian-camps',
-        'humanitarian-heatmap', 'humanitarian-flows', 'humanitarian-clusters',
+        'humanitarian-heatmap', 'humanitarian-clusters',
       ] as const).forEach(srcId => {
         const src = map.getSource(srcId) as mapboxgl.GeoJSONSource | undefined
         src?.setData({ type: 'FeatureCollection', features: [] })
@@ -581,37 +463,6 @@ export function useHumanitarianData({ mapRef, layersReadyRef, mapReady }: MapHan
       })),
     })
 
-    // Populate flow lines (great-circle arcs approximated as LineStrings)
-    const flowSrc = map.getSource('humanitarian-flows') as mapboxgl.GeoJSONSource | undefined
-    flowSrc?.setData({
-      type: 'FeatureCollection',
-      features: REFUGEE_FLOWS.map(f => {
-        // Generate curved arc with 40 interpolated points
-        const [oLng, oLat] = f.origin
-        const [dLng, dLat] = f.dest
-        const coords: [number, number][] = []
-        for (let i = 0; i <= 40; i++) {
-          const t = i / 40
-          const lng = oLng + (dLng - oLng) * t
-          const lat = oLat + (dLat - oLat) * t
-          // Add vertical arc bulge proportional to distance
-          const dist = Math.sqrt((dLng - oLng) ** 2 + (dLat - oLat) ** 2)
-          const bulge = Math.sin(t * Math.PI) * dist * 0.15
-          coords.push([lng, lat + bulge])
-        }
-        // Color by count: blue→yellow→red
-        const t = Math.min(1, f.count / 4_000_000)
-        const r = Math.round(t < 0.5 ? 255 * t * 2 : 255)
-        const g = Math.round(t < 0.5 ? 200 : 255 * (1 - (t - 0.5) * 2))
-        const b = Math.round(t < 0.5 ? 255 * (1 - t * 2) : 0)
-        return {
-          type: 'Feature' as const,
-          geometry: { type: 'LineString' as const, coordinates: coords },
-          properties: { label: f.label, count: f.count, color: `rgb(${r},${g},${b})` },
-        }
-      }),
-    })
-
     // Populate clustered source (camps + offices merged)
     const clusterSrc = map.getSource('humanitarian-clusters') as mapboxgl.GeoJSONSource | undefined
     const allPoints: GeoJSON.Feature[] = [
@@ -629,7 +480,7 @@ export function useHumanitarianData({ mapRef, layersReadyRef, mapReady }: MapHan
     clusterSrc?.setData({ type: 'FeatureCollection', features: allPoints })
   }, [showHumanitarian, mapReady])
 
-  // ── Animate flow-line dashes & cluster pulse ─────────────────────────────
+  // ── Animate cluster pulse ─────────────────────────────
   useEffect(() => {
     const map = mapRef.current
     if (!map || !showHumanitarian) return

@@ -5,10 +5,13 @@ import { useState, useEffect } from 'react'
 import { sameCountry } from '../../utils/countryBrief'
 import { CrisisEvent, Flight } from '../../types'
 import { onGlobalReload } from '../../utils/reloadBus'
-import { UNHCR_GLOBAL_2023, TOP_HOSTING, TOP_ORIGINS, UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS, REFUGEE_FLOWS, COUNTRY_DISPLACEMENT, fetchUNHCRPopulation, type UNHCRStat } from '../../services/unhcr'
+import { UNHCR_GLOBAL_2023, TOP_HOSTING, TOP_ORIGINS, UNHCR_OFFICES, BORDER_CROSSINGS, REFUGEE_CAMPS, CROSSING_STATUS_COLORS, OFFICE_TYPE_COLORS, fetchUNHCRPopulation, type UNHCRStat } from '../../services/unhcr'
+import { MIN_CORRIDOR, TREND_THRESHOLD, changeLabel, trendOf, type Trend } from '../../services/displacement'
+import type { DtmResult } from '../../services/dtm'
+import { useDisplacement, useDtm, type DisplacementState } from '../../hooks/useDisplacement'
 
 // ── Humanitarian Panel (UNHCR) ─────────────────────────────────────────────────
-const HUM_TABS = ['OVERVIEW', 'NEXUS', 'FLOWS', 'OFFICES', 'CROSSINGS', 'CAMPS'] as const
+const HUM_TABS = ['OVERVIEW', 'NEXUS', 'FLOWS', 'IDPS', 'OFFICES', 'CROSSINGS', 'CAMPS'] as const
 
 type HumTab = typeof HUM_TABS[number]
 
@@ -18,6 +21,63 @@ function fmt(n: number): string {
   return n.toLocaleString()
 }
 
+const TREND_VAR: Record<Trend, string> = { new: 'var(--red)', rising: 'var(--red)', steady: 'var(--amber)', falling: 'var(--blue)' }
+
+function DisplacementStatus({ state }: { state: DisplacementState }) {
+  return (
+    <div style={{ flex: 1, padding: '16px 12px', fontSize: 10.5, color: 'var(--text3)', textAlign: 'center' }}>
+      {state.status === 'loading' ? 'Loading UNHCR corridor data…' : 'UNHCR data could not be loaded. Nothing is shown rather than an old or estimated table.'}
+    </div>
+  )
+}
+
+function DtmDetail({ result, onLocate }: { result: DtmResult | null; onLocate: () => void }) {
+  const box: React.CSSProperties = { margin: '4px 0 6px 15px', padding: '6px 8px', background: 'var(--surface2)', border: '1px solid var(--border)', fontSize: 10 }
+  if (!result) return <div style={box}><span style={{ color: 'var(--text3)' }}>Loading IOM DTM…</span></div>
+  if (result.status === 'not_configured') return (
+    <div style={box}>
+      <div style={{ color: 'var(--text2)', marginBottom: 2 }}>IOM DTM rounds need a free API key.</div>
+      <div style={{ color: 'var(--text3)', fontSize: 9.5 }}>Register at dtm.iom.int → DTM API, subscribe to API-V3, then set <code>DTM_API_KEY</code> in .env / Vercel.</div>
+    </div>
+  )
+  if (result.status === 'error') return <div style={box}><span style={{ color: 'var(--red)' }}>{result.message}</span></div>
+  if (!result.operations.length) return <div style={box}><span style={{ color: 'var(--text3)' }}>No IOM DTM rounds for this country in the last two years.</span></div>
+  return (
+    <div style={box}>
+      {result.operations.slice(0, 4).map(op => (
+        <div key={op.operation} style={{ marginBottom: 4 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
+            <span style={{ color: 'var(--text1)', fontWeight: 700, flex: 1 }}>{op.operation}</span>
+            <span style={{ color: 'var(--amber)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{op.idps.toLocaleString()}</span>
+          </div>
+          <div style={{ color: 'var(--text3)', fontSize: 9.5 }}>
+            {op.round != null ? `Round ${op.round} · ` : ''}{op.reportingDate}
+            {op.prevIdps != null && op.prevDate && <> · {changeLabel(op.idps, op.prevIdps)} since {op.prevDate}</>}
+          </div>
+          {op.reasons.length > 1 && (
+            <div style={{ color: 'var(--text3)', fontSize: 9.5 }}>{op.reasons.slice(0, 3).map(r => `${r.reason} ${fmt(r.idps)}`).join(' · ')}</div>
+          )}
+        </div>
+      ))}
+      {result.regions.length > 0 && result.regionsFrom && (
+        <div style={{ marginTop: 4, paddingTop: 4, borderTop: '1px solid var(--border)' }}>
+          <div style={{ fontSize: 9, color: 'var(--text3)', letterSpacing: '.1em', marginBottom: 2 }}>WHERE IDPS ARE NOW · {result.regionsFrom.reportingDate}</div>
+          {result.regions.slice(0, 8).map(r => (
+            <div key={r.pcode ?? r.name} style={{ display: 'flex', gap: 6 }}>
+              <span style={{ flex: 1, color: 'var(--text2)' }}>{r.name}</span>
+              <span style={{ color: 'var(--text1)', fontVariantNumeric: 'tabular-nums' }}>{fmt(r.idps)}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: 'flex', marginTop: 4, fontSize: 9, color: 'var(--text3)' }}>
+        <span style={{ flex: 1 }}>SOURCE: IOM DTM API v3</span>
+        <span onClick={onLocate} style={{ color: 'var(--accent)', cursor: 'pointer' }}>SHOW ON MAP</span>
+      </div>
+    </div>
+  )
+}
+
 export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: CrisisEvent[]; flights: Flight[]; onGeoSearch?: (q: string) => void }) {
   const [tab, setTab]         = useState<HumTab>('OVERVIEW')
   const [stats, setStats]     = useState<UNHCRStat[]>(TOP_HOSTING)
@@ -25,6 +85,11 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
   const [officeFilter, setOfficeFilter] = useState('')
   const [crossFilter, setCrossFilter]   = useState<'all'|'open'|'restricted'|'closed'>('all')
   const [campSearch, setCampSearch]     = useState('')
+  const [flowFilter, setFlowFilter]     = useState<'all' | 'rising' | 'falling'>('all')
+  const [dtmIso, setDtmIso]             = useState<string | null>(null)
+  const disp = useDisplacement()
+  const snap = disp.status === 'ok' ? disp.snap : null
+  const dtm = useDtm(dtmIso)
 
   useEffect(() => {
     const load = () => { fetchUNHCRPopulation().then(data => { if (data.length) setStats(data) }) }
@@ -142,10 +207,11 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
         </div>
       )}
 
-      {/* ─ NEXUS: cross-link refugee flows ↔ active crises ↔ flights ─ */}
+      {/* ─ NEXUS: live UNHCR corridors ↔ active crises ↔ flights ─ */}
       {tab === 'NEXUS' && (() => {
-        // Group flows by origin country (extract from "Origin → Dest" label)
-        const originCountries = [...new Set(REFUGEE_FLOWS.map(f => f.label.split(' → ')[0]))]
+        if (!snap) return <DisplacementStatus state={disp} />
+        // Origins with at least one mapped corridor, most displaced first
+        const origins = snap.countries.filter(c => snap.corridors.some(f => f.from === c.iso3)).slice(0, 14)
 
         // Match crises to origin countries by ISO code / whole-word name (not substring: "Sudan" ≠ "South Sudan")
         const matchCrises = (origin: string) => crises.filter(c => sameCountry(c.country, origin))
@@ -155,30 +221,16 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
           flights.filter(f => f.latitude && f.longitude
             && Math.abs(f.latitude - lat) < radius && Math.abs(f.longitude - lng) < radius).length
 
-        // Get displacement data for a country
-        const getDisp = (name: string) => {
-          const entry = Object.entries(COUNTRY_DISPLACEMENT).find(([, d]) => {
-            const stat = [...TOP_HOSTING, ...TOP_ORIGINS].find(s => s.iso3 === Object.keys(COUNTRY_DISPLACEMENT).find(k => COUNTRY_DISPLACEMENT[k] === d))
-            // (a missing stat used to match every name: "x".includes('') is always true)
-            return !!stat && sameCountry(stat.country, name)
-          })
-          return entry ? entry[1] : null
-        }
-
-        // Get camps in a country (host side)
-        const getCamps = (dest: string) =>
-          REFUGEE_CAMPS.filter(c => sameCountry(c.country, dest))
+        const getCamps = (dest: string) => REFUGEE_CAMPS.filter(c => sameCountry(c.country, dest))
 
         return (
           <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
             <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.12em', marginBottom: 6 }}>
-              // CRISIS → DISPLACEMENT NEXUS · LIVE CORRELATION
+              // CRISIS → DISPLACEMENT NEXUS · UNHCR {snap.year} × LIVE EVENTS
             </div>
-            {originCountries.map(origin => {
-              const flows = REFUGEE_FLOWS.filter(f => f.label.startsWith(origin + ' →'))
-              const linked = matchCrises(origin)
-              const totalDisplaced = flows.reduce((s, f) => s + f.count, 0)
-              const disp = getDisp(origin)
+            {origins.map(o => {
+              const flows = snap.corridors.filter(f => f.from === o.iso3)
+              const linked = matchCrises(o.name)
               const severity = linked.length > 0
                 ? (linked.some(c => c.severity === 'critical') ? 'critical'
                   : linked.some(c => c.severity === 'high') ? 'high' : 'medium')
@@ -186,21 +238,19 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
               const sevColor = severity === 'critical' ? 'var(--red)' : severity === 'high' ? 'var(--amber)' : severity === 'medium' ? 'var(--amber)' : 'var(--text2)'
 
               return (
-                <div key={origin} style={{ marginBottom: 8, padding: '6px 8px', background: 'var(--surface2)', border: `1px solid ${sevColor}22` }}>
-                  {/* Origin header */}
+                <div key={o.iso3} style={{ marginBottom: 8, padding: '6px 8px', background: 'var(--surface2)', border: `1px solid ${sevColor}22` }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
                     <div style={{ width: 7, height: 7, borderRadius: '50%', background: sevColor, flexShrink: 0 }} />
-                    <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text1)', flex: 1 }}>{origin.toUpperCase()}</span>
+                    <span style={{ fontSize: 11.5, fontWeight: 800, color: 'var(--text1)', flex: 1 }}>{o.name.toUpperCase()}</span>
                     <span style={{ fontSize: 9.5, color: sevColor, fontWeight: 700, letterSpacing: '.08em' }}>{severity.toUpperCase()}</span>
                   </div>
 
-                  {/* Displacement total */}
-                  <div style={{ display: 'flex', gap: 8, marginBottom: 4, marginLeft: 13 }}>
-                    <span style={{ fontSize: 10.5, color: 'var(--amber)' }}>DISPLACED: <b>{fmt(totalDisplaced)}</b></span>
-                    {disp && disp.origin > 0 && <span style={{ fontSize: 9.5, color: 'var(--text2)' }}>UNHCR ORIGIN: {fmt(disp.origin)}</span>}
+                  <div style={{ display: 'flex', gap: 8, marginBottom: 4, marginLeft: 13, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 10.5, color: 'var(--amber)' }}>DISPLACED: <b>{fmt(o.displaced)}</b></span>
+                    <span style={{ fontSize: 9.5, color: 'var(--text2)' }}>ABROAD {fmt(o.abroad)} · IDPS {fmt(o.idps)}</span>
+                    <span style={{ fontSize: 9.5, color: TREND_VAR[o.trend], fontWeight: 700 }}>{changeLabel(o.displaced, o.abroadPrev + o.idpsPrev)} vs {snap.prevYear}</span>
                   </div>
 
-                  {/* Active crises linked */}
                   {linked.length > 0 && (
                     <div style={{ marginLeft: 13, marginBottom: 4 }}>
                       <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em', marginBottom: 2 }}>ACTIVE CRISES ({linked.length})</div>
@@ -208,10 +258,8 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
                         <div key={c.id + i}
                           onClick={() => onGeoSearch?.(`${c.latitude},${c.longitude}`)}
                           style={{ fontSize: 10, color: 'var(--text1)', marginBottom: 1, cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', gap: 4, alignItems: 'center' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--text1)' }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--text1)' }}
                         >
-                          <span style={{ fontSize: 8.5, color: c.severity === 'critical' ? 'var(--red)' : c.severity === 'high' ? 'var(--amber)' : 'var(--amber)', fontWeight: 700 }}>
+                          <span style={{ fontSize: 8.5, color: c.severity === 'critical' ? 'var(--red)' : 'var(--amber)', fontWeight: 700 }}>
                             {c.type.toUpperCase().slice(0, 3)}
                           </span>
                           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.title}</span>
@@ -225,23 +273,20 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
                     <div style={{ marginLeft: 13, fontSize: 9.5, color: 'var(--text3)', fontStyle: 'italic', marginBottom: 4 }}>No live crisis events detected</div>
                   )}
 
-                  {/* Flow corridors */}
                   <div style={{ marginLeft: 13 }}>
-                    <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '.1em', marginBottom: 2 }}>CORRIDORS ({flows.length})</div>
+                    <div style={{ fontSize: 9, color: 'var(--accent)', letterSpacing: '.1em', marginBottom: 2 }}>CORRIDORS ≥ {fmt(MIN_CORRIDOR)} ({flows.length})</div>
                     {flows.map(f => {
-                      const dest = f.label.split(' → ')[1]
-                      const camps = getCamps(dest)
+                      const camps = getCamps(f.toName)
                       const nearbyFlights = camps.length > 0 ? countFlightsNear(camps[0].lat, camps[0].lng) : 0
                       return (
-                        <div key={f.label}
-                          onClick={() => onGeoSearch?.(`${f.dest[1]},${f.dest[0]}`)}
+                        <div key={f.to}
+                          onClick={() => onGeoSearch?.(`${f.toPoint[1]},${f.toPoint[0]}`)}
                           style={{ fontSize: 10, color: 'var(--text2)', marginBottom: 2, cursor: onGeoSearch ? 'pointer' : 'default', display: 'flex', gap: 4, alignItems: 'center' }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--text1)' }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.color = 'var(--text2)' }}
                         >
-                          <span style={{ color: 'var(--accent)', fontWeight: 700 }}>→</span>
-                          <span style={{ flex: 1 }}>{dest}</span>
+                          <span style={{ color: TREND_VAR[f.trend], fontWeight: 700 }}>→</span>
+                          <span style={{ flex: 1 }}>{f.toName}</span>
                           <span style={{ fontSize: 9.5, color: 'var(--amber)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(f.count)}</span>
+                          <span style={{ fontSize: 9, color: TREND_VAR[f.trend], width: 38, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{changeLabel(f.count, f.prev)}</span>
                           {camps.length > 0 && <span style={{ fontSize: 8.5, color: 'var(--accent)' }}>{camps.length} sites</span>}
                           {nearbyFlights > 0 && <span style={{ fontSize: 8.5, color: 'var(--series-5)' }}>✈{nearbyFlights}</span>}
                         </div>
@@ -252,72 +297,106 @@ export function HumanitarianPanel({ crises, flights, onGeoSearch }: { crises: Cr
               )
             })}
             <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', letterSpacing: '.05em', lineHeight: 1.7 }}>
-              CORRELATION: UNHCR GLOBAL TRENDS × ACLED LIVE EVENTS × OPENSKY<br />
-              NEXUS UPDATES IN REAL-TIME WITH INCOMING DATA
+              CORRELATION: UNHCR {snap.year} CORRIDORS × LIVE CRISIS EVENTS × OPENSKY<br />
+              A SHARED COUNTRY IS A LINK TO CHECK, NOT A MEASURED CAUSE
             </div>
           </div>
         )
       })()}
 
-      {/* ─ FLOWS: refugee corridor listing ─ */}
-      {tab === 'FLOWS' && (
-        <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
-          <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.12em', marginBottom: 6 }}>
-            // MAJOR REFUGEE CORRIDORS · {REFUGEE_FLOWS.length} ROUTES
-          </div>
-          {REFUGEE_FLOWS
-            .sort((a, b) => b.count - a.count)
-            .map((f, i) => {
-              const maxCount = REFUGEE_FLOWS[0].count  // already sorted
-              const pct = (f.count / (maxCount || 1)) * 100
-              const origin = f.label.split(' → ')[0]
-              const dest = f.label.split(' → ')[1]
-              const linked = crises.filter(c => sameCountry(c.country, origin))
-              const isActive = linked.length > 0
-              // Color gradient by count
-              const t = Math.min(1, f.count / 4_000_000)
-              const color = t > 0.6 ? 'var(--red)' : t > 0.3 ? 'var(--amber)' : 'var(--accent)'
-
+      {/* ─ FLOWS: live refugee corridor listing ─ */}
+      {tab === 'FLOWS' && (() => {
+        if (!snap) return <DisplacementStatus state={disp} />
+        const list = snap.corridors.filter(f =>
+          flowFilter === 'all' || (flowFilter === 'rising' ? f.trend === 'rising' || f.trend === 'new' : f.trend === 'falling'))
+        const maxCount = snap.corridors[0]?.count || 1
+        return (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
+            <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+              {(['all', 'rising', 'falling'] as const).map(k => (
+                <button key={k} onClick={() => setFlowFilter(k)} style={{
+                  flex: 1, padding: '3px 6px', fontSize: 9.5, fontWeight: 700, letterSpacing: '.1em', cursor: 'pointer',
+                  border: `1px solid ${flowFilter === k ? 'var(--accent)55' : 'var(--border)'}`,
+                  background: flowFilter === k ? 'var(--accent-soft)' : 'transparent',
+                  color: flowFilter === k ? 'var(--accent)' : 'var(--text3)',
+                }}>{k === 'all' ? `ALL ${snap.corridors.length}` : k === 'rising' ? '▲ GROWING' : '▼ SHRINKING'}</button>
+              ))}
+            </div>
+            <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.12em', marginBottom: 6 }}>
+              // ORIGIN → ASYLUM · ≥ {fmt(MIN_CORRIDOR)} PEOPLE · {snap.prevYear} → {snap.year}
+            </div>
+            {list.map((f, i) => {
+              const pct = (f.count / maxCount) * 100
+              const linked = crises.filter(c => sameCountry(c.country, f.fromName))
+              const color = TREND_VAR[f.trend]
               return (
-                <div key={f.label}
-                  onClick={() => onGeoSearch?.(`${f.origin[1]},${f.origin[0]}`)}
+                <div key={f.from + f.to}
+                  onClick={() => onGeoSearch?.(`${f.fromPoint[1]},${f.fromPoint[0]}`)}
                   style={{ marginBottom: 5, cursor: onGeoSearch ? 'pointer' : 'default' }}
                   onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
                   onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
-                    <span style={{ fontSize: 9.5, color: 'var(--text3)', width: 16, textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
+                    <span style={{ fontSize: 9.5, color: 'var(--text3)', width: 18, textAlign: 'right', flexShrink: 0 }}>#{i + 1}</span>
                     <span style={{ fontSize: 10.5, color: 'var(--text1)', fontWeight: 700, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {origin} <span style={{ color: 'var(--text2)' }}>→</span> {dest}
+                      {f.fromName} <span style={{ color: 'var(--text2)' }}>→</span> {f.toName}
                     </span>
-                    <span style={{ fontSize: 10.5, color, fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(f.count)}</span>
-                    {isActive && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)', flexShrink: 0, animation: 'blink 1s step-end infinite' }} title={`${linked.length} active crises in ${origin}`} />}
+                    <span style={{ fontSize: 10.5, color: 'var(--text1)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{fmt(f.count)}</span>
+                    <span style={{ fontSize: 9.5, color, fontWeight: 700, width: 42, textAlign: 'right', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{changeLabel(f.count, f.prev)}</span>
+                    {linked.length > 0 && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--red)', flexShrink: 0 }} title={`${linked.length} live crisis events in ${f.fromName}`} />}
                   </div>
-                  <div style={{ marginLeft: 21, height: 2, background: 'var(--border)', borderRadius: 1, marginBottom: 2 }}>
-                    <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: color, opacity: 0.55, borderRadius: 1, transition: 'width .5s' }} />
+                  <div style={{ marginLeft: 23, height: 2, background: 'var(--border)', borderRadius: 1 }}>
+                    <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', background: color, opacity: 0.6, borderRadius: 1, transition: 'width .5s' }} />
                   </div>
-                  {isActive && (
-                    <div style={{ marginLeft: 21, display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                      {linked.slice(0, 3).map((c, j) => (
-                        <span key={j} style={{
-                          fontSize: 8.5, padding: '1px 4px', borderRadius: 2,
-                          background: c.severity === 'critical' ? 'var(--red-soft)' : 'var(--amber-soft)',
-                          color: c.severity === 'critical' ? 'var(--red)' : 'var(--amber)',
-                          border: `1px solid ${c.severity === 'critical' ? 'var(--red)22' : 'var(--amber)22'}`,
-                        }}>
-                          {c.type.toUpperCase().slice(0, 3)} · {c.title.slice(0, 30)}{c.title.length > 30 ? '…' : ''}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )
             })}
-          <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', letterSpacing: '.05em', lineHeight: 1.7 }}>
-            SOURCE: UNHCR GLOBAL TRENDS 2023 · CRISIS TAGS FROM ACLED LIVE
+            {list.length === 0 && <div style={{ fontSize: 10, color: 'var(--text3)', fontStyle: 'italic' }}>No corridors in this group.</div>}
+            <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', letterSpacing: '.05em', lineHeight: 1.7 }}>
+              SOURCE: UNHCR REFUGEE DATA FINDER (api.unhcr.org), {snap.year} vs {snap.prevYear}<br />
+              REFUGEES + ASYLUM-SEEKERS + OTHERS IN NEED OF PROTECTION · ±{Math.round(TREND_THRESHOLD * 100)}% = GROWING/SHRINKING<br />
+              A CHANGE CAN BE ARRIVALS, RETURNS OR RE-REGISTRATION · {fmt(snap.unplaced)} WITH UNKNOWN ORIGIN NOT MAPPED
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
+
+      {/* ─ IDPS: internal displacement (UNHCR) + latest IOM DTM rounds ─ */}
+      {tab === 'IDPS' && (() => {
+        if (!snap) return <DisplacementStatus state={disp} />
+        const rows = snap.countries.filter(c => c.idps > 0).sort((a, b) => b.idps - a.idps).slice(0, 20)
+        const max = rows[0]?.idps || 1
+        return (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '6px 8px' }}>
+            <div style={{ fontSize: 9.5, color: 'var(--text3)', letterSpacing: '.12em', marginBottom: 6 }}>
+              // DISPLACED INSIDE THEIR OWN COUNTRY · UNHCR {snap.year} · TAP FOR IOM DTM
+            </div>
+            {rows.map(c => {
+              const open = dtmIso === c.iso3
+              return (
+                <div key={c.iso3} style={{ marginBottom: 5 }}>
+                  <div onClick={() => setDtmIso(open ? null : c.iso3)} style={{ cursor: 'pointer' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginBottom: 2 }}>
+                      <span style={{ fontSize: 9, color: 'var(--text3)', width: 10 }}>{open ? '▾' : '▸'}</span>
+                      <span style={{ fontSize: 10.5, color: 'var(--text1)', fontWeight: 700, flex: 1 }}>{c.name}</span>
+                      <span style={{ fontSize: 10.5, color: 'var(--amber)', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(c.idps)}</span>
+                      <span style={{ fontSize: 9.5, color: TREND_VAR[trendOf(c.idps, c.idpsPrev)], width: 42, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{changeLabel(c.idps, c.idpsPrev)}</span>
+                    </div>
+                    <div style={{ marginLeft: 15, height: 2, background: 'var(--border)', borderRadius: 1 }}>
+                      <div style={{ width: `${(c.idps / max) * 100}%`, height: '100%', background: 'var(--amber)', opacity: 0.55, borderRadius: 1 }} />
+                    </div>
+                  </div>
+                  {open && <DtmDetail result={dtm} onLocate={() => onGeoSearch?.(`${c.point[1]},${c.point[0]}`)} />}
+                </div>
+              )
+            })}
+            <div style={{ marginTop: 6, fontSize: 9, color: 'var(--text3)', letterSpacing: '.05em', lineHeight: 1.7 }}>
+              UNHCR IDP FIGURES ARE CONFLICT-RELATED · IOM DTM: SURVEY ROUNDS WHERE IOM OPERATES<br />
+              DTM OPERATIONS IN ONE COUNTRY CAN OVERLAP, SO THEY ARE SHOWN SEPARATELY, NOT ADDED
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ─ OFFICES ─ */}
       {tab === 'OFFICES' && (
