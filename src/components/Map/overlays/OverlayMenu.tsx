@@ -1,37 +1,38 @@
 import { useState } from 'react'
-import { LAYER_SECTIONS } from '../../../utils/layerSections'
+import { LAYER_SECTIONS, MAP_ONLY, MAP_ONLY_NOTE } from '../../../utils/layerSections'
 import { PIPELINE_COLORS } from '../../../services/pipelines'
 import type { PanelState } from '../../../types'
 
+// `color` is the layer's own map colour (kept next to the layer as a literal, like the layer styles themselves)
 const OVERLAY_ITEMS: Record<keyof PanelState, { label: string; icon: string; color: string }> = {
-  outages: { label: 'OUTAGES', icon: '◐', color: '#f59e0b' },
-  disasters: { label: 'DISASTERS', icon: '⚑', color: '#f97316' },
-  resources: { label: 'RESOURCES', icon: '◭', color: '#d97706' },
-  tradeStats: { label: 'TRADE', icon: '⇄', color: '#22d3ee' },
-  flights: { label: 'FLIGHTS', icon: '✈', color: '#00ff88' },
-  crises: { label: 'CRISES', icon: '⚠', color: '#ff6600' },
-  vessels: { label: 'VESSELS', icon: '⎈', color: '#00aaff' },
-  wildfires: { label: 'WILDFIRES', icon: '✱', color: '#ff4400' },
-  news: { label: 'NEWS', icon: '◉', color: '#cccccc' },
-  stocks: { label: 'MARKETS', icon: '$', color: '#00ff88' },
-  military: { label: 'MILITARY', icon: '⚔', color: '#ff2244' },
-  nuclear: { label: 'NUCLEAR', icon: '☢', color: '#ffcc00' },
-  sanctions: { label: 'SANCTIONS', icon: '⊗', color: '#ff3344' },
-  cameras: { label: 'CAMERAS', icon: '◎', color: '#aa88ff' },
-  infrastructure: { label: 'INFRA', icon: '↯', color: '#ff8800' },
-  airspace: { label: 'AIRSPACE', icon: '◇', color: '#44aaff' },
-  humanitarian: { label: 'HUMANITARIAN', icon: '✚', color: '#ff6688' },
-  oil: { label: 'OIL', icon: '▲', color: '#ff6600' },
-  gas: { label: 'GAS', icon: '▲', color: '#00aaff' },
-  ports: { label: 'PORTS', icon: '⎈', color: '#00ccff' },
-  pipelines: { label: 'PIPELINES', icon: '═', color: PIPELINE_COLORS.gas },
-  gpsjam: { label: 'GPS JAM', icon: '◌', color: '#ff3344' },
-  chokepoints: { label: 'CHOKEPOINTS', icon: '⊘', color: '#ff4466' },
-  supplychain: { label: 'SUPPLY CHAIN', icon: '◆', color: '#00ccff' },
-  shippingDensity: { label: 'SHIPPING', icon: '≋', color: '#ff4466' },
-  analyticsHex: { label: 'HAZARD HEX', icon: '⬢', color: '#3987e5' },
-  countryAnalytics: { label: 'COLOUR COUNTRIES', icon: '▦', color: '#3987e5' },
-  datacenters: { label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
+  outages: { label: 'Internet outages', icon: '◐', color: '#f59e0b' },
+  disasters: { label: 'Disaster alerts', icon: '⚑', color: '#f97316' },
+  resources: { label: 'Critical minerals', icon: '◭', color: '#d97706' },
+  tradeStats: { label: 'Trade profiles', icon: '⇄', color: '#22d3ee' },
+  flights: { label: 'Flights', icon: '✈', color: '#00ff88' },
+  crises: { label: 'Conflict events', icon: '⚠', color: '#ff6600' },
+  vessels: { label: 'Vessels (AIS)', icon: '⎈', color: '#00aaff' },
+  wildfires: { label: 'Wildfires', icon: '✱', color: '#ff4400' },
+  news: { label: 'News pins', icon: '◉', color: '#cccccc' },
+  stocks: { label: 'Market hubs', icon: '$', color: '#00ff88' },
+  military: { label: 'Military bases', icon: '⚔', color: '#ff2244' },
+  nuclear: { label: 'Nuclear sites', icon: '☢', color: '#ffcc00' },
+  sanctions: { label: 'Sanctions', icon: '⊗', color: '#ff3344' },
+  cameras: { label: 'Webcams', icon: '◎', color: '#aa88ff' },
+  infrastructure: { label: 'Power plants & infra', icon: '↯', color: '#ff8800' },
+  airspace: { label: 'Low air traffic', icon: '◇', color: '#44aaff' },
+  humanitarian: { label: 'Displacement', icon: '✚', color: '#ff6688' },
+  oil: { label: 'Oil', icon: '▲', color: '#ff6600' },
+  gas: { label: 'Gas', icon: '▲', color: '#00aaff' },
+  ports: { label: 'Ports', icon: '⎈', color: '#00ccff' },
+  pipelines: { label: 'Pipelines', icon: '═', color: PIPELINE_COLORS.gas },
+  gpsjam: { label: 'GPS jamming', icon: '◌', color: '#ff3344' },
+  chokepoints: { label: 'Chokepoints', icon: '⊘', color: '#ff4466' },
+  supplychain: { label: 'Supply-chain sites', icon: '◆', color: '#00ccff' },
+  shippingDensity: { label: 'Shipping lanes', icon: '≋', color: '#ff4466' },
+  analyticsHex: { label: 'Hazard hexagons', icon: '⬢', color: '#3987e5' },
+  countryAnalytics: { label: 'Colour countries by data', icon: '▦', color: '#3987e5' },
+  datacenters: { label: 'Data centers', icon: '▤', color: '#a855f7' },
 }
 
 interface Props {
@@ -42,153 +43,84 @@ interface Props {
   /** DeepState split view (a mirror of deepstatemap.live beside the map); the row is hidden when the toggle is omitted */
   deepstateMode?: boolean
   onToggleDeepstate?: () => void
+  /** the layers the open workspace's panels draw, listed first; omitted or empty hides the section */
+  suggested?: { workspace: string; layers: readonly (keyof PanelState)[] }
   /** distance from the top of the map; the menu sits below the flight filter when that is showing */
   top: number
 }
 
 const DEEPSTATE_COLOR = '#ff1a3e'
 
-export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, deepstateMode = false, onToggleDeepstate, top }: Props) {
-  const [showOverlays, setShowOverlays] = useState(false)
-  // sections marked `collapsed` (layers that carry no analysis) stay folded until opened
-  const [openSections, setOpenSections] = useState<ReadonlySet<string>>(new Set())
-  const activeCount = Object.values(panelState).filter(Boolean).length
+function Row({ id, on, onToggle }: { id: keyof PanelState; on: boolean; onToggle: () => void }) {
+  const item = OVERLAY_ITEMS[id]
+  const mapOnly = MAP_ONLY.has(id)
   return (
-  <div style={{ position:'absolute', top, left:10, zIndex:29 }}
-    onMouseDown={e => e.stopPropagation()}
-    onPointerDown={e => e.stopPropagation()}
-  >
-    <button
-      onClick={() => setShowOverlays(v => !v)}
-      style={{
-        display:'flex', alignItems:'center', gap:5,
-        padding:'3px 10px', fontSize:8.5, fontWeight:700,
-        letterSpacing:'.14em', textTransform:'uppercase',
-        border:`1px solid ${showOverlays ? 'rgba(213,168,95,.58)' : '#263843'}`,
-        background: showOverlays ? 'rgba(213,168,95,.10)' : 'rgba(9,16,22,.9)',
-        color: showOverlays ? '#d5a85f' : '#c0cbd0',
-        cursor:'pointer', transition:'all .15s', fontFamily:'monospace',
-        backdropFilter:'blur(8px)',
-      }}
-    >
-      ◈ OVERLAYS
-      <span style={{ fontSize:7, color: showOverlays ? '#e5c997' : '#7c909a' }}>
-        {activeCount}
-      </span>
+    <button className={`ov-row ${on ? 'on' : ''}`} aria-pressed={on} onClick={e => { e.stopPropagation(); onToggle() }}
+      style={on ? { color: item.color } : undefined} title={mapOnly ? MAP_ONLY_NOTE : undefined}>
+      <span className="ov-icon" aria-hidden>{item.icon}</span>
+      <span className="ov-label">{item.label}</span>
+      {mapOnly && <span className="ov-tag">map only</span>}
+      <span className="ov-dot" style={on ? { background: item.color, borderColor: item.color } : undefined} />
+    </button>
+  )
+}
+
+export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, deepstateMode = false, onToggleDeepstate, suggested, top }: Props) {
+  const [showOverlays, setShowOverlays] = useState(false)
+  const [folded, setFolded] = useState<ReadonlySet<string>>(new Set())
+  const activeCount = Object.values(panelState).filter(Boolean).length
+  const suggestedOff = suggested?.layers.filter(k => !panelState[k]) ?? []
+  const toggleFold = (title: string) => setFolded(prev => { const n = new Set(prev); if (n.has(title)) n.delete(title); else n.add(title); return n })
+
+  return (
+  <div className="ov-menu" style={{ top }} onMouseDown={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}>
+    <button className={`ov-launch ${showOverlays ? 'open' : ''}`} aria-expanded={showOverlays} onClick={() => setShowOverlays(v => !v)}>
+      ◈ Map layers <span className="ov-count">{activeCount}</span>
     </button>
 
     {showOverlays && (
-      <div style={{
-        marginTop:3,
-        background:'rgba(9,16,22,0.97)',
-        border:'1px solid #263843', borderLeft:'2px solid rgba(213,168,95,.58)',
-        backdropFilter:'blur(10px)',
-        width:200,
-        boxShadow:'0 4px 20px rgba(0,0,0,0.7)',
-      }}>
+      <div className="ov-panel">
         {onClearLayers && (
-          <button
-            onClick={(e) => { e.stopPropagation(); onClearLayers() }}
-            disabled={activeCount === 0}
-            style={{
-              display:'block', width:'100%', padding:'6px 8px', fontSize:8, fontWeight:700,
-              letterSpacing:'.12em', textAlign:'center',
-              border:'none', borderBottom:'1px solid #263843',
-              background:'rgba(213,168,95,.08)',
-              color: activeCount === 0 ? '#647883' : '#d5a85f',
-              cursor: activeCount === 0 ? 'default' : 'pointer',
-              fontFamily:'monospace',
-            }}
-          >
-            ✕ DESELECT ALL
+          <button className="ov-clear" onClick={e => { e.stopPropagation(); onClearLayers() }} disabled={activeCount === 0}>
+            Turn all layers off
           </button>
         )}
-        <div style={{ maxHeight: 340, overflowY: 'auto' }}>
-        {onToggleDeepstate && (
-          <div>
-            <div style={{ padding:'5px 8px 3px', fontSize:7, fontWeight:700, letterSpacing:'.16em', color:'#647883', background:'rgba(255,255,255,.03)', borderBottom:'1px solid #1c2b35', position:'sticky', top:0, zIndex:1 }}>
-              WAR MONITOR
+        <div className="ov-scroll">
+          {suggested && suggested.layers.length > 0 && (
+            <div className="ov-section ov-suggested">
+              <div className="ov-head ov-head-static">
+                <span>For this workspace · {suggested.workspace}</span>
+                {suggestedOff.length > 0 && (
+                  <button className="ov-all" onClick={e => { e.stopPropagation(); suggestedOff.forEach(onToggleLayer) }}>Show all</button>
+                )}
+              </div>
+              {suggested.layers.map(k => <Row key={k} id={k} on={!!panelState[k]} onToggle={() => onToggleLayer(k)} />)}
             </div>
-            <button
-              onClick={(e) => { e.stopPropagation(); onToggleDeepstate() }}
-              aria-pressed={deepstateMode}
-              title="Split the map and mirror deepstatemap.live beside it"
-              style={{
-                display:'flex', alignItems:'center', gap:6, width:'100%',
-                padding:'5px 8px', fontSize:8, fontWeight:600,
-                letterSpacing:'.08em', textAlign:'left',
-                border:'none', borderBottom:'1px solid #1c2b35',
-                background: deepstateMode ? DEEPSTATE_COLOR + '0c' : 'transparent',
-                color: deepstateMode ? DEEPSTATE_COLOR : '#98aab4',
-                cursor:'pointer', transition:'all .12s', fontFamily:'monospace',
-              }}
-            >
-              <span style={{ width:14, textAlign:'center', fontSize:9 }}>◆</span>
-              <span style={{ flex:1 }}>DEEPSTATE UKRAINE</span>
-              <span style={{
-                width:6, height:6, borderRadius:'50%',
-                background: deepstateMode ? DEEPSTATE_COLOR : '#263843',
-                border: `1px solid ${deepstateMode ? DEEPSTATE_COLOR + '88' : '#31434d'}`,
-                transition:'all .15s',
-              }} />
-            </button>
-          </div>
-        )}
-        {LAYER_SECTIONS.map(section => {
-          const foldable = 'collapsed' in section && section.collapsed
-          const open = !foldable || openSections.has(section.title)
-          const onHere = section.keys.filter(k => panelState[k]).length
-          const headStyle = { padding:'5px 8px 3px', fontSize:7, fontWeight:700, letterSpacing:'.16em', color:'#647883', background:'rgba(255,255,255,.03)', borderBottom:'1px solid #1c2b35', position:'sticky' as const, top:0, zIndex:1 }
-          return (
-          <div key={section.title}>
-            {foldable ? (
-              <button
-                onClick={(e) => { e.stopPropagation(); setOpenSections(prev => { const n = new Set(prev); if (n.has(section.title)) n.delete(section.title); else n.add(section.title); return n }) }}
-                aria-expanded={open}
-                title={'note' in section ? section.note : undefined}
-                style={{ ...headStyle, display:'flex', width:'100%', border:'none', borderBottom:'1px solid #1c2b35', cursor:'pointer', fontFamily:'inherit', textAlign:'left' }}
-              >
-                <span style={{ flex:1 }}>{open ? '▾' : '▸'} {section.title} ({section.keys.length}){onHere ? ` · ${onHere} ON` : ''}</span>
+          )}
+          {onToggleDeepstate && (
+            <div className="ov-section">
+              <div className="ov-head ov-head-static"><span>War monitor</span></div>
+              <button className={`ov-row ${deepstateMode ? 'on' : ''}`} aria-pressed={deepstateMode} title="Split the map and mirror deepstatemap.live beside it"
+                onClick={e => { e.stopPropagation(); onToggleDeepstate() }} style={deepstateMode ? { color: DEEPSTATE_COLOR } : undefined}>
+                <span className="ov-icon" aria-hidden>◆</span>
+                <span className="ov-label">DeepState Ukraine</span>
+                <span className="ov-dot" style={deepstateMode ? { background: DEEPSTATE_COLOR, borderColor: DEEPSTATE_COLOR } : undefined} />
               </button>
-            ) : (
-              <div style={headStyle}>{section.title}</div>
-            )}
-            {open && 'note' in section && (
-              <div style={{ padding:'4px 8px', fontSize:7.5, lineHeight:1.4, color:'#647883', borderBottom:'1px solid #1c2b35' }}>{section.note}</div>
-            )}
-            {open && section.keys.map(key => {
-              const item = { key, ...OVERLAY_ITEMS[key] }
-              const on = panelState[item.key]
-          return (
-            <button
-              key={item.key}
-              onClick={(e) => { e.stopPropagation(); onToggleLayer(item.key) }}
-              style={{
-                display:'flex', alignItems:'center', gap:6, width:'100%',
-                padding:'5px 8px', fontSize:8, fontWeight:600,
-                letterSpacing:'.08em', textAlign:'left',
-                border:'none', borderBottom:'1px solid #1c2b35',
-                background: on ? item.color + '0c' : 'transparent',
-                color: on ? item.color : '#98aab4',
-                cursor:'pointer', transition:'all .12s', fontFamily:'monospace',
-              }}
-              onMouseEnter={e => { if (!on) (e.currentTarget as HTMLButtonElement).style.color = '#e5ecef' }}
-              onMouseLeave={e => { if (!on) (e.currentTarget as HTMLButtonElement).style.color = '#98aab4' }}
-            >
-              <span style={{ width:14, textAlign:'center', fontSize:9 }}>{item.icon}</span>
-              <span style={{ flex:1 }}>{item.label}</span>
-              <span style={{
-                width:6, height:6, borderRadius:'50%',
-                background: on ? item.color : '#263843',
-                border: `1px solid ${on ? item.color + '88' : '#31434d'}`,
-                transition:'all .15s',
-              }} />
-            </button>
-          )
-            })}
-          </div>
-          )
-        })}
+            </div>
+          )}
+          {LAYER_SECTIONS.map(section => {
+            const open = !folded.has(section.title)
+            const onHere = section.keys.filter(k => panelState[k]).length
+            return (
+              <div key={section.title} className="ov-section">
+                <button className="ov-head" aria-expanded={open} onClick={e => { e.stopPropagation(); toggleFold(section.title) }}>
+                  <span>{open ? '▾' : '▸'} {section.title}</span>
+                  {onHere > 0 && <span className="ov-on">{onHere} on</span>}
+                </button>
+                {open && section.keys.map(k => <Row key={k} id={k} on={!!panelState[k]} onToggle={() => onToggleLayer(k)} />)}
+              </div>
+            )
+          })}
         </div>
       </div>
     )}

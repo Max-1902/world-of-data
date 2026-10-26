@@ -62,7 +62,7 @@ export default function MapView({
   showAnalyticsHex, showCountryAnalytics,
   flyToQuery, geoFlyTo, onCountryClick, onPlaceClick, selectedCountry, selectedPlace,
   reticleColor = '#00ff88',
-  panelState, onToggleLayer, onClearLayers,
+  panelState, onToggleLayer, onClearLayers, suggestedLayers,
 }: MapViewProps) {
   const containerRef   = useRef<HTMLDivElement>(null)
   const mapRef         = useRef<mapboxgl.Map | null>(null)
@@ -236,7 +236,7 @@ export default function MapView({
         />
       )}
       {panelState && onToggleLayer && (
-        <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} top={52} />
+        <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} suggested={suggestedLayers} top={52} />
       )}
       {!deepstateMode && <Reticle color={reticleColor} />}
       </div>

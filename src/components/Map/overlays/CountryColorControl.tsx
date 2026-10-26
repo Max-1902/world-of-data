@@ -28,9 +28,12 @@ export default function CountryColorControl({ on, onToggle, countryData, country
   const bottom = raised ? 232 : 58
   if (!on) {
     return (
-      <button className="cc-launch" style={{ bottom }} onClick={onToggle} title="Shade every country by an economic, energy, security or social indicator">
-        ▦ Colour countries by data
-      </button>
+      // wrapped: the app-wide `.dashboard button` rule would override a button's own absolute positioning
+      <div className="cc-anchor" style={{ bottom }}>
+        <button className="cc-launch" onClick={onToggle} title="Shade every country by an economic, energy, security or social indicator">
+          ▦ Colour countries by data
+        </button>
+      </div>
     )
   }
 
