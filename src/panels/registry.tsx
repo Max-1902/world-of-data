@@ -6,6 +6,7 @@
  */
 import { lazy } from 'react'
 import type { PanelDef, PanelGroup, PanelSection } from './types'
+import type { PanelState } from '../types'
 import { AnalystSlot } from '../components/panels/aiAnalyst/AnalystWindow'
 // Every panel is code-split: its chunk (and the datasets it pulls in) loads only when the panel is first shown.
 // PanelHost supplies the Suspense boundary.
@@ -303,6 +304,11 @@ const sectionRank = (p: PanelDef) => GROUP_SECTIONS[p.group].findIndex(s => s.id
 /** Get all panels for a group, ordered by section, then by registry order within a section */
 export function panelsForGroup(group: PanelGroup): PanelDef[] {
   return PANELS.filter(p => p.group === group).sort((a, b) => sectionRank(a) - sectionRank(b))
+}
+
+/** The map layers a workspace's panels draw (their `map` lists), deduplicated, in registry order. */
+export function layersForGroup(group: PanelGroup): (keyof PanelState)[] {
+  return [...new Set(panelsForGroup(group).flatMap(p => Array.isArray(p.map) ? p.map : []))]
 }
 
 /** All group IDs in display order: the economic workflow first, then context domains, then raw sources. */

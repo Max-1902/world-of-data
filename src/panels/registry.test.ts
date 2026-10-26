@@ -44,3 +44,14 @@ describe('panel registry structure', () => {
     }
   })
 })
+
+describe('layersForGroup', () => {
+  it("collects each workspace's panel layers once, and nothing for workspaces whose panels draw no listed layer", async () => {
+    const { layersForGroup } = await import('./registry')
+    const markets = layersForGroup('markets')
+    expect(markets).toContain('stocks')
+    expect(markets).toContain('tradeStats')
+    expect(new Set(markets).size).toBe(markets.length)
+    expect(layersForGroup('country')).toEqual([])
+  })
+})

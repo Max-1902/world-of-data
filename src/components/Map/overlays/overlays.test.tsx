@@ -52,75 +52,104 @@ describe('FlightFilter', () => {
 
 describe('OverlayMenu', () => {
   const state = { flights: true, crises: false, military: true } as unknown as PanelState
+  const open = () => fireEvent.click(screen.getByRole('button', { name: /Map layers/ }))
 
   it('counts enabled layers and toggles one by key', () => {
     const onToggleLayer = vi.fn()
     render(<OverlayMenu panelState={state} onToggleLayer={onToggleLayer} top={52} />)
-    expect(screen.getByRole('button', { name: /OVERLAYS/ }).textContent).toContain('2')
-    expect(screen.queryByRole('button', { name: /SANCTIONS/ })).toBeNull()   // collapsed until opened
+    expect(screen.getByRole('button', { name: /Map layers/ }).textContent).toContain('2')
+    expect(screen.queryByRole('button', { name: /Sanctions/ })).toBeNull()   // closed until opened
 
-    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
-    fireEvent.click(screen.getByRole('button', { name: /SANCTIONS/ }))
+    open()
+    fireEvent.click(screen.getByRole('button', { name: /Sanctions/ }))
     expect(onToggleLayer).toHaveBeenCalledWith('sanctions')
   })
 
-  it('deselects every overlay with one button, disabled when none are on', () => {
+  it('turns every layer off with one button, disabled when none are on', () => {
     const onClearLayers = vi.fn()
     const { unmount } = render(<OverlayMenu panelState={state} onToggleLayer={() => {}} onClearLayers={onClearLayers} top={52} />)
-    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
-    fireEvent.click(screen.getByRole('button', { name: /DESELECT ALL/ }))
+    open()
+    fireEvent.click(screen.getByRole('button', { name: /Turn all layers off/ }))
     expect(onClearLayers).toHaveBeenCalledTimes(1)
     unmount()
 
     render(<OverlayMenu panelState={{ flights: false } as unknown as PanelState} onToggleLayer={() => {}} onClearLayers={onClearLayers} top={52} />)
-    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
-    expect((screen.getByRole('button', { name: /DESELECT ALL/ }) as HTMLButtonElement).disabled).toBe(true)
+    open()
+    expect((screen.getByRole('button', { name: /Turn all layers off/ }) as HTMLButtonElement).disabled).toBe(true)
   })
 
-  it('has a button for every layer key the sections list, so none can be un-toggleable', async () => {
+  it('has a toggle for every layer key the sections list, so none can be un-toggleable', async () => {
     const { LAYER_SECTIONS } = await import('../../../utils/layerSections')
     render(<OverlayMenu panelState={{} as PanelState} onToggleLayer={() => {}} top={52} />)
-    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
-    fireEvent.click(screen.getByRole('button', { name: /REFERENCE ONLY/ }))
+    open()
     const keys = LAYER_SECTIONS.flatMap(s => s.keys)
     expect(keys.length).toBeGreaterThan(20)
-    // each key renders one toggle (the menu would throw on a key missing from OVERLAY_ITEMS)
-    expect(screen.getAllByRole('button').length).toBeGreaterThanOrEqual(keys.length + 1)
+    // each key renders one pressable toggle (the menu would throw on a key missing from OVERLAY_ITEMS)
+    expect(screen.getAllByRole('button').filter(b => b.hasAttribute('aria-pressed'))).toHaveLength(keys.length)
   })
-  it('folds the layers that carry no analysis into REFERENCE ONLY, showing how many of them are on', () => {
-    const onToggleLayer = vi.fn()
-    render(<OverlayMenu panelState={{ vessels: true, flights: true } as unknown as PanelState} onToggleLayer={onToggleLayer} top={52} />)
-    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
-    const head = screen.getByRole('button', { name: /REFERENCE ONLY \(6\) · 1 ON/ })
-    expect(head.getAttribute('aria-expanded')).toBe('false')
-    expect(screen.queryByRole('button', { name: /VESSELS/ })).toBeNull()
-    expect(screen.getByRole('button', { name: /FLIGHTS/ })).toBeTruthy()
+
+  it('folds and unfolds a section, showing how many of its layers are on', () => {
+    render(<OverlayMenu panelState={{ vessels: true, stocks: true } as unknown as PanelState} onToggleLayer={() => {}} top={52} />)
+    open()
+    const head = screen.getByRole('button', { name: /MARKETS & TRADE/ })
+    expect(head.textContent).toContain('2 on')
+    expect(head.getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(head)
-    expect(screen.getByText(/Plotted, not analysed/)).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: /VESSELS/ }))
-    expect(onToggleLayer).toHaveBeenCalledWith('vessels')
+    expect(screen.queryByRole('button', { name: /Vessels/ })).toBeNull()
+    fireEvent.click(head)
+    expect(screen.getByRole('button', { name: /Vessels/ })).toBeTruthy()
   })
+
+  it('tags layers nothing computes from as map only, inside their own theme', () => {
+    render(<OverlayMenu panelState={{} as PanelState} onToggleLayer={() => {}} top={52} />)
+    open()
+    const vessels = screen.getByRole('button', { name: /Vessels/ })
+    expect(vessels.textContent).toContain('map only')
+    expect(vessels.getAttribute('title')).toMatch(/plotted, not analysed/)
+    expect(screen.getByRole('button', { name: /Chokepoints/ }).textContent).not.toContain('map only')
+  })
+
+  it("lists the open workspace's layers first, and shows the ones still off in one click", () => {
+    const onToggleLayer = vi.fn()
+    render(<OverlayMenu panelState={{ stocks: true } as unknown as PanelState} onToggleLayer={onToggleLayer} top={52}
+      suggested={{ workspace: 'ECONOMY', layers: ['stocks', 'tradeStats', 'resources'] }} />)
+    open()
+    expect(screen.getByText(/For this workspace · ECONOMY/)).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Show all' }))
+    expect(onToggleLayer.mock.calls.map(c => c[0])).toEqual(['tradeStats', 'resources'])
+  })
+
+  it('hides the workspace section when the workspace draws nothing, and "show all" once everything is on', () => {
+    const { unmount } = render(<OverlayMenu panelState={{} as PanelState} onToggleLayer={() => {}} top={52} suggested={{ workspace: 'COUNTRY LOOKUP', layers: [] }} />)
+    open()
+    expect(screen.queryByText(/For this workspace/)).toBeNull()
+    unmount()
+    render(<OverlayMenu panelState={{ stocks: true } as unknown as PanelState} onToggleLayer={() => {}} top={52} suggested={{ workspace: 'ECONOMY', layers: ['stocks'] }} />)
+    open()
+    expect(screen.queryByRole('button', { name: 'Show all' })).toBeNull()
+  })
+
   it('lists DeepState as a toggle that reports its state, and is not counted as a map layer', () => {
     const onToggleDeepstate = vi.fn()
     const base = { panelState: { flights: false } as unknown as PanelState, onToggleLayer: () => {}, top: 52 }
     const { unmount } = render(<OverlayMenu {...base} onToggleDeepstate={onToggleDeepstate} />)
-    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
-    const row = screen.getByRole('button', { name: /DEEPSTATE UKRAINE/ })
+    open()
+    const row = screen.getByRole('button', { name: /DeepState Ukraine/ })
     expect(row.getAttribute('aria-pressed')).toBe('false')
     fireEvent.click(row)
     expect(onToggleDeepstate).toHaveBeenCalledTimes(1)
     unmount()
 
     render(<OverlayMenu {...base} deepstateMode onToggleDeepstate={onToggleDeepstate} />)
-    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
-    expect(screen.getByRole('button', { name: /DEEPSTATE UKRAINE/ }).getAttribute('aria-pressed')).toBe('true')
-    // DeepState is a split view, not a PanelState layer, so it must not enable "deselect all"
-    expect(screen.getByRole('button', { name: /OVERLAYS/ }).textContent).toContain('0')
+    open()
+    expect(screen.getByRole('button', { name: /DeepState Ukraine/ }).getAttribute('aria-pressed')).toBe('true')
+    // DeepState is a split view, not a PanelState layer, so it is not counted
+    expect(screen.getByRole('button', { name: /Map layers/ }).textContent).toContain('0')
   })
 
   it('hides the DeepState row when no toggle is wired', () => {
     render(<OverlayMenu panelState={{} as PanelState} onToggleLayer={() => {}} top={52} />)
-    fireEvent.click(screen.getByRole('button', { name: /OVERLAYS/ }))
-    expect(screen.queryByRole('button', { name: /DEEPSTATE/ })).toBeNull()
+    open()
+    expect(screen.queryByRole('button', { name: /DeepState/ })).toBeNull()
   })
 })

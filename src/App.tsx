@@ -33,7 +33,7 @@ import { clearNewsCaches } from './services/news'
 import { selectForMap } from './services/countryAnalytics'
 import { summarizeKeyEvents } from './utils/keyEvents'
 import { useDisasterAlerts } from './hooks/useDisasterAlerts'
-import { GROUP_ORDER, PANEL_MAP } from './panels/registry'
+import { GROUP_ORDER, PANEL_MAP, layersForGroup } from './panels/registry'
 import { decodeHash, encodeHash, enabledLayers, isViewMode, layersToPanelState, type DecodedState } from './utils/urlState'
 
 // Rarely-open surfaces: keep their code (and the datasets CountryDrawer pulls in) out of the first load.
@@ -239,6 +239,12 @@ export default function App() {
     })
   }, [])
 
+  // the layer menu lists the open workspace's own layers first, so the map follows what you are looking at
+  const suggestedLayers = useMemo(() => ({
+    workspace: GROUP_ORDER.find(g => g.id === activeGroup)?.label ?? activeGroup,
+    layers: layersForGroup(activeGroup),
+  }), [activeGroup])
+
   // Cmd+K / search: shade the map by one indicator (turns the colouring on if it was off)
   const colorCountries = useCallback((indicatorId: string) => {
     selectForMap(indicatorId)
@@ -331,6 +337,7 @@ export default function App() {
           <div className="map-card">
           <MapView
             viewMode={viewMode}
+            suggestedLayers={suggestedLayers}
             flights={flights}
             crises={mapCrises}
             newsPins={newsPins}

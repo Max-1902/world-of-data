@@ -31,6 +31,8 @@ export interface MapViewProps {
   onCrisisClick: (c: CrisisEvent) => void
   fires:         FirePoint[]
   showWildfires: boolean
+  /** the open workspace and the layers its panels draw, offered first in the layer menu */
+  suggestedLayers?: { workspace: string; layers: readonly (keyof import('../../types').PanelState)[] }
   showMilitary:  boolean
   showNuclear:   boolean
   showSanctions:     boolean

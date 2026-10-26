@@ -1297,7 +1297,8 @@ body.pw-dragging iframe { pointer-events: none; }
 .dl-status-loading b { color: var(--text3); }
 
 /* ── "Colour countries by" map control (Map/overlays/CountryColorControl.tsx) ── */
-.cc-launch { position: absolute; right: 10px; z-index: 30; display: flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 11px; font-weight: 600; color: var(--text1); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); box-shadow: var(--shadow-md); cursor: pointer; }
+.cc-anchor { position: absolute; right: 10px; z-index: 30; }
+.cc-launch { display: flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 11px; font-weight: 600; color: var(--text1); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); box-shadow: var(--shadow-md); cursor: pointer; }
 .cc-launch:hover { color: var(--accent); }
 .cc-card { position: absolute; right: 10px; z-index: 30; width: 268px; padding: 10px 11px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); box-shadow: var(--shadow-md); display: flex; flex-direction: column; gap: 7px; }
 .cc-kicker { display: flex; align-items: center; justify-content: space-between; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
@@ -1323,3 +1324,25 @@ body.pw-dragging iframe { pointer-events: none; }
 .cc-opt:hover, .cc-opt.hl { background: var(--accent-soft); }
 .cc-opt[aria-selected="true"] { color: var(--accent); }
 .cc-empty { padding: 8px; font-size: 10.5px; color: var(--text3); }
+
+/* ── Map layer menu (Map/overlays/OverlayMenu.tsx) ── */
+.ov-menu { position: absolute; left: 10px; z-index: 29; }
+.ov-launch { display: flex; align-items: center; gap: 6px; padding: 5px 10px; font-size: 11px; font-weight: 600; color: var(--text1); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); box-shadow: var(--shadow-sm); cursor: pointer; }
+.ov-launch:hover, .ov-launch.open { color: var(--accent); border-color: var(--accent); }
+.ov-count { min-width: 16px; padding: 0 5px; font-size: 10px; text-align: center; color: var(--text2); background: var(--surface2); border-radius: var(--r-pill); }
+.ov-panel { margin-top: 4px; width: 236px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); box-shadow: var(--shadow-md); overflow: hidden; }
+.ov-clear { display: block; width: 100%; padding: 6px 10px; font-size: 10.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: none; border-bottom: 1px solid var(--border); cursor: pointer; }
+.ov-clear:disabled { color: var(--text3); background: none; cursor: default; }
+.ov-scroll { max-height: min(460px, calc(100vh - 220px)); overflow-y: auto; }
+.ov-head { position: sticky; top: 0; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; padding: 6px 10px 4px; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); background: var(--surface2); border: none; border-bottom: 1px solid var(--border); cursor: pointer; text-align: left; font-family: inherit; }
+.ov-head-static { cursor: default; }
+.ov-suggested .ov-head { color: var(--accent); }
+.ov-on { color: var(--accent); letter-spacing: .04em; }
+.ov-all { padding: 1px 7px; font-size: 9px; font-weight: 700; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r-pill); cursor: pointer; text-transform: none; letter-spacing: 0; }
+.ov-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 10px; font-size: 11.5px; color: var(--text2); background: none; border: none; border-bottom: 1px solid var(--border); cursor: pointer; text-align: left; }
+.ov-row:hover { color: var(--text1); background: var(--surface2); }
+.ov-row.on { background: var(--surface2); font-weight: 600; }
+.ov-icon { width: 14px; text-align: center; font-size: 11px; }
+.ov-label { flex: 1; }
+.ov-tag { font-size: 8.5px; color: var(--text3); border: 1px dashed var(--border-strong); border-radius: var(--r-pill); padding: 0 5px; white-space: nowrap; }
+.ov-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); border: 1px solid var(--border-strong); flex-shrink: 0; }
