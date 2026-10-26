@@ -40,7 +40,7 @@ function run(add: (map: never, ctx: LayerCtx) => void) {
     getCanvas: () => ({ style: {} }), getZoom: () => 4,
     on: (event: string, a: unknown, b?: unknown) => { if (event === 'click' && typeof b === 'function') handlers.push(b as (e: unknown) => void) },
   }
-  const ctx = { popupRef: { current: null }, flightDataRef: { current: [] }, militaryPersonnelRef: { current: [] }, infraIndicatorsRef: { current: [] },
+  const ctx = { popupRef: { current: null }, flightDataRef: { current: [] },
     countryAnalyticsRef: { current: null }, onFlightClick: vi.fn(), onCountryClickRef: { current: undefined }, onPlaceClickRef: { current: undefined } } as unknown as LayerCtx
   add(map as never, ctx)
   expect(handlers.length).toBeGreaterThan(0)

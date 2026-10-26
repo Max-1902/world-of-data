@@ -1283,3 +1283,43 @@ body.pw-dragging iframe { pointer-events: none; }
 /* A panel picked from search / ⌘K briefly glows so the eye lands on it after the scroll. */
 @keyframes dock-panel-focus { 0%, 40% { box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 2px transparent; } }
 .dock-panel.dock-panel-focus { animation: dock-panel-focus 1.6s ease-out; }
+
+/* ── Shared data labels (components/DataLabels.tsx): evidence kind, source line, status ── */
+.dl-ev { display: inline-block; padding: 1px 6px; border-radius: var(--r-pill); font-size: 9px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border: 1px solid currentColor; line-height: 1.5; cursor: help; white-space: nowrap; }
+.dl-ev-observed    { color: var(--blue); }
+.dl-ev-statistical { color: var(--amber); }
+.dl-ev-assumption  { color: var(--series-5); }
+.dl-src { font-size: 9.5px; color: var(--text3); line-height: 1.45; }
+.dl-status { font-size: 10px; color: var(--text2); line-height: 1.45; }
+.dl-status b { font-weight: 700; margin-right: 2px; }
+.dl-status-error b { color: var(--red); }
+.dl-status-stale b, .dl-status-empty b { color: var(--amber); }
+.dl-status-loading b { color: var(--text3); }
+
+/* ── "Colour countries by" map control (Map/overlays/CountryColorControl.tsx) ── */
+.cc-launch { position: absolute; right: 10px; z-index: 30; display: flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 11px; font-weight: 600; color: var(--text1); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); box-shadow: var(--shadow-md); cursor: pointer; }
+.cc-launch:hover { color: var(--accent); }
+.cc-card { position: absolute; right: 10px; z-index: 30; width: 268px; padding: 10px 11px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-md); box-shadow: var(--shadow-md); display: flex; flex-direction: column; gap: 7px; }
+.cc-kicker { display: flex; align-items: center; justify-content: space-between; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
+.cc-x { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+.cc-x:hover { color: var(--text1); }
+.cc-pick { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; padding: 5px 8px; font-size: 12px; font-weight: 650; color: var(--text1); background: var(--surface2); border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer; text-align: left; }
+.cc-pick:hover, .cc-pick[aria-expanded="true"] { border-color: var(--accent); }
+.cc-pick small { color: var(--text3); font-weight: 500; }
+.cc-sublabel { font-size: 10px; color: var(--text2); }
+.cc-modes { display: flex; gap: 4px; }
+.cc-modes button { padding: 3px 8px; font-size: 10px; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); cursor: pointer; }
+.cc-modes button[aria-pressed="true"] { color: var(--accent); background: var(--accent-soft); border-color: var(--accent); }
+.cc-ramp { height: 6px; border-radius: 3px; }
+.cc-ends { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text2); margin-top: 3px; }
+.cc-ev { display: flex; gap: 6px; align-items: flex-start; font-size: 10px; color: var(--text2); line-height: 1.45; }
+.cc-cover { font-size: 10px; color: var(--text2); line-height: 1.5; border-top: 1px solid var(--border); padding-top: 6px; }
+.cc-swatch { display: inline-block; width: 9px; height: 9px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+.cc-search { width: 100%; padding: 5px 8px; font-size: 11.5px; color: var(--text1); background: var(--bg); border: 1px solid var(--accent); border-radius: var(--r-sm); outline: none; }
+.cc-list { max-height: 260px; overflow-y: auto; margin-top: 4px; border: 1px solid var(--border); border-radius: var(--r-sm); }
+.cc-group { position: sticky; top: 0; padding: 4px 8px 2px; font-size: 8.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); background: var(--surface2); }
+.cc-opt { display: flex; justify-content: space-between; gap: 8px; width: 100%; padding: 4px 8px; font-size: 11px; color: var(--text1); background: none; border: none; text-align: left; cursor: pointer; }
+.cc-opt small { color: var(--text3); font-size: 9.5px; white-space: nowrap; }
+.cc-opt:hover, .cc-opt.hl { background: var(--accent-soft); }
+.cc-opt[aria-selected="true"] { color: var(--accent); }
+.cc-empty { padding: 8px; font-size: 10.5px; color: var(--text3); }

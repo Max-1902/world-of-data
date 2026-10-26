@@ -30,6 +30,7 @@ import OutlookCard from './components/OutlookCard'
 import { AnalystWindowProvider } from './components/panels/aiAnalyst/AnalystWindow'
 import { triggerGlobalReload } from './utils/reloadBus'
 import { clearNewsCaches } from './services/news'
+import { selectForMap } from './services/countryAnalytics'
 import { summarizeKeyEvents } from './utils/keyEvents'
 import { useDisasterAlerts } from './hooks/useDisasterAlerts'
 import { GROUP_ORDER, PANEL_MAP } from './panels/registry'
@@ -51,7 +52,7 @@ const DEFAULT_PANEL_STATE: PanelState = {
   oil: false, gas: false, gpsjam: false, ports: false, pipelines: false,
   chokepoints: false, supplychain: false, shippingDensity: false,
   outages: false, disasters: true, resources: false, tradeStats: false,
-  militaryPersonnel: false, datacenters: false, infraIndicators: false,
+  datacenters: false,
   analyticsHex: false, countryAnalytics: false,
 }
 
@@ -65,7 +66,8 @@ function loadPanelState(): PanelState {
   if (fromLink) return layersToPanelState(DEFAULT_PANEL_STATE, fromLink)
   try {
     const raw = localStorage.getItem('ws-panel-state')
-    if (raw) return { ...DEFAULT_PANEL_STATE, ...JSON.parse(raw) }
+    // only known layers: a key from a layer that has since been removed would otherwise linger and be counted as on
+    if (raw) return layersToPanelState(DEFAULT_PANEL_STATE, enabledLayers({ ...DEFAULT_PANEL_STATE, ...JSON.parse(raw) }))
   } catch {}
   return DEFAULT_PANEL_STATE
 }
@@ -237,6 +239,12 @@ export default function App() {
     })
   }, [])
 
+  // Cmd+K / search: shade the map by one indicator (turns the colouring on if it was off)
+  const colorCountries = useCallback((indicatorId: string) => {
+    selectForMap(indicatorId)
+    setPanelState(prev => prev.countryAnalytics ? prev : { ...prev, countryAnalytics: true })
+  }, [])
+
   // A screen switched: saved screens restore their exact layer set, built-in ones add the layers their panels draw.
   const applyLayers = useCallback((layers: (keyof PanelState)[], exact: boolean) => {
     setPanelState(prev => {
@@ -306,6 +314,7 @@ export default function App() {
         onOpenPanel={openPanel}
         onOpenLibrary={() => setLibraryOpen(true)}
         onToggleLayer={toggleLayer}
+        onColorCountries={colorCountries}
         onSettingsOpen={() => setSettingsOpen(true)}
         onReloadAll={handleReloadAll}
         reloading={reloading}
@@ -364,8 +373,6 @@ export default function App() {
             showDisasters={panelState.disasters}
             showResources={panelState.resources}
             showTradeStats={panelState.tradeStats}
-            showMilitaryPersonnel={panelState.militaryPersonnel}
-            showInfraIndicators={panelState.infraIndicators}
             showAnalyticsHex={panelState.analyticsHex}
             showCountryAnalytics={panelState.countryAnalytics}
             flyToQuery={searchQuery}
@@ -427,6 +434,7 @@ export default function App() {
             screens={screens.screens}
             onLoadScreen={screens.load}
             onOpenLibrary={() => setLibraryOpen(true)}
+            onColorCountries={colorCountries}
           />
           <PanelLibrary
             open={libraryOpen}

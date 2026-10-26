@@ -30,7 +30,6 @@ const LAYERS_CONFIG: { id: keyof PanelState; label: string; color: string; tag: 
   { id: 'crises',    label: 'CONFLICT ZONES',       color: 'var(--red)', tag: 'GEO' },
   { id: 'wildfires', label: 'WILDFIRES',             color: 'var(--amber)', tag: 'FIRE' },
   { id: 'military',  label: 'MILITARY INSTALLATIONS',color: 'var(--green)', tag: 'MIL' },
-  { id: 'militaryPersonnel', label: 'FORCE SIZE',           color: 'var(--red)', tag: 'MIL' },
   { id: 'nuclear',   label: 'NUCLEAR SITES',         color: 'var(--amber)', tag: 'NUC' },
   { id: 'sanctions', label: 'SANCTIONED STATES',     color: 'var(--red)', tag: 'SAN' },
   { id: 'news',      label: 'MEDIA SIGNALS',         color: 'var(--series-5)', tag: 'SIG' },

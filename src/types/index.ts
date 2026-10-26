@@ -84,9 +84,7 @@ export interface PanelState {
   disasters:      boolean
   resources:      boolean
   tradeStats:     boolean
-  militaryPersonnel: boolean
   datacenters:    boolean
-  infraIndicators: boolean
   analyticsHex:   boolean
   countryAnalytics: boolean
 }

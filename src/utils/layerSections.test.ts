@@ -7,9 +7,9 @@ describe('layer sections', () => {
     expect(new Set(keys).size).toBe(keys.length)
     expect(ALL_LAYERS_PLACED).toBe(true)
   })
-  it('keeps force size next to military and trade/resources under economy', () => {
+  it('keeps trade, resources and country colouring under economy', () => {
     const sec = (k: string) => LAYER_SECTIONS.find(s => (s.keys as readonly string[]).includes(k))!.title
-    expect(sec('militaryPersonnel')).toBe(sec('military'))
+    expect(sec('countryAnalytics')).toBe('ECONOMY')
     expect(sec('tradeStats')).toBe('ECONOMY')
     expect(sec('resources')).toBe('ECONOMY')
   })

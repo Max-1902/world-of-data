@@ -14,6 +14,12 @@ describe('search catalogue', () => {
     expect(new Set(catalogue.map(c => c.id)).size).toBe(catalogue.length)
   })
 
+  it('offers every country indicator as a "colour the map" row, found by its own words', () => {
+    expect(catalogue.filter(c => c.kind === 'indicator').length).toBeGreaterThanOrEqual(50)
+    const hits = scoreItems(catalogue, 'oil rents').map(s => s.item.id)
+    expect(hits).toContain('indicator:NY.GDP.PETR.RT.ZS')
+  })
+
   it('aliases only refer to panels that exist', () => {
     for (const id of Object.keys(PANEL_ALIASES)) expect(PANEL_MAP.has(id), id).toBe(true)
   })

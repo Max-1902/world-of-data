@@ -32,8 +32,8 @@ function fakeMap() {
 
 function ctx(): LayerCtx {
   return {
-    popupRef: { current: null }, flightDataRef: { current: [] }, militaryPersonnelRef: { current: [] },
-    infraIndicatorsRef: { current: [] }, countryAnalyticsRef: { current: null },
+    popupRef: { current: null }, flightDataRef: { current: [] }, 
+    countryAnalyticsRef: { current: null },
     onFlightClick: vi.fn(), onCountryClickRef: { current: undefined }, onPlaceClickRef: { current: undefined },
   }
 }
