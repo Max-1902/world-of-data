@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   summarizeForAI, makeScale, niceTicks, pearson, ranks, spearman, fisherCI, ols, joinRows, analyzePair, describePair, describeFit,
-  percentile, histogram, correlationMatrix, countryColors, MIN_PAIR_N,
+  percentile, histogram, correlationMatrix, countryColors, coverage, MIN_PAIR_N, STALE_YEARS,
 } from './countryStats'
 import { INDICATOR_BY_ID, type CountryValue } from '../services/countryIndicators'
 
@@ -235,5 +235,27 @@ describe('summarizeForAI', () => {
   it('lists each source once when both indicators share one, and says "none" with no outliers on a side', () => {
     expect(summarizeForAI(a, x, y, xs, ys)).toContain('(World Bank)')
     expect(summarizeForAI({ ...a, over: [], under: [] }, x, y, xs, ys)).toContain('Furthest ABOVE the trend: none.')
+  })
+})
+
+describe('coverage', () => {
+  const universe = new Set(['AAA', 'BBB', 'CCC', 'DDD', 'EEE'])
+  it('counts reporters, lists the economies without a value, and the spread of reporting years', () => {
+    const c = coverage([cv('AAA', 1, '2023'), cv('BBB', 2, '2022'), cv('CCC', 3, '2023'), cv('ZZZ', 4, '2021')], universe)
+    expect(c.n).toBe(4)
+    expect(c.missing).toEqual(['DDD', 'EEE'])
+    expect([c.minYear, c.maxYear]).toEqual([2021, 2023])
+    expect(c.typicalYear).toBe(2022) // lower median of 2021, 2022, 2023, 2023
+  })
+  it(`flags values ${STALE_YEARS}+ years older than the typical year, not merely older than the newest`, () => {
+    const c = coverage([cv('AAA', 1, '2023'), cv('BBB', 1, '2023'), cv('CCC', 1, '2023'), cv('DDD', 1, String(2023 - STALE_YEARS)), cv('EEE', 1, String(2024 - STALE_YEARS))], universe)
+    expect(c.typicalYear).toBe(2023)
+    expect(c.stale).toEqual(['DDD'])
+  })
+  it('handles no rows and undated rows without inventing years', () => {
+    expect(coverage([], universe)).toEqual({ n: 0, missing: [...universe], minYear: null, maxYear: null, typicalYear: null, stale: [] })
+    const c = coverage([cv('AAA', 1, '')], universe)
+    expect(c.n).toBe(1)
+    expect(c.typicalYear).toBeNull()
   })
 })

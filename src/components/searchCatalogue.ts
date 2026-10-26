@@ -2,6 +2,7 @@ import type { PanelGroup } from '../panels/types'
 import { GROUP_ORDER, GROUP_SECTIONS, panelsForGroup } from '../panels/registry'
 import { LAYER_IDS, VIEW_MODES } from './layerCatalogue'
 import { CHOKEPOINTS } from '../services/chokepoints'
+import { INDICATORS } from '../services/countryIndicators'
 import type { PaletteItem } from '../utils/paletteSearch'
 
 /**
@@ -38,7 +39,7 @@ export const PANEL_ALIASES: Record<string, string> = {
   layers: 'layers overlays map',
 }
 
-/** Searchable catalogue: every registry panel (with its workspace + section as extra keywords), layers, map styles, chokepoints. */
+/** Searchable catalogue: every registry panel (with its workspace + section as extra keywords), layers, map styles, country indicators, chokepoints. */
 export function buildSearchCatalogue(): { catalogue: PaletteItem[]; groupOfPanel: Map<string, PanelGroup> } {
   const groupOfPanel = new Map<string, PanelGroup>()
   const catalogue: PaletteItem[] = []
@@ -51,6 +52,7 @@ export function buildSearchCatalogue(): { catalogue: PaletteItem[]; groupOfPanel
   }
   for (const l of LAYER_IDS) catalogue.push({ id: `layer:${l.id}`, kind: 'layer', label: l.label, hint: l.desc })
   for (const v of VIEW_MODES) catalogue.push({ id: `view:${v.id}`, kind: 'view', label: v.label })
+  for (const i of INDICATORS) catalogue.push({ id: `indicator:${i.id}`, kind: 'indicator', label: i.label, hint: `Colour countries on the map · ${i.source}`, keywords: `${i.short} ${i.group} colour color map shade` })
   for (const c of CHOKEPOINTS) catalogue.push({ id: `choke:${c.name}`, kind: 'chokepoint', label: c.name, hint: c.controlledBy })
   return { catalogue, groupOfPanel }
 }

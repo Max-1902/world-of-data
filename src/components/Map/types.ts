@@ -9,8 +9,6 @@ import type { DisasterAlert } from '../../services/gdacs'
 import type { RadarOutage } from '../../services/radarOutages'
 import type { GPSJamData } from '../../services/gpsjam'
 import type { GeoNewsPin } from '../../utils/geoNews'
-import type { MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
-import type { CountryInfraEntry } from '../../services/infraIndicators'
 import type { CountryAnalyticsView } from './layers/types'
 
 export interface MapViewProps {
@@ -59,8 +57,6 @@ export interface MapViewProps {
   showDisasters:      boolean
   showResources:      boolean
   showTradeStats:     boolean
-  showMilitaryPersonnel: boolean
-  showInfraIndicators: boolean
   showAnalyticsHex: boolean
   showCountryAnalytics: boolean
   flyToQuery?:        string
@@ -88,7 +84,5 @@ export interface MapHandle {
   flightDataRef: MutableRefObject<Flight[]>
   popupRef: MutableRefObject<mapboxgl.Popup | null>
   markersRef: MutableRefObject<mapboxgl.Marker[]>
-  militaryPersonnelRef: MutableRefObject<MilitaryPersonnelEntry[]>
-  infraIndicatorsRef: MutableRefObject<CountryInfraEntry[]>
   countryAnalyticsRef: MutableRefObject<CountryAnalyticsView | null>
 }

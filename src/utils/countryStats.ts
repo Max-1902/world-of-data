@@ -247,6 +247,40 @@ export function correlationMatrix(items: { id: string; rows: CountryValue[] }[],
   return { ids: items.map(i => i.id), rho, n }
 }
 
+// ── Coverage & comparability ──────────────────────────────────────────────────
+
+/** A value this many years older than the indicator's typical year is flagged as not comparable with the rest. */
+export const STALE_YEARS = 3
+
+export interface Coverage {
+  /** countries with a value */
+  n: number
+  /** economies in `universe` with no value */
+  missing: string[]
+  minYear: number | null
+  maxYear: number | null
+  /** median reporting year across countries (lower median), the reference for `stale` */
+  typicalYear: number | null
+  /** countries whose value is STALE_YEARS or more older than `typicalYear` */
+  stale: string[]
+}
+
+/**
+ * How comparable one indicator's country values are: how many countries report, which of `universe` don't, the spread
+ * of reporting years, and which values are much older than the rest (each country's value is its own latest year).
+ */
+export function coverage(rows: readonly { iso3: string; year: string }[], universe: ReadonlySet<string>): Coverage {
+  const have = new Set(rows.map(r => r.iso3))
+  const missing = [...universe].filter(c => !have.has(c)).sort()
+  // only a four-digit year counts: Number('') is 0, which would read as a value from year 0
+  const dated = rows.filter(r => /^\d{4}$/.test(r.year)).map(r => ({ iso3: r.iso3, year: Number(r.year) }))
+  if (dated.length === 0) return { n: have.size, missing, minYear: null, maxYear: null, typicalYear: null, stale: [] }
+  const years = dated.map(r => r.year).sort((a, b) => a - b)
+  const typicalYear = years[Math.floor((years.length - 1) / 2)]
+  const stale = dated.filter(r => r.year <= typicalYear - STALE_YEARS).map(r => r.iso3).sort()
+  return { n: have.size, missing, minYear: years[0], maxYear: years[years.length - 1], typicalYear, stale }
+}
+
 // ── Map colouring ─────────────────────────────────────────────────────────────
 
 export type MapMode = 'value' | 'trend'

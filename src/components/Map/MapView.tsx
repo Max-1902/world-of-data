@@ -3,8 +3,6 @@ import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { Flight } from '../../types'
 import type { FlightType } from '../../utils/flightType'
-import type { MilitaryPersonnelEntry } from '../../services/militaryPersonnel'
-import type { CountryInfraEntry } from '../../services/infraIndicators'
 import { ALL_TYPES } from './flightLayer'
 import {
   addAllLayers,
@@ -13,7 +11,6 @@ import {
   useCameraMarkers,
   useChokepointData,
   useCountryAnalyticsLayer,
-  useCountryIndicatorData,
   useDatacenterData,
   useFlightData,
   useGpsJamData,
@@ -43,7 +40,7 @@ import {
   useWildfireData,
 } from './layers'
 import type { MapHandle, MapViewProps } from './types'
-import CountryAnalyticsLegend from './overlays/CountryAnalyticsLegend'
+import CountryColorControl from './overlays/CountryColorControl'
 import HazardHexLegend from './overlays/HazardHexLegend'
 import OverlayMenu from './overlays/OverlayMenu'
 import Reticle from './overlays/Reticle'
@@ -61,8 +58,8 @@ export default function MapView({
   showCameras, showInfrastructure, showDatacenters, showAirspace, showHumanitarian,
   vessels, showVessels, showOil, showGas, showGPSJam, gpsJam, showPorts, showPipelines,
   showChokepoints, showSupplyChain, showShippingDensity,
-  outages, radarOutages, showOutages, disasterAlerts, showDisasters, showResources, showTradeStats, showMilitaryPersonnel,
-  showInfraIndicators, showAnalyticsHex, showCountryAnalytics,
+  outages, radarOutages, showOutages, disasterAlerts, showDisasters, showResources, showTradeStats,
+  showAnalyticsHex, showCountryAnalytics,
   flyToQuery, geoFlyTo, onCountryClick, onPlaceClick, selectedCountry, selectedPlace,
   reticleColor = '#00ff88',
   panelState, onToggleLayer, onClearLayers,
@@ -81,8 +78,6 @@ export default function MapView({
   onCountryClickRef.current = onCountryClick
   const onPlaceClickRef = useRef(onPlaceClick)
   onPlaceClickRef.current = onPlaceClick
-  const militaryPersonnelRef = useRef<MilitaryPersonnelEntry[]>([])
-  const infraIndicatorsRef = useRef<CountryInfraEntry[]>([])
   const countryAnalyticsRef = useRef<CountryAnalyticsView | null>(null)
 
   // Filter state
@@ -151,7 +146,7 @@ export default function MapView({
     map.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-right')
 
     map.on('load', () => {
-      addAllLayers(map, { popupRef, flightDataRef, militaryPersonnelRef, infraIndicatorsRef, countryAnalyticsRef, onFlightClick: f => onFlightClickRef.current(f), onCountryClickRef, onPlaceClickRef })
+      addAllLayers(map, { popupRef, flightDataRef, countryAnalyticsRef, onFlightClick: f => onFlightClickRef.current(f), onCountryClickRef, onPlaceClickRef })
 
       // Mark layers ready AFTER all sources/layers are added
       layersReadyRef.current = true
@@ -167,7 +162,7 @@ export default function MapView({
     }
   }, [])
 
-  const handle: MapHandle = { mapRef, containerRef, layersReadyRef, mapReady, flightDataRef, popupRef, markersRef, militaryPersonnelRef, infraIndicatorsRef, countryAnalyticsRef }
+  const handle: MapHandle = { mapRef, containerRef, layersReadyRef, mapReady, flightDataRef, popupRef, markersRef, countryAnalyticsRef }
 
   useFlightData(handle, { flights, showFlights, filterQuery, filterTypes })
   useWildfireData(handle, { fires, showWildfires })
@@ -177,7 +172,6 @@ export default function MapView({
   useSanctionsVisibility(handle, { showSanctions })
   useResourcesVisibility(handle, { showResources })
   useTradeStatsVisibility(handle, { showTradeStats })
-  useCountryIndicatorData(handle, { showMilitaryPersonnel, showInfraIndicators })
   useOutageData(handle, { outages, radarOutages, showOutages })
   useDisasterData(handle, { disasterAlerts, showDisasters })
   useMilitaryData(handle, { showMilitary })
@@ -193,7 +187,7 @@ export default function MapView({
   useHumanitarianData(handle, { showHumanitarian })
   useOilGasData(handle, { showOil, showGas })
   useGpsJamData(handle, { showGPSJam, gpsJam })
-  const { countryData, countryShading } = useCountryAnalyticsLayer(handle, { showCountryAnalytics })
+  const { countryData, countryShading, shading } = useCountryAnalyticsLayer(handle, { showCountryAnalytics })
   const { analytics, hexSlice } = useHazardHexLayer(handle, { showAnalyticsHex })
   useMapResize(handle, { deepstateMode })
   useCameraMarkers(handle, { showCameras })
@@ -226,8 +220,13 @@ export default function MapView({
         }}
       >
 
-      {showCountryAnalytics && !deepstateMode && (
-        <CountryAnalyticsLegend countryData={countryData} countryShading={countryShading} raised={showAnalyticsHex} />
+      {!deepstateMode && onToggleLayer && (
+        <CountryColorControl
+          on={showCountryAnalytics}
+          onToggle={() => onToggleLayer('countryAnalytics')}
+          countryData={countryData} countryShading={countryShading} shading={shading}
+          raised={showAnalyticsHex}
+        />
       )}
       {showAnalyticsHex && !deepstateMode && (
         <HazardHexLegend

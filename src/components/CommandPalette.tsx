@@ -17,14 +17,16 @@ interface Props {
   screens?: Screen[]
   onLoadScreen?: (id: string) => void
   onOpenLibrary?: () => void
+  /** shade the map's countries by a catalogue indicator */
+  onColorCountries?: (indicatorId: string) => void
 }
 
 const KIND_LABEL: Record<PaletteItem['kind'], string> = {
-  panel: 'Panel', layer: 'Layer', view: 'Map style', chokepoint: 'Chokepoint', search: 'Search map', screen: 'Screen', action: 'Browse',
+  panel: 'Panel', layer: 'Layer', view: 'Map style', chokepoint: 'Chokepoint', search: 'Search map', screen: 'Screen', action: 'Browse', indicator: 'Colour map',
 }
 
 /** Cmd/Ctrl+K palette over the panel registry, map layers, map styles and chokepoints. */
-export default function CommandPalette({ open, onClose, panelState, onOpenPanel, onToggleLayer, onViewMode, onGeoSearch, screens = [], onLoadScreen, onOpenLibrary }: Props) {
+export default function CommandPalette({ open, onClose, panelState, onOpenPanel, onToggleLayer, onViewMode, onGeoSearch, screens = [], onLoadScreen, onOpenLibrary, onColorCountries }: Props) {
   const [query, setQuery] = useState('')
   const [cursor, setCursor] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -33,8 +35,8 @@ export default function CommandPalette({ open, onClose, panelState, onOpenPanel,
   const catalogue = useMemo<PaletteItem[]>(() => [
     ...screens.map((s, i) => ({ id: `screen:${s.id}`, kind: 'screen' as const, label: s.name, hint: `${s.desc ?? `${s.wins.length} windows`}${i < 9 ? ` · Alt+${i + 1}` : ''}`, keywords: 'screen layout workspace' })),
     ...(onOpenLibrary ? [{ id: 'action:library', kind: 'action' as const, label: 'All panels…', hint: 'Browse and search every panel (P)', keywords: 'panels library browse list find' }] : []),
-    ...base,
-  ], [screens, onOpenLibrary, base])
+    ...(onColorCountries ? base : base.filter(i => i.kind !== 'indicator')),
+  ], [screens, onOpenLibrary, onColorCountries, base])
 
   const results = useMemo(() => {
     const ranked = rankItems(catalogue, query)
@@ -57,6 +59,7 @@ export default function CommandPalette({ open, onClose, panelState, onOpenPanel,
     else if (item.kind === 'action') onOpenLibrary?.()
     else if (item.kind === 'layer') onToggleLayer(key as keyof PanelState)
     else if (item.kind === 'view') onViewMode(key as MapViewMode)
+    else if (item.kind === 'indicator') onColorCountries?.(key)
     else if (item.kind === 'chokepoint' || item.kind === 'search') onGeoSearch(key)
     onClose()
   }

@@ -1,15 +1,19 @@
 import type { MutableRefObject } from 'react'
 import type mapboxgl from 'mapbox-gl'
 import type { Flight, SelectedPlace } from '../../../types'
-import type { MilitaryPersonnelEntry } from '../../../services/militaryPersonnel'
-import type { CountryInfraEntry } from '../../../services/infraIndicators'
 import type { Residual } from '../../../utils/countryStats'
 
 export interface CountryAnalyticsView {
+  mode: 'value' | 'trend'
   yRows: Map<string, { name: string; value: number; year: string }>   // keyed by ISO-3166 alpha-3
   points: Map<string, Residual>
   xShort: string; yShort: string
   xFormat: (v: number) => string; yFormat: (v: number) => string
+  /** source(s) of what is shaded */
+  source: string
+  /** the typical reporting year, and the countries whose values are much older than it */
+  typicalYear: number | null
+  stale: ReadonlySet<string>
 }
 
 /**
@@ -20,8 +24,6 @@ export interface CountryAnalyticsView {
 export interface LayerCtx {
   popupRef: MutableRefObject<mapboxgl.Popup | null>
   flightDataRef: MutableRefObject<Flight[]>
-  militaryPersonnelRef: MutableRefObject<MilitaryPersonnelEntry[]>
-  infraIndicatorsRef: MutableRefObject<CountryInfraEntry[]>
   countryAnalyticsRef: MutableRefObject<CountryAnalyticsView | null>
   onFlightClick: (f: Flight) => void
   onCountryClickRef: MutableRefObject<((country: string) => void) | undefined>

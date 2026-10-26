@@ -7,7 +7,6 @@ import { addSanctionsLayers } from './sanctions'
 import { addSelectedCountryLayer } from './selectedCountry'
 import { addResourcesLayers } from './resources'
 import { addTradeStatsLayers } from './tradeStats'
-import { addCountryIndicatorLayers } from './countryIndicators'
 import { addOutageLayers } from './outages'
 import { addDisasterLayers } from './disasters'
 import { addMilitaryLayers } from './military'
@@ -42,7 +41,6 @@ export function addAllLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   addSelectedCountryLayer(map, ctx)
   addResourcesLayers(map, ctx)
   addTradeStatsLayers(map, ctx)
-  addCountryIndicatorLayers(map, ctx)
   addOutageLayers(map, ctx)
   addDisasterLayers(map, ctx)
   addMilitaryLayers(map, ctx)
@@ -68,7 +66,6 @@ export { useAirspaceData } from './airspace'
 export { useCameraMarkers } from './cameras'
 export { useChokepointData } from './chokepoints'
 export { useCountryAnalyticsLayer } from './countryAnalytics'
-export { useCountryIndicatorData } from './countryIndicators'
 export { useDatacenterData } from './datacenters'
 export { useDisasterData } from './disasters'
 export { useFlightData } from './flights'

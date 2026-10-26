@@ -13,12 +13,14 @@ interface Props {
   onViewMode: (m: MapViewMode) => void
   /** the panel library — offered as the last "Jump to" row */
   onOpenLibrary?: () => void
+  /** shade the map's countries by a catalogue indicator */
+  onColorCountries?: (indicatorId: string) => void
 }
 
 type Row = PaletteItem & { sub?: string }
 
 const KIND_LABEL: Record<PaletteItem['kind'], string> = {
-  panel: 'Panel', layer: 'Layer', view: 'Map style', chokepoint: 'Place', search: 'Location', screen: 'Screen', action: 'Browse',
+  panel: 'Panel', layer: 'Layer', view: 'Map style', chokepoint: 'Place', search: 'Location', screen: 'Screen', action: 'Browse', indicator: 'Colour map',
 }
 
 /** Shown before anything is typed, so it's obvious the box finds more than places. */
@@ -30,7 +32,7 @@ const MAX_ROWS = 7
  * map layers, map styles and chokepoints, plus "Fly to …" for anything else, which goes to the map geocoder.
  * Only a picked/entered location is committed — typing no longer geocodes on every keystroke.
  */
-export default function SmartSearch({ searchQuery, onSearch, onOpenPanel, onToggleLayer, onViewMode, onOpenLibrary }: Props) {
+export default function SmartSearch({ searchQuery, onSearch, onOpenPanel, onToggleLayer, onViewMode, onOpenLibrary, onColorCountries }: Props) {
   const { catalogue, groupOfPanel } = useMemo(buildSearchCatalogue, [])
   const [expanded, setExpanded] = useState(false)
   const [draft, setDraft] = useState('')
@@ -74,6 +76,7 @@ export default function SmartSearch({ searchQuery, onSearch, onOpenPanel, onTogg
     else if (row.kind === 'action') onOpenLibrary?.()
     else if (row.kind === 'layer') onToggleLayer(key as keyof PanelState)
     else if (row.kind === 'view') onViewMode(key as MapViewMode)
+    else if (row.kind === 'indicator') onColorCountries?.(key)
     else onSearch(key) // chokepoint or free-text location
     close()
   }

@@ -15,7 +15,6 @@ const OVERLAY_ITEMS: Record<keyof PanelState, { label: string; icon: string; col
   news: { label: 'NEWS', icon: '◉', color: '#cccccc' },
   stocks: { label: 'MARKETS', icon: '$', color: '#00ff88' },
   military: { label: 'MILITARY', icon: '⚔', color: '#ff2244' },
-  militaryPersonnel: { label: 'FORCE SIZE', icon: '⚔', color: '#dc2626' },
   nuclear: { label: 'NUCLEAR', icon: '☢', color: '#ffcc00' },
   sanctions: { label: 'SANCTIONS', icon: '⊗', color: '#ff3344' },
   cameras: { label: 'CAMERAS', icon: '◎', color: '#aa88ff' },
@@ -30,9 +29,8 @@ const OVERLAY_ITEMS: Record<keyof PanelState, { label: string; icon: string; col
   chokepoints: { label: 'CHOKEPOINTS', icon: '⊘', color: '#ff4466' },
   supplychain: { label: 'SUPPLY CHAIN', icon: '◆', color: '#00ccff' },
   shippingDensity: { label: 'SHIPPING', icon: '≋', color: '#ff4466' },
-  infraIndicators: { label: 'INFRA ACCESS', icon: '↯', color: '#22d3ee' },
   analyticsHex: { label: 'HAZARD HEX', icon: '⬢', color: '#3987e5' },
-  countryAnalytics: { label: 'COUNTRY DATA', icon: '▦', color: '#3987e5' },
+  countryAnalytics: { label: 'COLOUR COUNTRIES', icon: '▦', color: '#3987e5' },
   datacenters: { label: 'DATA CENTERS', icon: '▤', color: '#a855f7' },
 }
 

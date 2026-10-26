@@ -29,12 +29,13 @@ interface Props {
   onOpenPanel: (id: string) => void
   onOpenLibrary?: () => void
   onToggleLayer: (id: keyof PanelState) => void
+  onColorCountries?: (indicatorId: string) => void
   onSettingsOpen?: () => void
   onReloadAll?: () => void
   reloading?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSearch, onOpenPanel, onOpenLibrary, onToggleLayer, onSettingsOpen, onReloadAll, reloading }: Props) {
+export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSearch, onOpenPanel, onOpenLibrary, onToggleLayer, onColorCountries, onSettingsOpen, onReloadAll, reloading }: Props) {
   const sources = useSyncExternalStore(healthTracker.subscribe, healthTracker.getAll)
   const market = summarizeMarketHud(stocks)
   const sanctions = summarizeSanctionsHud()
@@ -124,7 +125,7 @@ export default function TopBar({ viewMode, onViewMode, stocks, searchQuery, onSe
 
         <div className="hud-sep" />
 
-        <SmartSearch searchQuery={searchQuery} onSearch={onSearch} onOpenPanel={onOpenPanel} onOpenLibrary={onOpenLibrary} onToggleLayer={onToggleLayer} onViewMode={onViewMode} />
+        <SmartSearch searchQuery={searchQuery} onSearch={onSearch} onOpenPanel={onOpenPanel} onOpenLibrary={onOpenLibrary} onToggleLayer={onToggleLayer} onColorCountries={onColorCountries} onViewMode={onViewMode} />
 
         <div className="hud-sep" />
 

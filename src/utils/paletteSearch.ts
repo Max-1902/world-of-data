@@ -2,7 +2,7 @@
 
 export interface PaletteItem {
   id: string
-  kind: 'panel' | 'layer' | 'view' | 'chokepoint' | 'search' | 'screen' | 'action'
+  kind: 'panel' | 'layer' | 'view' | 'chokepoint' | 'search' | 'screen' | 'action' | 'indicator'
   label: string
   hint?: string
   /** Extra words that should match but aren't shown (aliases: "ai", "forecast", the workspace name…). */
