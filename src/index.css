@@ -1365,3 +1365,8 @@ body.pw-dragging iframe { pointer-events: none; }
 .ex-loss { color: var(--red) !important; }
 .ex-gain { color: var(--green) !important; }
 .ex-caveats { margin: 2px 0 0; padding-left: 14px; }
+
+/* ── Predictions: IMF benchmark, what changed, track record ── */
+.pred-block { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+.pred-block-h { font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
+.pred-list { margin: 0; padding-left: 14px; font-size: 10.5px; color: var(--text2); line-height: 1.55; }
