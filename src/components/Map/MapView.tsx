@@ -48,7 +48,7 @@ import DeepStatePanel from './overlays/DeepStatePanel'
 import { MAPBOX_TOKEN as TOKEN } from './token'
 
 export default function MapView({
-  viewMode, flights, crises, newsPins, stocks, earthquakes,
+  viewMode, projectionMode = 'globe', showReticle = true, flights, crises, newsPins, stocks, earthquakes,
   showFlights, showCrises, showNews, showStocks,
   deepstateMode,
   onCloseDeepstate, onToggleDeepstate,
@@ -192,6 +192,9 @@ export default function MapView({
   useMapResize(handle, { deepstateMode })
   useCameraMarkers(handle, { showCameras })
   useViewMode(handle, { viewMode })
+  useEffect(() => {
+    if (mapReady) mapRef.current?.setProjection(projectionMode)
+  }, [mapReady, projectionMode])
   useCrisisMarkers(handle, { crises, earthquakes, showCrises, onCrisisClick })
   useNewsMarkers(handle, { newsPins, showNews })
   useMarketMarkers(handle, { stocks, showStocks })
@@ -238,7 +241,7 @@ export default function MapView({
       {panelState && onToggleLayer && (
         <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} suggested={suggestedLayers} top={52} />
       )}
-      {!deepstateMode && <Reticle color={reticleColor} />}
+      {!deepstateMode && showReticle && <Reticle color={reticleColor} />}
       </div>
 
       {deepstateMode && <DeepStatePanel onClose={onCloseDeepstate} />}

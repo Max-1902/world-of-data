@@ -38,6 +38,8 @@ const compact = (v: number): string => {
 }
 const usd = (v: number) => `${v < 0 ? '−' : ''}$${compact(Math.abs(v))}`
 const pct = (v: number) => `${v.toFixed(1)}%`
+// for values in Mt CO₂e (EN.GHG.CO2.MT.CE.AR5)
+const gigatonnes = (v: number) => v >= 1_000 ? `${(v / 1_000).toFixed(1)} Gt` : `${v >= 10 ? v.toFixed(0) : v.toFixed(1)} Mt`
 const num1 = (v: number) => v.toFixed(1)
 
 type Fmt = (v: number) => string
@@ -81,6 +83,8 @@ export const INDICATORS: IndicatorMeta[] = [
   wb('EG.USE.PCAP.KG.OE',  'Energy use per capita (kg oil equivalent)', 'Energy/cap', 'Energy & resources', 'log', compact),
   owid('global-primary-energy-by-source', 'Primary energy consumption (TWh)', 'Primary energy', 'Energy & resources', 'log', v => formatTwh(v)),
   owid('renewable-energy',                'Renewable energy consumption (TWh)', 'Renewables', 'Energy & resources', 'log', v => formatTwh(v)),
+  wb('EN.GHG.CO2.MT.CE.AR5', 'CO₂ emissions, excl. land use (Mt CO₂e)', 'CO₂',      'Energy & resources', 'log', gigatonnes),
+  wb('EG.FEC.RNEW.ZS',     'Renewable energy consumption (%)',       'Renewables',  'Energy & resources', 'linear', pct),
   ember('total',     'Electricity generated (TWh)',                 'Electricity', 'log',    v => formatTwh(v)),
   ember('lowcarbon', 'Low-carbon share of electricity (%)',         'Low-carbon',  'linear', pct),
   ember('windsolar', 'Wind and solar share of electricity (%)',     'Wind+solar',  'linear', pct),
