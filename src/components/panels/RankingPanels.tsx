@@ -12,6 +12,7 @@ import { INDICATOR_BY_ID } from '../../services/countryIndicators'
 import { OWID_CHARTS, fetchOwidChart, formatOwidValue, TOPIC_LABELS, type OwidTopic, type OwidChartData } from '../../services/owid'
 
 import { type MapLinkProps, infoStrip } from './countryDataShared'
+import { MetricRow, RankRow, StatusLabel } from '../DataLabels'
 
 // ── Military Personnel Panel — ranked by armed forces personnel (World Bank) ──
 export function MilitaryPersonnelPanel({ onCountryClick, panelState, onToggleLayer }: { onCountryClick?: (country: string) => void } & MapLinkProps) {
@@ -48,34 +49,14 @@ export function MilitaryPersonnelPanel({ onCountryClick, panelState, onToggleLay
         <OnMapButton indicatorId="MS.MIL.TOTL.P1" panelState={panelState} onToggleLayer={onToggleLayer} />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
-        {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading World Bank ranking…</div>}
-        {error && <div style={{ fontSize: 9.5, color: 'var(--red)', padding: '8px 0' }}>Failed to load World Bank data.</div>}
+        {loading && <StatusLabel status="loading">World Bank ranking…</StatusLabel>}
+        {error && <StatusLabel status="error">The World Bank ranking could not be loaded.</StatusLabel>}
         {filtered.map(c => {
-          const barW = (c.personnel / maxPersonnel) * 100
           const fresh = freshness(c.year, 'military', c.iso2)
           return (
-            <button
-              key={c.iso2}
-              onClick={() => onCountryClick?.(c.country)}
-              style={{
-                width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                borderBottom: '1px solid var(--border)', padding: '3.5px 0', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
-              }}
-            >
-              <span style={{ fontSize: 9, color: 'var(--text3)', width: 22, flexShrink: 0, textAlign: 'right' }}>#{c.rank}</span>
-              <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--red)', width: 20, flexShrink: 0 }}>{c.iso2}</span>
-              <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.country}</span>
-              <div style={{ width: 40, height: 3, background: 'var(--border)', borderRadius: 1, overflow: 'hidden', flexShrink: 0 }}>
-                <div style={{ width: `${barW}%`, height: '100%', background: 'var(--red)', borderRadius: 1 }} />
-              </div>
-              <span style={{ fontSize: 9, color: 'var(--text2)', fontWeight: 700, width: 46, textAlign: 'right', flexShrink: 0 }}>
-                {formatPersonnel(c.personnel)}
-              </span>
-              <span title={fresh?.label ?? `reported for ${c.year}`} style={{ fontSize: 9, width: 34, textAlign: 'right', flexShrink: 0, color: fresh?.stale ? 'var(--amber)' : 'var(--text3)', fontWeight: fresh?.stale ? 700 : 400 }}>
-                {c.year}{fresh?.stale ? '⚠' : ''}
-              </span>
-            </button>
+            <RankRow key={c.iso2} rank={c.rank} code={c.iso2} name={c.country} share={c.personnel / maxPersonnel} tone="down"
+              value={formatPersonnel(c.personnel)} year={c.year} stale={fresh?.stale} staleLabel={fresh?.label ?? undefined}
+              onClick={() => onCountryClick?.(c.country)} />
           )
         })}
       </div>
@@ -126,8 +107,8 @@ export function InfraIndicatorsPanel({ onCountryClick, panelState, onToggleLayer
         <OnMapButton indicatorId="ember:total" panelState={panelState} onToggleLayer={onToggleLayer} />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
-        {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading electricity data…</div>}
-        {error && <div style={{ fontSize: 9.5, color: 'var(--red)', padding: '8px 0' }}>Failed to load electricity data.</div>}
+        {loading && <StatusLabel status="loading">Electricity data…</StatusLabel>}
+        {error && <StatusLabel status="error">The electricity data could not be loaded.</StatusLabel>}
         {filtered.map(c => {
           const expanded = open === c.code
           return (
@@ -157,12 +138,9 @@ export function InfraIndicatorsPanel({ onCountryClick, panelState, onToggleLayer
               {expanded && (
                 <div style={{ padding: '2px 0 6px 28px' }}>
                   {POWER_SOURCES.filter(src => c.bySource[src.id] > 0).sort((a, b) => c.bySource[b.id] - c.bySource[a.id]).map(src => (
-                    <div key={src.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 9.5, padding: '1px 0' }}>
-                      <span style={{ width: 7, height: 7, borderRadius: 2, background: POWER_COLORS[src.id], flexShrink: 0 }} />
-                      <span style={{ color: 'var(--text2)', flex: 1 }}>{src.label}</span>
-                      <span style={{ color: 'var(--text1)', fontVariantNumeric: 'tabular-nums' }}>{formatTwh(c.bySource[src.id])}</span>
-                      <span style={{ color: 'var(--text3)', width: 30, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{Math.round((c.bySource[src.id] / c.totalTwh) * 100)}%</span>
-                    </div>
+                    <MetricRow key={src.id}
+                      label={<><span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: 2, background: POWER_COLORS[src.id], marginRight: 6 }} />{src.label}</>}
+                      value={`${formatTwh(c.bySource[src.id])} · ${Math.round((c.bySource[src.id] / c.totalTwh) * 100)}%`} />
                   ))}
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 3, fontSize: 9, color: 'var(--text3)' }}>
                     <span>Data year {c.year}</span>
@@ -252,32 +230,12 @@ export function OwidPanel({ onCountryClick, panelState, onToggleLayer }: { onCou
         <OnMapButton indicatorId={INDICATOR_BY_ID.has(`owid:${chartSlug}`) ? `owid:${chartSlug}` : null} panelState={panelState} onToggleLayer={onToggleLayer} />
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '2px 8px' }}>
-        {loading && <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>Loading Our World in Data…</div>}
-        {error && <div style={{ fontSize: 9.5, color: 'var(--red)', padding: '8px 0' }}>Failed to load data for this chart.</div>}
-        {!loading && !error && filtered.length === 0 && (
-          <div style={{ fontSize: 9.5, color: 'var(--text2)', padding: '8px 0', fontStyle: 'italic' }}>No countries match.</div>
-        )}
+        {loading && <StatusLabel status="loading">Our World in Data…</StatusLabel>}
+        {error && <StatusLabel status="error">The data for this chart could not be loaded.</StatusLabel>}
+        {!loading && !error && filtered.length === 0 && <StatusLabel status="empty">No countries match.</StatusLabel>}
         {filtered.map((v, i) => (
-          <button
-            key={v.entity}
-            onClick={() => onCountryClick?.(v.entity)}
-            style={{
-              width: '100%', textAlign: 'left', background: 'none', border: 'none',
-              borderBottom: '1px solid var(--border)', padding: '3.5px 0', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'inherit',
-            }}
-          >
-            <span style={{ fontSize: 9, color: 'var(--text3)', width: 22, flexShrink: 0, textAlign: 'right' }}>#{i + 1}</span>
-            <span style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--accent)', width: 26, flexShrink: 0 }}>{v.code}</span>
-            <span style={{ fontSize: 10.5, color: 'var(--text1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{v.entity}</span>
-            <div style={{ width: 40, height: 3, background: 'var(--border)', borderRadius: 1, overflow: 'hidden', flexShrink: 0 }}>
-              <div style={{ width: `${maxValue ? (v.value / maxValue) * 100 : 0}%`, height: '100%', background: 'var(--accent)', borderRadius: 1 }} />
-            </div>
-            <span style={{ fontSize: 9, color: 'var(--text2)', fontWeight: 700, width: 52, textAlign: 'right', flexShrink: 0 }}>
-              {data ? formatOwidValue(data.unit, v.value) : ''}
-            </span>
-            <span style={{ fontSize: 8, color: 'var(--text3)', width: 30, textAlign: 'right', flexShrink: 0 }}>{v.year}</span>
-          </button>
+          <RankRow key={v.entity} rank={i + 1} code={v.code} name={v.entity} share={maxValue ? v.value / maxValue : 0}
+            value={data ? formatOwidValue(data.unit, v.value) : ''} year={v.year} onClick={() => onCountryClick?.(v.entity)} />
         ))}
       </div>
     </div>
@@ -312,7 +270,7 @@ export function DataCentersPanel({ onGeoSearch }: { onGeoSearch?: (q: string) =>
           style={{ width: '100%', background: 'var(--surface2)', border: '1px solid var(--border)', color: 'var(--text1)', fontSize: 11.5, padding: '2px 6px', outline: 'none', fontFamily: 'inherit' }} />
       </div>
       <div style={{ padding: '2px 8px', borderBottom: '1px solid var(--border)', fontSize: '9.5px', color: 'var(--text3)' }}>
-        {loading ? 'Loading…' : error ? 'Failed to load' : `${filtered.length} facilities`}
+        {loading ? <StatusLabel status="loading">OpenStreetMap data centres…</StatusLabel> : error ? <StatusLabel status="error">OpenStreetMap could not be reached.</StatusLabel> : `${filtered.length} facilities`}
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>
         {filtered.map(d => (

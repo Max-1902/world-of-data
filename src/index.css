@@ -1655,3 +1655,32 @@ body.pw-dragging iframe { pointer-events: none; }
 /* ── Standard panel footer: sources, freshness, failing feeds (components/PanelSources.tsx) ── */
 .panel-sources { position: sticky; bottom: 0; z-index: 2; display: flex; flex-direction: column; gap: 3px; padding: 6px 10px; background: var(--surface); border-top: 1px solid var(--border); }
 .panel-sources-when { color: var(--text3); opacity: .85; }
+
+/* ── Shared figures (components/DataLabels.tsx): Metric, MetricRow, RankRow, SectionLabel ── */
+.dl-metric-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.dl-unit { font-size: .55em; font-weight: 500; color: var(--text3); }
+.dl-range { margin-top: 2px; font-size: 10px; color: var(--text2); font-variant-numeric: tabular-nums; }
+.dl-asof { margin-top: 2px; font-size: 9.5px; color: var(--text3); }
+.dl-tone-neutral { color: var(--text1); }
+.dl-tone-accent { color: var(--accent); }
+.dl-tone-up { color: var(--green); }
+.dl-tone-down { color: var(--red); }
+.dl-tone-warn { color: var(--amber); }
+.dl-bg-neutral { background: var(--text3); } .dl-bg-accent { background: var(--accent); } .dl-bg-up { background: var(--green); } .dl-bg-down { background: var(--red); } .dl-bg-warn { background: var(--amber); }
+.dl-row { display: flex; align-items: baseline; gap: 8px; padding: 2px 0; font-size: 11px; line-height: 1.45; }
+.dl-row-l { flex: 1; min-width: 0; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-row-v { font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dl-row-y { width: 38px; flex-shrink: 0; text-align: right; font-size: 9.5px; color: var(--text3); font-variant-numeric: tabular-nums; }
+.dl-row-y.stale { color: var(--amber); font-weight: 700; }
+.dl-rank { display: flex; align-items: center; gap: 7px; width: 100%; padding: 4px 0; background: none; border: none; border-bottom: 1px solid var(--border); text-align: left; font: inherit; color: inherit; cursor: default; }
+button.dl-rank { cursor: pointer; }
+button.dl-rank:hover { background: var(--surface2); }
+.dl-rank-n { width: 26px; flex-shrink: 0; text-align: right; font-size: 9.5px; color: var(--text3); font-variant-numeric: tabular-nums; }
+.dl-rank-code { width: 22px; flex-shrink: 0; font-size: 9.5px; font-weight: 700; }
+.dl-rank-name { flex: 1; min-width: 0; font-size: 11px; color: var(--text1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dl-rank-bar { width: 44px; height: 3px; flex-shrink: 0; background: var(--border); border-radius: 2px; overflow: hidden; }
+.dl-rank-bar > span { display: block; height: 100%; border-radius: 2px; }
+.dl-rank-v { width: 56px; flex-shrink: 0; text-align: right; font-size: 10.5px; font-weight: 650; color: var(--text1); font-variant-numeric: tabular-nums; }
+.dl-section { margin: 6px 0 2px; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
+.dl-row-btn { width: 100%; background: none; border: none; font: inherit; text-align: left; cursor: pointer; border-radius: var(--r-sm); }
+.dl-row-btn:hover { background: var(--surface2); }

@@ -7,6 +7,8 @@ import { TRADE_PROFILES } from '../../services/tradeStats'
 import { fetchCountryEcon, formatEconValue, groupIndicators, type CountryEconData } from '../../services/worldbank'
 import { RESOURCE_PROFILES, fetchResourceRents, type ResourceRent } from '../../services/resources'
 import { OnMapButton } from './OnMapButton'
+import { MetricRow, SectionLabel, StatusLabel } from '../DataLabels'
+import { freshness } from '../../utils/freshness'
 
 import { type MapLinkProps, infoStrip } from './countryDataShared'
 
@@ -144,21 +146,13 @@ export function GlobalEconomyPanel({ onCountryClick, panelState, onToggleLayer }
                           {t.incomeGroup}
                         </span>
                       </div>
-                      <div style={{ fontSize: 9, color: 'var(--text2)', marginBottom: 2 }}>TOP EXPORTS</div>
-                      {t.topExports.slice(0, 4).map(e => (
-                        <div key={e.product} style={{ fontSize: 9.5, color: 'var(--text2)', display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{e.product}</span><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{e.pct}%</span>
-                        </div>
-                      ))}
-                      <div style={{ fontSize: 9, color: 'var(--text2)', marginTop: 3, marginBottom: 2 }}>TOP PARTNERS</div>
-                      {t.topExportPartners.slice(0, 3).map(p => (
-                        <div key={p.country} style={{ fontSize: 9.5, color: 'var(--text2)', display: 'flex', justifyContent: 'space-between' }}>
-                          <span>{p.country}</span><span style={{ color: 'var(--accent)', fontWeight: 600 }}>{p.pct}%</span>
-                        </div>
-                      ))}
+                      <SectionLabel>Top exports · share of goods exports</SectionLabel>
+                      {t.topExports.slice(0, 4).map(e => <MetricRow key={e.product} label={e.product} value={`${e.pct}%`} tone="accent" year={t.year} stale={freshness(t.year, 'macro', t.iso2)?.stale} />)}
+                      <SectionLabel>Top export partners</SectionLabel>
+                      {t.topExportPartners.slice(0, 3).map(p => <MetricRow key={p.country} label={p.country} value={`${p.pct}%`} tone="accent" year={t.year} stale={freshness(t.year, 'macro', t.iso2)?.stale} />)}
                       {t.dependencies && t.dependencies.length > 0 && (
                         <>
-                          <div style={{ fontSize: 9, color: 'var(--red)', marginTop: 3, marginBottom: 2 }}>DEPENDENCIES</div>
+                          <SectionLabel tone="down">Dependencies (editorial)</SectionLabel>
                           {t.dependencies.slice(0, 3).map(d => (
                             <div key={d} style={{ fontSize: 9, color: 'var(--text2)' }}>▸ {d}</div>
                           ))}
@@ -167,23 +161,19 @@ export function GlobalEconomyPanel({ onCountryClick, panelState, onToggleLayer }
                     </>
                   )}
                   {/* World Bank live data */}
-                  {econLoading && <div style={{ fontSize: 9.5, color: 'var(--text2)', marginTop: 4, fontStyle: 'italic' }}>Loading World Bank data…</div>}
+                  {econLoading && <StatusLabel status="loading">World Bank data…</StatusLabel>}
                   {econData && econData.indicators.length > 0 && (() => {
                     const groups = groupIndicators(econData.indicators)
                     return Object.entries(groups).map(([groupName, indicators]) => (
-                      <div key={groupName} style={{ marginTop: 4 }}>
-                        <div style={{ fontSize: 9, color: 'var(--text2)', letterSpacing: '.08em', marginBottom: 2 }}>{groupName}</div>
+                      <div key={groupName}>
+                        <SectionLabel>{groupName}</SectionLabel>
                         {indicators.map(ind => {
                           if (ind.value == null) return null
-                          const formatted = formatEconValue(ind.id, ind.value)
                           const isGrowth = ind.id.includes('.ZG') || ind.id === 'SP.POP.GROW'
-                          let valColor = 'var(--accent)'
-                          if (isGrowth) valColor = ind.value >= 0 ? 'var(--accent)' : 'var(--red)'
+                          const fresh = ind.year ? freshness(ind.year, 'macro', c.iso2) : null
                           return (
-                            <div key={ind.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5, padding: '0.5px 0' }}>
-                              <span style={{ color: 'var(--text2)' }}>{ind.label}</span>
-                              <span style={{ color: valColor, fontWeight: 700 }}>{formatted} <span style={{ fontSize: 8, color: 'var(--text2)' }}>{ind.year}</span></span>
-                            </div>
+                            <MetricRow key={ind.id} label={ind.label} value={formatEconValue(ind.id, ind.value)} year={ind.year}
+                              tone={isGrowth ? (ind.value >= 0 ? 'up' : 'down') : 'accent'} stale={fresh?.stale} staleLabel={fresh?.label ?? undefined} />
                           )
                         })}
                       </div>
