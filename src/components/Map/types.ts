@@ -13,6 +13,8 @@ import type { CountryAnalyticsView } from './layers/types'
 
 export interface MapViewProps {
   viewMode:      MapViewMode
+  projectionMode?: 'globe' | 'mercator'
+  showReticle?: boolean
   flights:       Flight[]
   crises:        CrisisEvent[]
   newsPins:      GeoNewsPin[]

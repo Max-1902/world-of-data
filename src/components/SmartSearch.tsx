@@ -116,7 +116,7 @@ export default function SmartSearch({ searchQuery, onSearch, onOpenPanel, onTogg
           title="Search places, panels (AI analyst, Predictions…) and map layers"
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', fontSize: 11, padding: 0, fontFamily: 'Inter, -apple-system, sans-serif' }}
         >
-          {searchQuery || 'Search'}
+          {searchQuery || 'Search countries, indicators or topics...'}
         </button>
       )}
       {searchQuery && !expanded && (

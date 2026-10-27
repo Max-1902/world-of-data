@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, lazy, Suspense } from 'react'
+import { useState, useCallback, useEffect, useMemo, lazy, Suspense, cloneElement } from 'react'
 import type { MapViewMode, PanelState, Flight, CrisisEvent, SelectedPlace } from './types'
 import type { PanelGroup } from './panels/types'
 import { useFlights }     from './hooks/useFlights'
@@ -22,6 +22,7 @@ import PanelDock    from './components/PanelDock/PanelDock'
 import WindowLayer from './components/Windows/WindowLayer'
 import Taskbar from './components/Windows/Taskbar'
 import PanelLibrary from './components/Windows/PanelLibrary'
+import HomeDashboard from './components/HomeDashboard'
 import { useWindowLayout } from './components/Windows/useWindowLayout'
 import { useScreens } from './components/Windows/useScreens'
 import CommandPalette from './components/CommandPalette'
@@ -102,7 +103,14 @@ function loadGroup(): PanelGroup {
 }
 
 export default function App() {
+  const [isHome, setIsHome] = useState(() => {
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    return params.get('home') === '1' || (!readHash().group && !readHash().country)
+  })
   const [viewMode, setViewMode] = useState<MapViewMode>(loadViewMode)
+  const [projectionMode, setProjectionMode] = useState<'globe' | 'mercator'>(() => {
+    try { return localStorage.getItem('ws-projection-mode') === 'globe' ? 'globe' : 'mercator' } catch { return 'mercator' }
+  })
   const [activeGroup, setActiveGroup] = useState<PanelGroup>(loadGroup)
   const [panelState, setPanelState] = useState<PanelState>(loadPanelState)
   const [deepstateMode, setDeepstateMode] = useState(false)
@@ -117,8 +125,13 @@ export default function App() {
   const focusInDock = useCallback((id: string) => {
     const group = PANEL_MAP.get(id)?.group
     if (!group) return
+    setIsHome(false)
     setActiveGroup(group)
     setFocusPanel({ id, n: Date.now() })
+  }, [])
+  const changeWorkspace = useCallback((group: PanelGroup) => {
+    setIsHome(false)
+    setActiveGroup(group)
   }, [])
   // Session-only: a closed ticker / outlook card returns on reload. The outlook card is dismissed per subject
   // (the regional outlook, or one country's brief), so picking another country shows it again.
@@ -143,7 +156,7 @@ export default function App() {
     setSelectedPlace(place)
   }, [])
   const [reticleColor, setReticleColor] = useState(() => {
-    try { return localStorage.getItem('ws-reticle-color') || '#16a34a' } catch { return '#16a34a' }
+    try { return localStorage.getItem('ws-reticle-color') || '#23cdf3' } catch { return '#23cdf3' }
   })
 
   // Panels popped out of the dock into floating windows (Windows/WindowLayer)
@@ -195,18 +208,26 @@ export default function App() {
   // Persist preferences
   useEffect(() => { try { localStorage.setItem('ws-panel-state', JSON.stringify(panelState)) } catch {} }, [panelState])
   useEffect(() => { try { localStorage.setItem('ws-view-mode', viewMode) } catch {} }, [viewMode])
+  useEffect(() => { try { localStorage.setItem('ws-projection-mode', projectionMode) } catch {} }, [projectionMode])
   useEffect(() => { try { localStorage.setItem('ws-dock-group', activeGroup) } catch {} }, [activeGroup])
 
   // Mirror shareable state into the URL hash (replaceState: no history spam, no hashchange echo).
   useEffect(() => {
-    const hash = encodeHash({ viewMode, layers: enabledLayers(panelState), group: activeGroup, country: selectedCountry })
+    const encoded = encodeHash({ viewMode, layers: enabledLayers(panelState), group: activeGroup, country: selectedCountry })
+    const params = new URLSearchParams(encoded.replace(/^#/, ''))
+    if (isHome) params.set('home', '1')
+    else params.delete('home')
+    const hash = '#' + params.toString()
     if (window.location.hash !== hash) history.replaceState(null, '', hash)
-  }, [viewMode, panelState, activeGroup, selectedCountry])
+  }, [viewMode, panelState, activeGroup, selectedCountry, isHome])
 
   // A link pasted into the same tab only changes the hash — apply it without a reload.
   useEffect(() => {
     function onHashChange() {
       const d = readHash()
+      const params = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      if (params.get('home') === '1') setIsHome(true)
+      else if (d.group || d.country) setIsHome(false)
       if (d.viewMode) setViewMode(d.viewMode)
       if (d.layers) setPanelState(prev => layersToPanelState(prev, d.layers!))
       if (d.group) setActiveGroup(d.group as PanelGroup)
@@ -295,6 +316,82 @@ export default function App() {
     searchQuery,
   }), [crises, conflictFeed, flights, panelState, toggleLayer, deepstateMode, toggleDeepstate, handleGeoSearch, selectCountry, searchQuery])
 
+  const mapView = (
+    <MapView
+      viewMode={viewMode}
+      projectionMode={projectionMode}
+      suggestedLayers={suggestedLayers}
+      flights={flights}
+      crises={mapCrises}
+      newsPins={newsPins}
+      stocks={stocks}
+      earthquakes={earthquakes}
+      showFlights={panelState.flights}
+      showCrises={panelState.crises}
+      showNews={panelState.news}
+      showStocks={panelState.stocks}
+      deepstateMode={deepstateMode}
+      onCloseDeepstate={() => setDeepstateMode(false)}
+      onToggleDeepstate={() => setDeepstateMode(v => !v)}
+      onFlightClick={handleFlightSelect}
+      onCrisisClick={handleCrisisSelect}
+      fires={fires}
+      showWildfires={panelState.wildfires}
+      showMilitary={panelState.military}
+      showNuclear={panelState.nuclear}
+      showSanctions={panelState.sanctions}
+      showCameras={panelState.cameras}
+      showInfrastructure={panelState.infrastructure}
+      showDatacenters={panelState.datacenters}
+      showAirspace={panelState.airspace}
+      showHumanitarian={panelState.humanitarian}
+      vessels={vessels}
+      showVessels={panelState.vessels}
+      showOil={panelState.oil}
+      showGas={panelState.gas}
+      showGPSJam={panelState.gpsjam}
+      gpsJam={gpsJam}
+      showPorts={panelState.ports}
+      showPipelines={panelState.pipelines}
+      showChokepoints={panelState.chokepoints}
+      showSupplyChain={panelState.supplychain}
+      showShippingDensity={panelState.shippingDensity}
+      outages={outages}
+      radarOutages={radarOutages}
+      showOutages={panelState.outages}
+      disasterAlerts={disasterAlerts}
+      showDisasters={panelState.disasters}
+      showResources={panelState.resources}
+      showTradeStats={panelState.tradeStats}
+      showAnalyticsHex={panelState.analyticsHex}
+      showCountryAnalytics={panelState.countryAnalytics}
+      flyToQuery={searchQuery}
+      geoFlyTo={geoFlyTo}
+      onCountryClick={selectCountry}
+      onPlaceClick={selectPlace}
+      selectedCountry={selectedCountry}
+      selectedPlace={selectedPlace}
+      reticleColor={reticleColor}
+      panelState={panelState}
+      onToggleLayer={toggleLayer}
+      onClearLayers={clearLayers}
+    />
+  )
+  const homeOnlyPanelState = Object.fromEntries(Object.keys(panelState).map(key => [key, false])) as unknown as PanelState
+  homeOnlyPanelState.countryAnalytics = true
+  const homeMapView = cloneElement(mapView, {
+    showReticle: false,
+    showFlights: false, showCrises: false, showNews: false, showStocks: false,
+    showWildfires: false, showMilitary: false, showNuclear: false, showSanctions: false,
+    showCameras: false, showInfrastructure: false, showDatacenters: false, showAirspace: false,
+    showHumanitarian: false, showVessels: false, showOil: false, showGas: false, showGPSJam: false,
+    showPorts: false, showPipelines: false, showChokepoints: false, showSupplyChain: false,
+    showShippingDensity: false, showOutages: false, showDisasters: false, showResources: false,
+    showTradeStats: false, showAnalyticsHex: false, showCountryAnalytics: true,
+    panelState: homeOnlyPanelState,
+    deepstateMode: false,
+  })
+
   if (!TOKEN) {
     return (
       <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', fontFamily: 'Inter, -apple-system, sans-serif', fontSize: 12, flexDirection: 'column', gap: 12, padding: 24 }}>
@@ -309,114 +406,75 @@ export default function App() {
 
   return (
     <div className="dashboard">
-      {/* one shared Analyst: docked in the right panel, or popped out (see AnalystWindow) */}
       <AnalystWindowProvider panelProps={cornerProps}>
-      <TopBar
-        viewMode={viewMode}
-        onViewMode={setViewMode}
-        stocks={stocks}
-        searchQuery={searchQuery}
-        onSearch={setSearchQuery}
-        onOpenPanel={openPanel}
-        onOpenLibrary={() => setLibraryOpen(true)}
-        onToggleLayer={toggleLayer}
-        onColorCountries={colorCountries}
-        onSettingsOpen={() => setSettingsOpen(true)}
-        onReloadAll={handleReloadAll}
-        reloading={reloading}
-      />
+        <TopBar
+          viewMode={viewMode}
+          onViewMode={setViewMode}
+          searchQuery={searchQuery}
+          onSearch={setSearchQuery}
+          onOpenPanel={openPanel}
+          onOpenLibrary={() => setLibraryOpen(true)}
+          onToggleLayer={toggleLayer}
+          onColorCountries={colorCountries}
+          onSettingsOpen={() => setSettingsOpen(true)}
+          onReloadAll={handleReloadAll}
+          reloading={reloading}
+          onHome={() => setIsHome(true)}
+        />
 
-      {!tickerHidden && <NewsTicker onClose={() => setTickerHidden(true)} />}
-
-      {/* ── Main area: sidebar + map + command panel ──────────── */}
-      <div className="dashboard-main" style={{ display: 'flex', flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
-        <Sidebar activeGroup={activeGroup} onGroupChange={setActiveGroup} poppedOut={poppedOut} />
-
-        {/* Map area */}
-        <div className="area-map" style={{ position: 'relative', flex: '1 1 0', minWidth: 0 }}>
-          <div className="map-card">
-          <MapView
-            viewMode={viewMode}
-            suggestedLayers={suggestedLayers}
-            flights={flights}
-            crises={mapCrises}
-            newsPins={newsPins}
-            stocks={stocks}
-            earthquakes={earthquakes}
-            showFlights={panelState.flights}
-            showCrises={panelState.crises}
-            showNews={panelState.news}
-            showStocks={panelState.stocks}
-            deepstateMode={deepstateMode}
-            onCloseDeepstate={() => setDeepstateMode(false)}
-            onToggleDeepstate={() => setDeepstateMode(v => !v)}
-            onFlightClick={handleFlightSelect}
-            onCrisisClick={handleCrisisSelect}
-            fires={fires}
-            showWildfires={panelState.wildfires}
-            showMilitary={panelState.military}
-            showNuclear={panelState.nuclear}
-            showSanctions={panelState.sanctions}
-            showCameras={panelState.cameras}
-            showInfrastructure={panelState.infrastructure}
-            showDatacenters={panelState.datacenters}
-            showAirspace={panelState.airspace}
-            showHumanitarian={panelState.humanitarian}
-            vessels={vessels}
-            showVessels={panelState.vessels}
-            showOil={panelState.oil}
-            showGas={panelState.gas}
-            showGPSJam={panelState.gpsjam}
-            gpsJam={gpsJam}
-            showPorts={panelState.ports}
-            showPipelines={panelState.pipelines}
-            showChokepoints={panelState.chokepoints}
-            showSupplyChain={panelState.supplychain}
-            showShippingDensity={panelState.shippingDensity}
-            outages={outages}
-            radarOutages={radarOutages}
-            showOutages={panelState.outages}
-            disasterAlerts={disasterAlerts}
-            showDisasters={panelState.disasters}
-            showResources={panelState.resources}
-            showTradeStats={panelState.tradeStats}
-            showAnalyticsHex={panelState.analyticsHex}
-            showCountryAnalytics={panelState.countryAnalytics}
-            flyToQuery={searchQuery}
-            geoFlyTo={geoFlyTo}
-            onCountryClick={selectCountry}
-            onPlaceClick={selectPlace}
-            selectedCountry={selectedCountry}
-            selectedPlace={selectedPlace}
-            reticleColor={reticleColor}
-            panelState={panelState}
-            onToggleLayer={toggleLayer}
-            onClearLayers={clearLayers}
+        <div className="dashboard-shell">
+          <Sidebar
+            activeGroup={activeGroup}
+            onGroupChange={changeWorkspace}
+            poppedOut={poppedOut}
+            isHome={isHome}
+            onHome={() => setIsHome(true)}
+            onOpenLibrary={() => setLibraryOpen(true)}
+            onFocusPanel={focusInDock}
+            focusPanel={focusPanel}
+            libraryOpen={libraryOpen}
           />
-          {crisisArchive && panelState.crises && (
-            <div className="map-archive-note" role="status">
-              Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.
+
+          {isHome ? (
+            <div className="home-stage">
+              <HomeDashboard
+                map={<>
+                  {homeMapView}
+                  <Suspense fallback={null}>
+                    {selectedCountry && <CountryDrawer country={selectedCountry} crises={crises} flights={flights} earthquakes={earthquakes} fires={fires} onClose={() => setSelectedCountry(null)} onFlyTo={handleGeoSearch} />}
+                  </Suspense>
+                  {(briefCountry || selectedPlace) && dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={briefCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
+                </>}
+                onOpenPanel={openPanel}
+                onOpenMap={() => changeWorkspace('geo')}
+                onOpenLibrary={() => setLibraryOpen(true)}
+                onColorCountries={colorCountries}
+                projectionMode={projectionMode}
+                onProjectionMode={setProjectionMode}
+              />
+            </div>
+          ) : (
+            <div className="workspace-stage">
+              {!tickerHidden && <NewsTicker onClose={() => setTickerHidden(true)} />}
+              <div className="dashboard-main">
+                <div className="area-map">
+                  <div className="map-card">{mapView}
+                    {crisisArchive && panelState.crises && <div className="map-archive-note" role="status">Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.</div>}
+                  </div>
+                  <Suspense fallback={null}>
+                    {selectedCountry && <CountryDrawer country={selectedCountry} crises={crises} flights={flights} earthquakes={earthquakes} fires={fires} onClose={() => setSelectedCountry(null)} onFlyTo={handleGeoSearch} />}
+                  </Suspense>
+                  {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={briefCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
+                  <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
+                </div>
+                <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel} />
+              </div>
             </div>
           )}
-          </div>
-          <Suspense fallback={null}>
-            {selectedCountry && (
-              <CountryDrawer
-                country={selectedCountry}
-                crises={crises}
-                flights={flights}
-                earthquakes={earthquakes}
-                fires={fires}
-                onClose={() => setSelectedCountry(null)}
-                onFlyTo={handleGeoSearch}
-              />
-            )}
-          </Suspense>
-          <AlertToasts onSelectCountry={selectCountry} />
-          {dismissedCard !== cardKey && (
-            <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={briefCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />
-          )}
-          <Suspense fallback={null}>
+        </div>
+
+        <AlertToasts onSelectCountry={selectCountry} />
+        <Suspense fallback={null}>
           <SettingsModal
             open={settingsOpen}
             onClose={() => setSettingsOpen(false)}
@@ -429,43 +487,10 @@ export default function App() {
             reticleColor={reticleColor}
             onReticleColor={(c: string) => { setReticleColor(c); try { localStorage.setItem('ws-reticle-color', c) } catch {} }}
           />
-          </Suspense>
-          <CommandPalette
-            open={paletteOpen}
-            onClose={() => setPaletteOpen(false)}
-            panelState={panelState}
-            onOpenPanel={openPanel}
-            onToggleLayer={toggleLayer}
-            onViewMode={setViewMode}
-            onGeoSearch={handleGeoSearch}
-            screens={screens.screens}
-            onLoadScreen={screens.load}
-            onOpenLibrary={() => setLibraryOpen(true)}
-            onColorCountries={colorCountries}
-          />
-          <PanelLibrary
-            open={libraryOpen}
-            onClose={() => setLibraryOpen(false)}
-            openIds={windows.ids}
-            onOpenWindow={windows.actions.open}
-            onShowInDock={showInDock}
-          />
-
-          {/* ── Bottom strip: screens, the panel library, open windows ──────── */}
-          <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
-        </div>
-
-        {/* ── Right command panel ──────────────────────────────────── */}
-        <PanelDock
-          {...cornerProps}
-          poppedOut={poppedOut}
-          onPopOut={windows.actions.open}
-          onPopOutAll={windows.actions.openMany}
-          activeGroup={activeGroup}
-          focusPanel={focusPanel}
-        />
-      </div>
-      <WindowLayer layout={windows} panelProps={cornerProps} />
+        </Suspense>
+        <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} panelState={panelState} onOpenPanel={openPanel} onToggleLayer={toggleLayer} onViewMode={setViewMode} onGeoSearch={handleGeoSearch} screens={screens.screens} onLoadScreen={screens.load} onOpenLibrary={() => setLibraryOpen(true)} onColorCountries={colorCountries} />
+        <PanelLibrary open={libraryOpen} onClose={() => setLibraryOpen(false)} openIds={windows.ids} onOpenWindow={windows.actions.open} onShowInDock={showInDock} />
+        <WindowLayer layout={windows} panelProps={cornerProps} />
       </AnalystWindowProvider>
     </div>
   )
