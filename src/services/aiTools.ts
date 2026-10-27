@@ -37,6 +37,8 @@ import { ISO3_TO_ISO2, ISO2_TO_ISO3 } from './economies'
 import { WEO_FOR_WB, fetchWeo, weoPoints } from './imfWeo'
 import { gdpByIso2, partnerNames, summarizeExposure, traceExposure, type Macro, type Shock } from '../utils/exposure'
 import { loadSensitivities } from './exportSensitivity'
+import { NOWCAST_ECONOMIES, fetchNowcastData } from './eurostatNowcast'
+import { nowcast as runNowcast } from '../utils/nowcast'
 import { PORTS } from './ports'
 import { TOP_HOSTING, TOP_ORIGINS } from './unhcr'
 import { EIA_SERIES, fetchEiaSeries } from './eia'
@@ -636,6 +638,32 @@ const TOOLS: ToolDef[] = [
         title: 'Maritime chokepoints', source: 'EIA World Oil Transit Chokepoints; IMF PortWatch transit averages; risks editorial',
         text: CHOKEPOINTS.map(c => `  • ${c.name} (${c.controlledBy}): ${c.oilFlowMbd != null ? `${n1(c.oilFlowMbd)} mb/d oil (${oilSharePct(c)}% of seaborne)` : 'oil flow n/a'}${c.transits ? `, ${n0(c.transits.avgDaily)} transits/day (${n0(c.transits.avgDailyTankers)} tankers, ${c.transits.year})` : ''}. Risks: ${c.risks.slice(0, 2).join('; ')}`).join('\n'),
         chart: rows.length ? { kind: 'rank', unit: 'mb/d', items: rankItems(rows.sort((a, b) => b.value - a.value), v => `${n1(v)} mb/d`) } : undefined,
+      }
+    },
+  },
+  {
+    name: 'nowcast',
+    usage: '[DATA:nowcast|Country] (EU member states)',
+    describe: "This quarter's real GDP growth for an EU economy before Eurostat publishes it, from the industrial production months already out: a bridge model or \"same as last quarter\", whichever passed a backtest rule fixed in advance, with an 80% range from its own past errors.",
+    async run(args) {
+      const q = (args[0] ?? '').trim()
+      if (!q) throw new ToolError('a country name is required')
+      const e = NOWCAST_ECONOMIES.find(x => x.name.toLowerCase() === q.toLowerCase() || x.geo === q.toUpperCase())
+        ?? (() => { const c = needCountry(q); return NOWCAST_ECONOMIES.find(x => x.name === c.name || x.geo === c.iso2) })()
+      if (!e) throw new ToolError(`no nowcast for "${q}": EU member states only`)
+      const d = await fetchNowcastData(e.geo)
+      const n = runNowcast(d.gdp, d.ip)
+      if (!n) throw new ToolError(`no industrial production month is out yet for ${e.name}'s next quarter`)
+      const s = (v: number) => `${v >= 0 ? '+' : ''}${n2(v)}%`
+      const bt = n.backtest
+      const score = (p: typeof bt.early, label: string) => p ? `${label}: model ${n2(p.rmseModel)} vs baseline ${n2(p.rmseNaive)} pp RMSE (${p.n} quarters)` : `${label}: not scored`
+      return {
+        title: `GDP nowcast — ${e.name} ${n.quarter}`, source: 'Eurostat quarterly GDP and monthly industrial production; bridge model computed here, rule fixed in advance',
+        text: [
+          `${e.name} ${n.quarter} real GDP growth (q/q), nowcast from ${n.known} of 3 months of industrial production: ${s(n.value)}${n.range !== null ? ` (80% range ${s(n.value - n.range)} to ${s(n.value + n.range)})` : ''}. Statistical estimate, not a published figure.`,
+          n.headline === 'model' ? 'Headline: bridge model, which beat "same as last quarter" in both backtest periods.' : `Headline: "same as last quarter" (${n.naive.from}: ${s(n.naive.value)}); the bridge model${n.model ? ` (${s(n.model.value)})` : ''} did NOT pass the backtest rule for this economy.`,
+          `Backtest with ${n.known} month(s) known — ${score(bt.early, 'to 2014')}; ${score(bt.late, '2015 on')}. Scored on revised data, so it flatters both methods.`,
+        ].join('\n'),
       }
     },
   },

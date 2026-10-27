@@ -44,6 +44,7 @@ const CountryAnalyticsPanel = lazy(() => import('../components/panels/CountryAna
 const AnalyticsPanel = lazy(() => import('../components/panels/AnalyticsPanel').then(m => ({ default: m.AnalyticsPanel })))
 const CountryLookupPanel = lazy(() => import('../components/panels/CountryLookupPanel').then(m => ({ default: m.CountryLookupPanel })))
 const PredictionsPanel = lazy(() => import('../components/panels/PredictionsPanel').then(m => ({ default: m.PredictionsPanel })))
+const NowcastPanel = lazy(() => import('../components/panels/NowcastPanel'))
 const GasStorageForecastPanel = lazy(() => import('../components/panels/GasStorageForecast').then(m => ({ default: m.GasStorageForecastPanel })))
 const InventoriesPanel = lazy(() => import('../components/panels/InventoriesPanel').then(m => ({ default: m.InventoriesPanel })))
 const ExposurePanel = lazy(() => import('../components/panels/ExposurePanel'))
@@ -124,6 +125,11 @@ const PANELS: PanelDef[] = [
     id: 'predictions', title: 'Predictions', group: 'analysis', section: 'forecasts', map: 'none', sources: ['worldbank', 'imfweo'], minHeight: 900,
     dotColor: 'green', desc: 'GDP growth, inflation and unemployment forecast from a country’s own history — AR model vs. a naive baseline, backtested out of sample (World Bank)',
     render: () => <PredictionsPanel />,
+  },
+  {
+    id: 'nowcast', title: 'GDP Nowcast', group: 'analysis', section: 'forecasts', map: 'none', sources: ['eurostat'], minHeight: 760,
+    dotColor: 'blue', desc: 'This quarter’s GDP growth for any EU economy before it is published, from industrial production — backtested against “same as last quarter” under a rule fixed in advance (Eurostat)',
+    render: () => <NowcastPanel />,
   },
   {
     id: 'gasForecast', title: 'Gas Storage Forecast', group: 'analysis', section: 'forecasts', map: 'none', sources: ['eia'], minHeight: 700,
