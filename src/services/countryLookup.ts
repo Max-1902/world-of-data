@@ -101,6 +101,7 @@ export const CATEGORIES: Category[] = [
       s('NE.GDI.TOTL.ZS', 'Gross capital formation (% GDP)', 'pct'),
       s('NY.GNS.ICTR.ZS', 'Gross savings (% GDP)', 'pct'),
       s('NE.EXP.GNFS.ZS', 'Exports (% GDP)', 'pct'),
+      s('NE.EXP.GNFS.KD.ZG', 'Export volume growth (%)', 'growth'),
       s('NE.IMP.GNFS.ZS', 'Imports (% GDP)', 'pct'),
       s('NV.AGR.TOTL.ZS', 'Agriculture (% GDP)', 'pct'),
       s('NV.IND.TOTL.ZS', 'Industry (% GDP)', 'pct'),
@@ -368,12 +369,12 @@ export function fetchCountryDataset(iso2: string): Promise<CountryDataset> {
  * One catalogue series for several countries in a single request (the analyst's `series` tool). Keyed by ISO2; a
  * country the World Bank has no values for is present with []. Throws on HTTP/network failure.
  */
-export async function fetchSeriesForCountries(iso2s: string[], id: string, from = FIRST_YEAR): Promise<Record<string, SeriesData>> {
+export async function fetchSeriesForCountries(iso2s: string[], id: string, from = FIRST_YEAR, timeoutMs = 20000): Promise<Record<string, SeriesData>> {
   const meta = SERIES_BY_ID.get(id)
   if (!meta) throw new Error(`Unknown series ${id}`)
   const to = new Date().getUTCFullYear()
   const url = `${WB_BASE}/country/${iso2s.join(';')}/indicator/${id}?source=${meta.source}&format=json&date=${from}:${to}&per_page=20000`
-  const res = await fetch(url, { signal: AbortSignal.timeout(20000) })
+  const res = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) })
   if (!res.ok) throw new Error(`World Bank HTTP ${res.status}`)
   const json: unknown = await res.json()
   if (!Array.isArray(json)) throw new Error('World Bank: unexpected response')

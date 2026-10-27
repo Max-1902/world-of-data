@@ -35,7 +35,8 @@ import { getResourceProfile, fetchResourceRents } from './resources'
 import { CHOKEPOINTS, EIA_CHOKEPOINTS_SOURCE, oilSharePct } from './chokepoints'
 import { ISO3_TO_ISO2, ISO2_TO_ISO3 } from './economies'
 import { WEO_FOR_WB, fetchWeo, weoPoints } from './imfWeo'
-import { gdpByIso2, partnerNames, summarizeExposure, traceExposure, type Shock } from '../utils/exposure'
+import { gdpByIso2, partnerNames, summarizeExposure, traceExposure, type Macro, type Shock } from '../utils/exposure'
+import { loadSensitivities } from './exportSensitivity'
 import { PORTS } from './ports'
 import { TOP_HOSTING, TOP_ORIGINS } from './unhcr'
 import { EIA_SERIES, fetchEiaSeries } from './eia'
@@ -661,7 +662,12 @@ const TOOLS: ToolDef[] = [
         shock = { kind, partner, sizePct: size }
       }
       const gdp = gdpByIso2(await fetchIndicatorAll('NY.GDP.MKTP.CD'), ISO3_TO_ISO2)
-      const res = traceExposure(shock, TRADE_PROFILES, gdp, EIA_CHOKEPOINTS_SOURCE)
+      // a sized demand shock also gets the statistical GDP-growth step; if its history can't be loaded, the trade effect still stands
+      let macro: Macro | undefined
+      if (shock.kind === 'demand' && size && size > 0) {
+        try { macro = { sensitivity: await loadSensitivities(), totalExports: gdpByIso2(await fetchIndicatorAll('NE.EXP.GNFS.CD'), ISO3_TO_ISO2) } } catch { macro = undefined }
+      }
+      const res = traceExposure(shock, TRADE_PROFILES, gdp, EIA_CHOKEPOINTS_SOURCE, macro)
       const top = res.rows.slice(0, 12)
       return {
         title: res.title, source: 'UN Comtrade (reporter data) and World Bank GDP; chokepoint oil flow from EIA; computed in the browser',

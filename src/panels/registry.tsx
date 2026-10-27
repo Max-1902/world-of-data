@@ -276,7 +276,7 @@ export const GROUP_SECTIONS: Record<PanelGroup, PanelSection[]> = {
   markets: [
     { id: 'live', title: 'Markets today', desc: 'The fastest-moving signal: index and asset prices from the live feed.' },
     { id: 'macro', title: 'Macro indicators', desc: 'Slower, structural data per country: World Bank economic profiles and long-run global trends.' },
-    { id: 'exposure', title: 'How shocks spread', desc: 'Pick a shock and trace which economies it reaches through sourced trade links. Every step is labelled as reported data or as an assumption.' },
+    { id: 'exposure', title: 'How shocks spread', desc: 'Pick a shock and trace which economies it reaches through sourced trade links. Every step is labelled as reported data, a statistical estimate, or an assumption.' },
     { id: 'trade', title: 'Trade', desc: 'Who each country trades with, and what it exports and imports.' },
     { id: 'resources', title: 'Resources', desc: 'Critical minerals and commodities: reserves and production by country.' },
   ],
