@@ -13,6 +13,9 @@
 import snapshot from '../data/wb-economies.json'
 
 export const WB_ECONOMY_ISO3: ReadonlySet<string> = new Set(snapshot.economies.map(e => e[0]))
+/** ISO 3166 alpha-3 ↔ alpha-2 for World Bank economies (from the same snapshot). */
+export const ISO3_TO_ISO2: ReadonlyMap<string, string> = new Map(snapshot.economies.map(e => [e[0], e[1]]))
+export const ISO2_TO_ISO3: ReadonlyMap<string, string> = new Map(snapshot.economies.map(e => [e[1], e[0]]))
 /** Every aggregate code the snapshot lists, plus retired ones the API used to return. */
 export const WB_AGGREGATE_ISO3: ReadonlySet<string> = new Set([...snapshot.aggregates.map(a => a[0]), ...snapshot.retired.map(a => a[0])])
 

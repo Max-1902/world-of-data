@@ -115,6 +115,17 @@ All the maths is pure and tested in `utils/countryStats.ts`: scales and tick gen
 
 **Comparability is shown, not assumed.** Each country's value is its own latest year, so `coverage()` (`utils/countryStats.ts`) reports how many countries have a value, which World Bank economies don't, the spread of reporting years and the typical (median) year. Values `STALE_YEARS` (3) or more older than the typical year are drawn faded, economies with nothing to shade are drawn grey (`NO_DATA_FILL`) rather than left transparent, and the legend and click popup state the source, the year and whether a value is dated.
 
+## Shock exposure (`utils/exposure.ts`, Shock Exposure panel, analyst tool `exposure`)
+
+The "connect the dots" engine: pick a shock and see which economies it reaches, through which link, and how much, as a share of their own GDP. Pure and offline; it only combines data the app already holds:
+
+- **Demand** ("X buys less") and **supply** ("supply from X is cut"): X's share of each reporter's goods exports / imports (UN Comtrade top-6 partners, `trade-profiles.json`) × those exports / imports as % of GDP (Comtrade US$ totals ÷ World Bank `NY.GDP.MKTP.CD`).
+- **Oil chokepoint**: the chokepoint's oil flow (EIA) is stated, then an explicit *assumption* that a disruption moves the world oil price; countries are ranked by net mineral-fuel trade (HS 27) as % of GDP, importers losing and exporters gaining. Comtrade does not say whose cargo uses which route, so this ranking is the same for every oil chokepoint, and the panel says so.
+
+Every result is a path of `Step`s, each tagged `observed` (with source and year) or `assumption` (the shock itself, and an optional size the user types). A partner or product outside a reporter's top-N list is only known to be below the smallest listed share, so it becomes a range (`bounded`), never a guessed value; GDP and trade figures from different years are flagged. Results are first-order: goods only, gross flows (re-export hubs look more exposed), no rerouting or second-round effects; those caveats travel with every result. Only the 45 Comtrade-profile economies are covered.
+
+The panel's "Show on map" hands exact (unbounded) values to the country-colouring layer through `showDerivedOnMap()` (`services/countryAnalytics.ts`): a `derived:` indicator id registered with its own label and source, stored as a ready slice, never fetched. The map card and popup then say "computed from reported figures" instead of "as reported". The analyst's `exposure` tool runs the same function and passes `summarizeExposure()` text, so its answers cite the computed path rather than recalled figures.
+
 ## Evidence kinds and shared data labels
 
 Every claim is one of three kinds, labelled the same way everywhere (`utils/evidence.ts`): **observed** (figures as the source reports them), **statistical** (estimated by a stated method — an association with uncertainty, not a cause) and **assumption** (set by the user or a scenario). `components/DataLabels.tsx` holds the shared `EvidenceTag`, `SourceLine` and `StatusLabel` (`.dl-*` styles in `index.css`); map popups, which are HTML strings, use the same `EVIDENCE` wording. New views should use these rather than styling their own source, status or evidence text, so countries and topics read the same way across panels. Raw indicator values are observed; the map's "vs trend" colouring is statistical.

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createCountryAnalytics, selectForMap, sliceOf } from './countryAnalytics'
+import { createCountryAnalytics, selectForMap, showDerivedOnMap, sliceOf } from './countryAnalytics'
+import { INDICATOR_BY_ID, type IndicatorMeta } from './countryIndicators'
 import { PRESETS, type CountryValue } from './countryIndicators'
 
 const rows = (n: number): CountryValue[] => Array.from({ length: n }, (_, i) => ({ iso3: `C${i}`, name: `C${i}`, value: i, year: '2022' }))
@@ -98,5 +99,22 @@ describe('selectForMap', () => {
     expect(store.getState().selection).toEqual({ x: 'NY.GDP.PCAP.CD', y: 'SP.POP.TOTL' })
     selectForMap('NY.GDP.PCAP.CD', store)
     expect(store.getState().selection).toEqual({ x: 'SP.POP.TOTL', y: 'NY.GDP.PCAP.CD' })
+  })
+})
+
+describe('showDerivedOnMap', () => {
+  const meta: IndicatorMeta = { id: 'derived:test', label: 'Test exposure', short: 'Test', group: 'Trade & finance', source: 'UN Comtrade and World Bank (computed)', scale: 'linear', format: String }
+  it('stores computed rows as a ready slice, registers the meta and points the map at it without fetching', () => {
+    const fetcher = vi.fn(async () => [])
+    const store = createCountryAnalytics(fetcher)
+    showDerivedOnMap(meta, [{ iso3: 'DEU', name: 'Germany', value: 3, year: '2025' }], store)
+    expect(fetcher).not.toHaveBeenCalled()
+    expect(sliceOf(store.getState(), 'derived:test')).toMatchObject({ status: 'ready', rows: [{ iso3: 'DEU' }] })
+    expect(store.getState().selection.y).toBe('derived:test')
+    expect(store.getState().mapMode).toBe('value')
+    expect(INDICATOR_BY_ID.get('derived:test')).toBe(meta)
+  })
+  it('refuses an id that could collide with a catalogue indicator', () => {
+    expect(() => showDerivedOnMap({ ...meta, id: 'NY.GDP.MKTP.CD' }, [], createCountryAnalytics(async () => []))).toThrow(/derived:/)
   })
 })

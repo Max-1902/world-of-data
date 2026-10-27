@@ -17,7 +17,7 @@ const WB_BASE = 'https://api.worldbank.org/v2'
 export type IndicatorGroup =
   | 'Economy' | 'Trade & finance' | 'Population' | 'Military & conflict' | 'Energy & resources' | 'Innovation' | 'Society & infrastructure'
 export type ScaleKind = 'linear' | 'log' | 'symlog'
-export type IndicatorSource = 'World Bank' | 'Our World in Data' | 'Ember'
+export type IndicatorSource = 'World Bank' | 'Our World in Data' | 'Ember' | 'UN Comtrade and World Bank (computed)'
 
 export interface IndicatorMeta {
   id: string
@@ -229,6 +229,8 @@ async function fetchWorldBank(id: string): Promise<CountryValue[]> {
 }
 
 async function loadIndicator(id: string): Promise<CountryValue[]> {
+  // computed in the browser by a panel and handed to the map (countryAnalytics.showDerivedOnMap); nothing to fetch
+  if (id.startsWith('derived:')) throw new Error('Computed in the browser: open the panel that made it to recompute')
   if (id.startsWith('owid:')) {
     const data = await fetchOwidChart(id.slice(5))
     if (!data) throw new Error('Our World in Data request failed')

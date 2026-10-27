@@ -43,6 +43,8 @@ export default function CountryColorControl({ on, onToggle, countryData, country
   const failed = ySlice.status === 'error' ? ySlice : trend && xSlice.status === 'error' ? xSlice : null
   const { cover } = shading
   const source = trend && xMeta.source !== yMeta.source ? `${yMeta.source}, ${xMeta.source}` : yMeta.source
+  // computed in the browser by a panel (e.g. Shock Exposure), not a catalogue series
+  const derived = yMeta.id.startsWith('derived:') || (trend && xMeta.id.startsWith('derived:'))
 
   return (
     <div className="cc-card" style={{ bottom }} onMouseDown={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()} role="region" aria-label="Colour countries by data">
@@ -87,7 +89,7 @@ export default function CountryColorControl({ on, onToggle, countryData, country
         <EvidenceTag kind={trend ? 'statistical' : 'observed'} />
         <span>{trend
           ? `Distance from a least-squares line fitted across countries, in standard deviations. An association, not a cause.`
-          : `As reported${countryShading.lo !== null ? '; colour scale clipped to the 2nd–98th percentile' : ''}.`}</span>
+          : `${derived ? 'Computed from reported figures; open the panel that made it for each step' : 'As reported'}${countryShading.lo !== null ? '; colour scale clipped to the 2nd–98th percentile' : ''}.`}</span>
       </div>
 
       {loading ? <StatusLabel status="loading">{source} data…</StatusLabel>
@@ -105,7 +107,7 @@ export default function CountryColorControl({ on, onToggle, countryData, country
           </div>
         )}
 
-      <SourceLine source={source} asOf="each country's latest year since 2010">click a country</SourceLine>
+      <SourceLine source={source} asOf={derived ? "each country's own reporting year" : "each country's latest year since 2010"}>click a country</SourceLine>
     </div>
   )
 }

@@ -69,6 +69,17 @@ describe('CountryColorControl', () => {
   })
 })
 
+describe('CountryColorControl with computed data', () => {
+  it('says the numbers are computed, not as reported, and dates them by reporting year', () => {
+    const meta = { ...INDICATOR_BY_ID.get('FP.CPI.TOTL.ZG')!, id: 'derived:x', label: 'Sales to China (% of GDP)', source: 'UN Comtrade and World Bank (computed)' }
+    render(<CountryColorControl on onToggle={vi.fn()} countryData={data('value', { yMeta: meta })} countryShading={colors} shading={shading} raised={false} />)
+    const text = screen.getByRole('region', { name: 'Colour countries by data' }).textContent!
+    expect(text).toContain('Computed from reported figures')
+    expect(text).not.toContain('As reported')
+    expect(text).toContain("each country's own reporting year")
+  })
+})
+
 describe('IndicatorPicker', () => {
   it('matches every word against label, theme and source', () => {
     expect(matchIndicators('').length).toBe(INDICATORS.length)

@@ -333,3 +333,28 @@ describe('inventories', () => {
     expect(r.text).toMatch(why)
   })
 })
+
+describe('exposure', () => {
+  const gdpRows = [{ iso3: 'DEU', name: 'Germany', value: 4.6e12, year: '2024' }, { iso3: 'KOR', name: 'South Korea', value: 1.7e12, year: '2024' }, { iso3: 'JPN', name: 'Japan', value: 4.0e12, year: '2024' }]
+
+  it('traces a demand shock from the real Comtrade profiles, labelling each shared step', async () => {
+    m.fetchIndicatorAll.mockResolvedValue(gdpRows)
+    const r = await run('exposure', ['demand', 'china', '10'])
+    expect(m.fetchIndicatorAll).toHaveBeenCalledWith('NY.GDP.MKTP.CD')
+    expect(r.title).toContain('China')
+    expect(r.text).toContain('[assumption]')
+    expect(r.text).toMatch(/South Korea|Germany|Japan/)
+    expect(r.chart?.kind === 'rank' && r.chart.items.length).toBeGreaterThan(0)
+  })
+  it('matches an oil chokepoint by name and states the observed EIA flow', async () => {
+    m.fetchIndicatorAll.mockResolvedValue(gdpRows)
+    const hz = CHOKEPOINTS.find(c => /hormuz/i.test(c.name))!
+    const r = await run('exposure', ['oil', 'Hormuz'])
+    expect(r.text).toContain('[observed]')
+    expect(r.text).toContain(hz.name)
+  })
+  it('rejects an unknown shock type or partner instead of guessing', async () => {
+    expect((await run('exposure', ['tariff', 'China'])).text).toMatch(/demand, supply or oil/)
+    expect((await run('exposure', ['demand', 'Atlantis'])).text).toMatch(/not a partner/)
+  })
+})

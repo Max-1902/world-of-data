@@ -1346,3 +1346,22 @@ body.pw-dragging iframe { pointer-events: none; }
 .ov-label { flex: 1; }
 .ov-tag { font-size: 8.5px; color: var(--text3); border: 1px dashed var(--border-strong); border-radius: var(--r-pill); padding: 0 5px; white-space: nowrap; }
 .ov-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); border: 1px solid var(--border-strong); flex-shrink: 0; }
+
+/* ── Shock Exposure panel (panels/ExposurePanel.tsx) ── */
+.ex-panel { display: flex; flex-direction: column; gap: 8px; padding: 8px; }
+.ex-kinds { display: flex; flex-wrap: wrap; }
+.ex-kinds button { font-size: 10.5px; }
+.ex-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+.ex-controls label { display: flex; flex-direction: column; gap: 3px; font-size: 10px; color: var(--text3); flex: 1 1 140px; }
+.ex-controls select, .ex-controls input { padding: 4px 6px; font-size: 11.5px; color: var(--text1); background: var(--surface2); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
+.ex-path { list-style: none; margin: 4px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.ex-path li { display: grid; grid-template-columns: 82px 1fr; gap: 8px; align-items: start; font-size: 10.5px; color: var(--text2); line-height: 1.45; }
+.ex-path li .dl-ev { justify-self: start; }
+.ex-table-wrap { max-height: 340px; }
+.ex-row { cursor: pointer; }
+.ex-row:hover td, .ex-row:hover th, .ex-row.open td, .ex-row.open th { background: var(--surface2); }
+.ex-detail td { text-align: left !important; background: var(--bg); padding: 6px 8px !important; }
+.ex-bound { color: var(--amber); font-size: 9px; margin-left: 3px; }
+.ex-loss { color: var(--red) !important; }
+.ex-gain { color: var(--green) !important; }
+.ex-caveats { margin: 2px 0 0; padding-left: 14px; }
