@@ -19,6 +19,10 @@ vi.mock('./components/OutlookCard', () => ({
     <section data-testid="card">{selectedCountry ?? 'REGIONAL OUTLOOK'}<button onClick={onClose}>close-card</button></section>
   ),
 }))
+vi.mock('./services/countryLookup', async orig => ({
+  ...(await orig<typeof import('./services/countryLookup')>()),
+  fetchCountryList: () => Promise.resolve([{ iso2: 'UA', iso3: 'UKR', name: 'Ukraine', region: 'Europe', incomeLevel: '', capital: '' }]),
+}))
 
 // App renders a "Mapbox token required" screen instead of the map without a token. A developer's .env has one, CI
 // doesn't, so the test sets a placeholder (the map is mocked above; nothing is sent to Mapbox). In beforeEach because
@@ -50,5 +54,28 @@ describe('picking a country', () => {
     fireEvent.click(screen.getByText('close-page'))
     await waitFor(() => expect(screen.queryByTestId('page')).toBeNull())
     expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
+  })
+})
+
+describe('the analysis (forecasting) workspace', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder')
+    window.location.hash = '#g=analysis'
+    try { localStorage.removeItem('ws-analysis-map-hidden') } catch {}
+  })
+
+  it('has no map by default, and offers a way to search for a country', async () => {
+    const { default: App } = await import('./App')
+    render(<App />)
+    expect(screen.queryByText('pick-country')).toBeNull()
+    expect(await screen.findByLabelText('Search for a country')).toBeTruthy()
+    expect(screen.getByText('Show map')).toBeTruthy()
+  })
+
+  it('"Show map" brings the map back', async () => {
+    const { default: App } = await import('./App')
+    render(<App />)
+    fireEvent.click(await screen.findByText('Show map'))
+    expect(await screen.findByText('pick-country')).toBeTruthy()
   })
 })
