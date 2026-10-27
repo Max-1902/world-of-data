@@ -55,3 +55,20 @@ describe('layersForGroup', () => {
     expect(layersForGroup('country')).toEqual([])
   })
 })
+
+describe('panel sources', () => {
+  it('every panel names its sources: live ids the health tracker knows, or cited datasets', async () => {
+    const { SOURCE_RULES } = await import('../services/sourceHealth')
+    const known = new Set(SOURCE_RULES.map(r => r.id))
+    for (const p of PANEL_MAP.values()) {
+      for (const s of p.sources) {
+        if (typeof s === 'string') expect(known.has(s), `${p.id}: unknown live source "${s}"`).toBe(true)
+        else expect(s.name.trim().length, `${p.id}: a static source needs a name`).toBeGreaterThan(0)
+      }
+    }
+  })
+  it('only panels without figures of their own leave sources empty', () => {
+    const empty = [...PANEL_MAP.values()].filter(p => p.sources.length === 0).map(p => p.id)
+    expect(empty).toEqual(['layers'])
+  })
+})

@@ -38,9 +38,19 @@ export interface PanelDef {
    * - 'none': nothing in the panel has a map layer to show it on
    */
   map: (keyof PanelState)[] | 'inline' | 'none'
+  /**
+   * Where the panel's figures come from, shown in the same footer on every panel. Required, so every panel decides:
+   * a live feed by its `SOURCE_RULES` id (services/sourceHealth.ts — the footer then shows when it last answered and
+   * whether it is failing), or a static, cited dataset with the date it is as of (left out when no date is recorded,
+   * and the footer says so). An empty list is only for panels with no figures of their own (controls).
+   */
+  sources: PanelSource[]
   /** Render function — receives all props, panel uses what it needs */
   render: (props: PanelProps) => React.ReactNode
 }
+
+/** A panel's data source: a live feed's `SOURCE_RULES` id, or a static, cited dataset. */
+export type PanelSource = string | { name: string; asOf?: string }
 
 /** A banner in the right-hand dock: groups panels inside a workspace and says what they are for. */
 export interface PanelSection { id: string; title: string; desc: string }

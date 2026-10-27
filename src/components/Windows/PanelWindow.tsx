@@ -69,7 +69,7 @@ function PanelWindow({ win, z, top, panelProps, actions, getPlaced, onZone }: Pr
   }, [popup, id, actions])
 
   const body = useMemo(
-    () => (def ? <PanelHost label={def.title}>{def.render(panelProps)}</PanelHost> : null),
+    () => (def ? <PanelHost label={def.title} sources={def.sources}>{def.render(panelProps)}</PanelHost> : null),
     [def, panelProps],
   )
   if (!def) return null
