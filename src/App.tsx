@@ -28,6 +28,7 @@ import { useScreens } from './components/Windows/useScreens'
 import CommandPalette from './components/CommandPalette'
 import NewsTicker   from './components/NewsTicker'
 import OutlookCard from './components/OutlookCard'
+import CountrySearchBox from './components/CountrySearchBox'
 import { AnalystWindowProvider } from './components/panels/aiAnalyst/AnalystWindow'
 import { triggerGlobalReload } from './utils/reloadBus'
 import { clearNewsCaches } from './services/news'
@@ -112,6 +113,11 @@ export default function App() {
     try { return localStorage.getItem('ws-projection-mode') === 'globe' ? 'globe' : 'mercator' } catch { return 'mercator' }
   })
   const [activeGroup, setActiveGroup] = useState<PanelGroup>(loadGroup)
+  // Analysis (forecasting) defaults to no map — the country dashboard is the point, the map is one click away.
+  const [mapHidden, setMapHidden] = useState(() => {
+    try { return localStorage.getItem('ws-analysis-map-hidden') !== '0' } catch { return true }
+  })
+  useEffect(() => { try { localStorage.setItem('ws-analysis-map-hidden', mapHidden ? '1' : '0') } catch {} }, [mapHidden])
   const [panelState, setPanelState] = useState<PanelState>(loadPanelState)
   const [deepstateMode, setDeepstateMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -448,20 +454,38 @@ export default function App() {
             <div className="workspace-stage">
               {!tickerHidden && <NewsTicker onClose={() => setTickerHidden(true)} />}
               <div className="dashboard-main">
-                <div className="area-map">
-                  <div className="map-card">{mapView}
-                    {crisisArchive && panelState.crises && <div className="map-archive-note" role="status">Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.</div>}
-                  </div>
-                  {selectedCountry && (
-                    <div className="cp-chip" role="status">
-                      <b>{selectedCountry}</b>
-                      <button className="cp-chip-x" onClick={() => setSelectedCountry(null)} aria-label={`Deselect ${selectedCountry}`}>×</button>
+                {!(activeGroup === 'analysis' && mapHidden) && (
+                  <div className="area-map">
+                    <div className="map-card">{mapView}
+                      {crisisArchive && panelState.crises && <div className="map-archive-note" role="status">Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.</div>}
                     </div>
-                  )}
-                  {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
-                  <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
-                </div>
-                {selectedCountry ? (
+                    {selectedCountry && (
+                      <div className="cp-chip" role="status">
+                        <b>{selectedCountry}</b>
+                        <button className="cp-chip-x" onClick={() => setSelectedCountry(null)} aria-label={`Deselect ${selectedCountry}`}>×</button>
+                      </div>
+                    )}
+                    {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
+                    <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
+                    {activeGroup === 'analysis' && (
+                      <button className="map-hide-btn" onClick={() => setMapHidden(true)} title="Hide the map for this workspace">Hide map</button>
+                    )}
+                  </div>
+                )}
+                {activeGroup === 'analysis' && mapHidden ? (
+                  <div className="analysis-no-map">
+                    <CountrySearchBox onPick={selectCountry} />
+                    {selectedCountry ? (
+                      <Suspense fallback={null}>
+                        <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
+                          onClose={() => setSelectedCountry(null)} onShowMap={() => setMapHidden(false)} onOpenPanel={openPanel} onFlyTo={handleGeoSearch} initialTab="forecasts" />
+                      </Suspense>
+                    ) : (
+                      <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel}
+                        fullWidth onShowMap={() => setMapHidden(false)} />
+                    )}
+                  </div>
+                ) : selectedCountry ? (
                   <Suspense fallback={null}>
                     <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
                       onClose={() => setSelectedCountry(null)} onShowMap={() => setSelectedCountry(null)} onOpenPanel={openPanel} onFlyTo={handleGeoSearch} />

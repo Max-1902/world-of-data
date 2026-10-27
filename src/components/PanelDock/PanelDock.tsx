@@ -25,6 +25,9 @@ interface Props {
   activeGroup: PanelGroup
   /** Scroll to (and re-show, if closed) this panel; `n` changes on every request so picking the same panel twice still scrolls. */
   focusPanel?: { id: string; n: number } | null
+  /** the map is hidden for this workspace (Analysis defaults to it): the dock fills the width, and shows a way to bring the map back */
+  fullWidth?: boolean
+  onShowMap?: () => void
 }
 
 const MIN_W = 320
@@ -46,7 +49,7 @@ function loadWidth(): number {
   return Math.round(window.innerWidth * 0.28)
 }
 
-export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, onPopOut, onPopOutAll, activeGroup, focusPanel }: Props) {
+export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, onPopOut, onPopOutAll, activeGroup, focusPanel, fullWidth, onShowMap }: Props) {
   const [panelW, setPanelW] = useState(loadWidth)
   const resizeRef = useRef<{ startX: number; startW: number } | null>(null)
   // Panels the user closed with ✕; remembered across reloads and restorable from the workspace heading.
@@ -110,17 +113,17 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
     <div
       className="right-panel"
       style={{
-        width: panelW, minWidth: MIN_W, height: '100%',
-        display: 'flex', flexDirection: 'column', flexShrink: 0,
-        position: 'relative', borderLeft: '1px solid var(--border)',
+        width: fullWidth ? '100%' : panelW, minWidth: MIN_W, height: '100%',
+        display: 'flex', flexDirection: 'column', flexShrink: fullWidth ? undefined : 0,
+        position: 'relative', borderLeft: fullWidth ? undefined : '1px solid var(--border)',
         background: 'var(--bg)', overflow: 'hidden',
       }}
     >
       {/* resize handle */}
-      <div onMouseDown={onResizeDown} style={{
+      {!fullWidth && <div onMouseDown={onResizeDown} style={{
         position: 'absolute', top: 0, left: 0, bottom: 0, width: 4,
         cursor: 'ew-resize', zIndex: 40,
-      }} />
+      }} />}
 
       {/* panels — scrollable, each with proper min-height */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
@@ -130,6 +133,11 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
             <div className="dock-workspace-title">{groupLabel}</div>
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            {onShowMap && (
+              <button className="dock-restore" onClick={onShowMap} title="Show the map alongside this workspace">
+                Show map
+              </button>
+            )}
             {visibleDefs.length} {visibleDefs.length === 1 ? 'panel' : 'panels'}
             {visibleDefs.length > 1 && (
               <button className="dock-restore" onClick={() => onPopOutAll(visibleDefs.map(d => d.id))} title="Open every panel of this workspace as a window, tiled across the screen">

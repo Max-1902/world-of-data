@@ -1260,10 +1260,10 @@ body.pw-dragging iframe { pointer-events: none; }
 .topic-card-copy { display: flex; flex-direction: column; gap: 4px; padding: 0 13px 12px; }
 .topic-card-copy strong { font-size: 12px; font-weight: 650; }.topic-card-copy span { color: #8199ac; font-size: 9px; }
 .topic-arrow { position: absolute; right: 12px; bottom: 14px; color: #65859d; }
-.topic-cyan .topic-art { background-image: linear-gradient(0deg,rgba(4,15,24,.42),transparent 65%),url('/images/topic-economy.jpg'); }
-.topic-green .topic-art { color: #91ffd0; background-image: linear-gradient(0deg,rgba(4,15,24,.42),transparent 65%),url('/images/topic-climate.jpg'); }
-.topic-violet .topic-art { color: #e2caff; background-image: linear-gradient(0deg,rgba(4,15,24,.42),transparent 65%),url('/images/topic-health.jpg'); }
-.topic-orange .topic-art { color: #ffe0bd; background-image: linear-gradient(0deg,rgba(4,15,24,.42),transparent 65%),url('/images/topic-education.jpg'); }
+.topic-cyan .topic-art { background-image: linear-gradient(0deg,rgba(4,15,24,.42),transparent 65%),url('/images/topic-economy-v2.jpg'); }
+.topic-green .topic-art { color: #91ffd0; background-image: linear-gradient(0deg,rgba(4,15,24,.42),transparent 65%),url('/images/topic-climate-v2.jpg'); }
+.topic-violet .topic-art { color: #e2caff; background-image: linear-gradient(0deg,rgba(4,15,24,.42),transparent 65%),url('/images/topic-health-v2.jpg'); }
+.topic-orange .topic-art { color: #ffe0bd; background-image: linear-gradient(0deg,rgba(4,15,24,.42),transparent 65%),url('/images/topic-education-v2.jpg'); }
 .world-section { padding: 19px; border: 1px solid #152b3d; border-radius: 15px; background: linear-gradient(140deg,rgba(8,24,37,.94),rgba(6,17,28,.98)); }
 .world-section .home-section-heading { margin-bottom: 11px; }
 .indicator-tabs { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 11px; }
@@ -1293,6 +1293,10 @@ body.pw-dragging iframe { pointer-events: none; }
 .workspace-stage { display: flex; flex-direction: column; }
 .workspace-stage > .news-ticker { flex: 0 0 auto; position: relative; }
 .workspace-stage .dashboard-main { display: flex; flex: 1 1 0; min-height: 0; overflow: hidden; }
+.analysis-no-map { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); }
+.analysis-no-map > .country-search-box { flex: 0 0 auto; margin: 10px 14px 0; }
+.analysis-no-map > .country-page { position: relative; inset: auto; flex: 1 1 0; min-height: 0; }
+.analysis-no-map > .right-panel { border-left: none !important; }
 .workspace-stage .area-map { position: relative; flex: 1 1 0; min-width: 0; min-height: 0; }
 .workspace-stage .map-card { inset: 10px; border-color: #132a3e; border-radius: 13px; }
 .workspace-stage .right-panel { background: #06111a !important; border-left-color: #142a3d !important; }
@@ -1564,6 +1568,8 @@ body.pw-dragging iframe { pointer-events: none; }
 .map-tool { position: absolute; top: 12px; left: 10px; z-index: 20; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 10.5px; font-weight: 600; color: var(--text2); background: rgba(4,14,23,.94); border: 1px solid #1a354a; border-radius: 10px; box-shadow: 0 7px 22px rgba(0,0,0,.3); backdrop-filter: blur(10px); cursor: pointer; }
 .map-tool:hover { color: var(--text1); background: #102438; }
 .map-tool.on { color: var(--accent); border-color: rgba(24,201,244,.35); }
+.map-hide-btn { position: absolute; top: 12px; left: 10px; z-index: 20; display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; font-size: 10.5px; font-weight: 600; color: var(--text2); background: rgba(4,14,23,.94); border: 1px solid #1a354a; border-radius: 10px; box-shadow: 0 7px 22px rgba(0,0,0,.3); backdrop-filter: blur(10px); cursor: pointer; }
+.map-hide-btn:hover { color: var(--text1); background: #102438; }
 
 /* ── Flight filter (Map/overlays/FlightFilter.tsx) ── */
 .ff { position: absolute; top: 52px; left: 10px; z-index: 30; }

@@ -50,6 +50,7 @@ interface Props {
   onShowMap: () => void
   onOpenPanel: (id: string) => void
   onFlyTo?: (q: string) => void
+  initialTab?: CountryTab
 }
 
 /**
@@ -57,9 +58,9 @@ interface Props {
  * forecasts, trade and exposure, and the context tabs. Built from the same data and sections as the map's country
  * card, so nothing here is a second source of truth.
  */
-export default function CountryPage({ country, crises, conflictFeed, flights, articles, earthquakes, fires, onClose, onShowMap, onOpenPanel, onFlyTo }: Props) {
-  const [tab, setTab] = useState<CountryTab>('economy')
-  useEffect(() => { setTab('economy') }, [country])
+export default function CountryPage({ country, crises, conflictFeed, flights, articles, earthquakes, fires, onClose, onShowMap, onOpenPanel, onFlyTo, initialTab = 'economy' }: Props) {
+  const [tab, setTab] = useState<CountryTab>(initialTab)
+  useEffect(() => { setTab(initialTab) }, [country, initialTab])
   const iso2 = resolveISO2(country)
   const { econData, econLoading } = useCountryLiveData(country)
   const byId = useMemo(() => new Map((econData?.indicators ?? []).map(i => [i.id, i])), [econData])
