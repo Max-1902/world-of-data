@@ -6,6 +6,7 @@ import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart } from '../charts/LineChart'
 import { Metric, StatusLabel } from '../DataLabels'
 import { Method } from './countryLookup/shared'
+import { onFocusCountry, storedFocus } from '../../utils/focusCountry'
 
 const MONTH = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const pct = (v: number) => `${v < 0 ? '−' : v > 0 ? '+' : ''}${Math.abs(v).toFixed(1)}`
@@ -51,7 +52,8 @@ function BacktestTable({ rows }: { rows: Backtest[] }) {
  * production months already out. Model, baseline, backtest and headline rule are fixed in utils/nowcast.ts.
  */
 export default function NowcastPanel() {
-  const [geo, setGeo] = useState('DE')
+  const [geo, setGeo] = useState(() => { const g = storedFocus('nowcast'); return g && NOWCAST_ECONOMIES.some(e => e.geo === g) ? g : 'DE' })
+  useEffect(() => onFocusCountry('nowcast', g => { if (NOWCAST_ECONOMIES.some(e => e.geo === g)) setGeo(g) }), [])
   const name = NOWCAST_ECONOMIES.find(e => e.geo === geo)?.name ?? geo
   const d = useNowcastData(geo)
   const nc = useMemo(() => (d.data ? nowcast(d.data.gdp, d.data.ip) : null), [d.data])

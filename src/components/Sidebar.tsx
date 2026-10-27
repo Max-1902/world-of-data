@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Activity, ArrowLeftRight, BarChart3, Bookmark, BookOpen, ChevronDown, Compass, Cpu, Database, Globe2, Home, Layers, LineChart, Map, ShieldHalf, Sparkles, Users, Wind } from 'lucide-react'
+import { Activity, ArrowLeftRight, BarChart3, Bookmark, BookOpen, ChevronDown, Cpu, Database, Gauge, Globe2, Home, Layers, LineChart, Map, Network, Newspaper, Radar, ShieldHalf, Sparkles, TrendingUp, Users, Wind } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { GROUP_ORDER, panelsForGroup } from '../panels/registry'
 import type { PanelGroup } from '../panels/types'
@@ -14,6 +14,8 @@ interface Props {
   onFocusPanel?: (id: string) => void
   focusPanel?: { id: string; n: number } | null
   libraryOpen?: boolean
+  /** show the map (closes a country page over it) */
+  onOpenMap?: () => void
 }
 
 const WORKSPACE_ICONS: Record<PanelGroup, LucideIcon> = {
@@ -41,13 +43,14 @@ function NavItem({ icon: Icon, label, active, onClick, title }: {
   return <button className={`new-nav-item${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined} title={title}><Icon size={17} strokeWidth={1.8} /><span>{label}</span></button>
 }
 
-export default function Sidebar({ activeGroup, onGroupChange, poppedOut, isHome = false, onHome = () => {}, onOpenLibrary = () => {}, onFocusPanel = () => {}, focusPanel, libraryOpen = false }: Props) {
+export default function Sidebar({ activeGroup, onGroupChange, poppedOut, isHome = false, onHome = () => {}, onOpenLibrary = () => {}, onFocusPanel = () => {}, focusPanel, libraryOpen = false, onOpenMap = () => {} }: Props) {
   const [moreOpen, setMoreOpen] = useState(false)
   const go = (group: PanelGroup, panel?: string) => {
     onGroupChange(group)
     if (panel) onFocusPanel(panel)
   }
-  const panelIs = (id: string) => focusPanel?.id === id
+  // a panel item is active only while its own workspace is open (the focused panel outlives a workspace switch)
+  const at = (group: PanelGroup, id: string) => !isHome && activeGroup === group && focusPanel?.id === id
 
   return (
     <aside className="sidebar expanded new-sidebar" aria-label="Main navigation">
@@ -56,17 +59,27 @@ export default function Sidebar({ activeGroup, onGroupChange, poppedOut, isHome 
         <div><strong>World of Data</strong><small>Real data, a clearer world.</small></div>
       </div>
 
-      <nav className="new-primary-nav" aria-label="Explore">
+      {/* Ordered by what the dashboard is for: forecasting and connecting the dots first, then exploring, then context */}
+      <nav className="new-primary-nav" aria-label="Main">
         <NavItem icon={Home} label="Home" active={isHome} onClick={onHome} />
+        <div className="new-nav-heading">Forecast &amp; analyse</div>
+        <NavItem icon={TrendingUp} label="Forecasts" title="GDP growth, inflation and unemployment forecasts, backtested, beside the IMF's" active={at('analysis', 'predictions')} onClick={() => go('analysis', 'predictions')} />
+        <NavItem icon={Gauge} label="GDP nowcast" title="This quarter's GDP growth for EU economies, before it is published" active={at('analysis', 'nowcast')} onClick={() => go('analysis', 'nowcast')} />
+        <NavItem icon={Network} label="Shock exposure" title="Trace which economies a shock reaches, step by step" active={at('markets', 'exposure')} onClick={() => go('markets', 'exposure')} />
+        <NavItem icon={Sparkles} label="AI analyst" title="Ask questions over the dashboard's data" active={at('analysis', 'analyst')} onClick={() => go('analysis', 'analyst')} />
+        <div className="new-nav-heading">Explore</div>
         <NavItem icon={Globe2} label="Countries" active={!isHome && activeGroup === 'country'} onClick={() => go('country')} />
-        <NavItem icon={Compass} label="Explore" active={!isHome && activeGroup === 'overview'} onClick={() => go('overview')} />
-        <NavItem icon={Activity} label="Indicators" active={!isHome && activeGroup === 'markets'} onClick={() => go('markets')} />
-        <NavItem icon={ArrowLeftRight} label="Compare" active={!isHome && activeGroup === 'analysis' && panelIs('countryAnalytics')} onClick={() => go('analysis', 'countryAnalytics')} />
-        <NavItem icon={Map} label="Maps" active={!isHome && activeGroup === 'geo'} onClick={() => go('geo')} />
-        <NavItem icon={LineChart} label="Visualizations" active={!isHome && activeGroup === 'analysis' && panelIs('analytics')} onClick={() => go('analysis', 'analytics')} />
-        <NavItem icon={Database} label="Datasets" active={libraryOpen} onClick={onOpenLibrary} />
-        <NavItem icon={Bookmark} label="Saved" active={!isHome && activeGroup === 'overview' && panelIs('watchlist')} onClick={() => go('overview', 'watchlist')} />
-        <NavItem icon={BookOpen} label="Notes" active={!isHome && activeGroup === 'analysis' && panelIs('analyst')} title="Saved analyst conversations" onClick={() => go('analysis', 'analyst')} />
+        <NavItem icon={Activity} label="Indicators" active={!isHome && activeGroup === 'markets' && !at('markets', 'exposure')} onClick={() => go('markets')} />
+        <NavItem icon={ArrowLeftRight} label="Compare" active={at('analysis', 'countryAnalytics')} onClick={() => go('analysis', 'countryAnalytics')} />
+        <NavItem icon={Map} label="Map" title="The map, with every layer" active={false} onClick={onOpenMap} />
+        <div className="new-nav-heading">Context</div>
+        <NavItem icon={Radar} label="Risk monitor" active={!isHome && activeGroup === 'overview' && !at('overview', 'watchlist')} onClick={() => go('overview')} />
+        <NavItem icon={ShieldHalf} label="Security & defence" active={!isHome && activeGroup === 'security'} onClick={() => go('security')} />
+        <NavItem icon={Layers} label="Infrastructure & hazards" active={!isHome && activeGroup === 'geo'} onClick={() => go('geo')} />
+        <NavItem icon={Newspaper} label="News" active={!isHome && activeGroup === 'news'} onClick={() => go('news')} />
+        <div className="new-nav-heading">Yours</div>
+        <NavItem icon={Bookmark} label="Saved" title="Countries you watch, with alerts" active={at('overview', 'watchlist')} onClick={() => go('overview', 'watchlist')} />
+        <NavItem icon={Database} label="Datasets" title="Every panel, searchable" active={libraryOpen} onClick={onOpenLibrary} />
       </nav>
 
       <div className="new-sidebar-section new-presets">

@@ -1684,3 +1684,33 @@ button.dl-rank:hover { background: var(--surface2); }
 .dl-section { margin: 6px 0 2px; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
 .dl-row-btn { width: 100%; background: none; border: none; font: inherit; text-align: left; cursor: pointer; border-radius: var(--r-sm); }
 .dl-row-btn:hover { background: var(--surface2); }
+
+/* ── Country drawer / country page sections ── */
+.cd-section { margin-bottom: 14px; }
+.cd-section-h { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.cd-section-h > i { width: 6px; height: 6px; border-radius: 2px; flex-shrink: 0; }
+
+/* ── Country page (components/countryPage): a country's data in the main area, map one click away ── */
+.country-page { position: absolute; inset: 0; z-index: 45; display: flex; flex-direction: column; gap: 12px; padding: 18px 22px 0; overflow-y: auto; background: var(--bg); border-radius: var(--r-lg); }
+.cp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cp-title h2 { margin: 0; font-size: 24px; font-weight: 700; color: var(--text1); letter-spacing: -.01em; }
+.cp-title span { display: block; margin-top: 3px; font-size: 11.5px; color: var(--text3); }
+.cp-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.cp-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .cp-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cp-tabs { position: sticky; top: -18px; z-index: 3; display: flex; gap: 2px; flex-wrap: wrap; padding: 6px 0; background: var(--bg); border-bottom: 1px solid var(--border); }
+.cp-tabs button { padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text2); background: none; border: none; border-radius: var(--r-sm); cursor: pointer; }
+.cp-tabs button:hover { color: var(--text1); background: var(--surface2); }
+.cp-tabs button.on { color: var(--accent); background: var(--accent-soft); }
+.cp-body { flex: 1; max-width: 980px; padding-bottom: 8px; }
+.cp-body .viz-kpis { margin-bottom: 8px; }
+.cp-body .dl-row { max-width: 640px; }
+.cp-go { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 12px; padding: 6px 12px; font-size: 11.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r-pill); cursor: pointer; }
+.cp-mapcta { align-self: flex-start; margin: 0 0 16px; padding: 0; font-size: 11.5px; color: var(--text3); background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+.cp-mapcta:hover { color: var(--accent); }
+.country-page .panel-sources { margin: 0 -22px; padding: 8px 22px; }
+.cp-chip { position: absolute; bottom: 64px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; align-items: center; gap: 10px; padding: 6px 8px 6px 14px; font-size: 12px; color: var(--text1); background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--r-pill); box-shadow: var(--shadow-md); }
+.cp-chip-x { background: none; border: none; color: var(--text3); font-size: 15px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.cp-chip-x:hover { color: var(--text1); }
+.workspace-stage .country-page { inset: 10px; }
+.new-nav-heading { margin: 10px 0 3px; padding: 0 12px; font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--text3); }

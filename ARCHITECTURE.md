@@ -78,6 +78,10 @@ Refresh rates are chosen per-provider to stay under free-tier rate limits, not f
 
 `useCrises` also seeds a hardcoded `BASELINE` array of major ongoing conflicts (Ukraine, Gaza, Sudan, etc.), each stamped with **today's date** so they always render when ACLED is unconfigured, rate-limited or down (GDELT was dropped — see the note in `services/crises.ts`). Their coordinates are region centres, not event locations, and the date is the load date, not an event date; `useCrises` therefore also reports `liveCount` so the UI can tell when nothing live is loaded. This matters for anything doing time-series analysis over `crises` — see the Watchlist note below.
 
+## Country page (`components/countryPage/`)
+
+Picking a country (map click, search, alert, shared link) opens its data as a page in the main area, over the map rather than as cards on it; "Show on map" swaps the page for a small chip that leads back. Tabs, economy first: **Economy** (World Bank figures with year and freshness flag), **Forecasts** (the IMF's WEO projections, tagged statistical, and the GDP nowcast for EU members, with links that open Predictions / GDP Nowcast on the same country through `utils/focusCountry.ts`), **Trade & exposure** (this country's own rows from the Shock Exposure engine, then the trade profile), **Risk & security**, **Infrastructure**, **Live activity** and **News**. The context tabs are the country drawer's own sections (`CountryDrawer` with `embedded` and `only`), so nothing is computed twice. Each tab carries its sources footer.
+
 ## Map layer system (`components/Map/`)
 
 One Mapbox GL instance, ~25 independently toggleable layer groups (flights, vessels, crises, military, nuclear, pipelines, ports, chokepoints, supply chain, shipping density, humanitarian, GPS jamming, etc.), each gated by a boolean in `PanelState` (`src/types/index.ts`). `App.tsx` owns `panelState` and passes `showX` booleans down; the map adds/removes layer visibility, it never owns the toggle state itself.

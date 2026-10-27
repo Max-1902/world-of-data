@@ -74,7 +74,7 @@ function ImfBlock({ weo, imf, lastYear, lastValue, ours, unit }: {
           return <li key={p.year}><b>{p.year}</b>: IMF {plain(p.value)}{unit}{p.projection ? ' (projection)' : ' (IMF estimate or projection)'}{o && <> · ours {plain(o.value)}{unit}</>}</li>
         })}
       </ul>
-      <div className="cc-ev"><EvidenceTag kind="observed" /><span>The IMF's own published projection, made with far more information than this model, which sees only this one series. Not a measurement.</span></div>
+      <div className="cc-ev"><EvidenceTag kind="statistical" /><span>The IMF's own published projection, made with far more information than this model, which sees only this one series. A forecast, not a measurement.</span></div>
       <div className="cc-ev"><EvidenceTag kind="statistical" /><span>Ours: a projection of this series from its own past.</span></div>
       {gap !== null && Math.abs(gap) >= 0.3 && (
         <p className="viz-verdict">For {lastYear} the IMF reports {plain(level!.value)}{unit} where the World Bank reports {plain(lastValue)}{unit}: the two sources' definitions or data vintages differ, so compare the direction of the two forecasts rather than their levels.</p>

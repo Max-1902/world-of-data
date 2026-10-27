@@ -39,7 +39,7 @@ import { decodeHash, encodeHash, enabledLayers, isViewMode, layersToPanelState, 
 
 // Rarely-open surfaces: keep their code (and the datasets CountryDrawer pulls in) out of the first load.
 const SettingsModal = lazy(() => import('./components/SettingsModal'))
-const CountryDrawer = lazy(() => import('./components/CountryDrawer'))
+const CountryPage = lazy(() => import('./components/countryPage/CountryPage'))
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
 
@@ -139,20 +139,19 @@ export default function App() {
   const [dismissedCard, setDismissedCard] = useState<string | null>(null)
   // A picked city (map click) and a picked country are mutually exclusive; the city takes over the outlook card.
   const [selectedPlace, setSelectedPlace] = useState<SelectedPlace | null>(null)
-  // The card keeps showing the last picked country's brief after the drawer closes; only its own ✕ (or picking a city) takes it away.
-  const [briefCountry, setBriefCountry] = useState<string | null>(selectedCountry)
-  useEffect(() => { if (selectedCountry) setBriefCountry(selectedCountry) }, [selectedCountry])
-  const cardKey = selectedPlace ? `\u0000place:${selectedPlace.name}:${selectedPlace.lat}:${selectedPlace.lng}` : briefCountry ?? '\u0000outlook'
+  // the card is the regional outlook or a picked city's brief; a picked country has its own page
+  const cardKey = selectedPlace ? `\u0000place:${selectedPlace.name}:${selectedPlace.lat}:${selectedPlace.lng}` : '\u0000outlook'
   // Any explicit pick (map click, search, toast) re-opens the outlook box, even for a country whose brief was closed earlier.
+  // A picked country opens its data page in the main area; the map is one click away ("Show on map"), not underneath it.
+  const [countryView, setCountryView] = useState<'data' | 'map'>('data')
   const selectCountry = useCallback((country: string | null) => {
-    if (country) setDismissedCard(null)
+    if (country) { setDismissedCard(null); setCountryView('data'); setIsHome(false) }
     setSelectedPlace(null)
     setSelectedCountry(country)
   }, [])
   const selectPlace = useCallback((place: SelectedPlace) => {
     setDismissedCard(null)
     setSelectedCountry(null)
-    setBriefCountry(null)
     setSelectedPlace(place)
   }, [])
   const [reticleColor, setReticleColor] = useState(() => {
@@ -433,6 +432,7 @@ export default function App() {
             onFocusPanel={focusInDock}
             focusPanel={focusPanel}
             libraryOpen={libraryOpen}
+            onOpenMap={() => { setIsHome(false); setCountryView('map') }}
           />
 
           {isHome ? (
@@ -440,10 +440,7 @@ export default function App() {
               <HomeDashboard
                 map={<>
                   {homeMapView}
-                  <Suspense fallback={null}>
-                    {selectedCountry && <CountryDrawer country={selectedCountry} crises={crises} flights={flights} earthquakes={earthquakes} fires={fires} onClose={() => setSelectedCountry(null)} onFlyTo={handleGeoSearch} />}
-                  </Suspense>
-                  {(briefCountry || selectedPlace) && dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={briefCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
+                  {selectedPlace && dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
                 </>}
                 onOpenPanel={openPanel}
                 onOpenMap={() => changeWorkspace('geo')}
@@ -461,10 +458,20 @@ export default function App() {
                   <div className="map-card">{mapView}
                     {crisisArchive && panelState.crises && <div className="map-archive-note" role="status">Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.</div>}
                   </div>
-                  <Suspense fallback={null}>
-                    {selectedCountry && <CountryDrawer country={selectedCountry} crises={crises} flights={flights} earthquakes={earthquakes} fires={fires} onClose={() => setSelectedCountry(null)} onFlyTo={handleGeoSearch} />}
-                  </Suspense>
-                  {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={briefCountry} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
+                  {selectedCountry && countryView === 'data' && (
+                    <Suspense fallback={null}>
+                      <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
+                        onClose={() => setSelectedCountry(null)} onShowMap={() => setCountryView('map')} onOpenPanel={openPanel} onFlyTo={handleGeoSearch} />
+                    </Suspense>
+                  )}
+                  {selectedCountry && countryView === 'map' && (
+                    <div className="cp-chip" role="status">
+                      <b>{selectedCountry}</b>
+                      <button className="cy-btn" onClick={() => setCountryView('data')}>View data</button>
+                      <button className="cp-chip-x" onClick={() => setSelectedCountry(null)} aria-label={`Deselect ${selectedCountry}`}>×</button>
+                    </div>
+                  )}
+                  {!selectedCountry && dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
                   <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
                 </div>
                 <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel} />
