@@ -33,7 +33,8 @@ import { fetchPowerGenerationRanking, POWER_SOURCES } from './powerGeneration'
 import { OIL_GAS_DATA } from './oilgas'
 import { getResourceProfile, fetchResourceRents } from './resources'
 import { CHOKEPOINTS, EIA_CHOKEPOINTS_SOURCE, oilSharePct } from './chokepoints'
-import { ISO3_TO_ISO2 } from './economies'
+import { ISO3_TO_ISO2, ISO2_TO_ISO3 } from './economies'
+import { WEO_FOR_WB, fetchWeo, weoPoints } from './imfWeo'
 import { gdpByIso2, partnerNames, summarizeExposure, traceExposure, type Shock } from '../utils/exposure'
 import { PORTS } from './ports'
 import { TOP_HOSTING, TOP_ORIGINS } from './unhcr'
@@ -467,6 +468,15 @@ const TOOLS: ToolDef[] = [
       const label = headline === 'ar' ? 'AR(2) forecast' : 'No-change forecast'
       const verdict = !bt || bt.mae == null || bt.baselineMae == null ? 'backtest not possible (too short)'
         : `backtest over ${bt.folds} one-year-ahead folds: AR(2) mean abs. error ${n2(bt.mae)} vs naive ${n2(bt.baselineMae)}${bt.dm ? ` (Diebold–Mariano p=${n2(bt.dm.p)}${bt.dm.p < 0.05 ? ', significant' : ', not significant'})` : ''}`
+      // the outside benchmark: the IMF's published figures for the same years (null when unavailable or not a WEO series)
+      const weoId = WEO_FOR_WB[meta.id]
+      const weo = weoId ? await fetchWeo(weoId) : null
+      const iso3 = ISO2_TO_ISO3.get(c.iso2)
+      const imf = weo && iso3 ? weoPoints(weo, iso3, fc.points.map(p => p.year)) : []
+      const imfLine = !weoId ? null
+        : !weo ? 'IMF benchmark: NOT AVAILABLE (the IMF request failed).'
+        : imf.length ? `IMF benchmark (${weo.vintage}, published figures, not computed here): ${imf.map(p => `${p.year} ${f(p.value)}${p.projection ? ' projection' : ''}`).join('; ')}. The IMF's GDP forecasts beat this model in most economies; World Bank and IMF levels can differ by definition.`
+        : `IMF benchmark: no ${weo.label} figures for ${c.name} in ${weo.vintage}.`
       const why = policy
         ? headline === 'ar'
           ? 'Headline model: AR(2), which beat "no change" on average across 192 economies for this series (not significantly in any single one; the IMF\'s forecasts beat it in most).'
@@ -478,6 +488,7 @@ const TOOLS: ToolDef[] = [
           `${c.name} ${meta.short}: last observed ${f(last.y)} (${last.x}), n=${fc.n}.`,
           `${label}: ${fc.points.map((p, i) => `${p.year} ${f(p.value)} [${ciLabel(i + 1)}: ${f(p.lo)} to ${f(p.hi)}]`).join('; ')}${headline === 'ar' && ar.longRun != null ? `; long-run level ${f(ar.longRun)}` : ''}.`,
           why,
+          ...(imfLine ? [imfLine] : []),
           `Skill on this country: ${verdict}. A model that does not beat naive out of sample should not be presented as informative.`,
         ].join('\n'),
         chart: {

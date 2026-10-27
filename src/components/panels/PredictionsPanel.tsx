@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { AlertTriangle, MoveRight, RefreshCw, TrendingDown, TrendingUp } from 'lucide-react'
 import { useCountryLookup } from '../../hooks/useCountryLookup'
 import { pointsOf } from '../../services/countryLookup'
@@ -7,6 +7,10 @@ import { INTERVAL_RECENT, coverageLabel, headlineForecast } from '../../utils/fo
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart, type LinePoint } from '../charts/LineChart'
 import { Kpi, Method, PERIODS, inPeriod, plain, toLine, type Period } from './countryLookup/shared'
+import { WEO_FOR_WB, fetchWeo, weoPoints, type WeoPayload } from '../../services/imfWeo'
+import { recordsFor, remember } from '../../services/forecastLog'
+import { TAIL_YEARS, explainChange, scoreRecords, type Change, type ForecastRecord } from '../../utils/forecastRecord'
+import { EvidenceTag, SourceLine, StatusLabel } from '../DataLabels'
 
 const AR_ORDER = 2
 const HORIZON = 3
@@ -48,8 +52,118 @@ function forecastLine(last: Pt, f: Forecast, pick: 'value' | 'lo' | 'hi'): LineP
   return [{ t: last.x, v: last.y }, ...f.points.map(p => ({ t: p.year, v: p[pick] }))]
 }
 
-function Section({ target, series, period }: { target: Target; series: Pt[]; period: Period }) {
+function ImfBlock({ weo, imf, lastYear, lastValue, ours, unit }: {
+  weo: WeoPayload | null | 'loading'
+  imf: { year: number; value: number; projection: boolean }[]
+  lastYear: number; lastValue: number
+  ours: { year: number; value: number }[]
+  unit: string
+}) {
+  if (weo === 'loading') return <StatusLabel status="loading">IMF World Economic Outlook…</StatusLabel>
+  if (weo === null) return <StatusLabel status="error">The IMF's figures could not be loaded right now, so there is no outside benchmark on this card.</StatusLabel>
+  const fc = imf.filter(p => p.year !== lastYear)
+  if (!fc.length) return <StatusLabel status="empty">The IMF publishes no {weo.label.toLowerCase()} figures for this economy in {weo.vintage}.</StatusLabel>
+  const level = imf.find(p => p.year === lastYear)
+  const gap = level ? level.value - lastValue : null
+  return (
+    <div className="pred-block">
+      <div className="pred-block-h">IMF benchmark</div>
+      <ul className="pred-list">
+        {fc.map(p => {
+          const o = ours.find(q => q.year === p.year)
+          return <li key={p.year}><b>{p.year}</b>: IMF {plain(p.value)}{unit}{p.projection ? ' (projection)' : ' (IMF estimate or projection)'}{o && <> · ours {plain(o.value)}{unit}</>}</li>
+        })}
+      </ul>
+      <div className="cc-ev"><EvidenceTag kind="observed" /><span>The IMF's own published projection, made with far more information than this model, which sees only this one series. Not a measurement.</span></div>
+      <div className="cc-ev"><EvidenceTag kind="statistical" /><span>Ours: a projection of this series from its own past.</span></div>
+      {gap !== null && Math.abs(gap) >= 0.3 && (
+        <p className="viz-verdict">For {lastYear} the IMF reports {plain(level!.value)}{unit} where the World Bank reports {plain(lastValue)}{unit}: the two sources' definitions or data vintages differ, so compare the direction of the two forecasts rather than their levels.</p>
+      )}
+      <SourceLine source={`IMF, ${weo.vintage}`} asOf={weo.lastModified ? `updated ${weo.lastModified.slice(0, 10)}` : undefined} />
+    </div>
+  )
+}
+
+function SinceBlock({ memory, unit }: { memory: { previous: ForecastRecord | null; since: string; now: ForecastRecord }; unit: string }) {
+  const changes: Change[] = memory.previous ? explainChange(memory.previous, memory.now, unit) : []
+  return (
+    <div className="pred-block">
+      <div className="pred-block-h">What changed</div>
+      {!memory.previous
+        ? <p className="viz-verdict">First shown on this device on {memory.since}. When the World Bank adds or revises data, or the IMF publishes a new edition, this card will say what changed and why the forecast moved.</p>
+        : changes.length === 0
+          ? <p className="viz-verdict">Nothing new since {memory.since}: same data, same forecast.</p>
+          : <>
+              <p className="viz-verdict">Since the forecast shown on {memory.previous.issued}:</p>
+              <ul className="ex-path">{changes.map((c, i) => <li key={i}><EvidenceTag kind={c.kind} /><div>{c.text}</div></li>)}</ul>
+            </>}
+    </div>
+  )
+}
+
+function TrackBlock({ records, series, unit, since }: { records: ForecastRecord[]; series: Pt[]; unit: string; since: string }) {
+  const scored = scoreRecords(records, series)
+  const first = records[0]?.issued ?? since
+  return (
+    <div className="pred-block">
+      <div className="pred-block-h">Track record on this device</div>
+      {scored.length === 0
+        ? <p className="viz-verdict">No forecast recorded here (since {first}) has reached its year yet. Each one is scored, with the IMF's figure from the same day, once the World Bank publishes that year.</p>
+        : <>
+            <div className="viz-table-wrap"><table className="viz-table">
+              <thead><tr><th scope="col">Year</th><th scope="col">Made</th><th scope="col">Ours (interval)</th><th scope="col">Actual</th><th scope="col">Inside?</th><th scope="col">IMF then</th></tr></thead>
+              <tbody>{scored.map(r => (
+                <tr key={`${r.issued}|${r.year}`}>
+                  <th scope="row">{r.year}</th><td>{r.issued} ({r.horizon}y ahead)</td>
+                  <td>{plain(r.forecast)}{unit} ({plain(r.lo)} to {plain(r.hi)})</td><td>{plain(r.actual)}{unit}</td>
+                  <td>{r.inside ? 'yes' : 'no'}</td><td>{r.imf ? `${plain(r.imf.value)}${unit}` : '—'}</td>
+                </tr>
+              ))}</tbody>
+            </table></div>
+            <p className="viz-verdict">{scored.filter(r => r.inside).length} of {scored.length} outcomes fell inside our interval. Recorded only in this browser, so this is a small, informal record, not a validation.</p>
+          </>}
+    </div>
+  )
+}
+
+const today = () => new Date().toISOString().slice(0, 10)
+
+/** The IMF WEO indicator matching a World Bank series: 'loading' until the request settles, null if it failed. */
+function useWeo(seriesId: string): WeoPayload | null | 'loading' {
+  const [data, setData] = useState<WeoPayload | null | 'loading'>('loading')
+  useEffect(() => {
+    const ind = WEO_FOR_WB[seriesId]
+    if (!ind) { setData(null); return }
+    let live = true
+    setData('loading')
+    void fetchWeo(ind).then(d => { if (live) setData(d) })
+    return () => { live = false }
+  }, [seriesId])
+  return data
+}
+
+function Section({ target, series, period, country }: { target: Target; series: Pt[]; period: Period; country: { iso2: string; iso3: string } | null }) {
   const hf = useMemo(() => headlineForecast(target.id, series, HORIZON), [target.id, series])
+  const weo = useWeo(target.id)
+  const fcYears = useMemo(() => hf ? hf.forecast.points.map(p => p.year) : [], [hf])
+  const lastYear = series.length ? series[series.length - 1].x : null
+  const imf = useMemo(() => weo && weo !== 'loading' && country && lastYear !== null ? weoPoints(weo, country.iso3, [lastYear, ...fcYears]) : [], [weo, country, lastYear, fcYears])
+  const imfFc = imf.filter(p => p.year !== lastYear)
+
+  // remember what this card showed, once the IMF request has settled (so a slow request isn't recorded as "no IMF")
+  const [memory, setMemory] = useState<{ previous: ForecastRecord | null; since: string; records: ForecastRecord[]; now: ForecastRecord } | null>(null)
+  useEffect(() => {
+    if (!hf || !country || weo === 'loading') return
+    const rec: ForecastRecord = {
+      key: `${country.iso2}|${target.id}`, issued: today(), model: hf.headline,
+      tail: series.slice(-TAIL_YEARS).map(p => ({ year: p.x, value: p.y })),
+      points: hf.forecast.points.map(p => ({ year: p.year, value: p.value, lo: p.lo, hi: p.hi })),
+      imf: weo && imfFc.length ? { vintage: weo.vintage, points: imfFc.map(p => ({ year: p.year, value: p.value })) } : undefined,
+    }
+    const r = remember(rec)
+    setMemory({ ...r, records: recordsFor(rec.key), now: rec })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hf, country?.iso2, target.id, weo, imfFc.length])
   const naive = useMemo(() => naiveForecast(series, HORIZON), [series])
   const trend = useMemo(() => trendTest(series), [series])
   const backtest = useMemo(() => backtestForecast(series, s => arForecast(s, AR_ORDER, 1), MIN_HISTORY), [series])
@@ -82,6 +196,7 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
     : isAr ? 'the textbook AR interval' : "from the spread of this country's past year-to-year changes"
   const scaled = policy ? `, then ${policy.scale.map(k => `×${k.toFixed(2)}`).join(' / ')} at 1 / 2 / 3 years so it held 95% of outcomes on forecasts made before 2010` : ''
   // a fallback horizon shows the textbook interval, which the backtest coverage was not measured on
+  const imfAt = (year: number) => { const p = imf.find(q => q.year === year); return p ? `${plain(p.value)}${u}` : '—' }
   const ciLabel = (h: number) => coverageLabel(fallbackHorizons.includes(Math.min(h, HORIZON)) ? null : policy, h)
 
   return (
@@ -89,10 +204,10 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
       title={target.label}
       subtitle={isAr ? `${fc.method} forecast vs. a "no change" baseline, next ${HORIZON} years` : `"No change" forecast, next ${HORIZON} years — it beat the AR(${AR_ORDER}) model in the cross-country backtest`}
       table={{
-        columns: isAr ? ['Year', 'Actual', fcLabel, 'Interval', 'Naive (last value)'] : ['Year', 'Actual', fcLabel, 'Interval'],
+        columns: [...(isAr ? ['Year', 'Actual', fcLabel, 'Interval', 'Naive (last value)'] : ['Year', 'Actual', fcLabel, 'Interval']), 'IMF WEO'],
         rows: [
-          ...[...fc.points].reverse().map(p => [String(p.year), '—', `${plain(p.value)}${u}`, `${plain(p.lo)} to ${plain(p.hi)}${u}`, ...(isAr ? [`${plain(naive.points[p.year - last.x - 1].value)}${u}`] : [])]),
-          ...[...series].reverse().map(p => [String(p.x), `${plain(p.y)}${u}`, '', '', ...(isAr ? [''] : [])]),
+          ...[...fc.points].reverse().map(p => [String(p.year), '—', `${plain(p.value)}${u}`, `${plain(p.lo)} to ${plain(p.hi)}${u}`, ...(isAr ? [`${plain(naive.points[p.year - last.x - 1].value)}${u}`] : []), imfAt(p.year)]),
+          ...[...series].reverse().map(p => [String(p.x), `${plain(p.y)}${u}`, '', '', ...(isAr ? [''] : []), p.x === last.x ? imfAt(p.x) : '']),
         ],
       }}
       footer={<>
@@ -138,6 +253,9 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
           {isAr && ar!.longRun != null && <> Iterated forward, the forecast converges toward {plain(ar!.longRun)}{target.unit}, a level set by the whole {last.x - ar!.n + 1}–{last.x} history. If the economy has changed structurally since (e.g. a boom-era growth rate that no longer applies), that pull is an assumption of the model, not evidence.</>}
         </p>
         {policy && <p className="viz-verdict">{policy.evidence}</p>}
+        <ImfBlock weo={weo} imf={imf} lastYear={last.x} lastValue={last.y} ours={fc.points} unit={u} />
+        {memory && <SinceBlock memory={memory} unit={u} />}
+        {memory && <TrackBlock records={memory.records} series={series} unit={u} since={memory.since} />}
         <Method caveats={`A forecast ${HORIZON} years out on an annual series this short carries a wide, genuine interval — shown, not hidden. The backtests only ever fit on data before the year they are scored against (no look-ahead), but they use today's revised World Bank figures, not the data as first published, so they are more favourable than a real-time test. The choice of headline model was written down before the cross-country backtest was run, but that data had been studied before, so it is not a test on unseen data; only forecasts scored against years that have not happened yet are.`}>
           {isAr
             ? <>Low-order autoregression (AR{AR_ORDER}) fit by ordinary least squares on the most recent unbroken run of years; forecast iterated forward using the model's own prior steps. 95% interval: rerun the same model from every past year with at least 10 years before it, keep its last {INTERVAL_RECENT} absolute errors at each horizon, and use the largest that leaves 95% of them inside (the split-conformal rule), then scale it by a per-horizon factor fitted on forecasts made before 2010. It needs no assumption about the error distribution and includes the model's own estimation error, but the past errors overlap, so its coverage is measured (shown on the interval), not guaranteed. Baseline: next year equals the last observed value.</>
@@ -156,6 +274,7 @@ function Section({ target, series, period }: { target: Target; series: Pt[]; per
             : []),
           { key: 'fc', label: fcLabel, color: 'var(--series-2)', points: forecastLine(last, fc, 'value'), dashed: true, markers: true },
           ...(isAr ? [{ key: 'naive', label: 'Naive baseline', color: 'var(--series-4)', points: forecastLine(last, naive, 'value'), dashed: true }] : []),
+          ...(imfFc.length ? [{ key: 'imf', label: weo && weo !== 'loading' ? `IMF (${weo.vintage.replace('World Economic Outlook', 'WEO')})` : 'IMF', color: 'var(--series-5)', points: imfFc.map(p => ({ t: p.year, v: p.value })), dashed: true, markers: true }] : []),
         ]} />
     </ChartFrame>
   )
@@ -209,13 +328,13 @@ export function PredictionsPanel() {
       {c.status === 'loading' && <div className="viz-note" role="status">Loading {name}'s World Bank record…</div>}
       {c.status === 'error' && <div className="viz-note" role="status">Could not reach the World Bank ({c.error}). <button className="cy-btn" onClick={c.retry}><RefreshCw size={11} /> Retry</button></div>}
 
-      {c.data && TARGETS.map(t => <Section key={t.id} target={t} series={pointsOf(c.data, t.id)} period={period} />)}
+      {c.data && TARGETS.map(t => <Section key={t.id} target={t} series={pointsOf(c.data, t.id)} period={period} country={current ? { iso2: current.iso2, iso3: current.iso3 } : null} />)}
 
       <p className="viz-foot">
         Each headline model was picked by a backtest across every World Bank economy, and every card also backtests AR(2) against
         "no change" on this country — the comparison is shown whether the model wins or loses. Where no model beat "no change", that is
         what is shown. This is a projection of a time series from its own past, computed entirely in your browser — not a prediction
-        informed by news, policy, or anything the AI Analyst has said. Source: World Bank Open Data, free and keyless.
+        informed by news, policy, or anything the AI Analyst has said. The IMF's World Economic Outlook is shown beside it as the outside benchmark. Sources: World Bank Open Data and IMF DataMapper, both free and keyless.
       </p>
     </div>
   )

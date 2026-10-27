@@ -22,6 +22,7 @@ export const SOURCE_RULES: SourceRule[] = [
   { id: 'usgs',      label: 'Earthquakes (USGS)',        match: has('earthquake.usgs.gov') },
   { id: 'firms',     label: 'Wildfires (NASA FIRMS)',    match: has('/api/firms', 'firms.modaps.eosdis.nasa.gov') },
   { id: 'gpsjam',    label: 'GPS interference (GPSJAM)', match: has('/api/gpsjam') },
+  { id: 'imfweo',    label: 'IMF World Economic Outlook', match: has('/api/imf-weo') },
   { id: 'gdacs',     label: 'Disaster alerts (GDACS)',   match: has('gdacs.org') },
   { id: 'ioda',      label: 'Internet outages (IODA)',   match: has('api.ioda.inetintel.cc.gatech.edu') },
   { id: 'radar',     label: 'Verified outages (Cloudflare Radar)', match: has('/api/cloudflare-radar') },

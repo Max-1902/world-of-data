@@ -116,6 +116,20 @@ describe('runTool — fetched sources', () => {
     expect(r.text).toMatch(/2027 [^;]*\[95% interval \(coverage not measured/)
   })
 
+  it("forecast: adds the IMF's published figures for the same years as an outside benchmark, or says it is unavailable", async () => {
+    const pts: [number, number][] = Array.from({ length: 30 }, (_, i) => [1995 + i, 2 + Math.sin(i) + (i % 3) * 0.3])
+    const weo = { indicator: 'NGDP_RPCH', label: 'Real GDP growth', unit: '%', vintage: 'World Economic Outlook (October 2026)', lastModified: null, values: { DEU: { '2025': 0.2, '2026': 1.3 } } }
+    let { runTool } = await load()
+    mockFetch(url => url.startsWith('/api/imf-weo') ? jsonResponse(weo) : jsonResponse(wbRows({ DE: pts })))
+    let r = await runTool({ tool: 'forecast', args: ['Germany', 'NY.GDP.MKTP.KD.ZG'], raw: '' }, 'R1', { crises: [], flights: [], trajectories: [] })
+    expect(r.text).toMatch(/IMF benchmark \(World Economic Outlook \(October 2026\), published figures, not computed here\): 2025 \+?0\.2%; 2026 \+?1\.3% projection/)
+    ;({ runTool } = await load())
+    mockFetch(url => url.startsWith('/api/imf-weo') ? jsonResponse({}, { status: 502 }) : jsonResponse(wbRows({ DE: pts })))
+    r = await runTool({ tool: 'forecast', args: ['Germany', 'NY.GDP.MKTP.KD.ZG'], raw: '' }, 'R1', { crises: [], flights: [], trajectories: [] })
+    expect(r.ok).toBe(true)
+    expect(r.text).toContain('IMF benchmark: NOT AVAILABLE')
+  })
+
   it('forecast: for inflation the headline is "no change", with no AR(2) forecast given, and the model choice is explained', async () => {
     const { runTool } = await load()
     // a 1990s hyperinflation then low single digits: full-history AR(2) would forecast a return towards the 1990s
