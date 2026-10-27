@@ -24,13 +24,13 @@ describe('FlightFilter', () => {
 
   it('starts collapsed and shows the filtered count on its button', () => {
     setup({ filteredCount: 1234 })
-    expect(screen.getByRole('button', { name: /FILTER/ }).textContent).toContain('1,234')
+    expect(screen.getByRole('button', { name: /Filter flights/ }).textContent).toContain('1,234')
     expect(screen.queryByPlaceholderText(/callsign/)).toBeNull()
   })
 
   it('opens, forwards the search text, and clears it', () => {
     const p = setup({ filterQuery: 'RCH' })
-    fireEvent.click(screen.getByRole('button', { name: /FILTER/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Filter flights/ }))
     fireEvent.change(screen.getByPlaceholderText(/callsign/), { target: { value: 'RCH1' } })
     expect(p.setFilterQuery).toHaveBeenCalledWith('RCH1')
     fireEvent.click(screen.getByRole('button', { name: '×' }))
@@ -39,13 +39,13 @@ describe('FlightFilter', () => {
 
   it('toggles a flight type by updater and selects a size group', () => {
     const p = setup()
-    fireEvent.click(screen.getByRole('button', { name: /FILTER/ }))
-    fireEvent.click(screen.getByRole('button', { name: /MIL/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Filter flights/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Military/ }))
     const updater = p.setFilterTypes.mock.calls[0][0] as (prev: Set<string>) => Set<string>
     expect(updater(new Set(['military', 'cargo'])).has('military')).toBe(false)   // was on → off
     expect(updater(new Set(['cargo'])).has('military')).toBe(true)                // was off → on
 
-    fireEvent.click(screen.getByRole('button', { name: 'SMALL' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Small' }))
     expect([...(p.setFilterTypes.mock.calls[1][0] as Set<string>)].sort()).toEqual(['private', 'unknown'])
   })
 })

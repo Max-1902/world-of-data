@@ -339,16 +339,16 @@ function ForexPanel() {
 
 // ── Unified Markets Panel ─────────────────────────────────────────────────
 const MARKET_TABS = [
-  { id: 'indices',     label: 'IDX' },
-  { id: 'commodities', label: 'CMD' },
-  { id: 'energy',      label: 'NRG' },
-  { id: 'tech',        label: 'TCH' },
-  { id: 'healthcare',  label: 'HCR' },
-  { id: 'defense',     label: 'DEF' },
-  { id: 'bonds',       label: 'BND' },
-  { id: 'crypto',      label: 'CRY' },
+  { id: 'indices',     label: 'Indices' },
+  { id: 'commodities', label: 'Commodities' },
+  { id: 'energy',      label: 'Energy' },
+  { id: 'tech',        label: 'Tech' },
+  { id: 'healthcare',  label: 'Health care' },
+  { id: 'defense',     label: 'Defence' },
+  { id: 'bonds',       label: 'Bonds' },
+  { id: 'crypto',      label: 'Crypto' },
   { id: 'forex',       label: 'FX' },
-  { id: 'exchanges',   label: 'EXC' },
+  { id: 'exchanges',   label: 'Exchanges' },
 ] as const
 
 export function MarketsPanel() {
@@ -369,15 +369,9 @@ export function MarketsPanel() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       {/* Tab bar — scrollable row */}
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', flexShrink: 0, overflowX: 'auto', gap: 0 }}>
+      <div style={{ display: 'flex', gap: 4, padding: '6px 8px', borderBottom: '1px solid var(--border)', flexShrink: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
         {MARKET_TABS.map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
-            padding: '4px 7px', fontSize: 9.5, fontWeight: 700, letterSpacing: '.08em',
-            background: activeTab === t.id ? 'var(--accent-soft)' : 'transparent',
-            border: 'none', borderBottom: activeTab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
-            color: activeTab === t.id ? 'var(--accent)' : 'var(--text3)', cursor: 'pointer',
-            transition: 'all .12s', flexShrink: 0, fontFamily: 'inherit',
-          }}>{t.label}</button>
+          <button key={t.id} className={`news-tab${activeTab === t.id ? ' active' : ''}`} onClick={() => setActiveTab(t.id)} aria-pressed={activeTab === t.id}>{t.label}</button>
         ))}
       </div>
       {/* Active content */}

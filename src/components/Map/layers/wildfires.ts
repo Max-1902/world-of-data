@@ -57,7 +57,7 @@ export function addWildfireLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
         <div><span style="color:#6b7280">Satellite:</span> ${String(props.satellite||'')}</div>
         <div><span style="color:#6b7280">Detected:</span> ${String(props.date||'')} ${String(props.time||'').replace(/(\d{2})(\d{2})/, '$1:$2')} UTC</div>
         <div><span style="color:#6b7280">Day/Night:</span> ${props.daynight === 'D' ? '☼ Day' : '☾ Night'}</div>
-        <div style="margin-top:4px;font-size:10px;color:#9ca3af;font-family:monospace;">${coords[1].toFixed(4)}°, ${coords[0].toFixed(4)}°</div>
+        <div style="margin-top:4px;font-size:10px;color:#9ca3af;font-variant-numeric:tabular-nums;">${coords[1].toFixed(4)}°, ${coords[0].toFixed(4)}°</div>
       </div>`
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '260px', className: 'cy-popup' })

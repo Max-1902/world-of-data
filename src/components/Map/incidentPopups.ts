@@ -88,7 +88,7 @@ export function disasterPopupHtml(a: DisasterAlert, now = Date.now()): string {
     ${Number.isFinite(from) ? row('Period', `${utc(from).slice(0, 10)} → ${Number.isFinite(to) ? utc(to).slice(0, 10) : '?'}${Number.isFinite(to) ? ` <span style="${MUTED}">(updated ${timeAgo(to, now)})</span>` : ''}`) : ''}
     ${row('Status', a.isCurrent ? 'Active' : 'Ended')}
     ${row('GDACS score', `${a.score} <span style="${MUTED}">(used by GDACS to set the alert level)</span>`)}
-    <div style="margin-top:4px;font-size:10px;color:#9ca3af;font-family:monospace">${a.latitude.toFixed(3)}°, ${a.longitude.toFixed(3)}°</div>
+    <div style="margin-top:4px;font-size:10px;color:#9ca3af;font-variant-numeric:tabular-nums;">${a.latitude.toFixed(3)}°, ${a.longitude.toFixed(3)}°</div>
     <div style="margin-top:6px;font-size:10px;color:#9ca3af">Source: GDACS (EU JRC / UN OCHA)${a.source ? `, event data from ${esc(a.source)}` : ''}. Pin = the point GDACS gives for the event: an earthquake's epicentre; for storms, floods and droughts a representative point of the affected area, not its full extent.</div>
     ${a.reportUrl ? `<a href="${esc(a.reportUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:6px;font-size:11px;color:#2563eb">GDACS report →</a>` : ''}
   </div>`

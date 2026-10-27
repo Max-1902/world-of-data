@@ -29,9 +29,9 @@ const swatch = (color: string, opts: { light?: boolean; outline?: string } = {})
   }} />
 )
 
-const ROW = { display:'flex', alignItems:'flex-start', gap:6, marginTop:4, fontSize:9.5, color:'#c0cbd0', lineHeight:1.35 } as const
-const HEAD = { fontSize:10.5, fontWeight:650, color:'#e5ecef' } as const
-const NOTE = { marginTop:5, fontSize:9, color:'#647883', lineHeight:1.45 } as const
+const ROW = { display:'flex', alignItems:'flex-start', gap:6, marginTop:4, fontSize:9.5, color:'var(--text2)', lineHeight:1.35 } as const
+const HEAD = { fontSize:11, fontWeight:650, color:'var(--text1)' } as const
+const NOTE = { marginTop:5, fontSize:9, color:'var(--text3)', lineHeight:1.45 } as const
 
 /** Explains the incident layers: disaster pins and the outage shading, and how many of each are on the map. */
 export default function IncidentLegend({ outages, radarOutages, disasters }: Props) {
@@ -44,10 +44,10 @@ export default function IncidentLegend({ outages, radarOutages, disasters }: Pro
   const unplaced = outages?.filter(o => o.status === 'ongoing' && !o.countryCode).length ?? 0
 
   return (
-    <div style={{ position:'absolute', left:10, bottom:36, zIndex:30, width:250, maxHeight:'60%', overflowY:'auto', padding:'8px 10px', background:'rgba(9,16,22,0.94)', border:'1px solid #263843', borderRadius:6, backdropFilter:'blur(10px)', boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
+    <div className="map-legend" style={{ left:10, bottom:58, width:250, maxHeight:'60%', overflowY:'auto' }}>
       <button onClick={() => setOpen(v => !v)}
         style={{ ...HEAD, display:'flex', width:'100%', justifyContent:'space-between', background:'none', border:'none', padding:0, cursor:'pointer' }}>
-        <span>Incident legend</span><span style={{ color:'#647883' }}>{open ? '–' : '+'}</span>
+        <span>Incident legend</span><span style={{ color:'var(--text3)' }}>{open ? '–' : '+'}</span>
       </button>
 
       {open && disasters && (
@@ -66,7 +66,7 @@ export default function IncidentLegend({ outages, radarOutages, disasters }: Pro
       )}
 
       {open && outages && (
-        <div style={{ marginTop:8, paddingTop: disasters ? 6 : 0, borderTop: disasters ? '1px solid #263843' : 'none' }}>
+        <div style={{ marginTop:8, paddingTop: disasters ? 6 : 0, borderTop: disasters ? '1px solid var(--border)' : 'none' }}>
           <div style={HEAD}>Internet outages · {shaded.size} countries</div>
           {(['severe', 'major', 'minor'] as const).map(s => (
             <div key={s} style={ROW}>

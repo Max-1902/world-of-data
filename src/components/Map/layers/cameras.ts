@@ -27,21 +27,21 @@ export function useCameraMarkers({ mapRef, mapReady, popupRef }: MapHandle, { sh
         el.title = `${cam.name} — ${cam.city}, ${cam.country}`
         el.style.cssText = [
           'width:18px', 'height:18px', 'cursor:pointer',
-          'background:rgba(0,255,136,0.12)', 'border:1px solid #00ff8899',
+          'background:rgba(24,201,244,0.12)', 'border:1px solid #18c9f499',
           'border-radius:2px', 'display:flex', 'align-items:center',
           'justify-content:center', 'font-size:10px', 'line-height:1',
-          'box-shadow:0 0 6px rgba(0,255,136,0.35)',
+          'box-shadow:0 0 6px rgba(24,201,244,0.35)',
           'transition:all .15s',
         ].join(';')
         el.textContent = '◎'
 
         el.addEventListener('mouseenter', () => {
-          el.style.background = 'rgba(0,255,136,0.28)'
-          el.style.boxShadow  = '0 0 12px rgba(0,255,136,0.7)'
+          el.style.background = 'rgba(24,201,244,0.28)'
+          el.style.boxShadow  = '0 0 12px rgba(24,201,244,0.7)'
         })
         el.addEventListener('mouseleave', () => {
-          el.style.background = 'rgba(0,255,136,0.12)'
-          el.style.boxShadow  = '0 0 6px rgba(0,255,136,0.35)'
+          el.style.background = 'rgba(24,201,244,0.12)'
+          el.style.boxShadow  = '0 0 6px rgba(24,201,244,0.35)'
         })
 
         el.addEventListener('click', (e) => {
@@ -55,7 +55,7 @@ export function useCameraMarkers({ mapRef, mapReady, popupRef }: MapHandle, { sh
             <div style="padding:8px 10px;">
               <div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:2px;">◎ ${cam.name}</div>
               <div style="font-size:10px;color:#6b7280;margin-bottom:6px;">${cam.city}, ${cam.country}</div>
-              <div style="font-size:9px;color:#9ca3af;margin-bottom:8px;font-family:monospace;">${cam.lat.toFixed(4)}, ${cam.lng.toFixed(4)}</div>
+              <div style="font-size:9px;color:#9ca3af;margin-bottom:8px;font-variant-numeric:tabular-nums;">${cam.lat.toFixed(4)}, ${cam.lng.toFixed(4)}</div>
               <a href="${cam.url}" target="_blank" rel="noopener"
                 style="display:block;text-align:center;font-size:10px;font-weight:700;color:#16a34a;text-decoration:none;border:1px solid #16a34a44;padding:5px 0;background:rgba(22,163,74,0.08);letter-spacing:.06em;">
                 OPEN LIVE FEED ↗

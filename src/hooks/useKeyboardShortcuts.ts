@@ -47,7 +47,7 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       if (e.key === ',') { handlers.onSettingsOpen(); return }
       if (e.key.toLowerCase() === 'p' && handlers.onOpenLibrary) { e.preventDefault(); handlers.onOpenLibrary(); return }
       if (e.key === '?') {
-        console.log('%c World of Data keyboard shortcuts', 'color:#d5a85f;font-weight:bold;font-size:14px', `\n\n${HELP}`)
+        console.log('%c World of Data keyboard shortcuts', 'color:#18c9f4;font-weight:bold;font-size:14px', `\n\n${HELP}`)
         return
       }
       const view = VIEW_KEYS[e.key.toLowerCase()]

@@ -6,6 +6,7 @@ import { LAYER_IDS, VIEW_MODES } from './layerCatalogue'
 
 const TABS = ['GENERAL', 'LAYERS', 'DATA SOURCES', 'API KEYS', 'DISPLAY', 'ABOUT'] as const
 type Tab = typeof TABS[number]
+const TAB_LABEL: Record<Tab, string> = { GENERAL: 'General', LAYERS: 'Layers', 'DATA SOURCES': 'Data sources', 'API KEYS': 'API keys', DISPLAY: 'Display', ABOUT: 'About' }
 
 // Data sources registry (from old InfoModal)
 const DATA_SOURCES: { category: string; items: { label: string; source: string; notes: string }[] }[] = [
@@ -189,7 +190,7 @@ export default function SettingsModal({ open, onClose, viewMode, onViewMode, pan
                 borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
                 whiteSpace: 'nowrap',
               }}
-            >{t}</button>
+            >{TAB_LABEL[t]}</button>
           ))}
         </div>
 

@@ -61,7 +61,7 @@ export default function MapView({
   outages, radarOutages, showOutages, disasterAlerts, showDisasters, showResources, showTradeStats,
   showAnalyticsHex, showCountryAnalytics,
   flyToQuery, geoFlyTo, onCountryClick, onPlaceClick, selectedCountry, selectedPlace,
-  reticleColor = '#00ff88',
+  reticleColor = '#23cdf3',
   panelState, onToggleLayer, onClearLayers, suggestedLayers,
 }: MapViewProps) {
   const containerRef   = useRef<HTMLDivElement>(null)
@@ -201,9 +201,9 @@ export default function MapView({
 
   if (!TOKEN) {
     return (
-      <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'#080e13', flexDirection:'column', gap:12, fontFamily:'monospace', fontSize:11, color:'#98aab4' }}>
-        <div style={{ fontSize:14, color:'#d5a85f' }}>◆ MAPBOX TOKEN REQUIRED</div>
-        <div style={{ color:'#647883', fontSize:9, letterSpacing:'.1em' }}>Add VITE_MAPBOX_TOKEN to .env</div>
+      <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center', background:'var(--bg)', flexDirection:'column', gap:8, fontSize:12, color:'var(--text2)' }}>
+        <div style={{ fontSize:15, fontWeight:650, color:'var(--text1)' }}>The map needs a Mapbox token</div>
+        <div style={{ color:'var(--text3)', fontSize:11 }}>Add VITE_MAPBOX_TOKEN to .env and restart the dev server.</div>
       </div>
     )
   }
