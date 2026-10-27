@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { traceExposure, partnerNames, gdpByIso2, summarizeExposure, fmtRange, mapRows, type Gdp } from './exposure'
+import { traceExposure, partnerNames, gdpByIso2, summarizeExposure, fmtRange, mapRows, type Gdp, type Macro } from './exposure'
 import { TRADE_PROFILES, type TradeProfile } from '../services/tradeStats'
 import { CHOKEPOINTS, EIA_CHOKEPOINTS_SOURCE, type Chokepoint } from '../services/chokepoints'
 
@@ -126,4 +126,43 @@ it('formats a degenerate range as one value', () => {
   expect(fmtRange(1.23, 1.23)).toBe('1.2%')
   expect(fmtRange(0, 2.5)).toBe('0–2.5%')
   expect(fmtRange(-12.4, -3)).toBe('−12 to −3%')
+})
+
+describe('demand scenario with the statistical growth step', () => {
+  const X = profile('XX', 'Xland', { exportsUsdBn: 200 })   // 30% of goods exports to A
+  const macro = (slope: number, ci: [number, number]): Macro => ({
+    sensitivity: new Map([['XX', { slope, ci, r2: 0.5, n: 30, from: 1991, to: 2024 }]]),
+    totalExports: new Map([['XX', { usd: 300e9, year: '2024' }]]),
+  })
+
+  it('chains observed shares → assumed pass-through → estimated sensitivity, labelled in that order', () => {
+    const r = traceExposure({ kind: 'demand', partner: 'A', sizePct: 10 }, [X], gdp([['XX', 1000]]), EIA, macro(0.3, [0.2, 0.4]))
+    const row = r.rows[0]
+    // lost sales 30% × 200bn × 10% = 6bn; ÷ 300bn total exports = −2 pp export growth; × 0.3 = −0.6 pp GDP growth
+    expect(row.growth!.mid).toBeCloseTo(-0.6)
+    expect(row.growth!.lo).toBeCloseTo(-0.8)
+    expect(row.growth!.hi).toBeCloseTo(-0.4)
+    expect(row.growth!.crossesZero).toBe(false)
+    expect(row.path.slice(-3).map(s => s.kind)).toEqual(['assumption', 'statistical', 'statistical'])
+    expect(row.path[row.path.length - 2].text).toContain('not a measured cause')
+    expect(r.caveats.some(c => c.includes('upper-end guide'))).toBe(true)
+  })
+  it('says an effect whose interval crosses zero is not distinguishable from none', () => {
+    const row = traceExposure({ kind: 'demand', partner: 'A', sizePct: 10 }, [X], gdp([['XX', 1000]]), EIA, macro(0.1, [-0.2, 0.4])).rows[0]
+    expect(row.growth!.crossesZero).toBe(true)
+    expect(row.path[row.path.length - 1].text).toContain('not distinguishable from none')
+  })
+  it('explains a missing estimate instead of guessing one, and adds nothing without a size or for supply shocks', () => {
+    const none: Macro = { sensitivity: new Map(), totalExports: new Map([['XX', { usd: 300e9, year: '2024' }]]) }
+    const row = traceExposure({ kind: 'demand', partner: 'A', sizePct: 10 }, [X], gdp([['XX', 1000]]), EIA, none).rows[0]
+    expect(row.growth).toBeUndefined()
+    expect(row.path[row.path.length - 1].text).toContain('Fewer than 15 years')
+    expect(traceExposure({ kind: 'demand', partner: 'A' }, [X], gdp([['XX', 1000]]), EIA, macro(0.3, [0.2, 0.4])).rows[0].growth).toBeUndefined()
+    expect(traceExposure({ kind: 'supply', partner: 'A', sizePct: 10 }, [X], gdp([['XX', 1000]]), EIA, macro(0.3, [0.2, 0.4])).rows[0].growth).toBeUndefined()
+  })
+  it('carries the growth effect into the analyst summary, flagged as an association', () => {
+    const r = traceExposure({ kind: 'demand', partner: 'A', sizePct: 10 }, [X], gdp([['XX', 1000]]), EIA, macro(0.3, [0.2, 0.4]))
+    expect(summarizeExposure(r)).toContain('implied GDP growth change −0.60 pp')
+    expect(summarizeExposure(r)).toContain('statistical association, not a cause')
+  })
 })

@@ -18,6 +18,7 @@
 import type { TradeProfile } from '../services/tradeStats'
 import type { Chokepoint } from '../services/chokepoints'
 import type { EvidenceKind } from './evidence'
+import type { Sensitivity } from './sensitivity'
 
 export interface Step {
   kind: EvidenceKind
@@ -40,6 +41,11 @@ export interface ExposureRow {
   net?: { lo: number; hi: number }
   /** first-order effect of the assumed shock size, % of GDP (range when bounded); absent without a size */
   effect?: { lo: number; hi: number }
+  /**
+   * demand shocks with a size and macro data: implied change in GDP growth, pp, through the country's estimated
+   * export sensitivity — central value and the range spanned by its 95% interval (and any bounded share)
+   */
+  growth?: { mid: number; lo: number; hi: number; crossesZero: boolean }
   path: Step[]
 }
 
@@ -60,6 +66,13 @@ export type Shock =
   | { kind: 'oil'; chokepoint: Chokepoint; pricePct?: number }
 
 export interface Gdp { usd: number; year: string }
+
+/** Optional inputs for the statistical step of a demand scenario. */
+export interface Macro {
+  sensitivity: ReadonlyMap<string, Sensitivity>
+  /** exports of goods and services, current US$ (World Bank NE.EXP.GNFS.CD), by ISO2 */
+  totalExports: ReadonlyMap<string, Gdp>
+}
 
 const COMTRADE = 'UN Comtrade'
 const WB_GDP = 'World Bank (GDP, current US$)'
@@ -98,7 +111,7 @@ const TRADE_CAVEATS = [
 ]
 
 /** Exposure of each reporter to a fall in `partner`'s purchases (demand) or to a cut in supply from `partner`. */
-function partnerShock(shock: Extract<Shock, { kind: 'demand' | 'supply' }>, profiles: readonly TradeProfile[], gdp: ReadonlyMap<string, Gdp>): ExposureResult {
+function partnerShock(shock: Extract<Shock, { kind: 'demand' | 'supply' }>, profiles: readonly TradeProfile[], gdp: ReadonlyMap<string, Gdp>, macro?: Macro): ExposureResult {
   const demand = shock.kind === 'demand'
   const flow = demand ? 'exports' : 'imports'
   const size = shock.sizePct && shock.sizePct > 0 ? shock.sizePct : undefined
@@ -132,13 +145,39 @@ function partnerShock(shock: Extract<Shock, { kind: 'demand' | 'supply' }>, prof
     if (size) {
       row.effect = { lo: -lo * size / 100, hi: -hi * size / 100 }
       path.push({ kind: 'assumption', text: `With the assumed ${size}% fall: ${demand ? 'lost sales' : 'lost supply'} of ${fmtRange(lo * size / 100, hi * size / 100)} of GDP, before any rerouting.` })
+      if (demand && macro) growthSteps(row, p, s, size, macro)
     }
     rows.push(row)
   }
+  const caveats = demand && size && macro ? [...TRADE_CAVEATS, GROWTH_CAVEAT] : TRADE_CAVEATS
   return {
     title: demand ? `Who sells most to ${shock.partner}, relative to their own economy` : `Who buys most from ${shock.partner}, relative to their own economy`,
-    shared, rows: rank(rows), skipped, caveats: TRADE_CAVEATS,
+    shared, rows: rank(rows), skipped, caveats,
   }
+}
+
+const GROWTH_CAVEAT = 'GDP growth effects use each country\'s historical association between export growth and GDP growth. Global booms and recessions move both together, so the association is likely larger than the effect of exports alone; read it as an upper-end guide, not a forecast.'
+
+const pp = (v: number) => `${v < 0 ? '−' : v > 0 ? '+' : ''}${Math.abs(Math.round(v * 100) / 100).toFixed(2)} pp`
+
+/** The statistical half of a sized demand shock: fall in export growth → GDP growth, through the estimated sensitivity. */
+function growthSteps(row: ExposureRow, p: TradeProfile, s: { lo: number; hi: number; exact: boolean }, size: number, macro: Macro) {
+  const total = macro.totalExports.get(p.iso2)
+  const sens = macro.sensitivity.get(p.iso2)
+  if (!total || !(total.usd > 0)) { row.path.push({ kind: 'statistical', text: `No World Bank total for ${p.name}'s exports of goods and services, so the effect on GDP growth is not estimated.` }); return }
+  if (!sens) { row.path.push({ kind: 'statistical', text: `Fewer than 15 years of export and GDP growth for ${p.name}, so its sensitivity is not estimated.` }); return }
+  // fall in real export growth, pp: lost goods sales ÷ all exports of goods and services
+  const lost = (share: number) => (share / 100) * p.exportsUsdBn * 1e9 * (size / 100)
+  const dxLo = -lost(s.hi) / total.usd * 100, dxHi = -lost(s.lo) / total.usd * 100
+  row.path.push({ kind: 'assumption', text: `Prices hold, so the lost sales lower ${p.name}'s real export growth by ${fmtRange(-dxLo, -dxHi, ' pp')} (lost sales ÷ its exports of goods and services, US$${fmt(total.usd / 1e9)}bn in ${total.year}).` })
+  row.path.push({ kind: 'statistical', text: `${sens.from}–${sens.to}: ${p.name}'s GDP growth moved ${pp(sens.slope)} per 1 pp of export growth (95% interval ${pp(sens.ci[0])} to ${pp(sens.ci[1])}; R² ${sens.r2.toFixed(2)}; ${sens.n} years). An association that includes shared global swings, not a measured cause.`, source: 'World Bank (GDP growth, export volume growth); least squares computed here', year: String(sens.to) })
+  const combos = [dxLo, dxHi].flatMap(dx => sens.ci.map(b => b * dx))
+  const mid = sens.slope * (dxLo + dxHi) / 2
+  const g = { mid, lo: Math.min(...combos), hi: Math.max(...combos), crossesZero: Math.min(...combos) < 0 && Math.max(...combos) > 0 }
+  row.growth = g
+  row.path.push({ kind: 'statistical', text: g.crossesZero
+    ? `Implied change in GDP growth: about ${pp(mid)}, but the range (${pp(g.lo)} to ${pp(g.hi)}) includes zero, so the effect is not distinguishable from none.`
+    : `Implied change in GDP growth: about ${pp(mid)} (range ${pp(g.lo)} to ${pp(g.hi)} from the sensitivity's interval${s.exact ? '' : ' and the bounded share'}).` })
 }
 
 /** Exposure to an oil disruption at a chokepoint, through the world oil price: each reporter's net fuel trade as % of GDP. */
@@ -193,8 +232,8 @@ function oilShock(shock: Extract<Shock, { kind: 'oil' }>, profiles: readonly Tra
   }
 }
 
-export function traceExposure(shock: Shock, profiles: readonly TradeProfile[], gdp: ReadonlyMap<string, Gdp>, eia: { worldMaritimeOilMbd: number; name: string; year: number }): ExposureResult {
-  return shock.kind === 'oil' ? oilShock(shock, profiles, gdp, eia.worldMaritimeOilMbd, eia.name, eia.year) : partnerShock(shock, profiles, gdp)
+export function traceExposure(shock: Shock, profiles: readonly TradeProfile[], gdp: ReadonlyMap<string, Gdp>, eia: { worldMaritimeOilMbd: number; name: string; year: number }, macro?: Macro): ExposureResult {
+  return shock.kind === 'oil' ? oilShock(shock, profiles, gdp, eia.worldMaritimeOilMbd, eia.name, eia.year) : partnerShock(shock, profiles, gdp, macro)
 }
 
 /** World Bank GDP rows (ISO3) → by ISO2, the key the trade profiles use. */
@@ -208,7 +247,7 @@ export function gdpByIso2(rows: readonly { iso3: string; value: number; year: st
 export function summarizeExposure(res: ExposureResult, top = 8): string {
   const rows = res.rows.slice(0, top).map(r => {
     const dir = r.direction === 'loss' ? ' (net fuel importer)' : r.direction === 'gain' ? ' (net fuel exporter)' : ''
-    const eff = r.effect ? `; assumed-shock effect ${fmtRange(r.effect.lo, r.effect.hi)} of GDP` : ''
+    const eff = (r.effect ? `; assumed-shock effect ${fmtRange(r.effect.lo, r.effect.hi)} of GDP` : '') + (r.growth ? `; implied GDP growth change ${pp(r.growth.mid)} (range ${pp(r.growth.lo)} to ${pp(r.growth.hi)}${r.growth.crossesZero ? ', not distinguishable from zero' : ''}; statistical association, not a cause)` : '')
     return `${r.name}: ${fmtRange(r.lo, r.hi)} of GDP${r.bounded ? ' (bounded: share outside the top-6 lists)' : ''}${dir}${eff}`
   })
   return [
