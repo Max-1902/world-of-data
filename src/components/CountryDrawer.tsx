@@ -16,6 +16,7 @@ import { CIVIL_FACILITY_COLORS, CIVIL_FACILITY_LABELS } from '../services/civilF
 import { fmt, soft, Section, Row, Dot, MiniBarChart } from './countryDrawer/parts'
 import { useCountryDrawerData, useCountryLiveData } from './countryDrawer/useCountryDrawerData'
 import { TradeSections, EconomicDataSection } from './countryDrawer/TradeSections'
+import { Metric, MetricRow } from './DataLabels'
 
 interface Props {
   country: string
@@ -80,26 +81,11 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
 
         {/* ── Displacement ──────────────────────────────────── */}
         {show('risk') && (hosting > 0 || origin > 0 || idps > 0) && (
-          <Section title={`DISPLACEMENT · UNHCR ${displacementYear ?? ''}`} color="var(--amber)">
-            <div style={{ display: 'flex', gap: 6 }}>
-              {origin > 0 && (
-                <div style={{ flex: 1, padding: '4px 6px', background: soft('var(--amber)', 8), borderRadius: 'var(--r-sm)' }}>
-                  <div style={{ fontSize: 9, color: 'var(--amber)', letterSpacing: '.1em' }}>FLED ABROAD</div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--amber)' }}>{fmt(origin)}</div>
-                </div>
-              )}
-              {idps > 0 && (
-                <div style={{ flex: 1, padding: '4px 6px', background: soft('var(--red)', 8), borderRadius: 'var(--r-sm)' }}>
-                  <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }}>IDPS</div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)' }}>{fmt(idps)}</div>
-                </div>
-              )}
-              {hosting > 0 && (
-                <div style={{ flex: 1, padding: '4px 6px', background: soft('var(--blue)', 8), borderRadius: 'var(--r-sm)' }}>
-                  <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '.1em' }}>HOSTING</div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>{fmt(hosting)}</div>
-                </div>
-              )}
+          <Section title="DISPLACEMENT" color="var(--amber)">
+            <div className="viz-kpis">
+              {origin > 0 && <Metric label="Fled abroad" value={fmt(origin)} evidence="observed" asOf={displacementYear ? `UNHCR, ${displacementYear}` : 'UNHCR'} tone="warn" />}
+              {idps > 0 && <Metric label="IDPs" value={fmt(idps)} evidence="observed" asOf={displacementYear ? `UNHCR, ${displacementYear}` : 'UNHCR'} tone="down" />}
+              {hosting > 0 && <Metric label="Hosting" value={fmt(hosting)} evidence="observed" asOf={displacementYear ? `UNHCR, ${displacementYear}` : 'UNHCR'} tone="accent" />}
             </div>
           </Section>
         )}
@@ -173,41 +159,25 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
         {/* ── Armed forces personnel (World Bank, IISS Military Balance) ───── */}
         {show('risk') && milPersonnel && (
           <Section title="ARMED FORCES PERSONNEL" color="var(--red)">
-            <div style={{ display: 'flex', gap: 6, marginBottom: 3 }}>
-              <div style={{ padding: '3px 6px', background: soft('var(--red)', 8), borderRadius: 'var(--r-sm)' }}>
-                <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }}>PERSONNEL · {milPersonnel.year}</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)' }}>{formatPersonnel(milPersonnel.personnel)}</div>
-              </div>
-              <div style={{ padding: '3px 6px', background: soft('var(--red)', 8), borderRadius: 'var(--r-sm)' }}>
-                <div style={{ fontSize: 9, color: 'var(--red)', letterSpacing: '.1em' }} title="Rank among each country's latest reported figure; the years differ between countries">RANK (MIXED YEARS)</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--red)' }}>#{milPersonnel.rank} / {milPersonnelTotal}</div>
-              </div>
+            <div className="viz-kpis">
+              <Metric label="Personnel" value={formatPersonnel(milPersonnel.personnel)} evidence="observed" tone="down"
+                asOf={`World Bank (IISS Military Balance), ${milPersonnel.year}`}
+                detail={milFresh?.label ? `⚠ ${milFresh.label}: not current strength` : undefined} />
+              <Metric label="Rank (mixed years)" value={`#${milPersonnel.rank} / ${milPersonnelTotal}`} evidence="observed" tone="down"
+                detail="Rank among each country's latest reported figure; the years differ between countries" />
             </div>
-            {milFresh?.label && (
-              <div style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--amber)', margin: '2px 0' }}>⚠ {milFresh.label.toUpperCase()}: not current strength</div>
-            )}
-            <div style={{ fontSize: 9, color: 'var(--text3)' }}>Source: World Bank (IISS Military Balance), {milPersonnel.year}</div>
           </Section>
         )}
 
         {/* ── Infrastructure access indicators (World Bank, WDI) ────────── */}
         {show('infrastructure') && infraIndicators && (
           <Section title="INFRASTRUCTURE ACCESS" color="var(--blue)">
-            <div style={{ display: 'flex', gap: 6, marginBottom: 5 }}>
-              <div style={{ flex: 1, padding: '3px 6px', background: soft('var(--blue)', 8), borderRadius: 'var(--r-sm)' }}>
-                <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '.1em' }}>ACCESS INDEX</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>{infraIndicators.accessIndex === null ? 'n/a' : `${infraIndicators.accessIndex.toFixed(1)}%`}</div>
-              </div>
-              <div style={{ flex: 1, padding: '3px 6px', background: soft('var(--blue)', 8), borderRadius: 'var(--r-sm)' }}>
-                <div style={{ fontSize: 9, color: 'var(--blue)', letterSpacing: '.1em' }}>WORLD RANK</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--blue)' }}>#{infraIndicators.rank} / {infraIndicatorsTotal}</div>
-              </div>
+            <div className="viz-kpis" style={{ marginBottom: 5 }}>
+              <Metric label="Access index" value={infraIndicators.accessIndex === null ? 'n/a' : `${infraIndicators.accessIndex.toFixed(1)}%`} evidence="observed" tone="accent" />
+              <Metric label="World rank" value={`#${infraIndicators.rank} / ${infraIndicatorsTotal}`} evidence="observed" tone="accent" />
             </div>
             {infraIndicators.indicators.map(i => (
-              <Row key={i.id}>
-                <span style={{ color: 'var(--text2)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{i.label}</span>
-                <span style={{ fontSize: 10, color: 'var(--text1)', fontWeight: 700, flexShrink: 0 }}>{formatInfraValue(i.id, i.value)}</span>
-              </Row>
+              <MetricRow key={i.id} label={i.label} value={formatInfraValue(i.id, i.value)} tone="neutral" />
             ))}
             <div style={{ fontSize: 9, color: 'var(--text3)', marginTop: 2 }}>Source: World Bank (World Development Indicators), {infraIndicators.year}</div>
           </Section>
@@ -298,17 +268,9 @@ export default function CountryDrawer({ country, crises, flights, earthquakes, f
         {/* ── Air traffic ───────────────────────────────────── */}
         {show('activity') && nearbyFlights > 0 && (
           <Section title="AIR TRAFFIC" color="var(--series-5)">
-            <div style={{ display: 'flex', gap: 6, marginBottom: 3 }}>
-              <div style={{ padding: '3px 6px', background: soft('var(--series-5)', 8), borderRadius: 'var(--r-sm)' }}>
-                <div style={{ fontSize: 9, color: 'var(--series-5)', letterSpacing: '.1em' }}>NEARBY</div>
-                <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--series-5)' }}>{nearbyFlights}</div>
-              </div>
-              {countryFlights > 0 && (
-                <div style={{ padding: '3px 6px', background: soft('var(--green)', 8), borderRadius: 'var(--r-sm)' }}>
-                  <div style={{ fontSize: 9, color: 'var(--green)', letterSpacing: '.1em' }}>FROM COUNTRY</div>
-                  <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--green)' }}>{countryFlights}</div>
-                </div>
-              )}
+            <div className="viz-kpis" style={{ marginBottom: 3 }}>
+              <Metric label="Nearby" value={String(nearbyFlights)} evidence="observed" asOf="OpenSky, live" />
+              {countryFlights > 0 && <Metric label="From country" value={String(countryFlights)} evidence="observed" tone="up" asOf="OpenSky, live" />}
             </div>
             {Object.keys(flightTypes).length > 0 && (
               <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
