@@ -300,12 +300,12 @@ export function AirspacePanel({ flights }: { flights: { latitude: number | null;
       <div style={{ padding: '4px 8px', borderBottom: '1px solid var(--border)', fontSize: 10, color: 'var(--text3)', lineHeight: 1.4 }}>
         OpenSky aircraft counts in rough FIR boxes vs hand-set reference counts. Not NOTAMs and not closures: low counts can mean thin receiver coverage. No alerts at local night.
       </div>
-      <div style={{ display: 'flex', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: 4, padding: '6px 8px', borderBottom: '1px solid var(--border)' }}>
         <button className={`news-tab ${tab==='alerts'?'active':''}`} onClick={() => setTab('alerts')}>
-          LOW TRAFFIC <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{alerts.length}</span>
+          Low traffic <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{alerts.length}</span>
         </button>
         <button className={`news-tab ${tab==='regions'?'active':''}`} onClick={() => setTab('regions')}>
-          ALL FIRS <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{statuses.length}</span>
+          All FIRs <span style={{ fontSize: '9.5px', color: 'var(--text3)' }}>{statuses.length}</span>
         </button>
       </div>
       <div style={{ flex: 1, overflowY: 'auto' }}>

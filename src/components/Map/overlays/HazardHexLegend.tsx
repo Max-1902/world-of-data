@@ -12,13 +12,13 @@ interface Props {
 
 export default function HazardHexLegend({ analytics, hexSlice, onTilt }: Props) {
   return (
-  <div style={{ position:'absolute', right:10, bottom:58, zIndex:30, width:220, padding:'8px 10px', background:'rgba(9,16,22,0.94)', border:'1px solid #263843', borderRadius:6, backdropFilter:'blur(10px)', boxShadow:'0 4px 20px rgba(0,0,0,0.5)' }}>
-    <div style={{ fontSize:10.5, fontWeight:650, color:'#e5ecef' }}>
+  <div className="map-legend" style={{ right:10, bottom:58, width:220 }}>
+    <div style={{ fontSize:11, fontWeight:650, color:'var(--text1)' }}>
       {analytics.hexSource === 'fires' ? 'Wildfire power, last 24 h' : 'Earthquakes M4.5+, last 7 days'}
     </div>
     <div style={{ marginTop:6, height:6, borderRadius:3, background:`linear-gradient(90deg, ${SEQUENTIAL.join(',')})` }} />
-    <div style={{ display:'flex', justifyContent:'space-between', marginTop:3, fontSize:9, color:'#98aab4' }}><span>Low</span><span>High</span></div>
-    <div style={{ marginTop:5, fontSize:9, color:'#647883', lineHeight:1.45 }}>
+    <div style={{ display:'flex', justifyContent:'space-between', marginTop:3, fontSize:9, color:'var(--text2)' }}><span>Low</span><span>High</span></div>
+    <div style={{ marginTop:5, fontSize:9, color:'var(--text3)', lineHeight:1.45 }}>
       {hexSlice.status === 'loading' || hexSlice.status === 'idle' ? 'Loading…'
         : hexSlice.status === 'error' ? `Could not load this feed${hexSlice.error ? ` (${hexSlice.error})` : ''}.`
         : hexSlice.status === 'empty' ? 'The feed returned no data — nothing to draw.'
@@ -26,13 +26,11 @@ export default function HazardHexLegend({ analytics, hexSlice, onTilt }: Props) 
     </div>
     <div style={{ marginTop:6, display:'flex', gap:4, flexWrap:'wrap' }}>
       {(['fires', 'quakes'] as const).map(k => (
-        <button key={k} onClick={() => analyticsData.setHexSource(k)}
-          style={{ padding:'3px 8px', fontSize:9.5, color: analytics.hexSource === k ? '#d5a85f' : '#e5ecef', background: analytics.hexSource === k ? 'rgba(213,168,95,0.12)' : 'rgba(255,255,255,0.06)', border:'1px solid #263843', borderRadius:4, cursor:'pointer' }}>
+        <button key={k} onClick={() => analyticsData.setHexSource(k)} className={`map-legend-btn${analytics.hexSource === k ? ' on' : ''}`} aria-pressed={analytics.hexSource === k}>
           {k === 'fires' ? 'Wildfires' : 'Earthquakes'}
         </button>
       ))}
-      <button onClick={onTilt}
-        style={{ padding:'3px 8px', fontSize:9.5, color:'#e5ecef', background:'rgba(255,255,255,0.06)', border:'1px solid #263843', borderRadius:4, cursor:'pointer' }}>
+      <button onClick={onTilt} className="map-legend-btn">
         Tilt map
       </button>
     </div>

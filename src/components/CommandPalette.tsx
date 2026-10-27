@@ -74,13 +74,13 @@ export default function CommandPalette({ open, onClose, panelState, onOpenPanel,
   return (
     <div
       onMouseDown={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(15,23,42,0.35)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '12vh' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(2,7,11,0.72)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '12vh' }}
     >
       <div
         role="dialog"
         aria-label="Command palette"
         onMouseDown={e => e.stopPropagation()}
-        style={{ position: 'relative', width: 'min(560px, calc(100vw - 32px))', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r-lg)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}
+        style={{ position: 'relative', width: 'min(560px, calc(100vw - 32px))', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 14, boxShadow: 'var(--shadow-lg)', overflow: 'hidden', fontFamily: 'Inter, -apple-system, sans-serif' }}
       >
         <CloseButton corner onClick={onClose} label="Close command palette" style={{ top: 12 }} />
         <input
@@ -106,7 +106,7 @@ export default function CommandPalette({ open, onClose, panelState, onOpenPanel,
                 aria-selected={i === cursor}
                 onMouseEnter={() => setCursor(i)}
                 onClick={() => run(item)}
-                style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '8px 16px', cursor: 'pointer', background: i === cursor ? 'var(--surface2)' : 'transparent' }}
+                style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '8px 16px', cursor: 'pointer', background: i === cursor ? 'var(--surface2)' : 'transparent', boxShadow: i === cursor ? 'inset 2px 0 var(--accent)' : 'none' }}
               >
                 <span style={{ fontSize: 9.5, fontWeight: 600, letterSpacing: 0.4, textTransform: 'uppercase', color: 'var(--text3)', width: 74, flexShrink: 0 }}>{KIND_LABEL[item.kind]}</span>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--text1)', flexShrink: 0 }}>{item.label}</span>

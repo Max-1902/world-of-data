@@ -408,7 +408,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
               display: 'flex', alignItems: 'center', gap: 7, fontSize: 12,
               padding: '6px 10px', borderRadius: 'var(--r-sm)',
               background: 'var(--accent-soft)', color: 'var(--accent)',
-              border: '1px solid rgba(213,168,95,0.22)',
+              border: '1px solid rgba(24,201,244,0.22)',
             }}>
               <Icon size={12} style={{ flexShrink: 0 }} />
               <span style={{ fontWeight: 600 }}>

@@ -44,11 +44,11 @@ export default function OutlookCard({ crises, conflictFeed, flights, articles, e
         <div className="outlook-title">
           <span className="outlook-icon"><Radar size={13} /></span>
           <div>
-            <div className="outlook-eyebrow">{selectedPlace ? selectedPlace.name.toUpperCase() : selectedCountry ? selectedCountry.toUpperCase() : 'REGIONAL OUTLOOK'}</div>
+            <div className="outlook-eyebrow">{selectedPlace ? selectedPlace.name : selectedCountry ? selectedCountry : 'Regional outlook'}</div>
             <div className="outlook-subtitle">{selectedPlace ? `${[selectedPlace.region, selectedPlace.country].filter(Boolean).join(', ')} · local brief` : selectedCountry ? 'Country brief · news and facts' : 'Activity trend · 72 hours'}</div>
           </div>
         </div>
-        <span className="outlook-live"><i /> {selectedCountry || selectedPlace ? 'LIVE' : 'RULE BASED'}</span>
+        <span className="outlook-live"><i /> {selectedCountry || selectedPlace ? 'Live' : 'Rule-based'}</span>
         <CloseButton onClick={onClose} label={selectedPlace ? `Close ${selectedPlace.name} brief` : selectedCountry ? `Close ${selectedCountry} brief` : 'Close regional outlook'} />
       </div>
 

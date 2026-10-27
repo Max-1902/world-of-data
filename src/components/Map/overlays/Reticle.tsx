@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Crosshair } from 'lucide-react'
 
 /** Centre crosshair plus its on/off switch (top-left). */
 export default function Reticle({ color: reticleColor }: { color: string }) {
@@ -21,22 +22,9 @@ export default function Reticle({ color: reticleColor }: { color: string }) {
       </svg>
     </div>
       )}
-    <div style={{ position:'absolute', top:10, left:10, zIndex:20 }}>
-      <button
-        onClick={() => setShowReticle(v => !v)}
-        style={{
-          background: showReticle ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.4)',
-          border:`1px solid ${showReticle ? reticleColor + '66' : '#31434d'}`,
-          color: showReticle ? reticleColor : '#c0cbd0',
-          padding:'3px 8px', fontSize:8, fontFamily:'IBM Plex Mono, monospace',
-          fontWeight:500, letterSpacing:'.1em', cursor:'pointer', transition:'all .15s',
-        }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = reticleColor }}
-        onMouseLeave={e => { if (!showReticle) (e.currentTarget as HTMLButtonElement).style.color = '#c0cbd0' }}
-      >
-        RETICLE
-      </button>
-    </div>
+    <button className={`map-tool${showReticle ? ' on' : ''}`} onClick={() => setShowReticle(v => !v)} aria-pressed={showReticle} title="Show or hide the centre crosshair">
+      <Crosshair size={13} strokeWidth={1.8} /> Crosshair
+    </button>
     </>
   )
 }

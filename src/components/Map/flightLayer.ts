@@ -165,7 +165,7 @@ export function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta)
   return `
     <div style="padding:10px;font-family:'Inter',-apple-system,sans-serif;min-width:220px;max-width:280px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid #e5e7eb;">
-        <span style="font-size:15px;font-weight:800;color:#14161a;letter-spacing:.06em;font-family:monospace;">${cs}</span>
+        <span style="font-size:15px;font-weight:800;color:#14161a;letter-spacing:.06em;font-variant-numeric:tabular-nums;">${cs}</span>
         <span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:${typeColor};border:1px solid ${typeColor}55;padding:1px 6px;">${typeLabel.toUpperCase()}</span>
       </div>
       ${aircraftSection}
