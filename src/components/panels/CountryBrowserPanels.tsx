@@ -7,6 +7,8 @@ import { MILITARY_FACILITIES, NUCLEAR_PLANTS, FACILITY_COLORS, FACILITY_LABELS, 
 import { TRADE_PROFILES } from '../../services/tradeStats'
 import { RESOURCE_PROFILES } from '../../services/resources'
 import { ALL_INFRA_POINTS, INFRA_COLORS } from '../../services/infrastructure'
+import { MetricRow, SectionLabel } from '../DataLabels'
+import { freshness } from '../../utils/freshness'
 
 
 // ── Generic country → items browser ─────────────────────────────────────────
@@ -254,33 +256,15 @@ export function TradePartnersByCountryPanel({ onGeoSearch, onCountryClick }: { o
               </button>
               {isOpen && (
                 <div style={{ padding: '2px 0 6px 10px' }}>
-                  <div style={{ fontSize: 9, color: 'var(--green)', marginBottom: 2 }}>EXPORT PARTNERS</div>
+                  <SectionLabel tone="up">Export partners · share of goods exports</SectionLabel>
                   {c.topExportPartners.map(p => (
-                    <div
-                      key={`exp-${p.country}`}
-                      onClick={() => onGeoSearch?.(p.country)}
-                      style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 6px', cursor: onGeoSearch ? 'pointer' : 'default', borderRadius: 3 }}
-                      onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
-                      title={onGeoSearch ? `Fly to ${p.country}` : undefined}
-                    >
-                      <span style={{ fontSize: 10.5, color: 'var(--text1)' }}>{p.country}</span>
-                      <span style={{ fontSize: 10, color: 'var(--green)', fontWeight: 700 }}>{p.pct}%</span>
-                    </div>
+                    <MetricRow key={`exp-${p.country}`} label={p.country} value={`${p.pct}%`} tone="up" year={c.year} stale={freshness(c.year, 'macro', c.iso2)?.stale}
+                      onClick={onGeoSearch ? () => onGeoSearch(p.country) : undefined} title={onGeoSearch ? `Fly to ${p.country}` : undefined} />
                   ))}
-                  <div style={{ fontSize: 9, color: 'var(--amber)', marginTop: 4, marginBottom: 2 }}>IMPORT PARTNERS</div>
+                  <SectionLabel tone="warn">Import partners · share of goods imports</SectionLabel>
                   {c.topImportPartners.map(p => (
-                    <div
-                      key={`imp-${p.country}`}
-                      onClick={() => onGeoSearch?.(p.country)}
-                      style={{ display: 'flex', justifyContent: 'space-between', padding: '2px 6px', cursor: onGeoSearch ? 'pointer' : 'default', borderRadius: 3 }}
-                      onMouseEnter={e => { if (onGeoSearch) (e.currentTarget as HTMLDivElement).style.background = 'var(--accent-soft)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.background = '' }}
-                      title={onGeoSearch ? `Fly to ${p.country}` : undefined}
-                    >
-                      <span style={{ fontSize: 10.5, color: 'var(--text1)' }}>{p.country}</span>
-                      <span style={{ fontSize: 10, color: 'var(--amber)', fontWeight: 700 }}>{p.pct}%</span>
-                    </div>
+                    <MetricRow key={`imp-${p.country}`} label={p.country} value={`${p.pct}%`} tone="warn" year={c.year} stale={freshness(c.year, 'macro', c.iso2)?.stale}
+                      onClick={onGeoSearch ? () => onGeoSearch(p.country) : undefined} title={onGeoSearch ? `Fly to ${p.country}` : undefined} />
                   ))}
                 </div>
               )}
@@ -333,20 +317,10 @@ export function TradeProductsByCountryPanel({ onCountryClick }: { onCountryClick
               </button>
               {isOpen && (
                 <div style={{ padding: '2px 0 6px 10px' }}>
-                  <div style={{ fontSize: 9, color: 'var(--blue)', marginBottom: 2 }}>TOP EXPORTS</div>
-                  {c.topExports.map(p => (
-                    <div key={`exp-${p.product}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '1.5px 6px' }}>
-                      <span style={{ fontSize: 10.5, color: 'var(--text1)' }}>{p.product}</span>
-                      <span style={{ fontSize: 10, color: 'var(--blue)', fontWeight: 700 }}>{p.pct}%</span>
-                    </div>
-                  ))}
-                  <div style={{ fontSize: 9, color: 'var(--series-5)', marginTop: 4, marginBottom: 2 }}>TOP IMPORTS</div>
-                  {c.topImports.map(p => (
-                    <div key={`imp-${p.product}`} style={{ display: 'flex', justifyContent: 'space-between', padding: '1.5px 6px' }}>
-                      <span style={{ fontSize: 10.5, color: 'var(--text1)' }}>{p.product}</span>
-                      <span style={{ fontSize: 10, color: 'var(--series-5)', fontWeight: 700 }}>{p.pct}%</span>
-                    </div>
-                  ))}
+                  <SectionLabel tone="accent">Top exports · share of goods exports</SectionLabel>
+                  {c.topExports.map(p => <MetricRow key={`exp-${p.product}`} label={p.product} value={`${p.pct}%`} tone="accent" year={c.year} stale={freshness(c.year, 'macro', c.iso2)?.stale} />)}
+                  <SectionLabel tone="warn">Top imports · share of goods imports</SectionLabel>
+                  {c.topImports.map(p => <MetricRow key={`imp-${p.product}`} label={p.product} value={`${p.pct}%`} tone="warn" year={c.year} stale={freshness(c.year, 'macro', c.iso2)?.stale} />)}
                 </div>
               )}
             </div>

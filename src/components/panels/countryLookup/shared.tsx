@@ -1,15 +1,12 @@
 import type { ReactNode } from 'react'
+import { Metric } from '../../DataLabels'
+import type { EvidenceKind } from '../../../utils/evidence'
 import type { Pt } from '../../../utils/econAnalysis'
 import type { LinePoint } from '../../charts/LineChart'
 
-export function Kpi({ label, value, detail }: { label: string; value: string; detail?: string }) {
-  return (
-    <div className="viz-kpi">
-      <div className="viz-kpi-l">{label}</div>
-      <div className="viz-kpi-v">{value}</div>
-      {detail && <div className="viz-kpi-d">{detail}</div>}
-    </div>
-  )
+/** The analysis panels' headline figure: the shared Metric (components/DataLabels.tsx), so it reads like every other panel's. */
+export function Kpi({ label, value, detail, evidence, asOf }: { label: string; value: string; detail?: string; evidence?: EvidenceKind; asOf?: string }) {
+  return <Metric label={label} value={value} detail={detail} evidence={evidence} asOf={asOf} />
 }
 
 /** "Result / Method / Caveats" block under an analysis, so every finding travels with how it was obtained. */
