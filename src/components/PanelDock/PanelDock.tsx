@@ -195,7 +195,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
                 <CloseButton onClick={() => closePanel(def.id)} label={`Close ${def.title} panel`} />
               </div>
               <div className="dock-body" style={{ flex: '1 1 0', minHeight: 0, overflow: 'auto' }}>
-                <PanelHost label={def.title}>{def.render(panelProps)}</PanelHost>
+                <PanelHost label={def.title} sources={def.sources}>{def.render(panelProps)}</PanelHost>
               </div>
             </div>
             </Fragment>
