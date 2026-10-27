@@ -60,12 +60,25 @@ describe('CountryColorControl', () => {
     expect(screen.queryByText(/countries shaded/)).toBeNull()
   })
 
-  it('picks a new indicator from the searchable list', () => {
+  it('picks one of the four quick options from the dropdown', () => {
     render(<CountryColorControl on onToggle={vi.fn()} countryData={data()} countryShading={colors} shading={shading} raised={false} />)
-    fireEvent.click(screen.getByRole('button', { name: /Inflation, consumer prices/ }))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Colour countries by' }), { target: { value: 'SP.DYN.LE00.IN' } })
+    expect(m.selectForMap).toHaveBeenCalledWith('SP.DYN.LE00.IN')
+  })
+
+  it('opens the full searchable list from "More…" for indicators outside the quick picks', () => {
+    render(<CountryColorControl on onToggle={vi.fn()} countryData={data()} countryShading={colors} shading={shading} raised={false} />)
+    fireEvent.change(screen.getByRole('combobox', { name: 'Colour countries by' }), { target: { value: 'more' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Search indicators' }), { target: { value: 'oil rents' } })
     fireEvent.keyDown(screen.getByRole('textbox', { name: 'Search indicators' }), { key: 'Enter' })
     expect(m.selectForMap).toHaveBeenCalledWith('NY.GDP.PETR.RT.ZS')
+  })
+
+  it('closes when the × is clicked', () => {
+    const onToggle = vi.fn()
+    render(<CountryColorControl on onToggle={onToggle} countryData={data()} countryShading={colors} shading={shading} raised={false} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Stop colouring countries' }))
+    expect(onToggle).toHaveBeenCalledOnce()
   })
 })
 

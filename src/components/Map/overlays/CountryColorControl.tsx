@@ -9,6 +9,14 @@ import { NO_DATA_FILL } from '../layers/countryAnalytics'
 import { EvidenceTag, SourceLine, StatusLabel } from '../../DataLabels'
 import { IndicatorPicker } from './IndicatorPicker'
 
+/** The quick-pick list for "Colour countries by": the four indicators people reach for most, as a plain dropdown. */
+export const COLOUR_BY_OPTIONS = [
+  { id: 'NY.GDP.PCAP.CD', label: 'GDP per capita' },
+  { id: 'SP.DYN.LE00.IN', label: 'Life expectancy' },
+  { id: 'EN.GHG.CO2.MT.CE.AR5', label: 'CO₂ emissions' },
+  { id: 'EG.FEC.RNEW.ZS', label: 'Renewable energy' },
+] as const
+
 interface Props {
   on: boolean
   onToggle: () => void
@@ -53,9 +61,20 @@ export default function CountryColorControl({ on, onToggle, countryData, country
         <button className="cc-x" onClick={onToggle} aria-label="Stop colouring countries" title="Stop colouring countries">×</button>
       </div>
 
-      <button className="cc-pick" aria-expanded={picking === 'y'} onClick={() => setPicking(p => p === 'y' ? null : 'y')}>
-        <span>{yMeta.label}</span><small>▾</small>
-      </button>
+      <select
+        className="cc-select"
+        aria-label="Colour countries by"
+        value={COLOUR_BY_OPTIONS.some(o => o.id === yMeta.id) ? yMeta.id : 'more'}
+        onChange={e => {
+          const id = e.target.value
+          if (id === 'more') { setPicking('y'); return }
+          selectForMap(id)
+          if (trend) countryData.setMapMode('trend')
+        }}
+      >
+        {COLOUR_BY_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+        <option value="more">{COLOUR_BY_OPTIONS.some(o => o.id === yMeta.id) ? 'More…' : yMeta.label}</option>
+      </select>
       {picking === 'y' && (
         <IndicatorPicker value={yMeta.id} onPick={id => { selectForMap(id); if (trend) countryData.setMapMode('trend'); setPicking(null) }} onClose={() => setPicking(null)} />
       )}

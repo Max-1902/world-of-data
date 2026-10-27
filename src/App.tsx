@@ -142,10 +142,9 @@ export default function App() {
   // the card is the regional outlook or a picked city's brief; a picked country has its own page
   const cardKey = selectedPlace ? `\u0000place:${selectedPlace.name}:${selectedPlace.lat}:${selectedPlace.lng}` : '\u0000outlook'
   // Any explicit pick (map click, search, toast) re-opens the outlook box, even for a country whose brief was closed earlier.
-  // A picked country opens its data page in the main area; the map is one click away ("Show on map"), not underneath it.
-  const [countryView, setCountryView] = useState<'data' | 'map'>('data')
+  // A picked country opens its data page in the right panel; the map stays visible underneath.
   const selectCountry = useCallback((country: string | null) => {
-    if (country) { setDismissedCard(null); setCountryView('data'); setIsHome(false) }
+    if (country) { setDismissedCard(null); setIsHome(false) }
     setSelectedPlace(null)
     setSelectedCountry(country)
   }, [])
@@ -154,9 +153,6 @@ export default function App() {
     setSelectedCountry(null)
     setSelectedPlace(place)
   }, [])
-  const [reticleColor, setReticleColor] = useState(() => {
-    try { return localStorage.getItem('ws-reticle-color') || '#23cdf3' } catch { return '#23cdf3' }
-  })
 
   // Panels popped out of the dock into floating windows (Windows/WindowLayer)
   const windows = useWindowLayout()
@@ -370,7 +366,6 @@ export default function App() {
       onPlaceClick={selectPlace}
       selectedCountry={selectedCountry}
       selectedPlace={selectedPlace}
-      reticleColor={reticleColor}
       panelState={panelState}
       onToggleLayer={toggleLayer}
       onClearLayers={clearLayers}
@@ -379,7 +374,6 @@ export default function App() {
   const homeOnlyPanelState = Object.fromEntries(Object.keys(panelState).map(key => [key, false])) as unknown as PanelState
   homeOnlyPanelState.countryAnalytics = true
   const homeMapView = cloneElement(mapView, {
-    showReticle: false,
     showFlights: false, showCrises: false, showNews: false, showStocks: false,
     showWildfires: false, showMilitary: false, showNuclear: false, showSanctions: false,
     showCameras: false, showInfrastructure: false, showDatacenters: false, showAirspace: false,
@@ -432,7 +426,7 @@ export default function App() {
             onFocusPanel={focusInDock}
             focusPanel={focusPanel}
             libraryOpen={libraryOpen}
-            onOpenMap={() => { setIsHome(false); setCountryView('map') }}
+            onOpenMap={() => setIsHome(false)}
           />
 
           {isHome ? (
@@ -458,23 +452,23 @@ export default function App() {
                   <div className="map-card">{mapView}
                     {crisisArchive && panelState.crises && <div className="map-archive-note" role="status">Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.</div>}
                   </div>
-                  {selectedCountry && countryView === 'data' && (
-                    <Suspense fallback={null}>
-                      <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
-                        onClose={() => setSelectedCountry(null)} onShowMap={() => setCountryView('map')} onOpenPanel={openPanel} onFlyTo={handleGeoSearch} />
-                    </Suspense>
-                  )}
-                  {selectedCountry && countryView === 'map' && (
+                  {selectedCountry && (
                     <div className="cp-chip" role="status">
                       <b>{selectedCountry}</b>
-                      <button className="cy-btn" onClick={() => setCountryView('data')}>View data</button>
                       <button className="cp-chip-x" onClick={() => setSelectedCountry(null)} aria-label={`Deselect ${selectedCountry}`}>×</button>
                     </div>
                   )}
-                  {!selectedCountry && dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
+                  {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
                   <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
                 </div>
-                <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel} />
+                {selectedCountry ? (
+                  <Suspense fallback={null}>
+                    <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
+                      onClose={() => setSelectedCountry(null)} onShowMap={() => setSelectedCountry(null)} onOpenPanel={openPanel} onFlyTo={handleGeoSearch} />
+                  </Suspense>
+                ) : (
+                  <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel} />
+                )}
               </div>
             </div>
           )}
@@ -491,8 +485,6 @@ export default function App() {
             onToggleLayer={toggleLayer}
             deepstateMode={deepstateMode}
             onDeepstateToggle={() => setDeepstateMode(v => !v)}
-            reticleColor={reticleColor}
-            onReticleColor={(c: string) => { setReticleColor(c); try { localStorage.setItem('ws-reticle-color', c) } catch {} }}
           />
         </Suspense>
         <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} panelState={panelState} onOpenPanel={openPanel} onToggleLayer={toggleLayer} onViewMode={setViewMode} onGeoSearch={handleGeoSearch} screens={screens.screens} onLoadScreen={screens.load} onOpenLibrary={() => setLibraryOpen(true)} onColorCountries={colorCountries} />

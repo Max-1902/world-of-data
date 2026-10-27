@@ -120,8 +120,6 @@ interface Props {
   onToggleLayer: (id: keyof PanelState) => void
   deepstateMode: boolean
   onDeepstateToggle: () => void
-  reticleColor?: string
-  onReticleColor?: (color: string) => void
 }
 
 const s = {
@@ -131,7 +129,7 @@ const s = {
   sectionTitle: { fontSize: 11, fontWeight: 700, letterSpacing: '.04em', color: 'var(--text1)', textTransform: 'uppercase' as const, marginBottom: 10, marginTop: 20 },
 }
 
-export default function SettingsModal({ open, onClose, viewMode, onViewMode, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, reticleColor, onReticleColor }: Props) {
+export default function SettingsModal({ open, onClose, viewMode, onViewMode, panelState, onToggleLayer, deepstateMode, onDeepstateToggle }: Props) {
   const [tab, setTab] = useState<Tab>('GENERAL')
 
   if (!open) return null
@@ -200,7 +198,7 @@ export default function SettingsModal({ open, onClose, viewMode, onViewMode, pan
           {tab === 'LAYERS' && <LayersTab panelState={panelState} onToggleLayer={onToggleLayer} />}
           {tab === 'DATA SOURCES' && <DataSourcesTab />}
           {tab === 'API KEYS' && <ApiKeysTab />}
-          {tab === 'DISPLAY' && <DisplayTab reticleColor={reticleColor} onReticleColor={onReticleColor} />}
+          {tab === 'DISPLAY' && <DisplayTab />}
           {tab === 'ABOUT' && <AboutTab />}
         </div>
       </div>
@@ -353,41 +351,9 @@ function ApiKeysTab() {
   )
 }
 
-const RETICLE_COLORS = [
-  { id: '#16a34a', label: 'GREEN' },
-  { id: '#dc2626', label: 'RED' },
-  { id: '#2563eb', label: 'BLUE' },
-]
-
-function DisplayTab({ reticleColor, onReticleColor }: { reticleColor?: string; onReticleColor?: (c: string) => void }) {
+function DisplayTab() {
   return (
     <div>
-      <div style={s.sectionTitle}>Reticle</div>
-      <div style={{ ...s.row, gap: 8 }}>
-        <span style={s.label}>Color</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {RETICLE_COLORS.map(c => (
-            <button
-              key={c.id}
-              onClick={() => onReticleColor?.(c.id)}
-              style={{
-                width: 56, height: 26,
-                background: reticleColor === c.id ? c.id + '18' : 'var(--surface2)',
-                border: `1px solid ${reticleColor === c.id ? c.id : 'var(--border)'}`,
-                borderRadius: 'var(--r-sm)',
-                color: reticleColor === c.id ? c.id : 'var(--text2)',
-                fontSize: 9, fontWeight: 600,
-                letterSpacing: '.02em', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
-              }}
-            >
-              <div style={{ width: 7, height: 7, borderRadius: '50%', background: c.id, flexShrink: 0 }} />
-              {c.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <div style={s.sectionTitle}>Typography</div>
       <div style={s.row}>
         <span style={s.label}>UI font</span>

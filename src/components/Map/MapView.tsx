@@ -43,12 +43,11 @@ import type { MapHandle, MapViewProps } from './types'
 import CountryColorControl from './overlays/CountryColorControl'
 import HazardHexLegend from './overlays/HazardHexLegend'
 import OverlayMenu from './overlays/OverlayMenu'
-import Reticle from './overlays/Reticle'
 import DeepStatePanel from './overlays/DeepStatePanel'
 import { MAPBOX_TOKEN as TOKEN } from './token'
 
 export default function MapView({
-  viewMode, projectionMode = 'globe', showReticle = true, flights, crises, newsPins, stocks, earthquakes,
+  viewMode, projectionMode = 'globe', flights, crises, newsPins, stocks, earthquakes,
   showFlights, showCrises, showNews, showStocks,
   deepstateMode,
   onCloseDeepstate, onToggleDeepstate,
@@ -61,7 +60,6 @@ export default function MapView({
   outages, radarOutages, showOutages, disasterAlerts, showDisasters, showResources, showTradeStats,
   showAnalyticsHex, showCountryAnalytics,
   flyToQuery, geoFlyTo, onCountryClick, onPlaceClick, selectedCountry, selectedPlace,
-  reticleColor = '#23cdf3',
   panelState, onToggleLayer, onClearLayers, suggestedLayers,
 }: MapViewProps) {
   const containerRef   = useRef<HTMLDivElement>(null)
@@ -241,7 +239,6 @@ export default function MapView({
       {panelState && onToggleLayer && (
         <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} suggested={suggestedLayers} top={52} />
       )}
-      {!deepstateMode && showReticle && <Reticle color={reticleColor} />}
       </div>
 
       {deepstateMode && <DeepStatePanel onClose={onCloseDeepstate} />}
