@@ -46,6 +46,7 @@ const CountryLookupPanel = lazy(() => import('../components/panels/CountryLookup
 const PredictionsPanel = lazy(() => import('../components/panels/PredictionsPanel').then(m => ({ default: m.PredictionsPanel })))
 const GasStorageForecastPanel = lazy(() => import('../components/panels/GasStorageForecast').then(m => ({ default: m.GasStorageForecastPanel })))
 const InventoriesPanel = lazy(() => import('../components/panels/InventoriesPanel').then(m => ({ default: m.InventoriesPanel })))
+const ExposurePanel = lazy(() => import('../components/panels/ExposurePanel'))
 const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
@@ -92,6 +93,11 @@ const PANELS: PanelDef[] = [
     id: 'owid', title: 'Global Trends', group: 'markets', section: 'macro', map: 'inline',
     dotColor: 'amber', desc: 'Agriculture, violence & war, energy & environment, innovation & tech (Our World in Data)',
     render: (p) => <OwidPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
+  },
+  {
+    id: 'exposure', title: 'Shock Exposure', group: 'markets', section: 'exposure', map: 'inline',
+    dotColor: 'orange', desc: 'Pick a shock (a buyer, a supplier, an oil chokepoint) and trace which economies it reaches, step by step',
+    render: (p) => <ExposurePanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
   },
   {
     id: 'tradePartnersByCountry', title: 'Trade Partners', group: 'markets', section: 'trade', map: ['tradeStats'],
@@ -270,6 +276,7 @@ export const GROUP_SECTIONS: Record<PanelGroup, PanelSection[]> = {
   markets: [
     { id: 'live', title: 'Markets today', desc: 'The fastest-moving signal: index and asset prices from the live feed.' },
     { id: 'macro', title: 'Macro indicators', desc: 'Slower, structural data per country: World Bank economic profiles and long-run global trends.' },
+    { id: 'exposure', title: 'How shocks spread', desc: 'Pick a shock and trace which economies it reaches through sourced trade links. Every step is labelled as reported data or as an assumption.' },
     { id: 'trade', title: 'Trade', desc: 'Who each country trades with, and what it exports and imports.' },
     { id: 'resources', title: 'Resources', desc: 'Critical minerals and commodities: reserves and production by country.' },
   ],

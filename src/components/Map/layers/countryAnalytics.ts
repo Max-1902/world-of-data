@@ -64,6 +64,7 @@ export function addCountryAnalyticsLayers(map: mapboxgl.Map, ctx: LayerCtx): voi
     const name = yRow?.name ?? pt?.name ?? (feat?.properties?.name_en as string | undefined) ?? iso3
     const row = (k: string, v: string) => `<span style="color:#6b7280;">${esc(k)}</span><span style="color:#14161a;">${v}</span>`
     const dated = info.stale.has(iso3) && info.typicalYear !== null
+    const derived = info.derived
     const body = [
       yRow ? row(info.yShort, `<b>${esc(info.yFormat(yRow.value))}</b> (${esc(yRow.year)})`) : '',
       trend && pt ? row(info.xShort, `${esc(info.xFormat(pt.x))} (${esc(pt.xYear)})`) : '',
@@ -73,10 +74,10 @@ export function addCountryAnalyticsLayers(map: mapboxgl.Map, ctx: LayerCtx): voi
     const kind = EVIDENCE[trend ? 'statistical' : 'observed']
     const html = `<div style="font-family:'Inter',-apple-system,sans-serif;padding:10px 12px;min-width:230px;max-width:300px;">
       <div style="font-size:13px;font-weight:800;color:#14161a;margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid #e5e7eb;">${esc(name)}</div>
-      ${body ? `<div style="display:grid;grid-template-columns:100px 1fr;gap:3px 8px;font-size:11px;">${body}</div>` : `<div style="font-size:11px;color:#6b7280;">No value for this country since 2010${trend ? ' in one or both compared indicators' : ''}.</div>`}
+      ${body ? `<div style="display:grid;grid-template-columns:100px 1fr;gap:3px 8px;font-size:11px;">${body}</div>` : `<div style="font-size:11px;color:#6b7280;">${derived ? 'Not computed for this country (not one of the economies with a UN Comtrade profile, or its share is only bounded).' : `No value for this country since 2010${trend ? ' in one or both compared indicators' : ''}.`}</div>`}
       ${dated ? `<div style="margin-top:5px;font-size:10px;color:#9a6700;">Dated: most countries report ${info.typicalYear}. Compare with care.</div>` : ''}
-      <div style="margin-top:6px;font-size:10px;color:#4b5563;"><b style="text-transform:uppercase;letter-spacing:.06em;">${esc(kind.label)}</b>${trend ? ' · least-squares trend across countries, an association, not a cause' : ' · as reported'}</div>
-      <div style="margin-top:3px;font-size:9px;color:#6b7280;">Source: ${esc(info.source)} · each country's latest year since 2010</div>
+      <div style="margin-top:6px;font-size:10px;color:#4b5563;"><b style="text-transform:uppercase;letter-spacing:.06em;">${esc(kind.label)}</b>${trend ? ' · least-squares trend across countries, an association, not a cause' : derived ? ' · computed from reported figures' : ' · as reported'}</div>
+      <div style="margin-top:3px;font-size:9px;color:#6b7280;">Source: ${esc(info.source)} · ${derived ? "each country's own reporting year" : "each country's latest year since 2010"}</div>
     </div>`
     if (popupRef.current) popupRef.current.remove()
     popupRef.current = new mapboxgl.Popup({ maxWidth: '320px', className: 'cy-popup' }).setLngLat(e.lngLat).setHTML(html).addTo(map)
@@ -120,6 +121,7 @@ export function useCountryAnalyticsLayer({ mapRef, layersReadyRef, mapReady, cou
     source: mapMode === 'trend' && xMeta.source !== yMeta.source ? `${yMeta.source} and ${xMeta.source}` : yMeta.source,
     typicalYear: shading.cover.typicalYear,
     stale: shading.stale,
+    derived: yMeta.id.startsWith('derived:') || (mapMode === 'trend' && xMeta.id.startsWith('derived:')),
   }
   useEffect(() => {
     const map = mapRef.current

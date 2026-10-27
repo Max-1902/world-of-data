@@ -25,14 +25,16 @@ import { searchAllSources, fetchTopHeadlines } from './news'
 import { fetchMultipleQuotes, MARKET_HUBS } from './stocks'
 import { analyzeAirspace, FIR_STATUS_LABEL } from './notam'
 import { history, countrySeries } from './history'
-import { getTradeProfile } from './tradeStats'
+import { getTradeProfile, TRADE_PROFILES } from './tradeStats'
 import { SANCTIONED_COUNTRIES } from './sanctions'
 import { MILITARY_FACILITIES, NUCLEAR_PLANTS } from './military'
 import { fetchMilitaryPersonnelRanking } from './militaryPersonnel'
 import { fetchPowerGenerationRanking, POWER_SOURCES } from './powerGeneration'
 import { OIL_GAS_DATA } from './oilgas'
 import { getResourceProfile, fetchResourceRents } from './resources'
-import { CHOKEPOINTS, oilSharePct } from './chokepoints'
+import { CHOKEPOINTS, EIA_CHOKEPOINTS_SOURCE, oilSharePct } from './chokepoints'
+import { ISO3_TO_ISO2 } from './economies'
+import { gdpByIso2, partnerNames, summarizeExposure, traceExposure, type Shock } from '../utils/exposure'
 import { PORTS } from './ports'
 import { TOP_HOSTING, TOP_ORIGINS } from './unhcr'
 import { EIA_SERIES, fetchEiaSeries } from './eia'
@@ -622,6 +624,38 @@ const TOOLS: ToolDef[] = [
         title: 'Maritime chokepoints', source: 'EIA World Oil Transit Chokepoints; IMF PortWatch transit averages; risks editorial',
         text: CHOKEPOINTS.map(c => `  • ${c.name} (${c.controlledBy}): ${c.oilFlowMbd != null ? `${n1(c.oilFlowMbd)} mb/d oil (${oilSharePct(c)}% of seaborne)` : 'oil flow n/a'}${c.transits ? `, ${n0(c.transits.avgDaily)} transits/day (${n0(c.transits.avgDailyTankers)} tankers, ${c.transits.year})` : ''}. Risks: ${c.risks.slice(0, 2).join('; ')}`).join('\n'),
         chart: rows.length ? { kind: 'rank', unit: 'mb/d', items: rankItems(rows.sort((a, b) => b.value - a.value), v => `${n1(v)} mb/d`) } : undefined,
+      }
+    },
+  },
+  {
+    name: 'exposure',
+    usage: '[DATA:exposure|demand|China] · [DATA:exposure|supply|China] · [DATA:exposure|oil|Strait of Hormuz] — optional 4th arg: assumed size in %',
+    describe: 'Shock exposure (Shock Exposure panel): which of 45 economies a fall in a buyer\'s demand, a cut in a supplier\'s goods, or an oil chokepoint disruption reaches, as % of their GDP, with each step labelled observed or assumption. UN Comtrade + World Bank GDP; first-order, goods only.',
+    async run(args) {
+      const kind = (args[0] ?? '').trim().toLowerCase()
+      if (kind !== 'demand' && kind !== 'supply' && kind !== 'oil') throw new ToolError('first argument must be demand, supply or oil')
+      const target = (args[1] ?? '').trim()
+      if (!target) throw new ToolError(kind === 'oil' ? 'a chokepoint name is required' : 'a partner country is required')
+      const size = args[2] != null && args[2].trim() !== '' && Number.isFinite(Number(args[2])) ? Number(args[2]) : undefined
+      let shock: Shock
+      if (kind === 'oil') {
+        const oil = CHOKEPOINTS.filter(c => c.oilFlowMbd != null)
+        const c = bestMatch(target, oil, x => x.id, x => x.name)
+        if (!c) throw new ToolError(`no oil chokepoint matches "${target}"; known: ${oil.map(x => x.name).join(', ')}`)
+        shock = { kind, chokepoint: c, pricePct: size }
+      } else {
+        const names = partnerNames(TRADE_PROFILES)
+        const partner = names.find(n => n.toLowerCase() === target.toLowerCase()) ?? getTradeProfile(target)?.name
+        if (!partner || !names.includes(partner)) throw new ToolError(`"${target}" is not a partner in the Comtrade top-6 lists`)
+        shock = { kind, partner, sizePct: size }
+      }
+      const gdp = gdpByIso2(await fetchIndicatorAll('NY.GDP.MKTP.CD'), ISO3_TO_ISO2)
+      const res = traceExposure(shock, TRADE_PROFILES, gdp, EIA_CHOKEPOINTS_SOURCE)
+      const top = res.rows.slice(0, 12)
+      return {
+        title: res.title, source: 'UN Comtrade (reporter data) and World Bank GDP; chokepoint oil flow from EIA; computed in the browser',
+        text: summarizeExposure(res, 12),
+        chart: top.length ? { kind: 'rank', unit: '% of GDP', items: top.map(r => ({ label: r.name, value: (r.lo + r.hi) / 2, text: r.bounded ? `${n1(r.lo)}–${n1(r.hi)}%` : `${n1(r.lo)}%` })) } : undefined,
       }
     },
   },

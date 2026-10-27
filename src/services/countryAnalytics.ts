@@ -3,7 +3,7 @@
  * how the globe is coloured, and the World Bank rows loaded for each indicator. One load per indicator no matter how
  * many components ask (fetchIndicatorAll also caches for an hour).
  */
-import { PRESETS, fetchIndicatorAll, type CountryValue } from './countryIndicators'
+import { INDICATOR_BY_ID, PRESETS, fetchIndicatorAll, type CountryValue, type IndicatorMeta } from './countryIndicators'
 import type { MapMode } from '../utils/countryStats'
 
 export type SliceStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -60,6 +60,8 @@ export function createCountryAnalytics(fetcher: (id: string) => Promise<CountryV
         for (let id = queue.shift(); id !== undefined; id = queue.shift()) await load(id)
       }))
     },
+    /** Rows computed elsewhere (not fetched), stored as a ready slice. */
+    put(id: string, rows: CountryValue[]) { setSlice(id, { status: 'ready', rows, error: null }) },
     setSelection(x: string, y: string) { if (x !== state.selection.x || y !== state.selection.y) set({ selection: { x, y } }) },
     setMapMode(mapMode: MapMode) { if (mapMode !== state.mapMode) set({ mapMode }) },
   }
@@ -77,4 +79,16 @@ export function selectForMap(yId: string, store: Pick<typeof countryAnalytics, '
   const x = store.getState().selection.x
   store.setSelection(x === yId ? (yId === DEFAULT_X ? 'SP.POP.TOTL' : DEFAULT_X) : x, yId)
   store.setMapMode('value')
+}
+
+/**
+ * Shades the globe by numbers a panel computed in the browser (e.g. shock exposure), through the same layer, legend,
+ * coverage note and popup as the catalogue indicators. `meta.id` must start with `derived:`; it is registered so the
+ * layer can read its label, source and format, but it is not added to the searchable catalogue.
+ */
+export function showDerivedOnMap(meta: IndicatorMeta, rows: CountryValue[], store: Pick<typeof countryAnalytics, 'getState' | 'setSelection' | 'setMapMode' | 'put'> = countryAnalytics): void {
+  if (!meta.id.startsWith('derived:')) throw new Error(`Derived indicator ids start with "derived:": ${meta.id}`)
+  INDICATOR_BY_ID.set(meta.id, meta)
+  store.put(meta.id, rows)
+  selectForMap(meta.id, store)
 }

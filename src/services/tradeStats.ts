@@ -21,9 +21,12 @@ export interface TradeProfile {
   // Top export/import partners (% of total)
   topExportPartners: { country: string; pct: number }[]
   topImportPartners: { country: string; pct: number }[]
-  // Top exported/imported product categories (HS2-level descriptions)
-  topExports: { product: string; pct: number }[]
-  topImports: { product: string; pct: number }[]
+  // Top exported/imported product categories (HS2-level descriptions, with the HS chapter code)
+  topExports: { product: string; hs: string; pct: number }[]
+  topImports: { product: string; hs: string; pct: number }[]
+  // Goods exports / imports, US$ billions, Comtrade, same year as `year`
+  exportsUsdBn: number
+  importsUsdBn: number
   // Key metrics
   tradeBalance?: number     // US$ billions (positive = surplus)
   tradeToGDP?: number       // trade openness (%), World Bank NE.TRD.GNFS.ZS
@@ -124,8 +127,10 @@ export const TRADE_PROFILES: TradeProfile[] = Object.entries(profiles)
       year: g.year,
       topExportPartners: g.topExportPartners,
       topImportPartners: g.topImportPartners,
-      topExports: g.topExports.map(({ product, pct }) => ({ product, pct })),
-      topImports: g.topImports.map(({ product, pct }) => ({ product, pct })),
+      topExports: g.topExports.map(({ product, hs, pct }) => ({ product, hs, pct })),
+      topImports: g.topImports.map(({ product, hs, pct }) => ({ product, hs, pct })),
+      exportsUsdBn: g.exportsUsdBn,
+      importsUsdBn: g.importsUsdBn,
       tradeBalance: Math.round(g.tradeBalanceUsdBn),
       tradeToGDP: g.tradeToGDP?.value,
       currentAccount: g.currentAccount?.value,

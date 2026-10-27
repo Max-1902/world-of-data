@@ -14,6 +14,8 @@ export interface CountryAnalyticsView {
   /** the typical reporting year, and the countries whose values are much older than it */
   typicalYear: number | null
   stale: ReadonlySet<string>
+  /** computed in the browser by a panel, not a catalogue series */
+  derived: boolean
 }
 
 /**

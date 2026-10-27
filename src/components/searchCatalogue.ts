@@ -21,6 +21,7 @@ export const PANEL_ALIASES: Record<string, string> = {
   inventories: 'eia oil crude gas stockpiles energy',
   gasForecast: 'natural gas storage forecast injection withdrawal eia weekly bcf backtest prediction',
   economy: 'gdp world bank macro',
+  exposure: 'shock exposure contagion spillover dependence connect dots scenario chokepoint hormuz demand supply',
   owid: 'trends our world in data',
   countryAnalytics: 'correlation compare indicators scatter',
   analytics: 'earthquakes wildfires hazards hex',
