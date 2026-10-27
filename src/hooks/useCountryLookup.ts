@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { onFocusCountry } from '../utils/focusCountry'
 import { fetchCountryDataset, fetchCountryList, type CountryDataset, type WbCountry } from '../services/countryLookup'
 import { fetchEuropeData, isEurope, type EuropeData } from '../services/europeMacro'
 
@@ -22,6 +23,8 @@ function loadIso(): string {
  */
 export function useCountryLookup() {
   const [iso2, setIso2State] = useState(loadIso)
+  // another view (the country page) can point this panel at a country while it is open
+  useEffect(() => onFocusCountry('predictions', setIso2State), [])
   const [countries, setCountries] = useState<WbCountry[]>([])
   const [listError, setListError] = useState<string | null>(null)
   const [data, setData] = useState<CountryDataset | null>(null)

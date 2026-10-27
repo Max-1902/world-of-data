@@ -2,16 +2,16 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-// Stand-ins for the heavy pieces: the map just exposes a "click a country" button,
-// the drawer just exposes its close button, the cards report which subject they show.
+// Stand-ins for the heavy pieces: the map just exposes a "click a country" button, the country page its two
+// actions, and the outlook card reports which subject it shows.
 vi.mock('./components/Map/MapView', () => ({
   default: ({ onCountryClick }: { onCountryClick: (c: string) => void }) => (
     <button onClick={() => onCountryClick('Ukraine')}>pick-country</button>
   ),
 }))
-vi.mock('./components/CountryDrawer', () => ({
-  default: ({ country, onClose }: { country: string; onClose: () => void }) => (
-    <div data-testid="drawer">{country}<button onClick={onClose}>close-drawer</button></div>
+vi.mock('./components/countryPage/CountryPage', () => ({
+  default: ({ country, onClose, onShowMap }: { country: string; onClose: () => void; onShowMap: () => void }) => (
+    <div data-testid="page">{country}<button onClick={onShowMap}>show-map</button><button onClick={onClose}>close-page</button></div>
   ),
 }))
 vi.mock('./components/OutlookCard', () => ({
@@ -23,28 +23,34 @@ vi.mock('./components/OutlookCard', () => ({
 // App renders a "Mapbox token required" screen instead of the map without a token. A developer's .env has one, CI
 // doesn't, so the test sets a placeholder (the map is mocked above; nothing is sent to Mapbox). In beforeEach because
 // the config's unstubEnvs resets stubbed env vars before every test.
-describe('country drawer and outlook card', () => {
+describe('picking a country', () => {
   beforeEach(() => { vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder') })
 
   async function pickCountry() {
     const { default: App } = await import('./App')
     render(<App />)
-    fireEvent.click(await screen.findByText('pick-country'))
-    expect(await screen.findByTestId('drawer')).toBeTruthy()
-    expect(screen.getByTestId('card').textContent).toContain('Ukraine')
+    fireEvent.click((await screen.findAllByText('pick-country'))[0])
+    expect((await screen.findByTestId('page')).textContent).toContain('Ukraine')
   }
 
-  it('closing the drawer leaves the card open on the same country', async () => {
+  it('opens the country data page in the main area, with no country card over the map', async () => {
     await pickCountry()
-    fireEvent.click(screen.getByText('close-drawer'))
-    await waitFor(() => expect(screen.queryByTestId('drawer')).toBeNull())
-    expect(screen.getByTestId('card').textContent).toContain('Ukraine')
+    expect(screen.queryByTestId('card')).toBeNull()
   })
 
-  it('closing the card leaves the drawer open', async () => {
+  it('"Show on map" swaps the page for a small chip that leads back to the data', async () => {
     await pickCountry()
-    fireEvent.click(screen.getByText('close-card'))
-    await waitFor(() => expect(screen.queryByTestId('card')).toBeNull())
-    expect(screen.getByTestId('drawer')).toBeTruthy()
+    fireEvent.click(screen.getByText('show-map'))
+    await waitFor(() => expect(screen.queryByTestId('page')).toBeNull())
+    expect(screen.getByRole('status').textContent).toContain('Ukraine')
+    fireEvent.click(screen.getByRole('button', { name: 'View data' }))
+    expect((await screen.findByTestId('page')).textContent).toContain('Ukraine')
+  })
+
+  it('closing the page returns to the map with the regional outlook', async () => {
+    await pickCountry()
+    fireEvent.click(screen.getByText('close-page'))
+    await waitFor(() => expect(screen.queryByTestId('page')).toBeNull())
+    expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
   })
 })

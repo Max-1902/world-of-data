@@ -22,13 +22,12 @@ export function matchCountry(name: string, lc: string): boolean {
 
 // Defined at module scope (not inside the drawer) so React keeps their subtrees mounted across renders.
 // Section renderer helper
+// The heading is the shared section style (DataLabels' SectionLabel); the section's colour survives only as a marker.
 export const Section = ({ title, color, count, children }: { title: string; color: string; count?: number; children: React.ReactNode }) => (
-  <div style={{ marginBottom: 12 }}>
-    <div style={{ fontSize: 10, fontWeight: 700, color, letterSpacing: '.04em', marginBottom: 5, textTransform: 'uppercase' }}>
-      {title}{count !== undefined ? ` (${count})` : ''}
-    </div>
+  <section className="cd-section">
+    <div className="dl-section cd-section-h"><i style={{ background: color }} aria-hidden />{title}{count !== undefined ? ` (${count})` : ''}</div>
     {children}
-  </div>
+  </section>
 )
 
 export const Row = ({ children, onClick, style }: { children: React.ReactNode; onClick?: () => void; style?: React.CSSProperties }) => (
