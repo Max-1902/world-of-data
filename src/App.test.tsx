@@ -2,8 +2,8 @@
 import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 
-// Stand-ins for the heavy pieces: the map just exposes a "click a country" button, the country page its two
-// actions, and the outlook card reports which subject it shows.
+// Stand-ins for the heavy pieces: the map just exposes a "click a country" button, the country page (now rendered
+// in the right panel, not over the map) its two actions, and the outlook card reports which subject it shows.
 vi.mock('./components/Map/MapView', () => ({
   default: ({ onCountryClick }: { onCountryClick: (c: string) => void }) => (
     <button onClick={() => onCountryClick('Ukraine')}>pick-country</button>
@@ -33,18 +33,16 @@ describe('picking a country', () => {
     expect((await screen.findByTestId('page')).textContent).toContain('Ukraine')
   }
 
-  it('opens the country data page in the main area, with no country card over the map', async () => {
+  it('opens the country data page in the right panel, map and outlook card stay visible', async () => {
     await pickCountry()
-    expect(screen.queryByTestId('card')).toBeNull()
+    expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
   })
 
-  it('"Show on map" swaps the page for a small chip that leads back to the data', async () => {
+  it('"Show on map" closes the page; the map and outlook card were visible underneath all along', async () => {
     await pickCountry()
     fireEvent.click(screen.getByText('show-map'))
     await waitFor(() => expect(screen.queryByTestId('page')).toBeNull())
-    expect(screen.getByRole('status').textContent).toContain('Ukraine')
-    fireEvent.click(screen.getByRole('button', { name: 'View data' }))
-    expect((await screen.findByTestId('page')).textContent).toContain('Ukraine')
+    expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
   })
 
   it('closing the page returns to the map with the regional outlook', async () => {

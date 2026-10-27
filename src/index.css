@@ -1533,11 +1533,13 @@ body.pw-dragging iframe { pointer-events: none; }
 .cc-launch:hover { color: var(--accent); }
 .cc-card { position: absolute; right: 10px; z-index: 30; width: 268px; padding: 11px 12px; background: rgba(4,15,24,.93); border: 1px solid #1a3447; border-radius: 11px; box-shadow: 0 14px 36px rgba(0,0,0,.28); backdrop-filter: blur(10px); display: flex; flex-direction: column; gap: 7px; }
 .cc-kicker { display: flex; align-items: center; justify-content: space-between; font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
-.cc-x { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+.cc-x { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin: -4px -4px -4px 0; background: none; border: none; border-radius: var(--r-sm); color: var(--text3); cursor: pointer; font-size: 14px; line-height: 1; }
 .cc-x:hover { color: var(--text1); }
 .cc-pick { display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; padding: 5px 8px; font-size: 12px; font-weight: 650; color: var(--text1); background: var(--surface2); border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer; text-align: left; }
 .cc-pick:hover, .cc-pick[aria-expanded="true"] { border-color: var(--accent); }
 .cc-pick small { color: var(--text3); font-weight: 500; }
+.cc-select { width: 100%; padding: 5px 8px; font-size: 12px; font-weight: 650; color: var(--text1); background: var(--surface2); border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer; }
+.cc-select:hover, .cc-select:focus { border-color: var(--accent); }
 .cc-sublabel { font-size: 10px; color: var(--text2); }
 .cc-modes { display: flex; gap: 4px; }
 .cc-modes button { padding: 3px 8px; font-size: 10px; color: var(--text2); background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r-sm); cursor: pointer; }

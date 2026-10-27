@@ -14,7 +14,6 @@ import type { CountryAnalyticsView } from './layers/types'
 export interface MapViewProps {
   viewMode:      MapViewMode
   projectionMode?: 'globe' | 'mercator'
-  showReticle?: boolean
   flights:       Flight[]
   crises:        CrisisEvent[]
   newsPins:      GeoNewsPin[]
@@ -70,7 +69,6 @@ export interface MapViewProps {
   onPlaceClick?:      (place: import('../../types').SelectedPlace) => void
   selectedCountry?:   string | null
   selectedPlace?:     import('../../types').SelectedPlace | null
-  reticleColor?:      string
   panelState?:        import('../../types').PanelState
   onToggleLayer?:     (id: keyof import('../../types').PanelState) => void
   onClearLayers?:     () => void
