@@ -10,7 +10,7 @@ const m = vi.hoisted(() => ({
   fetchWildfires: vi.fn(), loadDisasterAlerts: vi.fn(), fetchOutageEvents: vi.fn(), fetchRadarOutages: vi.fn(), fetchGPSJam: vi.fn(),
   searchAllSources: vi.fn(), fetchTopHeadlines: vi.fn(), fetchMultipleQuotes: vi.fn(), fetchEiaSeries: vi.fn(),
   fetchIndicatorAll: vi.fn(), fetchCountryDataset: vi.fn(), fetchPowerGenerationRanking: vi.fn(),
-  fetchMilitaryPersonnelRanking: vi.fn(), fetchResourceRents: vi.fn(), historyLoad: vi.fn(), getSnapshots: vi.fn(),
+  fetchMilitaryPersonnelRanking: vi.fn(), fetchNowcastData: vi.fn(), fetchResourceRents: vi.fn(), historyLoad: vi.fn(), getSnapshots: vi.fn(),
 }))
 
 vi.mock('./wildfires', () => ({ fetchWildfires: m.fetchWildfires }))
@@ -27,6 +27,8 @@ vi.mock('./powerGeneration', async orig => ({ ...await orig<typeof import('./pow
 vi.mock('./militaryPersonnel', () => ({ fetchMilitaryPersonnelRanking: m.fetchMilitaryPersonnelRanking }))
 vi.mock('./resources', async orig => ({ ...await orig<typeof import('./resources')>(), fetchResourceRents: m.fetchResourceRents }))
 vi.mock('./history', async orig => ({ ...await orig<typeof import('./history')>(), history: { load: m.historyLoad, getSnapshots: m.getSnapshots } }))
+
+vi.mock('./eurostatNowcast', async orig => ({ ...await orig<typeof import('./eurostatNowcast')>(), fetchNowcastData: m.fetchNowcastData }))
 
 const { runTool } = await import('./aiTools')
 const { SANCTIONED_COUNTRIES } = await import('./sanctions')
@@ -356,5 +358,17 @@ describe('exposure', () => {
   it('rejects an unknown shock type or partner instead of guessing', async () => {
     expect((await run('exposure', ['tariff', 'China'])).text).toMatch(/demand, supply or oil/)
     expect((await run('exposure', ['demand', 'Atlantis'])).text).toMatch(/not a partner/)
+  })
+})
+
+describe('nowcast', () => {
+  it('rejects economies outside the EU instead of guessing', async () => {
+    expect((await run('nowcast', ['Japan'])).text).toMatch(/EU member states only/)
+  })
+  it('reports a failed Eurostat request as an error, not a figure', async () => {
+    m.fetchNowcastData.mockRejectedValue(new Error('Eurostat HTTP 503'))
+    const r = await run('nowcast', ['Germany'])
+    expect(r.ok).toBe(false)
+    expect(r.text).toContain('Eurostat HTTP 503')
   })
 })

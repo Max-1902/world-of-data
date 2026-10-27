@@ -8,7 +8,7 @@ import { freshness } from '../../utils/freshness'
 import { fetchPowerGenerationRanking, formatTwh, POWER_SOURCES, type PowerGenerationEntry, type PowerSource } from '../../services/powerGeneration'
 import { fetchDataCenters, type DataCenterPoint } from '../../services/datacenters'
 import { OnMapButton } from './OnMapButton'
-import { INDICATOR_BY_ID } from '../../services/countryIndicators'
+import { INDICATOR_BY_ID, cleanCountryName } from '../../services/countryIndicators'
 import { OWID_CHARTS, fetchOwidChart, formatOwidValue, TOPIC_LABELS, type OwidTopic, type OwidChartData } from '../../services/owid'
 
 import { type MapLinkProps, infoStrip } from './countryDataShared'
@@ -54,7 +54,7 @@ export function MilitaryPersonnelPanel({ onCountryClick, panelState, onToggleLay
         {filtered.map(c => {
           const fresh = freshness(c.year, 'military', c.iso2)
           return (
-            <RankRow key={c.iso2} rank={c.rank} code={c.iso2} name={c.country} share={c.personnel / maxPersonnel} tone="down"
+            <RankRow key={c.iso2} rank={c.rank} code={c.iso2} name={cleanCountryName(c.country)} share={c.personnel / maxPersonnel} tone="down"
               value={formatPersonnel(c.personnel)} year={c.year} stale={fresh?.stale} staleLabel={fresh?.label ?? undefined}
               onClick={() => onCountryClick?.(c.country)} />
           )
