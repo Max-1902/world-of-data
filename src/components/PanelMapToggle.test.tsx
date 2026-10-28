@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import type { PanelState } from '../types'
 import { LAYER_IDS } from './layerCatalogue'
 import PanelMapToggle from './PanelMapToggle'
+import { OpenMapContext } from './OpenMapContext'
 
 const allOff = Object.fromEntries(LAYER_IDS.map(l => [l.id, false])) as unknown as PanelState
 const state = (on: (keyof PanelState)[]) => ({ ...allOff, ...Object.fromEntries(on.map(id => [id, true])) }) as PanelState
@@ -37,5 +38,16 @@ describe('PanelMapToggle', () => {
   it('names what will be drawn, from the layer catalogue', () => {
     render(<PanelMapToggle map={['sanctions']} panelState={allOff} onToggleLayer={vi.fn()} />)
     expect(screen.getByRole('button').getAttribute('title')).toContain('Sanctioned countries')
+  })
+
+  it('opens the Map when it turns layers on, and not when it turns them off', () => {
+    const openMap = vi.fn()
+    const { unmount } = render(<OpenMapContext.Provider value={openMap}><PanelMapToggle map={['sanctions']} panelState={allOff} onToggleLayer={vi.fn()} /></OpenMapContext.Provider>)
+    fireEvent.click(screen.getByRole('button'))
+    expect(openMap).toHaveBeenCalledOnce()
+    unmount()
+    render(<OpenMapContext.Provider value={openMap}><PanelMapToggle map={['sanctions']} panelState={state(['sanctions'])} onToggleLayer={vi.fn()} /></OpenMapContext.Provider>)
+    fireEvent.click(screen.getByRole('button'))
+    expect(openMap).toHaveBeenCalledOnce()
   })
 })

@@ -33,7 +33,7 @@ vi.mock('./services/countryLookup', async orig => ({
 // doesn't, so the test sets a placeholder (the map is mocked above; nothing is sent to Mapbox). In beforeEach because
 // the config's unstubEnvs resets stubbed env vars before every test.
 describe('picking a country', () => {
-  beforeEach(() => { vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder') })
+  beforeEach(() => { vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder'); history.replaceState(null, '', '#') })
 
   async function pickCountry() {
     const { default: App } = await import('./App')
@@ -47,11 +47,11 @@ describe('picking a country', () => {
     expect(screen.queryByTestId('card')).toBeNull()
   })
 
-  it('"Show on map" closes the page in a workspace', async () => {
+  it('"Show on map" on a country page opens the Map with that country\'s overview', async () => {
     await pickCountry()
     fireEvent.click(screen.getByText('show-map'))
-    await waitFor(() => expect(screen.queryByTestId('page')).toBeNull())
-    expect(screen.queryByTestId('card')).toBeNull()
+    expect((await screen.findByTestId('drawer')).textContent).toContain('Ukraine')
+    expect(screen.getByTestId('card').textContent).toContain('pinned:Ukraine')
   })
 
   it('closing the page returns to the workspace', async () => {
@@ -62,7 +62,7 @@ describe('picking a country', () => {
 })
 
 describe('the Map destination', () => {
-  beforeEach(() => { vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder') })
+  beforeEach(() => { vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder'); history.replaceState(null, '', '#') })
 
   async function openMapPage() {
     const { default: App } = await import('./App')

@@ -8,6 +8,7 @@ import type { IndicatorMeta } from '../../services/countryIndicators'
 import { fmtRange, gdpByIso2, mapRows, partnerNames, traceExposure, type ExposureResult, type ExposureRow, type Macro, type Shock, type Step } from '../../utils/exposure'
 import { SENS_FROM, type Sensitivity } from '../../utils/sensitivity'
 import { loadSensitivities } from '../../services/exportSensitivity'
+import { useOpenMap } from '../OpenMapContext'
 import { EvidenceTag, SourceLine, StatusLabel } from '../DataLabels'
 import { Method } from './countryLookup/shared'
 import type { MapLinkProps } from './countryDataShared'
@@ -82,6 +83,7 @@ function Row({ r, rank, open, onToggle, oil, growth }: { r: ExposureRow; rank: n
  * each one — every step labelled as observed data or as an assumption the shock makes.
  */
 export default function ExposurePanel({ panelState, onToggleLayer }: MapLinkProps) {
+  const openMap = useOpenMap()
   const [kind, setKind] = useState<Kind>('demand')
   const [partner, setPartner] = useState('China')
   const [chokeId, setChokeId] = useState(() => (OIL_CHOKEPOINTS.find(c => /hormuz/i.test(c.name)) ?? OIL_CHOKEPOINTS[0])?.id ?? '')
@@ -121,6 +123,7 @@ export default function ExposurePanel({ panelState, onToggleLayer }: MapLinkProp
     }
     showDerivedOnMap(meta, mapRows(res, ISO2_TO_ISO3, iso2 => YEAR_OF.get(iso2) ?? ''))
     if (panelState && onToggleLayer && !panelState.countryAnalytics) onToggleLayer('countryAnalytics')
+    openMap()
   }
 
   return (

@@ -35,6 +35,7 @@ import { clearNewsCaches } from './services/news'
 import { selectForMap } from './services/countryAnalytics'
 import { summarizeKeyEvents } from './utils/keyEvents'
 import { useDisasterAlerts } from './hooks/useDisasterAlerts'
+import { OpenMapContext } from './components/OpenMapContext'
 import { GROUP_ORDER, PANEL_MAP, layersForGroup } from './panels/registry'
 import { decodeHash, encodeHash, enabledLayers, isViewMode, layersToPanelState, type DecodedState } from './utils/urlState'
 
@@ -125,9 +126,8 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [focusPanel, setFocusPanel] = useState<{ id: string; n: number } | null>(null)
-  // Forecasts and Countries are page-style destinations: the map is not part of their layout.
-  // The Country Lookup panel (opened from search or the home topics) is the one Countries view that stays in the dock.
-  const noMap = activeGroup === 'analysis' || (activeGroup === 'country' && focusPanel?.id !== 'countryLookup')
+  // Countries opens on its picker; the Country Lookup panel (from search or the home topics) is the one view that stays in the dock.
+  const showLanding = activeGroup === 'country' && focusPanel?.id !== 'countryLookup'
   const [libraryOpen, setLibraryOpen] = useState(false)
   // Switch to a panel's workspace and scroll the dock to it.
   const focusInDock = useCallback((id: string) => {
@@ -307,9 +307,11 @@ export default function App() {
   const handleFlightSelect = useCallback((_f: Flight) => {}, [])
   const handleCrisisSelect = useCallback((_c: CrisisEvent) => {}, [])
 
+  // Flying to a place needs the map, so from anywhere else it opens the Map destination.
   const handleGeoSearch = useCallback((q: string) => {
     setGeoFlyTo(q + '\u0000' + Date.now())
-  }, [])
+    if (!isHome) setIsMapPage(true)
+  }, [isHome])
 
   const toggleDeepstate = useCallback(() => setDeepstateMode(v => !v), [])
   // memoised so floating windows only re-render their panel when the data actually changes
@@ -410,6 +412,7 @@ export default function App() {
   }
 
   return (
+    <OpenMapContext.Provider value={openMap}>
     <div className="dashboard">
       <AnalystWindowProvider panelProps={cornerProps}>
         <TopBar
@@ -475,45 +478,24 @@ export default function App() {
             <div className="workspace-stage">
               {!tickerHidden && <NewsTicker onClose={() => setTickerHidden(true)} />}
               <div className="dashboard-main">
-                {!noMap && (
-                  <div className="area-map">
-                    <div className="map-card">{mapView}
-                      {crisisArchive && panelState.crises && <div className="map-archive-note" role="status">Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.</div>}
-                    </div>
-                    {selectedCountry && (
-                      <div className="cp-chip" role="status">
-                        <b>{selectedCountry}</b>
-                        <button className="cp-chip-x" onClick={() => setSelectedCountry(null)} aria-label={`Deselect ${selectedCountry}`}>×</button>
-                      </div>
-                    )}
-                    <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
-                  </div>
-                )}
-                {noMap ? (
-                  <div className="analysis-no-map">
-                    {selectedCountry ? (
-                      <Suspense fallback={null}>
-                        {/* the dock's own panels carry their country pickers; this one is for switching while a country page is open */}
-                        <CountrySearchBox onPick={selectCountry} />
-                        <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
-                          onClose={() => setSelectedCountry(null)} onShowMap={openMap} onOpenPanel={openPanel} onFlyTo={handleGeoSearch}
-                          initialTab={activeGroup === 'country' ? 'economy' : 'forecasts'} />
-                      </Suspense>
-                    ) : activeGroup === 'country' ? (
-                      <Suspense fallback={null}><CountriesLanding onPick={selectCountry} /></Suspense>
-                    ) : (
-                      <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel}
-                        fullWidth onShowMap={openMap} />
-                    )}
-                  </div>
-                ) : selectedCountry ? (
-                  <Suspense fallback={null}>
-                    <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
-                      onClose={() => setSelectedCountry(null)} onShowMap={() => setSelectedCountry(null)} onOpenPanel={openPanel} onFlyTo={handleGeoSearch} />
-                  </Suspense>
-                ) : (
-                  <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel} />
-                )}
+                {/* No map here: it lives only in the Map destination, and every panel's Show on map goes there. */}
+                <div className="analysis-no-map">
+                  {selectedCountry ? (
+                    <Suspense fallback={null}>
+                      {/* the dock's own panels carry their country pickers; this one is for switching while a country page is open */}
+                      <CountrySearchBox onPick={selectCountry} />
+                      <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
+                        onClose={() => setSelectedCountry(null)} onShowMap={openMap} onOpenPanel={openPanel} onFlyTo={handleGeoSearch}
+                        initialTab={activeGroup === 'country' ? 'economy' : 'forecasts'} />
+                    </Suspense>
+                  ) : showLanding ? (
+                    <Suspense fallback={null}><CountriesLanding onPick={selectCountry} /></Suspense>
+                  ) : (
+                    <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel}
+                      fullWidth onShowMap={openMap} />
+                  )}
+                  <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
+                </div>
               </div>
             </div>
           )}
@@ -537,5 +519,6 @@ export default function App() {
         <WindowLayer layout={windows} panelProps={cornerProps} />
       </AnalystWindowProvider>
     </div>
+    </OpenMapContext.Provider>
   )
 }

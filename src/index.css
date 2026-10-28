@@ -1301,7 +1301,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .workspace-stage { display: flex; flex-direction: column; }
 .workspace-stage > .news-ticker { flex: 0 0 auto; position: relative; }
 .workspace-stage .dashboard-main { display: flex; flex: 1 1 0; min-height: 0; overflow: hidden; }
-.analysis-no-map { display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); }
+.analysis-no-map { position: relative; display: flex; flex-direction: column; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; background: var(--bg); }
 .analysis-no-map > .country-search-box { flex: 0 0 auto; margin: 10px 14px 0; }
 .analysis-no-map > .country-page { position: relative; inset: auto; flex: 1 1 0; min-height: 0; }
 .analysis-no-map > .right-panel { border-left: none !important; }
