@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
+import { Suspense, lazy, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { WEO_FOR_WB, fetchWeo, vintageYear, weoPoints, type WeoPayload } from '../../services/imfWeo'
 import { ISO2_TO_ISO3, ISO3_TO_ISO2 } from '../../services/economies'
@@ -10,6 +10,8 @@ import { nowcast, type Nowcast } from '../../utils/nowcast'
 import { fmtRange, gdpByIso2, traceExposure } from '../../utils/exposure'
 import { focusCountry } from '../../utils/focusCountry'
 import { Metric, SectionLabel, StatusLabel } from '../DataLabels'
+
+const PredictionsPanel = lazy(() => import('../panels/PredictionsPanel').then(m => ({ default: m.PredictionsPanel })))
 
 const signed = (v: number) => `${v < 0 ? '−' : v > 0 ? '+' : ''}${Math.abs(v).toFixed(1)}`
 // growth and inflation are rates of change and carry a sign; unemployment is a level and doesn't
@@ -87,7 +89,9 @@ export function ForecastsTab({ country, iso2, onOpenPanel }: { country: string; 
       )}
 
       <SectionLabel>Our forecasts</SectionLabel>
-      <p className="viz-foot">Our own statistical forecasts for {country}, how they did out of sample, the IMF comparison and what changed since your last visit are in Predictions.</p>
+      {iso2
+        ? <Suspense fallback={<StatusLabel status="loading">Forecasts for {country}…</StatusLabel>}><PredictionsPanel iso2={iso2} /></Suspense>
+        : <StatusLabel status="empty">No country code for {country}, so there is no forecast to compute.</StatusLabel>}
       {iso2 && <GoButton onClick={() => { focusCountry('predictions', iso2); onOpenPanel('predictions') }}>Open {country} in Predictions</GoButton>}
     </>
   )

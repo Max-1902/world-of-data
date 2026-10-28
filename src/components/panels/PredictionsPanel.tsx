@@ -264,8 +264,9 @@ function Section({ target, series, period, country }: { target: Target; series: 
  * for each series (AR(2) or "no change") and which interval it carries is set in utils/forecastPolicy.ts from a
  * cross-country backtest; each card also backtests AR(2) against "no change" on the selected country.
  */
-export function PredictionsPanel() {
-  const c = useCountryLookup()
+export function PredictionsPanel({ iso2 }: { iso2?: string } = {}) {
+  const embedded = !!iso2
+  const c = useCountryLookup(iso2)
   const [query, setQuery] = useState('')
   const [period, setPeriod] = useState<Period>('2000')
   const current = c.countries.find(x => x.iso2 === c.iso2)
@@ -278,7 +279,7 @@ export function PredictionsPanel() {
 
   return (
     <div className="viz-root cl-root">
-      <div className="cl-search">
+      {!embedded && <div className="cl-search">
         <label className="viz-field" style={{ flex: 1 }}>
           <span>Country</span>
           <input className="viz-select" type="search" placeholder={c.countries.length ? `Search ${c.countries.length} economies…` : 'Loading country list…'} value={query}
@@ -292,12 +293,14 @@ export function PredictionsPanel() {
             ))}
           </ul>
         )}
-      </div>
+      </div>}
 
       <header className="cl-head">
         <div>
-          <h2 className="cl-name">{name}</h2>
-          <p className="viz-sub">Statistical projections from {name}'s own World Bank history — not an AI forecast, and not a claim about what will happen.</p>
+          {embedded ? <p className="viz-sub">Statistical projections from {name}'s own World Bank history — not an AI forecast, and not a claim about what will happen.</p> : <>
+            <h2 className="cl-name">{name}</h2>
+            <p className="viz-sub">Statistical projections from {name}'s own World Bank history — not an AI forecast, and not a claim about what will happen.</p>
+          </>}
         </div>
         <div className="viz-toggle" role="group" aria-label="Years shown in charts (models always use the full history)">
           {PERIODS.map(p => <button key={p.id} className={period === p.id ? 'on' : ''} aria-pressed={period === p.id} onClick={() => setPeriod(p.id)}>{p.label}</button>)}
