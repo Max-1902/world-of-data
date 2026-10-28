@@ -212,10 +212,16 @@ const inflight = new Map<string, Promise<CountryValue[]>>()
 
 async function fetchWorldBank(id: string): Promise<CountryValue[]> {
   const base = `${WB_BASE}/country/all/indicator/${encodeURIComponent(id)}`
-  // The retry asks for the same data with the parameters reordered: World Bank's CDN has been seen (2026-10-20,
-  // EG.USE.PCAP.KG.OE) serving a cached copy of one exact URL without its CORS header for up to a day, which a browser
-  // reports as a network error. A different query string is a different cache entry.
-  const urls = [`${base}?format=json&per_page=20000&mrnev=1`, `${base}?per_page=20000&mrnev=1&format=json`]
+  // The retries ask for the same data with the query string changed: World Bank's CDN has been seen (2026-10-20,
+  // EG.USE.PCAP.KG.OE; again 2026-10-27, NY.GDP.PCAP.CD, where reordering alone did not help) serving a cached copy of
+  // one exact URL without its CORS header for up to a day, which a browser reports as a network error. A different
+  // query string is a different cache entry. The last variant adds a date range (`mrnev` ignores it; parseWorldBank
+  // drops pre-MIN_YEAR rows anyway).
+  const urls = [
+    `${base}?format=json&per_page=20000&mrnev=1`,
+    `${base}?per_page=20000&mrnev=1&format=json`,
+    `${base}?format=json&per_page=20000&mrnev=1&date=${MIN_YEAR}:${new Date().getFullYear()}`,
+  ]
   let tries = 0
   const attempt = async (): Promise<CountryValue[]> => {
     const url = urls[Math.min(tries++, urls.length - 1)]
@@ -223,12 +229,15 @@ async function fetchWorldBank(id: string): Promise<CountryValue[]> {
     if (!res.ok) throw Object.assign(new Error(`World Bank HTTP ${res.status}`), { transient: res.status === 429 || res.status >= 500 })
     return parseWorldBank(await res.json())
   }
-  try { return await attempt() } catch (e) {
-    // one retry for throttling / server hiccups / timeouts / network errors; a malformed body or a 4xx is not retried
-    const transient = (e as { transient?: boolean }).transient ?? (e instanceof TypeError || (e as Error)?.name === 'TimeoutError')
-    if (!transient) throw e
-    await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
-    return attempt()
+  for (;;) {
+    try { return await attempt() } catch (e) {
+      // one retry for throttling / server hiccups / timeouts; a blocked response (a TypeError) walks through every URL
+      // variant; a malformed body or a 4xx is not retried
+      const blocked = e instanceof TypeError
+      const transient = (e as { transient?: boolean }).transient ?? (blocked || (e as Error)?.name === 'TimeoutError')
+      if (!transient || tries >= (blocked ? urls.length : 2)) throw e
+      await new Promise(r => setTimeout(r, RETRY_DELAY_MS))
+    }
   }
 }
 

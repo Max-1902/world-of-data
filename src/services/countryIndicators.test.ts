@@ -144,6 +144,28 @@ describe('fetchIndicatorAll', () => {
     vi.useRealTimers()
   })
 
+  it('walks through a third URL variant when two in a row are blocked, then gives up', async () => {
+    vi.useFakeTimers()
+    let n = 0
+    const fetchMock = mockFetch(() => {
+      if (n++ < 2) throw new TypeError('Failed to fetch')
+      return jsonResponse([{}, [row('US', 'USA', 5)]])
+    })
+    const { fetchIndicatorAll } = await load()
+    const p = fetchIndicatorAll('B.B')
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(await p).toHaveLength(1)
+    const urls = fetchMock.mock.calls.map(c => String(c[0]))
+    expect(new Set(urls).size).toBe(3)
+
+    const blocked = mockFetch(() => { throw new TypeError('Failed to fetch') })
+    const q = (await load()).fetchIndicatorAll('B.C').catch(e => e)
+    await vi.advanceTimersByTimeAsync(3000)
+    expect(await q).toBeInstanceOf(TypeError)
+    expect(blocked).toHaveBeenCalledTimes(3)
+    vi.useRealTimers()
+  })
+
   it('gives up after one retry, and never retries a client error or a malformed body', async () => {
     vi.useFakeTimers()
     const always500 = mockFetch(() => new Response('x', { status: 500 }))

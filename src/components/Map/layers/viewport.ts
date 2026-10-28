@@ -1,8 +1,26 @@
 import { useEffect } from 'react'
 import type { MapHandle, MapViewProps } from '../types'
 
+/** Keep the canvas the size of its container: Mapbox only follows window resizes, not a dock being dragged or closed. */
+function useContainerResize({ mapRef, containerRef, mapReady }: MapHandle) {
+  useEffect(() => {
+    const map = mapRef.current
+    const container = containerRef.current
+    if (!map || !container || typeof ResizeObserver === 'undefined') return
+    let raf = 0
+    const ro = new ResizeObserver(() => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(() => { map.resize() })
+    })
+    ro.observe(container)
+    return () => { cancelAnimationFrame(raf); ro.disconnect() }
+  }, [mapReady])
+}
+
 /** Resize Mapbox when deepstate split activates / deactivates */
-export function useMapResize({ mapRef, containerRef }: MapHandle, { deepstateMode }: Pick<MapViewProps, 'deepstateMode'>) {
+export function useMapResize(handle: MapHandle, { deepstateMode }: Pick<MapViewProps, 'deepstateMode'>) {
+  const { mapRef, containerRef } = handle
+  useContainerResize(handle)
   // ── Resize Mapbox when deepstate split activates / deactivates ───────────
   useEffect(() => {
     const map = mapRef.current
