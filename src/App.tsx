@@ -18,6 +18,7 @@ import AlertToasts from './components/AlertToasts'
 import MapView      from './components/Map/MapView'
 import TopBar       from './components/TopBar'
 import Sidebar      from './components/Sidebar'
+import { DEFAULT_VIEW, viewOf, type DockView } from './panels/destinations'
 import PanelDock    from './components/PanelDock/PanelDock'
 import WindowLayer from './components/Windows/WindowLayer'
 import Taskbar from './components/Windows/Taskbar'
@@ -128,6 +129,8 @@ export default function App() {
   const [focusPanel, setFocusPanel] = useState<{ id: string; n: number } | null>(null)
   // Countries opens on its picker; the Country Lookup panel (from search or the home topics) is the one view that stays in the dock.
   const showLanding = activeGroup === 'country' && focusPanel?.id !== 'countryLookup'
+  // Analysis and Economy hold several destinations' panels; the dock shows only the one the sidebar is on.
+  const dockView: DockView | null = (focusPanel && viewOf(activeGroup, focusPanel.id)) || DEFAULT_VIEW[activeGroup] || null
   const [libraryOpen, setLibraryOpen] = useState(false)
   // Switch to a panel's workspace and scroll the dock to it. Going to a panel leaves the country profile
   // (which would otherwise render in place of the dock); the panel picks the country up via focusCountry.
@@ -145,6 +148,7 @@ export default function App() {
     setIsHome(false)
     setIsMapPage(false)
     setSelectedCountry(null)
+    setFocusPanel(null) // a panel focused in another workspace must not decide which destination this one opens on
     setActiveGroup(group)
   }, [])
   const openMap = useCallback(() => { setIsHome(false); setIsMapPage(true) }, [])
@@ -241,7 +245,7 @@ export default function App() {
       else if (d.group || d.country) setIsHome(false)
       if (d.viewMode) setViewMode(d.viewMode)
       if (d.layers) setPanelState(prev => layersToPanelState(prev, d.layers!))
-      if (d.group) { setActiveGroup(d.group as PanelGroup); setIsMapPage(false) }
+      if (d.group) { setActiveGroup(d.group as PanelGroup); setIsMapPage(false); setFocusPanel(null) }
       setSelectedPlace(null)
       setSelectedCountry(d.country ?? null)
     }
@@ -495,7 +499,7 @@ export default function App() {
                   ) : showLanding ? (
                     <Suspense fallback={null}><CountriesLanding onPick={selectCountry} /></Suspense>
                   ) : (
-                    <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel}
+                    <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel} view={dockView}
                       fullWidth onShowMap={openMap} />
                   )}
                   <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />

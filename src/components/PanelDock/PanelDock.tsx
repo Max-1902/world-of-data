@@ -2,6 +2,7 @@ import { Fragment, useState, useRef, useEffect } from 'react'
 import type { CrisisEvent, PanelState, Flight } from '../../types'
 import { GROUP_ORDER, GROUP_SECTIONS, panelsForGroup } from '../../panels/registry'
 import type { PanelGroup, PanelProps } from '../../panels/types'
+import { panelsInView, viewTitle, type DockView } from '../../panels/destinations'
 import PanelHost from '../PanelHost'
 import PanelMapToggle from '../PanelMapToggle'
 import CloseButton from '../CloseButton'
@@ -24,6 +25,8 @@ interface Props {
   /** pop every panel of the workspace out and tile them */
   onPopOutAll: (ids: string[]) => void
   activeGroup: PanelGroup
+  /** which destination of a shared workspace is showing (Forecasts, Drivers or Explore); absent → every panel of the workspace */
+  view?: DockView | null
   /** Scroll to (and re-show, if closed) this panel; `n` changes on every request so picking the same panel twice still scrolls. */
   focusPanel?: { id: string; n: number } | null
   /** the map is hidden for this workspace (Analysis defaults to it): the dock fills the width, and shows a way to bring the map back */
@@ -50,17 +53,17 @@ function loadWidth(): number {
   return Math.round(window.innerWidth * 0.28)
 }
 
-export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, onPopOut, onPopOutAll, activeGroup, focusPanel, fullWidth, onShowMap }: Props) {
+export default function PanelDock({ crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery, poppedOut, onPopOut, onPopOutAll, activeGroup, view = null, focusPanel, fullWidth, onShowMap }: Props) {
   const [panelW, setPanelW] = useState(loadWidth)
   const resizeRef = useRef<{ startX: number; startW: number } | null>(null)
   // Panels the user closed with ✕; remembered across reloads and restorable from the workspace heading.
   const [hidden, setHidden] = useState<Set<string>>(loadHidden)
 
   // Derive visible panels from registry
-  const groupPanels = panelsForGroup(activeGroup)
+  const groupPanels = panelsInView(activeGroup, view, panelsForGroup(activeGroup))
   const visibleDefs = groupPanels.filter(p => !poppedOut.has(p.id) && !hidden.has(p.id))
   const closedInGroup = groupPanels.filter(p => hidden.has(p.id))
-  const groupLabel = GROUP_ORDER.find(group => group.id === activeGroup)?.label ?? activeGroup
+  const groupLabel = viewTitle(activeGroup, view, GROUP_ORDER.find(group => group.id === activeGroup)?.label ?? activeGroup)
 
   // Shared props for all panels
   const panelProps: PanelProps = { crises, flights, panelState, onToggleLayer, deepstateMode, onDeepstateToggle, onGeoSearch, onCountryClick, searchQuery }
