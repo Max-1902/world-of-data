@@ -94,21 +94,21 @@ describe('the analysis (forecasting) workspace', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder')
     window.location.hash = '#g=analysis'
-    try { localStorage.removeItem('ws-analysis-map-hidden') } catch {}
   })
 
-  it('has no map by default, and offers a way to search for a country', async () => {
+  it('never shows the map, and offers a way to search for a country', async () => {
     const { default: App } = await import('./App')
     render(<App />)
     expect(screen.queryByText('pick-country')).toBeNull()
     expect(await screen.findByLabelText('Search for a country')).toBeTruthy()
-    expect(screen.getByText('Show map')).toBeTruthy()
+    expect(screen.queryByText('Hide map')).toBeNull()
   })
 
-  it('"Show map" brings the map back', async () => {
+  it('"Open Map" goes to the Map destination, the one place the map lives', async () => {
     const { default: App } = await import('./App')
     render(<App />)
-    fireEvent.click(await screen.findByText('Show map'))
+    fireEvent.click(await screen.findByText('Open Map'))
     expect(await screen.findByText('pick-country')).toBeTruthy()
+    expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
   })
 })

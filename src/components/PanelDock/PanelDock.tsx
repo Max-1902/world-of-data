@@ -135,8 +135,8 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
           </div>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
             {onShowMap && (
-              <button className="dock-restore" onClick={onShowMap} title="Show the map alongside this workspace">
-                Show map
+              <button className="dock-restore" onClick={onShowMap} title="Open the Map">
+                Open Map
               </button>
             )}
             {visibleDefs.length} {visibleDefs.length === 1 ? 'panel' : 'panels'}
