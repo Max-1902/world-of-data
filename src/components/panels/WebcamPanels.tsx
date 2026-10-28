@@ -192,13 +192,13 @@ export function LiveFeedPanel() {
           >{ch.label}</button>
         ))}
       </div>
-      {/* 16:9 like the stream itself, so it fills the width with no black bars in the dock; in a taller window it grows to fill. */}
-      <div style={{ position: 'relative', flex: '1 1 auto', aspectRatio: '16 / 9', background: '#000', minHeight: 0 }}>
+      {/* Square box; the 16:9 stream is scaled to the box height and centred, so it fills the square (the outer edges of the picture are cropped). */}
+      <div style={{ position: 'relative', flex: '0 0 auto', aspectRatio: '1 / 1', overflow: 'hidden', background: '#000' }}>
         <iframe
           key={active.id}
           src={`https://www.youtube.com/embed/${active.videoId}?autoplay=1&mute=1`}
           title={`${active.label} live feed`}
-          style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
+          style={{ position: 'absolute', top: 0, left: '50%', height: '100%', aspectRatio: '16 / 9', transform: 'translateX(-50%)', border: 'none', display: 'block' }}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
