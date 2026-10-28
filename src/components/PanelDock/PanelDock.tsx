@@ -5,6 +5,7 @@ import type { PanelGroup, PanelProps } from '../../panels/types'
 import PanelHost from '../PanelHost'
 import PanelMapToggle from '../PanelMapToggle'
 import CloseButton from '../CloseButton'
+import { AskAnalyst, offersAnalyst } from './AskAnalyst'
 import { PictureInPicture2 } from 'lucide-react'
 
 interface Props {
@@ -169,6 +170,7 @@ export default function PanelDock({ crises, flights, panelState, onToggleLayer, 
                   <h2 className="dock-section-title" id={`dock-section-${activeGroup}-${section.id}`}>{section.title}</h2>
                   <p className="dock-section-desc">{section.desc}</p>
                 </div>
+                {offersAnalyst(activeGroup, section.id) && <AskAnalyst />}
               </section>
             )}
             <div

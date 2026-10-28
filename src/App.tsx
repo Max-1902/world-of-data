@@ -425,14 +425,12 @@ export default function App() {
           <Sidebar
             activeGroup={activeGroup}
             onGroupChange={changeWorkspace}
-            poppedOut={poppedOut}
             isHome={isHome}
             onHome={() => setIsHome(true)}
             onOpenLibrary={() => setLibraryOpen(true)}
             onFocusPanel={focusInDock}
             focusPanel={focusPanel}
             libraryOpen={libraryOpen}
-            onOpenMap={() => setIsHome(false)}
           />
 
           {isHome ? (

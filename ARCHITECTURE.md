@@ -9,7 +9,7 @@ src/
   App.tsx                       # root composition + top-level state (view mode, panel layout, selected country)
   components/
     Map/MapView.tsx             # Mapbox GL composition root — see Map/layers, Map/overlays below
-    Sidebar.tsx                 # left nav — one entry per panel group (INTEL/GEO/MIL/FIN/AI)
+    Sidebar.tsx                 # left nav — six entries (Outlook, Forecasts, Drivers, Countries, Explore, Saved) + a folded More
     TopBar.tsx                  # live counters, view switcher, search
     NewsTicker.tsx               # scrolling headline strip
     CountryDrawer.tsx            # click-a-country intel aggregation (crises, bases, trade, econ, refugees...)
@@ -64,7 +64,7 @@ Every panel in the right-hand dock is one entry in `src/panels/registry.tsx`:
   desc: 'ICG conflict tracking — 70+ states', render: () => <CrisisWatchPanel /> }
 ```
 
-`group` is the workspace (`overview | markets | analysis | country | security | geo | news`). `GROUP_ORDER` sets the order of workspaces in the left `Sidebar`, and `SIDEBAR_SECTIONS` sets the headings that group them: Start, Economy & forecasting, Context, Sources. `section` names a banner from `GROUP_SECTIONS[group]`. The dock shows panels section by section, each section under a numbered banner with a header and a one-line explanation, ordered from the most immediate or aggregated view to the detail behind it. `src/panels/registry.test.ts` checks that every panel's section exists and that no section is empty. Adding a panel means adding one entry here — `PanelDock`, the floating windows (`Windows/`), and `SettingsModal`'s layer list all read from this registry, so nothing else needs to change. Panels receive a shared `PanelProps` bag (`crises`, `flights`, `panelState`, `onToggleLayer`, `onGeoSearch`, `onCountryClick`, ...) and destructure only what they use.
+`group` is the workspace (`overview | markets | analysis | country | security | geo | news`). `GROUP_ORDER` sets the order of workspaces. The left `Sidebar` is organised by purpose, not by workspace: six entries (Outlook, Forecasts, Drivers, Countries, Explore, Saved) each open a workspace on a chosen panel, and Risk monitor, Security, Infrastructure and News sit in a folded More. `navSection()` in `Sidebar.tsx` maps the current workspace and focused panel to the one entry that is lit. Topic presets live as tiles on the Outlook page, and the AI analyst is offered as an "Ask the AI analyst" button on the Forecasts and Shock-exposure dock banners (`PanelDock/AskAnalyst.tsx`) rather than as a navigation entry. `section` names a banner from `GROUP_SECTIONS[group]`. The dock shows panels section by section, each section under a numbered banner with a header and a one-line explanation, ordered from the most immediate or aggregated view to the detail behind it. `src/panels/registry.test.ts` checks that every panel's section exists and that no section is empty. Adding a panel means adding one entry here — `PanelDock`, the floating windows (`Windows/`), and `SettingsModal`'s layer list all read from this registry, so nothing else needs to change. Panels receive a shared `PanelProps` bag (`crises`, `flights`, `panelState`, `onToggleLayer`, `onGeoSearch`, `onCountryClick`, ...) and destructure only what they use.
 
 ## Data flow: service → hook → panel
 
