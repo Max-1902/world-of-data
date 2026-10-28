@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowLeftRight, Bookmark, Compass, ChevronDown, Database, Layers, MapPinned, Network, Newspaper, Radar, ShieldHalf, TrendingUp, Globe2, Activity, Telescope } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PanelGroup } from '../panels/types'
+import { DEFAULT_VIEW, viewOf } from '../panels/destinations'
 
 interface Props {
   activeGroup: PanelGroup
@@ -22,11 +23,6 @@ export type NavSection =
   | 'outlook' | 'forecasts' | 'drivers' | 'countries' | 'map' | 'explore' | 'saved'
   | 'risk' | 'security' | 'infrastructure' | 'news'
 
-/** Dock panels that belong to Drivers: the trade and resource links that shocks travel along. */
-const DRIVER_PANELS = new Set(['drivers', 'exposure', 'tradePartnersByCountry', 'tradeProductsByCountry', 'resources', 'resourcesByCountry'])
-/** Panels in the forecasting workspace that are open-ended exploration rather than forecasts. */
-const EXPLORE_ANALYSIS_PANELS = new Set(['countryAnalytics', 'analytics'])
-
 const MORE: { section: NavSection; label: string; icon: LucideIcon; group: PanelGroup }[] = [
   { section: 'risk', label: 'Risk monitor', icon: Radar, group: 'overview' },
   { section: 'security', label: 'Security & defence', icon: ShieldHalf, group: 'security' },
@@ -42,8 +38,8 @@ export function navSection(isHome: boolean, group: PanelGroup, focusId?: string,
   if (isHome) return 'outlook'
   if (isMap) return 'map'
   switch (group) {
-    case 'analysis': return focusId && EXPLORE_ANALYSIS_PANELS.has(focusId) ? 'explore' : 'forecasts'
-    case 'markets': return focusId && DRIVER_PANELS.has(focusId) ? 'drivers' : 'explore'
+    case 'analysis':
+    case 'markets': return (focusId && viewOf(group, focusId)) || DEFAULT_VIEW[group]!
     case 'country': return 'countries'
     case 'overview': return focusId === 'watchlist' ? 'saved' : 'risk'
     case 'security': return 'security'
@@ -87,7 +83,7 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
         {current === 'explore' && (
           <div className="new-nav-subgroup">
             <NavItem sub icon={Activity} label="Indicators" active={activeGroup === 'markets'} onClick={() => go('markets', 'economy')} />
-            <NavItem sub icon={ArrowLeftRight} label="Compare" active={activeGroup === 'analysis'} onClick={() => go('analysis', 'countryAnalytics')} />
+            <NavItem sub icon={ArrowLeftRight} label="Analysis" active={activeGroup === 'analysis'} onClick={() => go('analysis', 'countryAnalytics')} />
             <NavItem sub icon={Database} label="Datasets" title="Every panel, searchable" active={libraryOpen} onClick={onOpenLibrary} />
           </div>
         )}

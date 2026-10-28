@@ -139,12 +139,12 @@ const PANELS: PanelDef[] = [
     render: () => <NowcastPanel />,
   },
   {
-    id: 'gasForecast', title: 'Gas Storage Forecast', group: 'analysis', section: 'forecasts', map: 'none', sources: ['eia'], minHeight: 700,
+    id: 'gasForecast', title: 'Gas Storage Forecast', group: 'analysis', section: 'explore', map: 'none', sources: ['eia'], minHeight: 700,
     dotColor: 'green', desc: 'Next week’s change in US natural-gas storage — a seasonal model vs. the 5-year norm and last week, backtested week by week in time order (EIA, free key)',
     render: () => <GasStorageForecastPanel />,
   },
   {
-    id: 'inventories', title: 'Energy Inventories', group: 'analysis', section: 'forecasts', map: 'none', sources: ['eia'], minHeight: 900,
+    id: 'inventories', title: 'Energy Inventories', group: 'analysis', section: 'explore', map: 'none', sources: ['eia'], minHeight: 900,
     dotColor: 'amber', desc: 'Weekly US crude, gasoline, distillate and natural-gas stocks against the same week in the previous five years (EIA, free key)',
     render: () => <InventoriesPanel />,
   },
@@ -295,9 +295,9 @@ export const GROUP_SECTIONS: Record<PanelGroup, PanelSection[]> = {
     { id: 'resources', title: 'Resources', desc: 'Critical minerals and commodities: reserves and production by country.' },
   ],
   analysis: [
-    { id: 'forecasts', title: 'Forecasts', desc: 'Statistical projections computed in your browser and backtested out of sample, plus the weekly EIA stock data the gas forecast is built on. Evidence first: these numbers are measured, not generated.' },
+    { id: 'forecasts', title: 'Forecasts', desc: 'Statistical projections computed in your browser and backtested out of sample. Evidence first: these numbers are measured, not generated.' },
     { id: 'ai', title: 'AI analyst', desc: 'A language model reasoning over the dashboard\'s live data. Inference, not evidence: its answers have not been systematically evaluated.' },
-    { id: 'explore', title: 'Explore the data', desc: 'Open-ended analysis: compare any two country indicators, or study earthquake and wildfire patterns.' },
+    { id: 'explore', title: 'Explore the data', desc: 'Open-ended analysis: compare any two country indicators, study earthquake and wildfire patterns, or follow the weekly EIA gas storage data and its forecast.' },
   ],
   country: [
     { id: 'profile', title: 'One country in depth', desc: 'A single country\'s full World Bank record by category, ECB/Eurostat data for Europe, and an analysis of its own history.' },
