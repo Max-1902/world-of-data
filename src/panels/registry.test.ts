@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { LAYER_IDS } from '../components/layerCatalogue'
-import { GROUP_ORDER, GROUP_SECTIONS, PANEL_MAP, SIDEBAR_SECTIONS, panelsForGroup } from './registry'
+import { GROUP_ORDER, GROUP_SECTIONS, PANEL_MAP, panelsForGroup } from './registry'
 
 describe('panel registry structure', () => {
   it('puts every panel under a section that exists in its own workspace', () => {
@@ -23,10 +23,6 @@ describe('panel registry structure', () => {
       const ranks = panelsForGroup(group).map(p => order.indexOf(p.section))
       expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
     }
-  })
-
-  it('lists every workspace exactly once in the sidebar, in GROUP_ORDER order', () => {
-    expect(SIDEBAR_SECTIONS.flatMap(s => s.groups)).toEqual(GROUP_ORDER.map(g => g.id))
   })
 
   it('opens each workspace with its most immediate view', () => {

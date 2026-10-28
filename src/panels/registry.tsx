@@ -334,11 +334,3 @@ export const GROUP_ORDER: { id: PanelGroup; label: string }[] = [
   { id: 'geo',      label: 'INFRASTRUCTURE' },
   { id: 'news',     label: 'NEWS & MEDIA' },
 ]
-
-/** Sidebar headings: which workspaces sit under each, in GROUP_ORDER order. */
-export const SIDEBAR_SECTIONS: { label: string; groups: PanelGroup[] }[] = [
-  { label: 'START', groups: ['overview'] },
-  { label: 'ECONOMY & FORECASTING', groups: ['markets', 'analysis', 'country'] },
-  { label: 'CONTEXT', groups: ['security', 'geo'] },
-  { label: 'SOURCES', groups: ['news'] },
-]
