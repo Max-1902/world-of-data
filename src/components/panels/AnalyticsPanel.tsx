@@ -1,5 +1,6 @@
 import { useMemo, type ReactNode } from 'react'
 import { Map as MapIcon, RefreshCw } from 'lucide-react'
+import { useOpenMap } from '../OpenMapContext'
 import { useAnalyticsData } from '../../hooks/useAnalyticsData'
 import type { HexSource, Slice } from '../../services/analyticsData'
 import {
@@ -53,6 +54,7 @@ export function AnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }: {
   onToggleLayer: (id: keyof PanelState) => void
   onGeoSearch?: (q: string) => void
 }) {
+  const openMap = useOpenMap()
   const d = useAnalyticsData({ quakes: true, fires: true })
   const { quakes, fires } = d
   const layerOn = panelState.analyticsHex
@@ -99,7 +101,7 @@ export function AnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }: {
   return (
     <div className="viz-root">
       <div className="viz-filters">
-        <button className={`cy-btn ${layerOn ? 'active' : ''}`} aria-pressed={layerOn} onClick={() => onToggleLayer('analyticsHex')}
+        <button className={`cy-btn ${layerOn ? 'active' : ''}`} aria-pressed={layerOn} onClick={() => { if (!layerOn) openMap(); onToggleLayer('analyticsHex') }}
           title="Draw this data on the map as 3D hexagons — tilt the map to see heights">
           <MapIcon size={11} /> {layerOn ? 'On the map' : 'Show on map'}
         </button>

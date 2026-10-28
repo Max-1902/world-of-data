@@ -2,6 +2,7 @@ import { Map as MapIcon } from 'lucide-react'
 import type { PanelState } from '../types'
 import type { PanelDef } from '../panels/types'
 import { LAYER_IDS } from './layerCatalogue'
+import { useOpenMap } from './OpenMapContext'
 
 /**
  * The standard "Show on map" control in a panel's header, for every panel whose registry entry lists map layers.
@@ -13,6 +14,7 @@ export default function PanelMapToggle({ map, panelState, onToggleLayer }: {
   panelState: PanelState
   onToggleLayer: (id: keyof PanelState) => void
 }) {
+  const openMap = useOpenMap()
   if (!Array.isArray(map) || map.length === 0) return null
   const active = map.every(id => panelState[id])
   const what = map.map(id => {
@@ -23,9 +25,10 @@ export default function PanelMapToggle({ map, panelState, onToggleLayer }: {
     <button
       className={`cy-btn ${active ? 'active' : ''}`}
       aria-pressed={active}
-      title={active ? `Hide from the map: ${what}` : `Show on the map: ${what}`}
+      title={active ? `Hide from the map: ${what}` : `Show on the map (opens the Map): ${what}`}
       onClick={() => {
         for (const id of map) if (panelState[id] === active) onToggleLayer(id)
+        if (!active) openMap()
       }}
       onMouseDown={e => e.stopPropagation()}
       draggable={false}

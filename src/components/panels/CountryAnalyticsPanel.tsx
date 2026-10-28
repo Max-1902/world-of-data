@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { ArrowLeftRight, Map as MapIcon, RefreshCw } from 'lucide-react'
 import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
+import { useOpenMap } from '../OpenMapContext'
 import { INDICATORS, INDICATOR_GROUPS, PRESETS } from '../../services/countryIndicators'
 import { describeFit, describePair, histogram, type MapMode } from '../../utils/countryStats'
 import { ChartFrame } from '../charts/ChartFrame'
@@ -42,6 +43,7 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
   onToggleLayer: (id: keyof PanelState) => void
   onGeoSearch?: (q: string) => void
 }) {
+  const openMap = useOpenMap()
   const c = useCountryAnalytics(true)
   const { xMeta, yMeta, xs, ys, xSlice, ySlice, analysis, state } = c
   const { x, y } = state.selection
@@ -78,7 +80,7 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
       </p>
 
       <div className="viz-filters">
-        <button className={`cy-btn ${layerOn ? 'active' : ''}`} aria-pressed={layerOn} onClick={() => onToggleLayer('countryAnalytics')} title="Colour the countries on the globe with these results">
+        <button className={`cy-btn ${layerOn ? 'active' : ''}`} aria-pressed={layerOn} onClick={() => { if (!layerOn) openMap(); onToggleLayer('countryAnalytics') }} title="Colour the countries on the globe with these results">
           <MapIcon size={11} /> {layerOn ? 'On the map' : 'Show on map'}
         </button>
         {(['value', 'trend'] as MapMode[]).map(m => (

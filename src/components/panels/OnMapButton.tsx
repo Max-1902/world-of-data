@@ -2,6 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { Map as MapIcon } from 'lucide-react'
 import { countryAnalytics, selectForMap } from '../../services/countryAnalytics'
 import type { PanelState } from '../../types'
+import { useOpenMap } from '../OpenMapContext'
 
 /**
  * "On the map" for a country-data panel: shades the globe by `indicatorId` through the Country Analytics layer (the same
@@ -14,6 +15,7 @@ export function OnMapButton({ indicatorId, panelState, onToggleLayer }: {
   onToggleLayer?: (id: keyof PanelState) => void
 }) {
   const selection = useSyncExternalStore(countryAnalytics.subscribe, () => countryAnalytics.getState().selection)
+  const openMap = useOpenMap()
   if (!panelState || !onToggleLayer) return null
   const active = panelState.countryAnalytics && indicatorId !== null && selection.y === indicatorId
   return (
@@ -26,6 +28,7 @@ export function OnMapButton({ indicatorId, panelState, onToggleLayer }: {
         if (active) { onToggleLayer('countryAnalytics'); return }
         selectForMap(indicatorId!)
         if (!panelState.countryAnalytics) onToggleLayer('countryAnalytics')
+        openMap()
       }}
       style={{ flexShrink: 0 }}
     >
