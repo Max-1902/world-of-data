@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { ArrowRight, BarChart3, BookOpen, Globe2, Map, Table, Users, Wind } from 'lucide-react'
 import { fetchGlobalTrend, type GlobalTrendPoint } from '../services/globalTrends'
+import { selectForMap } from '../services/countryAnalytics'
 import { ForecastHome } from './home/ForecastHome'
 
 interface Props {
@@ -27,11 +28,12 @@ const INDICATORS = [
   { label: 'Renewable energy', id: 'EG.FEC.RNEW.ZS' },
 ]
 
+/** Each card shows the World Bank's world aggregate; a click opens the same indicator country by country (Country Analytics). */
 const GLOBAL_TRENDS = [
-  { id: 'gdp', indicator: 'NY.GDP.MKTP.KD.ZG', label: 'Global GDP Growth', unit: 'percent', panel: 'predictions', color: '#28c9f3' },
-  { id: 'co2', indicator: 'EN.GHG.CO2.MT.CE.AR5', label: 'CO₂ Emissions', unit: 'gigatonnes', panel: 'owid', color: '#42d8a5' },
-  { id: 'renewables', indicator: 'EG.FEC.RNEW.ZS', label: 'Renewable Energy', unit: 'percent', panel: 'owid', color: '#ff982f' },
-  { id: 'life', indicator: 'SP.DYN.LE00.IN', label: 'Life Expectancy', unit: 'years', panel: 'countryAnalytics', color: '#a680ff' },
+  { id: 'gdp', indicator: 'NY.GDP.MKTP.KD.ZG', label: 'Global GDP Growth', unit: 'percent', color: '#28c9f3' },
+  { id: 'co2', indicator: 'EN.GHG.CO2.MT.CE.AR5', label: 'CO₂ Emissions', unit: 'gigatonnes', color: '#42d8a5' },
+  { id: 'renewables', indicator: 'EG.FEC.RNEW.ZS', label: 'Renewable Energy', unit: 'percent', color: '#ff982f' },
+  { id: 'life', indicator: 'SP.DYN.LE00.IN', label: 'Life Expectancy', unit: 'years', color: '#a680ff' },
 ] as const
 
 type TrendId = typeof GLOBAL_TRENDS[number]['id']
@@ -80,7 +82,7 @@ export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenLibra
         <section className="home-section trend-section">
           <div className="home-section-heading"><div><span className="section-kicker">GLOBAL CONTEXT</span><h2>The world so far</h2></div><button className="text-link" onClick={() => onOpenPanel('predictions')}>Forecasts <ArrowRight size={14} /></button></div>
           <div className="trend-grid">
-            {GLOBAL_TRENDS.map(trend => <GlobalTrendCard key={trend.id} trend={trend} points={globalTrend[trend.id]} onClick={() => onOpenPanel(trend.panel)} />)}
+            {GLOBAL_TRENDS.map(trend => <GlobalTrendCard key={trend.id} trend={trend} points={globalTrend[trend.id]} onClick={() => { selectForMap(trend.indicator); onOpenPanel('countryAnalytics') }} />)}
           </div>
           <div className="home-footnote">World Bank World aggregate · annual observations · each card shows its latest reported year. Country-level maps use each country’s latest available year.</div>
         </section>
@@ -118,10 +120,10 @@ function GlobalTrendCard({ trend, points = [], onClick }: {
   }).join(' ')
   const value = last ? formatGlobalValue(trend.unit, last.value) : '—'
   return (
-    <button className="signal-card" onClick={onClick} style={{ '--trend-color': trend.color } as CSSProperties} title={last ? `${trend.label}: ${value} in ${last.year}. World Bank World aggregate.` : `${trend.label}: World Bank series unavailable`}>
+    <button className="signal-card" onClick={onClick} style={{ '--trend-color': trend.color } as CSSProperties} title={last ? `${trend.label}: ${value} in ${last.year}. World Bank World aggregate. Click to see this indicator for every country.` : `${trend.label}: World Bank series unavailable`}>
       <span className="signal-label"><span className="signal-dot" />{trend.label}</span>
       <strong>{value}</strong>
-      <span className="signal-detail">{last ? `in ${last.year} · World Bank` : 'Loading World Bank data'}</span>
+      <span className="signal-detail">{last ? `in ${last.year} · World Bank · by country →` : 'Loading World Bank data'}</span>
       {path && <svg className="signal-spark" viewBox="0 0 100 34" preserveAspectRatio="none" aria-label={`${trend.label} annual trend, ${recent[0]?.year} to ${last?.year}`}><path d={path} /></svg>}
     </button>
   )
