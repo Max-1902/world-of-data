@@ -472,9 +472,10 @@ export default function App() {
                 )}
                 {activeGroup === 'analysis' && mapHidden ? (
                   <div className="analysis-no-map">
-                    <CountrySearchBox onPick={selectCountry} />
                     {selectedCountry ? (
                       <Suspense fallback={null}>
+                        {/* the dock's own panels carry their country pickers; this one is for switching while a country page is open */}
+                        <CountrySearchBox onPick={selectCountry} />
                         <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
                           onClose={() => setSelectedCountry(null)} onShowMap={() => setMapHidden(false)} onOpenPanel={openPanel} onFlyTo={handleGeoSearch} initialTab="forecasts" />
                       </Suspense>
