@@ -260,7 +260,7 @@ const PANELS: PanelDef[] = [
     render: (p) => <IntelBriefPanel query={p.searchQuery ?? ''} crises={p.crises} flights={p.flights} />,
   },
   {
-    id: 'livefeed', title: 'Live Feed', group: 'news', section: 'video', map: 'none', sources: [{ name: "Broadcasters' own YouTube live streams (curated channel list)" }],
+    id: 'livefeed', title: 'Live Feed', group: 'news', section: 'video', map: 'none', sources: [{ name: "Broadcasters' own YouTube live streams (curated channel list)" }], minHeight: 0,
     dotColor: 'red', desc: 'Live news broadcasts — CNN, FOX, NBC, CBS, Euronews, DW, Sky News, France 24',
     render: () => <LiveFeedPanel />,
   },
