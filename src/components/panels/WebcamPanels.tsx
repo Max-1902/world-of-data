@@ -5,6 +5,7 @@ import CloseButton from '../CloseButton'
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { ExternalLink } from 'lucide-react'
+import { parseYouTubeLink } from '../../services/youtubeLink'
 import { WebcamSource, WebcamEntry, US_WEBCAMS } from '../../services/usWebcams'
 
 const WEBCAM_STATES = ['All', ...Array.from(new Set(US_WEBCAMS.map(w => w.state))).sort()]
@@ -167,7 +168,21 @@ interface LiveChannel {
   id: string
   label: string
   videoId: string
+  /** Set for links added by the user that point at a channel's current live stream rather than one video. */
+  channelId?: string
 }
+
+const CUSTOM_KEY = 'wod-livefeed-custom'
+function loadCustom(): LiveChannel[] {
+  try {
+    const raw = JSON.parse(localStorage.getItem(CUSTOM_KEY) ?? '[]')
+    return Array.isArray(raw) ? raw.filter(c => c && typeof c.id === 'string' && typeof c.label === 'string' && typeof c.videoId === 'string') : []
+  } catch { return [] }
+}
+const embedSrc = (c: LiveChannel) =>
+  c.channelId
+    ? `https://www.youtube.com/embed/live_stream?channel=${c.channelId}&autoplay=1&mute=1`
+    : `https://www.youtube.com/embed/${c.videoId}?autoplay=1&mute=1`
 
 const LIVE_CHANNELS: LiveChannel[] = [
   { id: 'cnn', label: 'CNN', videoId: 'GotlA1KKWoo' },
@@ -181,22 +196,61 @@ const LIVE_CHANNELS: LiveChannel[] = [
 ]
 
 export function LiveFeedPanel() {
+  const [custom, setCustom] = useState<LiveChannel[]>(loadCustom)
   const [active, setActive] = useState<LiveChannel>(LIVE_CHANNELS[0])
+  const [link, setLink] = useState('')
+  const [name, setName] = useState('')
+  const [error, setError] = useState('')
+  const all = [...LIVE_CHANNELS, ...custom]
+
+  useEffect(() => { try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom)) } catch {} }, [custom])
+
+  function add() {
+    const t = parseYouTubeLink(link)
+    if (!t) { setError('Not a YouTube video, live or channel/UC… link'); return }
+    const ch: LiveChannel = {
+      id: `custom-${Date.now()}`,
+      label: (name.trim() || `CUSTOM ${custom.length + 1}`).toUpperCase(),
+      videoId: t.kind === 'video' ? t.id : '',
+      channelId: t.kind === 'channel' ? t.id : undefined,
+    }
+    setCustom(c => [...c, ch]); setActive(ch); setLink(''); setName(''); setError('')
+  }
+
+  function remove(ch: LiveChannel) {
+    setCustom(c => c.filter(x => x.id !== ch.id))
+    if (active.id === ch.id) setActive(LIVE_CHANNELS[0])
+  }
+
+  const watchUrl = active.channelId ? `https://www.youtube.com/channel/${active.channelId}/live` : `https://www.youtube.com/watch?v=${active.videoId}`
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-        {LIVE_CHANNELS.map(ch => (
-          <button key={ch.id} onClick={() => setActive(ch)}
-            className={`news-tab ${active.id === ch.id ? 'active' : ''}`}
-          >{ch.label}</button>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2, padding: '3px 6px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        {all.map(ch => (
+          <span key={ch.id} style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <button onClick={() => setActive(ch)} className={`news-tab ${active.id === ch.id ? 'active' : ''}`}>{ch.label}</button>
+            {ch.id.startsWith('custom-') && (
+              <button onClick={() => remove(ch)} aria-label={`Remove ${ch.label}`} title="Remove"
+                style={{ background: 'none', border: 'none', color: 'var(--text3)', cursor: 'pointer', fontSize: 11, padding: '0 3px' }}>×</button>
+            )}
+          </span>
         ))}
       </div>
+      <form onSubmit={e => { e.preventDefault(); add() }}
+        style={{ display: 'flex', gap: 4, padding: '4px 6px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+        <input value={link} onChange={e => { setLink(e.target.value); setError('') }} placeholder="Paste a YouTube live link"
+          aria-label="YouTube link" style={{ flex: 1, minWidth: 0, fontSize: 11, padding: '3px 6px' }} />
+        <input value={name} onChange={e => setName(e.target.value)} placeholder="Name" aria-label="Channel name"
+          style={{ width: 80, fontSize: 11, padding: '3px 6px' }} />
+        <button type="submit" className="news-tab" disabled={!link.trim()}>ADD</button>
+      </form>
+      {error && <div style={{ padding: '2px 8px', fontSize: 10, color: 'var(--red)' }}>{error}</div>}
       {/* Square box; the 16:9 stream is scaled to the box height and centred, so it fills the square (the outer edges of the picture are cropped). */}
       <div style={{ position: 'relative', flex: '0 0 auto', aspectRatio: '1 / 1', overflow: 'hidden', background: '#000' }}>
         <iframe
           key={active.id}
-          src={`https://www.youtube.com/embed/${active.videoId}?autoplay=1&mute=1`}
+          src={embedSrc(active)}
           title={`${active.label} live feed`}
           style={{ position: 'absolute', top: 0, left: '50%', width: '177.78%', height: '100%', transform: 'translateX(-50%)', border: 'none', display: 'block' }}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -208,8 +262,8 @@ export function LiveFeedPanel() {
         </div>
       </div>
       <div style={{ padding: '3px 8px', borderTop: '1px solid var(--border)', fontSize: 9, color: 'var(--text3)', letterSpacing: '.08em', flexShrink: 0, display: 'flex', justifyContent: 'space-between' }}>
-        <span>SOURCE: YOUTUBE — {active.label} OFFICIAL</span>
-        <a href={`https://www.youtube.com/watch?v=${active.videoId}`} target="_blank" rel="noopener noreferrer"
+        <span>SOURCE: YOUTUBE — {active.label}{active.id.startsWith('custom-') ? '' : ' OFFICIAL'}</span>
+        <a href={watchUrl} target="_blank" rel="noopener noreferrer"
           style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text3)', textDecoration: 'none' }}
         >OPEN <ExternalLink size={9} /></a>
       </div>
