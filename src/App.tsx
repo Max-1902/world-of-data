@@ -117,11 +117,6 @@ export default function App() {
   const [activeGroup, setActiveGroup] = useState<PanelGroup>(loadGroup)
   // The Map destination: only the map, with the regional outlook and a clicked country's overview on top of it.
   const [isMapPage, setIsMapPage] = useState(false)
-  // Analysis (forecasting) defaults to no map — the country dashboard is the point, the map is one click away.
-  const [mapHidden, setMapHidden] = useState(() => {
-    try { return localStorage.getItem('ws-analysis-map-hidden') !== '0' } catch { return true }
-  })
-  useEffect(() => { try { localStorage.setItem('ws-analysis-map-hidden', mapHidden ? '1' : '0') } catch {} }, [mapHidden])
   const [panelState, setPanelState] = useState<PanelState>(loadPanelState)
   const [deepstateMode, setDeepstateMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -130,9 +125,9 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [paletteOpen, setPaletteOpen] = useState(false)
   const [focusPanel, setFocusPanel] = useState<{ id: string; n: number } | null>(null)
-  // Forecasts (with the map hidden) and Countries are page-style destinations: the map is not part of their layout.
+  // Forecasts and Countries are page-style destinations: the map is not part of their layout.
   // The Country Lookup panel (opened from search or the home topics) is the one Countries view that stays in the dock.
-  const noMap = (activeGroup === 'analysis' && mapHidden) || (activeGroup === 'country' && focusPanel?.id !== 'countryLookup')
+  const noMap = activeGroup === 'analysis' || (activeGroup === 'country' && focusPanel?.id !== 'countryLookup')
   const [libraryOpen, setLibraryOpen] = useState(false)
   // Switch to a panel's workspace and scroll the dock to it.
   const focusInDock = useCallback((id: string) => {
@@ -492,9 +487,6 @@ export default function App() {
                       </div>
                     )}
                     <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
-                    {activeGroup === 'analysis' && (
-                      <button className="map-hide-btn" onClick={() => setMapHidden(true)} title="Hide the map for this workspace">Hide map</button>
-                    )}
                   </div>
                 )}
                 {noMap ? (
@@ -504,14 +496,14 @@ export default function App() {
                         {/* the dock's own panels carry their country pickers; this one is for switching while a country page is open */}
                         <CountrySearchBox onPick={selectCountry} />
                         <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
-                          onClose={() => setSelectedCountry(null)} onShowMap={() => (activeGroup === 'country' ? openMap() : setMapHidden(false))} onOpenPanel={openPanel} onFlyTo={handleGeoSearch}
+                          onClose={() => setSelectedCountry(null)} onShowMap={openMap} onOpenPanel={openPanel} onFlyTo={handleGeoSearch}
                           initialTab={activeGroup === 'country' ? 'economy' : 'forecasts'} />
                       </Suspense>
                     ) : activeGroup === 'country' ? (
                       <Suspense fallback={null}><CountriesLanding onPick={selectCountry} /></Suspense>
                     ) : (
                       <PanelDock {...cornerProps} poppedOut={poppedOut} onPopOut={windows.actions.open} onPopOutAll={windows.actions.openMany} activeGroup={activeGroup} focusPanel={focusPanel}
-                        fullWidth onShowMap={() => setMapHidden(false)} />
+                        fullWidth onShowMap={openMap} />
                     )}
                   </div>
                 ) : selectedCountry ? (
