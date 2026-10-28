@@ -14,6 +14,7 @@ import CloseButton from '../CloseButton'
 import CountryBrief from '../CountryBrief'
 import type { PanelSource } from '../../panels/types'
 import { ForecastsTab, TradeTab } from './tabs'
+import { ActivityMore, InfraMore, NewsMore, RiskMore, TradeMore } from './moreData'
 
 const CountryDrawer = lazy(() => import('../CountryDrawer'))
 const CountryLookupPanel = lazy(() => import('../panels/CountryLookupPanel').then(m => ({ default: m.CountryLookupPanel })))
@@ -21,12 +22,12 @@ const CountryLookupPanel = lazy(() => import('../panels/CountryLookupPanel').the
 export type CountryTab = 'economy' | 'forecasts' | 'trade' | 'risk' | 'infrastructure' | 'activity' | 'news'
 
 const TABS: { id: CountryTab; label: string; sources: PanelSource[] }[] = [
-  { id: 'economy', label: 'Economy', sources: ['worldbank'] },
-  { id: 'forecasts', label: 'Forecasts', sources: ['imfweo', 'eurostat'] },
-  { id: 'trade', label: 'Trade & exposure', sources: ['worldbank', { name: 'UN Comtrade and World Bank (trade snapshot)', asOf: 'retrieved 2026-10-08' }] },
-  { id: 'risk', label: 'Risk & security', sources: ['acled', 'unhcr', { name: 'Sanctions, military and nuclear datasets (curated)', asOf: 'spot-checked 2026-10' }] },
+  { id: 'economy', label: 'Economy', sources: ['worldbank', 'ecb', 'eurostat', 'bis'] },
+  { id: 'forecasts', label: 'Forecasts', sources: ['worldbank', 'imfweo', 'eurostat'] },
+  { id: 'trade', label: 'Trade & exposure', sources: ['worldbank', { name: 'UN Comtrade and World Bank (trade snapshot)', asOf: 'retrieved 2026-10-08' }, { name: 'USGS Mineral Commodity Summaries and BGS', asOf: 'MCS 2025/2026 editions' }, { name: 'CIA World Factbook, energy' }, { name: 'IMF PortWatch (ports)' }] },
+  { id: 'risk', label: 'Risk & security', sources: ['acled', 'unhcr', 'rss', { name: 'Sanctions, military and nuclear datasets (curated)', asOf: 'spot-checked 2026-10' }] },
   { id: 'infrastructure', label: 'Infrastructure', sources: ['worldbank', 'wri', 'osm'] },
-  { id: 'activity', label: 'Live activity', sources: ['opensky', 'usgs', 'firms'] },
+  { id: 'activity', label: 'Live activity', sources: ['opensky', 'usgs', 'firms', 'gdacs', 'ioda', 'radar'] },
   { id: 'news', label: 'News', sources: ['rss', 'gnews', 'gdelt', 'nyt'] },
 ]
 
@@ -121,11 +122,21 @@ export default function CountryPage({ country, crises, conflictFeed, flights, ar
             : <StatusLabel status="empty">No country code for {country}, so the full record cannot be loaded.</StatusLabel>}
         </>)}
         {tab === 'forecasts' && <ForecastsTab country={country} iso2={iso2} onOpenPanel={onOpenPanel} />}
-        {tab === 'trade' && <TradeTab country={country} iso2={iso2} onOpenPanel={onOpenPanel} drawer={<Suspense fallback={null}><CountryDrawer {...drawerProps} only="trade" /></Suspense>} />}
+        {tab === 'trade' && <>
+          <TradeTab country={country} iso2={iso2} onOpenPanel={onOpenPanel} drawer={<Suspense fallback={null}><CountryDrawer {...drawerProps} only="trade" /></Suspense>} />
+          <TradeMore country={country} iso2={iso2} />
+        </>}
         {(tab === 'risk' || tab === 'infrastructure' || tab === 'activity') && (
           <Suspense fallback={<StatusLabel status="loading">{current.label}…</StatusLabel>}><CountryDrawer {...drawerProps} only={tab} /></Suspense>
         )}
-        {tab === 'news' && <CountryBrief country={country} crises={crises} articles={articles} earthquakes={earthquakes} trend={trend} />}
+        {/* the overview above stays as it was; what else we hold on the country follows it */}
+        {tab === 'risk' && <RiskMore country={country} crises={crises} />}
+        {tab === 'infrastructure' && <InfraMore country={country} iso2={iso2} />}
+        {tab === 'activity' && <ActivityMore country={country} iso2={iso2} />}
+        {tab === 'news' && <>
+          <CountryBrief country={country} crises={crises} articles={articles} earthquakes={earthquakes} trend={trend} />
+          <NewsMore country={country} articles={articles} />
+        </>}
       </div>
 
       <PanelSources sources={current.sources} />
