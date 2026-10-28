@@ -13,8 +13,10 @@ import { PERIODS, type Period } from './countryLookup/shared'
  * European countries; and below it all, an analysis of that economy's own history. A research tool, separate from the
  * cross-country Country Analytics panel.
  */
-export function CountryLookupPanel() {
-  const c = useCountryLookup()
+export function CountryLookupPanel({ iso2 }: { iso2?: string } = {}) {
+  // given a country (the country page), the panel is that country's record: no picker of its own
+  const embedded = !!iso2
+  const c = useCountryLookup(iso2)
   const [query, setQuery] = useState('')
   const [period, setPeriod] = useState<Period>('all')
   const current = c.countries.find(x => x.iso2 === c.iso2)
@@ -27,7 +29,7 @@ export function CountryLookupPanel() {
 
   return (
     <div className="viz-root cl-root">
-      <div className="cl-search">
+      {!embedded && <div className="cl-search">
         <label className="viz-field" style={{ flex: 1 }}>
           <span>Country</span>
           <input className="viz-select" type="search" placeholder={c.countries.length ? `Search ${c.countries.length} economies…` : 'Loading country list…'} value={query}
@@ -41,12 +43,12 @@ export function CountryLookupPanel() {
             ))}
           </ul>
         )}
-      </div>
+      </div>}
       {c.listError && <div className="viz-note" role="status">Could not load the World Bank country list ({c.listError}). <button className="cy-btn" onClick={c.retry}><RefreshCw size={11} /> Retry</button></div>}
 
       <header className="cl-head">
         <div>
-          <h2 className="cl-name">{name}</h2>
+          {!embedded && <h2 className="cl-name">{name}</h2>}
           {current && <p className="viz-sub">{[current.region, current.incomeLevel, current.capital && `capital ${current.capital}`].filter(Boolean).join(' · ')}</p>}
         </div>
         <div className="viz-toggle" role="group" aria-label="Period shown in charts">
