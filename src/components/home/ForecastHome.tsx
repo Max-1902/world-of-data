@@ -8,6 +8,7 @@ import { remember } from '../../services/forecastLog'
 import { EvidenceTag, Metric, SourceLine, StatusLabel } from '../DataLabels'
 import { SinceBlock } from '../forecast/SinceBlock'
 import { LineChart } from '../charts/LineChart'
+import { CorrMatrixCard } from '../charts/CorrMatrixCard'
 
 /** An interval band wider than this many times the charted history's own range is stated in words, not drawn. */
 const MAX_BAND_RATIO = 4
@@ -108,6 +109,10 @@ export function ForecastHome({ onOpenPanel }: Props) {
           </div>
         </section>
       )}
+
+      <section className="home-section fh-section" aria-label="What moves together">
+        <div className="fh-card"><CorrMatrixCard onPick={() => onOpenPanel('countryAnalytics')} /></div>
+      </section>
 
       {compare && (
         <section className="home-section fh-section" aria-label="Compare economies">
