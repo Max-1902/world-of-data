@@ -129,18 +129,22 @@ export default function App() {
   // Countries opens on its picker; the Country Lookup panel (from search or the home topics) is the one view that stays in the dock.
   const showLanding = activeGroup === 'country' && focusPanel?.id !== 'countryLookup'
   const [libraryOpen, setLibraryOpen] = useState(false)
-  // Switch to a panel's workspace and scroll the dock to it.
+  // Switch to a panel's workspace and scroll the dock to it. Going to a panel leaves the country profile
+  // (which would otherwise render in place of the dock); the panel picks the country up via focusCountry.
   const focusInDock = useCallback((id: string) => {
     const group = PANEL_MAP.get(id)?.group
     if (!group) return
     setIsHome(false)
     setIsMapPage(false)
+    setSelectedCountry(null)
     setActiveGroup(group)
     setFocusPanel({ id, n: Date.now() })
   }, [])
+  // A sidebar click is a destination change: it always leaves an open country profile.
   const changeWorkspace = useCallback((group: PanelGroup) => {
     setIsHome(false)
     setIsMapPage(false)
+    setSelectedCountry(null)
     setActiveGroup(group)
   }, [])
   const openMap = useCallback(() => { setIsHome(false); setIsMapPage(true) }, [])
