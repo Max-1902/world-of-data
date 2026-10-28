@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
-import { ArrowRight, BarChart3, BookOpen, Globe2, Leaf, Map, Table, Users, Wind } from 'lucide-react'
+import { ArrowRight, BarChart3, BookOpen, Globe2, Map, Table, Users, Wind } from 'lucide-react'
 import { fetchGlobalTrend, type GlobalTrendPoint } from '../services/globalTrends'
+import { ForecastHome } from './home/ForecastHome'
 
 interface Props {
   map: ReactNode
@@ -27,12 +28,10 @@ const INDICATORS = [
 ]
 
 const GLOBAL_TRENDS = [
-  { id: 'gdp', indicator: 'NY.GDP.MKTP.KD.ZG', label: 'Global GDP Growth', unit: 'percent', panel: 'predictions', color: '#28c9f3', panelCard: true },
-  { id: 'co2', indicator: 'EN.GHG.CO2.MT.CE.AR5', label: 'CO₂ Emissions', unit: 'gigatonnes', panel: 'owid', color: '#42d8a5', panelCard: true },
-  { id: 'renewables', indicator: 'EG.FEC.RNEW.ZS', label: 'Renewable Energy', unit: 'percent', panel: 'owid', color: '#ff982f', panelCard: true },
-  { id: 'life', indicator: 'SP.DYN.LE00.IN', label: 'Life Expectancy', unit: 'years', panel: 'countryAnalytics', color: '#a680ff', panelCard: true },
-  { id: 'worldgdp', indicator: 'NY.GDP.MKTP.CD', label: 'Global GDP', unit: 'trillions', panel: 'economy', color: '#28c9f3', panelCard: false },
-  { id: 'population', indicator: 'SP.POP.TOTL', label: 'Population', unit: 'billions', panel: 'economy', color: '#42d8a5', panelCard: false },
+  { id: 'gdp', indicator: 'NY.GDP.MKTP.KD.ZG', label: 'Global GDP Growth', unit: 'percent', panel: 'predictions', color: '#28c9f3' },
+  { id: 'co2', indicator: 'EN.GHG.CO2.MT.CE.AR5', label: 'CO₂ Emissions', unit: 'gigatonnes', panel: 'owid', color: '#42d8a5' },
+  { id: 'renewables', indicator: 'EG.FEC.RNEW.ZS', label: 'Renewable Energy', unit: 'percent', panel: 'owid', color: '#ff982f' },
+  { id: 'life', indicator: 'SP.DYN.LE00.IN', label: 'Life Expectancy', unit: 'years', panel: 'countryAnalytics', color: '#a680ff' },
 ] as const
 
 type TrendId = typeof GLOBAL_TRENDS[number]['id']
@@ -59,38 +58,10 @@ export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenLibra
   return (
     <main className="home-scroll">
       <div className="home-content">
-        <section className="home-hero">
-          <div className="hero-copy">
-            <div className="home-eyebrow"><span className="new-live-dot" /> GLOBAL DATA, CONNECTED</div>
-            <h1>Global data.<br /><em>Real insights.</em></h1>
-            <p>Explore countries, compare indicators, and uncover the stories behind the numbers.</p>
-            <button className="home-primary-cta" onClick={() => onOpenPanel('economy')}>Start exploring <ArrowRight size={16} /></button>
-          </div>
-          <aside className="live-indicator-card" aria-label="Latest global indicators">
-            <div className="live-card-heading"><strong>Global indicators</strong><span><i />Annual data</span></div>
-            {(['worldgdp', 'population', 'co2', 'renewables', 'life'] as const).map(id => {
-              const trend = GLOBAL_TRENDS.find(item => item.id === id)!
-              return <GlobalIndicatorRow key={id} trend={trend} points={globalTrend[id]} onClick={() => onOpenPanel(trend.panel)} />
-            })}
-            <button className="live-card-link" onClick={() => onOpenPanel('economy')}>Browse indicators <ArrowRight size={13} /></button>
-          </aside>
-        </section>
-
-        <section className="home-section topics-section">
-          <div className="home-section-heading"><div><h2>Featured Topics</h2></div><button className="text-link" onClick={onOpenLibrary}>View all <ArrowRight size={14} /></button></div>
-          <div className="topic-grid">
-            {TOPICS.map(({ title, subtitle, icon: Icon, tone, panel }) => (
-              <button className={`topic-card topic-${tone}`} key={title} onClick={() => onOpenPanel(panel)}>
-                <div className="topic-art"><Icon size={24} strokeWidth={1.6} /></div>
-                <div className="topic-card-copy"><strong>{title}</strong><span>{subtitle}</span></div>
-                <ArrowRight className="topic-arrow" size={15} />
-              </button>
-            ))}
-          </div>
-        </section>
+        <ForecastHome onOpenPanel={onOpenPanel} />
 
         <section className="home-section world-section">
-          <div className="home-section-heading map-heading"><div><span className="section-kicker">COUNTRY INDICATORS</span><h2>Explore the world</h2><p>Compare country data on the map. Select an indicator to change the view.</p></div><div className="map-heading-actions"><span className="map-period">Latest reported</span><button className="text-link" onClick={onOpenMap}>Full map <ArrowRight size={14} /></button></div></div>
+          <div className="home-section-heading map-heading"><div><span className="section-kicker">COUNTRIES ON THE MAP</span><h2>Compare countries</h2><p>Colour the map by an indicator to see where a country sits. The map supports the forecast; it is not the product.</p></div><div className="map-heading-actions"><span className="map-period">Latest reported</span><button className="text-link" onClick={onOpenMap}>Full map <ArrowRight size={14} /></button></div></div>
           <div className="indicator-tabs" role="group" aria-label="Map indicator">
             {INDICATORS.map(indicator => <button key={indicator.id} className={selectedIndicator === indicator.id ? 'selected' : ''} onClick={() => { setSelectedIndicator(indicator.id); onColorCountries(indicator.id) }}>{indicator.label}</button>)}
           </div>
@@ -107,12 +78,25 @@ export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenLibra
         </section>
 
         <section className="home-section trend-section">
-          <div className="home-section-heading"><div><h2>Key Global Trends</h2></div><button className="text-link" onClick={() => onOpenPanel('predictions')}>Forecasts & analysis <ArrowRight size={14} /></button></div>
+          <div className="home-section-heading"><div><span className="section-kicker">GLOBAL CONTEXT</span><h2>The world so far</h2></div><button className="text-link" onClick={() => onOpenPanel('predictions')}>Forecasts <ArrowRight size={14} /></button></div>
           <div className="trend-grid">
-            {GLOBAL_TRENDS.filter(trend => trend.panelCard).map(trend => <GlobalTrendCard key={trend.id} trend={trend} points={globalTrend[trend.id]} onClick={() => onOpenPanel(trend.panel)} />)}
+            {GLOBAL_TRENDS.map(trend => <GlobalTrendCard key={trend.id} trend={trend} points={globalTrend[trend.id]} onClick={() => onOpenPanel(trend.panel)} />)}
           </div>
           <div className="home-footnote">World Bank World aggregate · annual observations · each card shows its latest reported year. Country-level maps use each country’s latest available year.</div>
         </section>
+        <section className="home-section topics-section">
+          <div className="home-section-heading"><div><span className="section-kicker">EXPLORE</span><h2>Browse the data behind the forecast</h2><p>Indicators by theme. Each opens the panel with its sources.</p></div><button className="text-link" onClick={onOpenLibrary}>All datasets <ArrowRight size={14} /></button></div>
+          <div className="topic-grid">
+            {TOPICS.map(({ title, subtitle, icon: Icon, tone, panel }) => (
+              <button className={`topic-card topic-${tone}`} key={title} onClick={() => onOpenPanel(panel)}>
+                <div className="topic-art"><Icon size={24} strokeWidth={1.6} /></div>
+                <div className="topic-card-copy"><strong>{title}</strong><span>{subtitle}</span></div>
+                <ArrowRight className="topic-arrow" size={15} />
+              </button>
+            ))}
+          </div>
+        </section>
+
       </div>
     </main>
   )
@@ -143,37 +127,8 @@ function GlobalTrendCard({ trend, points = [], onClick }: {
   )
 }
 
-function GlobalIndicatorRow({ trend, points = [], onClick }: {
-  trend: typeof GLOBAL_TRENDS[number]
-  points?: GlobalTrendPoint[]
-  onClick: () => void
-}) {
-  const last = points[points.length - 1]
-  const previous = points[points.length - 2]
-  const delta = last && previous ? formatGlobalDelta(trend.unit, last.value, previous.value) : null
-  const Icon = trend.id === 'worldgdp' ? BarChart3 : trend.id === 'population' || trend.id === 'life' ? Users : trend.id === 'renewables' ? Wind : Leaf
-  return (
-    <button className="live-indicator-row" onClick={onClick} title={last ? `${trend.label}: ${formatGlobalValue(trend.unit, last.value)} in ${last.year}, World Bank World aggregate` : `${trend.label}: loading World Bank data`}>
-      <span className="live-indicator-name"><span className="live-indicator-icon" style={{ '--trend-color': trend.color } as CSSProperties}><Icon size={12} /></span>{trend.label}</span>
-      <b>{last ? formatGlobalValue(trend.unit, last.value) : '—'}</b>
-      <em>{last ? `${last.year}${delta ? ` · ${delta}` : ''}` : 'Loading'}</em>
-    </button>
-  )
-}
-
 function formatGlobalValue(unit: typeof GLOBAL_TRENDS[number]['unit'], value: number) {
   if (unit === 'gigatonnes') return `${(value / 1_000).toFixed(1)} Gt` // series is in Mt CO₂e
   if (unit === 'percent') return `${value.toFixed(1)}%`
-  if (unit === 'trillions') return `$${(value / 1_000_000_000_000).toFixed(1)}T`
-  if (unit === 'billions') return `${(value / 1_000_000_000).toFixed(2)}B`
   return `${value.toFixed(1)} yrs`
 }
-
-function formatGlobalDelta(unit: typeof GLOBAL_TRENDS[number]['unit'], current: number, previous: number) {
-  if (unit === 'percent') return `${current - previous >= 0 ? '+' : ''}${(current - previous).toFixed(1)} pp`
-  if (unit === 'years') return `${current - previous >= 0 ? '+' : ''}${(current - previous).toFixed(1)} yr`
-  if (unit === 'gigatonnes') return `${current - previous >= 0 ? '+' : ''}${(((current - previous) / 1_000)).toFixed(1)} Gt`
-  const pct = (current - previous) / Math.abs(previous) * 100
-  return `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`
-}
-

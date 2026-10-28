@@ -24,6 +24,26 @@ export interface ForecastRecord {
 export const TAIL_YEARS = 5
 const EPS = 0.05
 
+/**
+ * The record for what a card shows now. Built in one place so every view that records a forecast writes the same
+ * shape: two views that disagreed about the tail or the IMF figures would report phantom "changes" to each other.
+ */
+export function makeRecord(a: {
+  key: string
+  issued: string
+  model: ForecastRecord['model']
+  series: readonly { x: number; y: number }[]
+  points: ForecastRecord['points']
+  imf?: { vintage: string; points: readonly { year: number; value: number }[] } | null
+}): ForecastRecord {
+  return {
+    key: a.key, issued: a.issued, model: a.model,
+    tail: a.series.slice(-TAIL_YEARS).map(p => ({ year: p.x, value: p.y })),
+    points: a.points.map(p => ({ year: p.year, value: p.value, lo: p.lo, hi: p.hi })),
+    imf: a.imf && a.imf.points.length ? { vintage: a.imf.vintage, points: a.imf.points.map(p => ({ year: p.year, value: p.value })) } : undefined,
+  }
+}
+
 const near = (a: number, b: number) => Math.abs(a - b) < EPS
 const r1 = (v: number) => `${v < 0 ? '−' : ''}${Math.abs(Math.round(v * 10) / 10).toFixed(1)}`
 

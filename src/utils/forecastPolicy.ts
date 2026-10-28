@@ -32,6 +32,11 @@ export function coverageLabel(policy: Policy | null, horizon: number): string {
   return `95% interval (held ${policy.measured[Math.min(horizon, 3) - 1]}% of outcomes in backtests since 2010)`
 }
 
+/** Forecast horizon in years, the autoregression order and the shortest history a card will forecast from. */
+export const FORECAST_HORIZON = 3
+export const AR_ORDER = 2
+export const MIN_HISTORY = 15
+
 /** Past errors the empirical interval is calibrated on (the most recent ones only); see `empiricalInterval`. */
 export const INTERVAL_RECENT = 20
 
