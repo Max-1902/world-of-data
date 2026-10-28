@@ -1730,3 +1730,6 @@ button.dl-rank:hover { background: var(--surface2); }
   .fh-hero p { max-width: none; }
   .fh-pick { max-width: none; }
 }
+.countries-landing { display: flex; flex-direction: column; gap: 10px; max-width: 640px; width: 100%; margin: 0 auto; padding: 28px 16px; overflow-y: auto; }
+.countries-landing > h2 { color: var(--text1); font-size: 18px; font-weight: 650; }
+.countries-landing .country-search-box { position: relative; }
