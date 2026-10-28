@@ -54,6 +54,12 @@ describe('picking a country', () => {
     expect(screen.getByTestId('card').textContent).toContain('pinned:Ukraine')
   })
 
+  it.each(['Forecasts', 'Drivers', 'Explore'])('choosing %s in the sidebar leaves the country page', async name => {
+    await pickCountry()
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('button', { name: new RegExp(name) }))
+    await waitFor(() => expect(screen.queryByTestId('page')).toBeNull())
+  })
+
   it('closing the page returns to the workspace', async () => {
     await pickCountry()
     fireEvent.click(screen.getByText('close-page'))
