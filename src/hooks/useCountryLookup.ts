@@ -21,8 +21,10 @@ function loadIso(): string {
  * dataset for the selection, and — for European countries — the ECB / Eurostat / BIS bundle. A newer selection
  * discards a slower earlier response.
  */
-export function useCountryLookup() {
-  const [iso2, setIso2State] = useState(loadIso)
+export function useCountryLookup(forcedIso2?: string) {
+  const [chosenIso2, setIso2State] = useState(loadIso)
+  // a view that already knows its country (the country page) passes it in and leaves the stored choice alone
+  const iso2 = forcedIso2 ?? chosenIso2
   // another view (the country page) can point this panel at a country while it is open
   useEffect(() => onFocusCountry('predictions', setIso2State), [])
   const [countries, setCountries] = useState<WbCountry[]>([])
@@ -55,6 +57,7 @@ export function useCountryLookup() {
   }, [iso2, attempt])
 
   const setIso2 = (v: string) => {
+    if (forcedIso2) return
     setIso2State(v)
     try { localStorage.setItem(LS_KEY, v) } catch { /* storage unavailable */ }
   }

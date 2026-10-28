@@ -11,6 +11,7 @@ vi.mock('../countryDrawer/useCountryDrawerData', () => ({ useCountryLiveData: ()
 vi.mock('../CountryDrawer', () => ({ default: ({ only }: { only: string }) => { m.drawerOnly.push(only); return <div data-testid="drawer">{only}</div> } }))
 vi.mock('../CountryBrief', () => ({ default: ({ country }: { country: string }) => <div data-testid="brief">{country} news</div> }))
 vi.mock('../WatchButton', () => ({ default: () => null }))
+vi.mock('../panels/PredictionsPanel', () => ({ PredictionsPanel: ({ iso2 }: { iso2?: string }) => <div data-testid="our-forecast">our forecast for {iso2}</div> }))
 vi.mock('../../services/imfWeo', async orig => ({ ...await orig<typeof import('../../services/imfWeo')>(), fetchWeo: m.fetchWeo }))
 vi.mock('../../services/eurostatNowcast', async orig => ({ ...await orig<typeof import('../../services/eurostatNowcast')>(), fetchNowcastData: m.fetchNowcast }))
 vi.mock('../../services/countryAnalytics', () => ({ countryAnalytics: { subscribe: () => () => {}, getState: () => ({}), load: vi.fn() }, sliceOf: () => m.gdp }))
@@ -66,6 +67,12 @@ describe('CountryPage', () => {
     expect(await screen.findByText(/Eurostat could not be reached/)).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /Open Germany in Predictions/ }))
     expect(props.onOpenPanel).toHaveBeenCalledWith('predictions')
+  })
+
+  it('forecasts tab: our own forecast for this country is shown on the tab, not only linked to', async () => {
+    render(<CountryPage {...props} />)
+    fireEvent.click(screen.getByRole('tab', { name: 'Forecasts' }))
+    expect((await screen.findByTestId('our-forecast')).textContent).toBe('our forecast for DE')
   })
 
   it("trade tab: the country's own exposure figures, scaled to its GDP, then the trade sections", async () => {
