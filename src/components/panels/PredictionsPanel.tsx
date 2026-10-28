@@ -3,18 +3,16 @@ import { AlertTriangle, MoveRight, RefreshCw, TrendingDown, TrendingUp } from 'l
 import { useCountryLookup } from '../../hooks/useCountryLookup'
 import { pointsOf } from '../../services/countryLookup'
 import { arForecast, backtestForecast, median, naiveForecast, trendTest, type DieboldMariano, type Forecast, type Pt } from '../../utils/econAnalysis'
-import { INTERVAL_RECENT, coverageLabel, headlineForecast } from '../../utils/forecastPolicy'
+import { AR_ORDER, FORECAST_HORIZON as HORIZON, INTERVAL_RECENT, MIN_HISTORY, coverageLabel, headlineForecast } from '../../utils/forecastPolicy'
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart, type LinePoint } from '../charts/LineChart'
 import { Kpi, Method, PERIODS, inPeriod, plain, toLine, type Period } from './countryLookup/shared'
 import { WEO_FOR_WB, fetchWeo, weoPoints, type WeoPayload } from '../../services/imfWeo'
 import { recordsFor, remember } from '../../services/forecastLog'
-import { TAIL_YEARS, explainChange, scoreRecords, type Change, type ForecastRecord } from '../../utils/forecastRecord'
+import { makeRecord, scoreRecords, type ForecastRecord } from '../../utils/forecastRecord'
+import { SinceBlock } from '../forecast/SinceBlock'
 import { EvidenceTag, SourceLine, StatusLabel } from '../DataLabels'
 
-const AR_ORDER = 2
-const HORIZON = 3
-const MIN_HISTORY = 15
 /** An interval band wider than this many times the charted series' own range is stated in words, not drawn. */
 const MAX_BAND_RATIO = 4
 
@@ -84,23 +82,6 @@ function ImfBlock({ weo, imf, lastYear, lastValue, ours, unit }: {
   )
 }
 
-function SinceBlock({ memory, unit }: { memory: { previous: ForecastRecord | null; since: string; now: ForecastRecord }; unit: string }) {
-  const changes: Change[] = memory.previous ? explainChange(memory.previous, memory.now, unit) : []
-  return (
-    <div className="pred-block">
-      <div className="pred-block-h">What changed</div>
-      {!memory.previous
-        ? <p className="viz-verdict">First shown on this device on {memory.since}. When the World Bank adds or revises data, or the IMF publishes a new edition, this card will say what changed and why the forecast moved.</p>
-        : changes.length === 0
-          ? <p className="viz-verdict">Nothing new since {memory.since}: same data, same forecast.</p>
-          : <>
-              <p className="viz-verdict">Since the forecast shown on {memory.previous.issued}:</p>
-              <ul className="ex-path">{changes.map((c, i) => <li key={i}><EvidenceTag kind={c.kind} /><div>{c.text}</div></li>)}</ul>
-            </>}
-    </div>
-  )
-}
-
 function TrackBlock({ records, series, unit, since }: { records: ForecastRecord[]; series: Pt[]; unit: string; since: string }) {
   const scored = scoreRecords(records, series)
   const first = records[0]?.issued ?? since
@@ -154,12 +135,10 @@ function Section({ target, series, period, country }: { target: Target; series: 
   const [memory, setMemory] = useState<{ previous: ForecastRecord | null; since: string; records: ForecastRecord[]; now: ForecastRecord } | null>(null)
   useEffect(() => {
     if (!hf || !country || weo === 'loading') return
-    const rec: ForecastRecord = {
-      key: `${country.iso2}|${target.id}`, issued: today(), model: hf.headline,
-      tail: series.slice(-TAIL_YEARS).map(p => ({ year: p.x, value: p.y })),
-      points: hf.forecast.points.map(p => ({ year: p.year, value: p.value, lo: p.lo, hi: p.hi })),
-      imf: weo && imfFc.length ? { vintage: weo.vintage, points: imfFc.map(p => ({ year: p.year, value: p.value })) } : undefined,
-    }
+    const rec = makeRecord({
+      key: `${country.iso2}|${target.id}`, issued: today(), model: hf.headline, series, points: hf.forecast.points,
+      imf: weo ? { vintage: weo.vintage, points: imfFc } : null,
+    })
     const r = remember(rec)
     setMemory({ ...r, records: recordsFor(rec.key), now: rec })
     // eslint-disable-next-line react-hooks/exhaustive-deps

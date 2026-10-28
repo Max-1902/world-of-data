@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { explainChange, sameInputs, scoreRecords, type ForecastRecord } from './forecastRecord'
+import { TAIL_YEARS, explainChange, makeRecord, sameInputs, scoreRecords, type ForecastRecord } from './forecastRecord'
 
 const rec = (o: Partial<ForecastRecord> = {}): ForecastRecord => ({
   key: 'DE|g', issued: '2026-10-27', model: 'ar',
@@ -56,5 +56,22 @@ describe('scoreRecords', () => {
   })
   it('scores nothing before any forecast year has happened', () => {
     expect(scoreRecords([rec()], [{ x: 2024, y: -0.3 }])).toEqual([])
+  })
+})
+
+describe('makeRecord', () => {
+  const series = Array.from({ length: 9 }, (_, i) => ({ x: 2016 + i, y: i / 10 }))
+  const points = [{ year: 2025, value: 0.5, lo: -2, hi: 3 }]
+  it('keeps the last TAIL_YEARS observations and the forecast points', () => {
+    const r = makeRecord({ key: 'DE|g', issued: '2026-10-27', model: 'ar', series, points })
+    expect(r.tail.map(p => p.year)).toEqual(series.slice(-TAIL_YEARS).map(p => p.x))
+    expect(r.points).toEqual(points)
+    expect(r.imf).toBeUndefined()
+  })
+  it('records the IMF figures only when there are some', () => {
+    const none = makeRecord({ key: 'k', issued: 'd', model: 'ar', series, points, imf: { vintage: 'WEO', points: [] } })
+    expect(none.imf).toBeUndefined()
+    const some = makeRecord({ key: 'k', issued: 'd', model: 'ar', series, points, imf: { vintage: 'WEO', points: [{ year: 2025, value: 1.2 }] } })
+    expect(some.imf).toEqual({ vintage: 'WEO', points: [{ year: 2025, value: 1.2 }] })
   })
 })
