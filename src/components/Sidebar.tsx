@@ -20,7 +20,7 @@ export type NavSection =
   | 'risk' | 'security' | 'infrastructure' | 'news'
 
 /** Dock panels that belong to Drivers: the trade and resource links that shocks travel along. */
-const DRIVER_PANELS = new Set(['exposure', 'tradePartnersByCountry', 'tradeProductsByCountry', 'resources', 'resourcesByCountry'])
+const DRIVER_PANELS = new Set(['drivers', 'exposure', 'tradePartnersByCountry', 'tradeProductsByCountry', 'resources', 'resourcesByCountry'])
 /** Panels in the forecasting workspace that are open-ended exploration rather than forecasts. */
 const EXPLORE_ANALYSIS_PANELS = new Set(['countryAnalytics', 'analytics'])
 
@@ -76,7 +76,7 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
       <nav className="new-primary-nav" aria-label="Main">
         <NavItem icon={Compass} label="Outlook" title="The world's economic outlook at a glance" active={current === 'outlook'} onClick={onHome} />
         <NavItem icon={TrendingUp} label="Forecasts" title="GDP-growth forecast and this quarter's nowcast, backtested, beside the IMF's" active={current === 'forecasts'} onClick={() => go('analysis', 'predictions')} />
-        <NavItem icon={Network} label="Drivers" title="Which economies a shock reaches, and the trade links it travels along" active={current === 'drivers'} onClick={() => go('markets', 'exposure')} />
+        <NavItem icon={Network} label="Drivers" title="Which indicators improve the GDP forecast (tested out of sample), and the trade links a shock travels along" active={current === 'drivers'} onClick={() => go('markets', 'drivers')} />
         <NavItem icon={Globe2} label="Countries" title="One country's full record" active={current === 'countries'} onClick={() => go('country')} />
         <NavItem icon={Map} label="Explore" title="The map, indicators, country comparison and every dataset" active={current === 'explore'} onClick={() => go('markets', 'economy')} />
         {current === 'explore' && (
