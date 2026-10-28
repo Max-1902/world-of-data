@@ -177,6 +177,8 @@ html, body, #root {
   background: #080e13;
 }
 .dock-workspace-heading + .dock-panel { margin-top: 9px; }
+/* a panel scrolled to from the sidebar or search must stop below the sticky workspace heading, not under it */
+.right-panel [data-panel-id] { scroll-margin-top: 68px; }
 /* Section banners between panel groups in the dock: step number, header, one-line explanation */
 .dock-section {
   display: flex; gap: 10px; align-items: flex-start;
@@ -704,6 +706,8 @@ input::placeholder { color: var(--text3); opacity: 1; }
     height: 100% !important;
     box-shadow: -20px 0 48px rgba(0,0,0,.38);
   }
+  /* with the map hidden the dock is the page, not a slide-over on top of it */
+  .analysis-no-map > .right-panel { position: relative !important; inset: auto !important; flex: 1 1 0; width: 100% !important; box-shadow: none; }
   .map-card { inset: 8px; }
   .outlook-card { left: 10px; bottom: 36px; width: min(280px, calc(100% - 20px)); }
   .country-drawer { top: 8px !important; right: 8px !important; width: min(320px, calc(100% - 16px)) !important; max-height: calc(100% - 16px) !important; }
