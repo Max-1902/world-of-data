@@ -7,9 +7,9 @@ const base = { activeGroup: 'overview' as const, onGroupChange: () => {} }
 const mainNav = () => screen.getByRole('navigation', { name: 'Main' })
 
 describe('Sidebar', () => {
-  it('has six entries, in the order of what the dashboard is for', () => {
+  it('has seven entries, in the order of what the dashboard is for', () => {
     render(<Sidebar {...base} />)
-    expect(within(mainNav()).getAllByRole('button').map(b => b.textContent)).toEqual(['Outlook', 'Forecasts', 'Drivers', 'Countries', 'Explore', 'Saved'])
+    expect(within(mainNav()).getAllByRole('button').map(b => b.textContent)).toEqual(['Outlook', 'Forecasts', 'Drivers', 'Countries', 'Map', 'Explore', 'Saved'])
   })
 
   it('no longer carries presets, a workspace list or a separate AI analyst entry', () => {
@@ -86,6 +86,8 @@ describe('navSection', () => {
     expect(navSection(false, 'analysis', 'analyst')).toBe('forecasts')
     expect(navSection(false, 'analysis', 'countryAnalytics')).toBe('explore')
     expect(navSection(false, 'markets', 'drivers')).toBe('drivers')
+    expect(navSection(false, 'markets', 'exposure', true)).toBe('map')
+    expect(navSection(true, 'markets', undefined, true)).toBe('outlook')
     expect(navSection(false, 'markets', 'exposure')).toBe('drivers')
     expect(navSection(false, 'markets', 'tradePartnersByCountry')).toBe('drivers')
     expect(navSection(false, 'markets', 'economy')).toBe('explore')

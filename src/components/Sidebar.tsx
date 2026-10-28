@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeftRight, Bookmark, Compass, ChevronDown, Database, Layers, Map, Network, Newspaper, Radar, ShieldHalf, TrendingUp, Globe2, Activity } from 'lucide-react'
+import { ArrowLeftRight, Bookmark, Compass, ChevronDown, Database, Layers, MapPinned, Network, Newspaper, Radar, ShieldHalf, TrendingUp, Globe2, Activity, Telescope } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PanelGroup } from '../panels/types'
 
@@ -8,6 +8,9 @@ interface Props {
   onGroupChange: (g: PanelGroup) => void
   isHome?: boolean
   onHome?: () => void
+  /** the map destination is showing (it is not one of the dock workspaces) */
+  isMap?: boolean
+  onMap?: () => void
   onOpenLibrary?: () => void
   onFocusPanel?: (id: string) => void
   focusPanel?: { id: string; n: number } | null
@@ -16,7 +19,7 @@ interface Props {
 
 /** The six entries of the main navigation, plus the four context workspaces folded under "More". */
 export type NavSection =
-  | 'outlook' | 'forecasts' | 'drivers' | 'countries' | 'explore' | 'saved'
+  | 'outlook' | 'forecasts' | 'drivers' | 'countries' | 'map' | 'explore' | 'saved'
   | 'risk' | 'security' | 'infrastructure' | 'news'
 
 /** Dock panels that belong to Drivers: the trade and resource links that shocks travel along. */
@@ -35,8 +38,9 @@ const MORE: { section: NavSection; label: string; icon: LucideIcon; group: Panel
  * Which navigation entry the current view belongs to. The focused panel outlives a workspace switch, so it only
  * counts for the workspace it lives in.
  */
-export function navSection(isHome: boolean, group: PanelGroup, focusId?: string): NavSection {
+export function navSection(isHome: boolean, group: PanelGroup, focusId?: string, isMap = false): NavSection {
   if (isHome) return 'outlook'
+  if (isMap) return 'map'
   switch (group) {
     case 'analysis': return focusId && EXPLORE_ANALYSIS_PANELS.has(focusId) ? 'explore' : 'forecasts'
     case 'markets': return focusId && DRIVER_PANELS.has(focusId) ? 'drivers' : 'explore'
@@ -54,13 +58,13 @@ function NavItem({ icon: Icon, label, active, onClick, title, sub = false }: {
   return <button className={`new-nav-item${sub ? ' sub' : ''}${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined} title={title}><Icon size={sub ? 14 : 17} strokeWidth={1.8} /><span>{label}</span></button>
 }
 
-export default function Sidebar({ activeGroup, onGroupChange, isHome = false, onHome = () => {}, onOpenLibrary = () => {}, onFocusPanel = () => {}, focusPanel, libraryOpen = false }: Props) {
+export default function Sidebar({ activeGroup, onGroupChange, isHome = false, onHome = () => {}, isMap = false, onMap = () => {}, onOpenLibrary = () => {}, onFocusPanel = () => {}, focusPanel, libraryOpen = false }: Props) {
   const [moreOpen, setMoreOpen] = useState(false)
   const go = (group: PanelGroup, panel?: string) => {
     onGroupChange(group)
     if (panel) onFocusPanel(panel)
   }
-  const current = navSection(isHome, activeGroup, focusPanel?.id)
+  const current = navSection(isHome, activeGroup, focusPanel?.id, isMap)
   const inMore = MORE.some(m => m.section === current)
   // never hide the entry you are standing on
   const showMore = moreOpen || inMore
@@ -78,7 +82,8 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
         <NavItem icon={TrendingUp} label="Forecasts" title="GDP-growth forecast and this quarter's nowcast, backtested, beside the IMF's" active={current === 'forecasts'} onClick={() => go('analysis', 'predictions')} />
         <NavItem icon={Network} label="Drivers" title="Which indicators improve the GDP forecast (tested out of sample), and the trade links a shock travels along" active={current === 'drivers'} onClick={() => go('markets', 'drivers')} />
         <NavItem icon={Globe2} label="Countries" title="One country's full record" active={current === 'countries'} onClick={() => go('country', 'countries')} />
-        <NavItem icon={Map} label="Explore" title="The map, indicators, country comparison and every dataset" active={current === 'explore'} onClick={() => go('markets', 'economy')} />
+        <NavItem icon={MapPinned} label="Map" title="Only the map: click a country for its overview, a city or region for its local outlook" active={current === 'map'} onClick={onMap} />
+        <NavItem icon={Telescope} label="Explore" title="Indicators, country comparison and every dataset" active={current === 'explore'} onClick={() => go('markets', 'economy')} />
         {current === 'explore' && (
           <div className="new-nav-subgroup">
             <NavItem sub icon={Activity} label="Indicators" active={activeGroup === 'markets'} onClick={() => go('markets', 'economy')} />

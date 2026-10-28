@@ -41,6 +41,7 @@ import { decodeHash, encodeHash, enabledLayers, isViewMode, layersToPanelState, 
 // Rarely-open surfaces: keep their code (and the datasets CountryDrawer pulls in) out of the first load.
 const SettingsModal = lazy(() => import('./components/SettingsModal'))
 const CountryPage = lazy(() => import('./components/countryPage/CountryPage'))
+const CountryDrawer = lazy(() => import('./components/CountryDrawer'))
 const CountriesLanding = lazy(() => import('./components/countryPage/CountriesLanding'))
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
@@ -114,6 +115,8 @@ export default function App() {
     try { return localStorage.getItem('ws-projection-mode') === 'globe' ? 'globe' : 'mercator' } catch { return 'mercator' }
   })
   const [activeGroup, setActiveGroup] = useState<PanelGroup>(loadGroup)
+  // The Map destination: only the map, with the regional outlook and a clicked country's overview on top of it.
+  const [isMapPage, setIsMapPage] = useState(false)
   // Analysis (forecasting) defaults to no map — the country dashboard is the point, the map is one click away.
   const [mapHidden, setMapHidden] = useState(() => {
     try { return localStorage.getItem('ws-analysis-map-hidden') !== '0' } catch { return true }
@@ -136,13 +139,17 @@ export default function App() {
     const group = PANEL_MAP.get(id)?.group
     if (!group) return
     setIsHome(false)
+    setIsMapPage(false)
     setActiveGroup(group)
     setFocusPanel({ id, n: Date.now() })
   }, [])
   const changeWorkspace = useCallback((group: PanelGroup) => {
     setIsHome(false)
+    setIsMapPage(false)
     setActiveGroup(group)
   }, [])
+  const openMap = useCallback(() => { setIsHome(false); setIsMapPage(true) }, [])
+  const goHome = useCallback(() => { setIsMapPage(false); setIsHome(true) }, [])
   // Session-only: a closed ticker / outlook card returns on reload. The outlook card is dismissed per subject
   // (the regional outlook, or one country's brief), so picking another country shows it again.
   const [tickerHidden, setTickerHidden] = useState(false)
@@ -235,7 +242,7 @@ export default function App() {
       else if (d.group || d.country) setIsHome(false)
       if (d.viewMode) setViewMode(d.viewMode)
       if (d.layers) setPanelState(prev => layersToPanelState(prev, d.layers!))
-      if (d.group) setActiveGroup(d.group as PanelGroup)
+      if (d.group) { setActiveGroup(d.group as PanelGroup); setIsMapPage(false) }
       setSelectedPlace(null)
       setSelectedCountry(d.country ?? null)
     }
@@ -422,7 +429,7 @@ export default function App() {
           onSettingsOpen={() => setSettingsOpen(true)}
           onReloadAll={handleReloadAll}
           reloading={reloading}
-          onHome={() => setIsHome(true)}
+          onHome={goHome}
         />
 
         <div className="dashboard-shell">
@@ -430,7 +437,9 @@ export default function App() {
             activeGroup={activeGroup}
             onGroupChange={changeWorkspace}
             isHome={isHome}
-            onHome={() => setIsHome(true)}
+            onHome={goHome}
+            isMap={isMapPage}
+            onMap={openMap}
             onOpenLibrary={() => setLibraryOpen(true)}
             onFocusPanel={focusInDock}
             focusPanel={focusPanel}
@@ -440,17 +449,32 @@ export default function App() {
           {isHome ? (
             <div className="home-stage">
               <HomeDashboard
-                map={<>
-                  {homeMapView}
-                  {selectedPlace && dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
-                </>}
+                map={homeMapView}
                 onOpenPanel={openPanel}
-                onOpenMap={() => changeWorkspace('geo')}
+                onOpenMap={openMap}
                 onOpenLibrary={() => setLibraryOpen(true)}
                 onColorCountries={colorCountries}
                 projectionMode={projectionMode}
                 onProjectionMode={setProjectionMode}
               />
+            </div>
+          ) : isMapPage ? (
+            <div className="workspace-stage">
+              {!tickerHidden && <NewsTicker onClose={() => setTickerHidden(true)} />}
+              <div className="dashboard-main map-page">
+                <div className="area-map">
+                  <div className="map-card">{mapView}
+                    {crisisArchive && panelState.crises && <div className="map-archive-note" role="status">Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.</div>}
+                  </div>
+                  {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} pinnedCountry={selectedCountry} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
+                  {selectedCountry && (
+                    <Suspense fallback={null}>
+                      <CountryDrawer country={selectedCountry} crises={crises} flights={flights} earthquakes={earthquakes} fires={fires} onClose={() => setSelectedCountry(null)} onFlyTo={handleGeoSearch} />
+                    </Suspense>
+                  )}
+                  <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
+                </div>
+              </div>
             </div>
           ) : (
             <div className="workspace-stage">
@@ -467,7 +491,6 @@ export default function App() {
                         <button className="cp-chip-x" onClick={() => setSelectedCountry(null)} aria-label={`Deselect ${selectedCountry}`}>×</button>
                       </div>
                     )}
-                    {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
                     <Taskbar layout={windows} screens={screens} onOpenLibrary={() => setLibraryOpen(true)} />
                     {activeGroup === 'analysis' && (
                       <button className="map-hide-btn" onClick={() => setMapHidden(true)} title="Hide the map for this workspace">Hide map</button>
@@ -481,7 +504,7 @@ export default function App() {
                         {/* the dock's own panels carry their country pickers; this one is for switching while a country page is open */}
                         <CountrySearchBox onPick={selectCountry} />
                         <CountryPage country={selectedCountry} crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires}
-                          onClose={() => setSelectedCountry(null)} onShowMap={() => (activeGroup === 'country' ? changeWorkspace('geo') : setMapHidden(false))} onOpenPanel={openPanel} onFlyTo={handleGeoSearch}
+                          onClose={() => setSelectedCountry(null)} onShowMap={() => (activeGroup === 'country' ? openMap() : setMapHidden(false))} onOpenPanel={openPanel} onFlyTo={handleGeoSearch}
                           initialTab={activeGroup === 'country' ? 'economy' : 'forecasts'} />
                       </Suspense>
                     ) : activeGroup === 'country' ? (
