@@ -36,6 +36,7 @@ const TradePartnersByCountryPanel = lazy(() => import('../components/panels/Coun
 const TradeProductsByCountryPanel = lazy(() => import('../components/panels/CountryBrowserPanels').then(m => ({ default: m.TradeProductsByCountryPanel })))
 const MilitaryPersonnelPanel = lazy(() => import('../components/panels/RankingPanels').then(m => ({ default: m.MilitaryPersonnelPanel })))
 const InfraIndicatorsPanel = lazy(() => import('../components/panels/RankingPanels').then(m => ({ default: m.InfraIndicatorsPanel })))
+const DriversPanel = lazy(() => import('../components/panels/DriversPanel'))
 const OwidPanel = lazy(() => import('../components/panels/RankingPanels').then(m => ({ default: m.OwidPanel })))
 const DataCentersPanel = lazy(() => import('../components/panels/RankingPanels').then(m => ({ default: m.DataCentersPanel })))
 const HumanitarianPanel = lazy(() => import('../components/panels/HumanitarianPanel').then(m => ({ default: m.HumanitarianPanel })))
@@ -94,6 +95,12 @@ const PANELS: PanelDef[] = [
     id: 'owid', title: 'Global Trends', group: 'markets', section: 'macro', map: 'inline', sources: ['owid'],
     dotColor: 'amber', desc: 'Agriculture, violence & war, energy & environment, innovation & tech (Our World in Data)',
     render: (p) => <OwidPanel onCountryClick={p.onCountryClick} panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
+  },
+  {
+    id: 'drivers', title: 'What drives growth', group: 'markets', section: 'drivers', map: 'none',
+    sources: [{ name: 'Predictor backtest on World Bank WDI and FRED Brent (docs/predictor-backtest-results.md)', asOf: '2026-10-28' }],
+    dotColor: 'green', desc: 'Which indicators improve a one-year-ahead GDP-growth forecast, tested out of sample: none of the seven candidates did',
+    render: () => <DriversPanel />,
   },
   {
     id: 'exposure', title: 'Shock Exposure', group: 'markets', section: 'exposure', map: 'inline', sources: ['worldbank', { name: 'UN Comtrade and World Bank (trade snapshot)', asOf: 'retrieved 2026-10-08' }, { name: 'EIA World Oil Transit Chokepoints', asOf: '2024 flows' }],
@@ -282,6 +289,7 @@ export const GROUP_SECTIONS: Record<PanelGroup, PanelSection[]> = {
   markets: [
     { id: 'live', title: 'Markets today', desc: 'The fastest-moving signal: index and asset prices from the live feed.' },
     { id: 'macro', title: 'Macro indicators', desc: 'Slower, structural data per country: World Bank economic profiles and long-run global trends.' },
+    { id: 'drivers', title: 'What drives growth', desc: 'Which indicators help predict a country\'s next-year GDP growth, judged only on forecasts the model had not seen. Co-movement is not prediction, and this page keeps them apart.' },
     { id: 'exposure', title: 'How shocks spread', desc: 'Pick a shock and trace which economies it reaches through sourced trade links. Every step is labelled as reported data, a statistical estimate, or an assumption.' },
     { id: 'trade', title: 'Trade', desc: 'Who each country trades with, and what it exports and imports.' },
     { id: 'resources', title: 'Resources', desc: 'Critical minerals and commodities: reserves and production by country.' },
