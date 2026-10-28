@@ -16,6 +16,7 @@ import type { PanelSource } from '../../panels/types'
 import { ForecastsTab, TradeTab } from './tabs'
 
 const CountryDrawer = lazy(() => import('../CountryDrawer'))
+const CountryLookupPanel = lazy(() => import('../panels/CountryLookupPanel').then(m => ({ default: m.CountryLookupPanel })))
 
 export type CountryTab = 'economy' | 'forecasts' | 'trade' | 'risk' | 'infrastructure' | 'activity' | 'news'
 
@@ -99,8 +100,8 @@ export default function CountryPage({ country, crises, conflictFeed, flights, ar
       </nav>
 
       <div className="cp-body" role="tabpanel" aria-label={current.label}>
-        {tab === 'economy' && (
-          econLoading ? <StatusLabel status="loading">World Bank data for {country}…</StatusLabel>
+        {tab === 'economy' && (<>
+          {econLoading ? <StatusLabel status="loading">World Bank data for {country}…</StatusLabel>
             : !econData ? <StatusLabel status="empty">The World Bank has no economic data for {country}.</StatusLabel>
             : Object.entries(groupIndicators(econData.indicators)).map(([group, inds]) => (
                 <div key={group}>
@@ -112,8 +113,13 @@ export default function CountryPage({ country, crises, conflictFeed, flights, ar
                       tone={growth ? (i.value! >= 0 ? 'up' : 'down') : 'neutral'} stale={fresh?.stale} staleLabel={fresh?.label ?? undefined} />
                   })}
                 </div>
-              ))
-        )}
+              ))}
+          {/* the overview above stays; everything else we hold on this economy follows it */}
+          <SectionLabel>Full record</SectionLabel>
+          {iso2
+            ? <Suspense fallback={<StatusLabel status="loading">The full record for {country}…</StatusLabel>}><CountryLookupPanel iso2={iso2} /></Suspense>
+            : <StatusLabel status="empty">No country code for {country}, so the full record cannot be loaded.</StatusLabel>}
+        </>)}
         {tab === 'forecasts' && <ForecastsTab country={country} iso2={iso2} onOpenPanel={onOpenPanel} />}
         {tab === 'trade' && <TradeTab country={country} iso2={iso2} onOpenPanel={onOpenPanel} drawer={<Suspense fallback={null}><CountryDrawer {...drawerProps} only="trade" /></Suspense>} />}
         {(tab === 'risk' || tab === 'infrastructure' || tab === 'activity') && (
