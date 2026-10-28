@@ -198,7 +198,7 @@ export function LiveFeedPanel() {
           key={active.id}
           src={`https://www.youtube.com/embed/${active.videoId}?autoplay=1&mute=1`}
           title={`${active.label} live feed`}
-          style={{ position: 'absolute', top: 0, left: '50%', height: '100%', aspectRatio: '16 / 9', transform: 'translateX(-50%)', border: 'none', display: 'block' }}
+          style={{ position: 'absolute', top: 0, left: '50%', width: '177.78%', height: '100%', transform: 'translateX(-50%)', border: 'none', display: 'block' }}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
