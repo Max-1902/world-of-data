@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react'
 
 // Stand-ins for the heavy pieces: the map just exposes a "click a country" button, the country page (now rendered
 // in the right panel, not over the map) its two actions, and the outlook card reports which subject it shows.
@@ -15,8 +15,13 @@ vi.mock('./components/countryPage/CountryPage', () => ({
   ),
 }))
 vi.mock('./components/OutlookCard', () => ({
-  default: ({ selectedCountry, onClose }: { selectedCountry?: string | null; onClose: () => void }) => (
-    <section data-testid="card">{selectedCountry ?? 'REGIONAL OUTLOOK'}<button onClick={onClose}>close-card</button></section>
+  default: ({ selectedCountry, pinnedCountry, onClose }: { selectedCountry?: string | null; pinnedCountry?: string | null; onClose: () => void }) => (
+    <section data-testid="card">{selectedCountry ?? 'REGIONAL OUTLOOK'}{pinnedCountry ? ` pinned:${pinnedCountry}` : ''}<button onClick={onClose}>close-card</button></section>
+  ),
+}))
+vi.mock('./components/CountryDrawer', () => ({
+  default: ({ country, only, onClose }: { country: string; only?: string; onClose: () => void }) => (
+    <div data-testid="drawer">{country}{only ? ` only:${only}` : ' all-sections'}<button onClick={onClose}>close-drawer</button></div>
   ),
 }))
 vi.mock('./services/countryLookup', async orig => ({
@@ -37,23 +42,51 @@ describe('picking a country', () => {
     expect((await screen.findByTestId('page')).textContent).toContain('Ukraine')
   }
 
-  it('opens the country data page in the right panel, map and outlook card stay visible', async () => {
+  it('opens the country data page in the right panel, and shows no outlook card outside the Map destination', async () => {
     await pickCountry()
-    expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
+    expect(screen.queryByTestId('card')).toBeNull()
   })
 
-  it('"Show on map" closes the page; the map and outlook card were visible underneath all along', async () => {
+  it('"Show on map" closes the page in a workspace', async () => {
     await pickCountry()
     fireEvent.click(screen.getByText('show-map'))
     await waitFor(() => expect(screen.queryByTestId('page')).toBeNull())
-    expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
+    expect(screen.queryByTestId('card')).toBeNull()
   })
 
-  it('closing the page returns to the map with the regional outlook', async () => {
+  it('closing the page returns to the workspace', async () => {
     await pickCountry()
     fireEvent.click(screen.getByText('close-page'))
     await waitFor(() => expect(screen.queryByTestId('page')).toBeNull())
+  })
+})
+
+describe('the Map destination', () => {
+  beforeEach(() => { vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder') })
+
+  async function openMapPage() {
+    const { default: App } = await import('./App')
+    render(<App />)
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('button', { name: /Map/ }))
+    expect((await screen.findAllByText('pick-country'))[0]).toBeTruthy()
+  }
+
+  it('shows the regional outlook on the map', async () => {
+    await openMapPage()
     expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
+    expect(screen.queryByTestId('drawer')).toBeNull()
+  })
+
+  it('a clicked country keeps the regional outlook (that country first) and opens its full overview beside it', async () => {
+    await openMapPage()
+    fireEvent.click(screen.getAllByText('pick-country')[0])
+    const drawer = await screen.findByTestId('drawer')
+    expect(drawer.textContent).toContain('Ukraine')
+    expect(drawer.textContent).toContain('all-sections')
+    expect(screen.queryByTestId('page')).toBeNull()
+    expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK pinned:Ukraine')
+    fireEvent.click(screen.getByText('close-drawer'))
+    await waitFor(() => expect(screen.queryByTestId('drawer')).toBeNull())
   })
 })
 

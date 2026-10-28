@@ -24,11 +24,16 @@ interface Props {
   selectedCountry?: string | null
   /** a picked city; takes over the card from the regional outlook */
   selectedPlace?: SelectedPlace | null
+  /**
+   * A country clicked on the map. The card stays the regional outlook (what is rising across regions), with this
+   * country's own activity trend first; its general data opens beside the map, not in the card.
+   */
+  pinnedCountry?: string | null
   onSelectCountry: (country: string) => void
   onClose: () => void
 }
 
-export default function OutlookCard({ crises, conflictFeed, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, onSelectCountry, onClose }: Props) {
+export default function OutlookCard({ crises, conflictFeed, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, pinnedCountry, onSelectCountry, onClose }: Props) {
   const subject = selectedPlace ? null : selectedCountry
   const entries = computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { limit: 6, articles, focusCountry: subject, capped: conflictFeed?.capped })
   const rising = entries.filter(isFlaggedUp)
@@ -36,7 +41,11 @@ export default function OutlookCard({ crises, conflictFeed, flights, articles, e
   const since = PREVIOUS_VISIT !== null && Date.now() - PREVIOUS_VISIT >= MIN_AWAY_MS
     ? changesSince(snaps, PREVIOUS_VISIT, scoreByCountry(crises))
     : null
-  const featured = subject ? entries : (rising.length ? rising : entries).slice(0, 2)
+  const pinned = !subject && !selectedPlace && pinnedCountry
+    ? computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { limit: 6, articles, focusCountry: pinnedCountry, capped: conflictFeed?.capped })[0]
+    : undefined
+  const others = (rising.length ? rising : entries).filter(e => e.country !== pinned?.country)
+  const featured = subject ? entries : pinned ? [pinned, ...others.slice(0, 2)] : (rising.length ? rising : entries).slice(0, 2)
 
   return (
     <section className={`outlook-card${selectedCountry || selectedPlace ? ' outlook-card-country' : ''}`} aria-label={selectedPlace ? `${selectedPlace.name} brief` : selectedCountry ? `${selectedCountry} brief` : 'Regional activity outlook'}>
@@ -45,7 +54,7 @@ export default function OutlookCard({ crises, conflictFeed, flights, articles, e
           <span className="outlook-icon"><Radar size={13} /></span>
           <div>
             <div className="outlook-eyebrow">{selectedPlace ? selectedPlace.name : selectedCountry ? selectedCountry : 'Regional outlook'}</div>
-            <div className="outlook-subtitle">{selectedPlace ? `${[selectedPlace.region, selectedPlace.country].filter(Boolean).join(', ')} · local brief` : selectedCountry ? 'Country brief · news and facts' : 'Activity trend · 72 hours'}</div>
+            <div className="outlook-subtitle">{selectedPlace ? `${[selectedPlace.region, selectedPlace.country].filter(Boolean).join(', ')} · local brief` : selectedCountry ? 'Country brief · news and facts' : pinned ? `Activity trend · 72 hours · ${pinned.country} first` : 'Activity trend · 72 hours'}</div>
           </div>
         </div>
         <span className="outlook-live"><i /> {selectedCountry || selectedPlace ? 'Live' : 'Rule-based'}</span>
