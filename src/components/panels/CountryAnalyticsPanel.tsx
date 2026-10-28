@@ -1,14 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { ArrowLeftRight, Map as MapIcon, RefreshCw } from 'lucide-react'
 import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
-import { sliceOf } from '../../services/countryAnalytics'
-import { INDICATORS, INDICATOR_BY_ID, INDICATOR_GROUPS, MATRIX_IDS, PRESETS } from '../../services/countryIndicators'
-import { correlationMatrix, describeFit, describePair, histogram, type MapMode } from '../../utils/countryStats'
+import { INDICATORS, INDICATOR_GROUPS, PRESETS } from '../../services/countryIndicators'
+import { describeFit, describePair, histogram, type MapMode } from '../../utils/countryStats'
 import { ChartFrame } from '../charts/ChartFrame'
 import { ScatterChart } from '../charts/ScatterChart'
 import { RankChart, type RankItem } from '../charts/RankChart'
 import { BarsChart } from '../charts/BarsChart'
-import { CorrMatrixChart } from '../charts/CorrMatrixChart'
+import { CorrMatrixCard } from '../charts/CorrMatrixCard'
 import type { PanelState } from '../../types'
 
 function Kpi({ label, value, detail }: { label: string; value: string; detail?: string }) {
@@ -43,22 +42,13 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
   onToggleLayer: (id: keyof PanelState) => void
   onGeoSearch?: (q: string) => void
 }) {
-  const [showMatrix, setShowMatrix] = useState(false)
-  const c = useCountryAnalytics(true, showMatrix ? MATRIX_IDS : [])
+  const c = useCountryAnalytics(true)
   const { xMeta, yMeta, xs, ys, xSlice, ySlice, analysis, state } = c
   const { x, y } = state.selection
   const layerOn = panelState.countryAnalytics
 
   const topY = useMemo(() => [...ySlice.rows].sort((a, b) => b.value - a.value).slice(0, 10), [ySlice.rows])
   const hist = useMemo(() => histogram(ySlice.rows.map(r => r.value), ys, 12), [ySlice.rows, ys])
-  const matrix = useMemo(() => {
-    if (!showMatrix) return null
-    const items = MATRIX_IDS.map(id => ({ id, rows: sliceOf(state, id).rows }))
-    return items.some(i => i.rows.length > 0) ? correlationMatrix(items) : null
-  }, [showMatrix, state])
-  const matrixLoading = showMatrix && MATRIX_IDS.some(id => ['idle', 'loading'].includes(sliceOf(state, id).status))
-  const matrixFailed = showMatrix ? MATRIX_IDS.filter(id => sliceOf(state, id).status === 'error').length : 0
-
   const loading = [xSlice, ySlice].some(s => s.status === 'idle' || s.status === 'loading')
   const failed = [xSlice, ySlice].find(s => s.status === 'error')
   const fly = (name: string) => onGeoSearch?.(name)
@@ -170,22 +160,7 @@ export function CountryAnalyticsPanel({ panelState, onToggleLayer, onGeoSearch }
         </>
       )}
 
-      <ChartFrame
-        title="What moves together"
-        subtitle={`Spearman rank correlation between ${MATRIX_IDS.length} indicators, using the countries each pair has in common. Click a cell to plot that pair.`}
-        table={{
-          columns: ['Indicator', ...MATRIX_IDS.map(id => INDICATOR_BY_ID.get(id)!.short)],
-          rows: matrix ? MATRIX_IDS.map((id, i) => [INDICATOR_BY_ID.get(id)!.short, ...matrix.rho[i].map(r => (r === null ? '—' : r.toFixed(2)))]) : [],
-        }}
-        footer={matrix ? `Blank cells ("–") have fewer than 12 countries in common.${matrixFailed ? ` ${matrixFailed} indicator${matrixFailed === 1 ? '' : 's'} could not be loaded.` : ''}` : undefined}
-      >
-        {!showMatrix ? (
-          <button className="cy-btn" onClick={() => setShowMatrix(true)} title={`Fetches ${MATRIX_IDS.length} indicators`}>Compute (loads {MATRIX_IDS.length} indicators)</button>
-        ) : matrix && !matrixLoading ? (
-          <CorrMatrixChart matrix={matrix} labels={MATRIX_IDS.map(id => INDICATOR_BY_ID.get(id)!.short)} names={MATRIX_IDS.map(id => INDICATOR_BY_ID.get(id)!.label)}
-            onPick={(i, j) => c.setSelection(MATRIX_IDS[j], MATRIX_IDS[i])} />
-        ) : <div className="viz-note" role="status">Loading the indicators…</div>}
-      </ChartFrame>
+      <CorrMatrixCard />
 
       <div className="viz-note">
         Sources: World Bank Open Data (economy, trade, population, military, society, resource rents), Our World in Data (conflict and terrorism deaths, R&D, primary and renewable energy) and Ember (electricity mix) — all free, no key, and the same feeds the other country panels use. Military series are SIPRI/IISS-derived and missing for many countries; conflict figures come from UCDP via Our World in Data. Everything is computed in the browser from the rows those services return; nothing is estimated or filled in.

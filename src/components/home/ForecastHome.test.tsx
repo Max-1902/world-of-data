@@ -40,6 +40,14 @@ describe('ForecastHome', () => {
     expect(m.fetchSeries).toHaveBeenCalledWith(['DE'], 'NY.GDP.MKTP.KD.ZG')
   })
 
+  it('offers the Spearman matrix under the forecast without fetching its indicators until asked', async () => {
+    render(<ForecastHome onOpenPanel={() => {}} />)
+    await waitFor(() => expect(screen.getByText(/What it rests on/)).toBeTruthy())
+    expect(screen.getByText('What moves together')).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Compute \(loads \d+ indicators\)/ })).toBeTruthy()
+    expect(m.fetchSeries).toHaveBeenCalledTimes(1)
+  })
+
   it('shows the interval with the coverage it actually held, and the IMF figure beside it', async () => {
     render(<ForecastHome onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByLabelText('Germany forecast at a glance')).toBeTruthy())
