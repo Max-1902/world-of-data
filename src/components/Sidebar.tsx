@@ -99,10 +99,6 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
           ))}
         </div>}
       </div>
-
-      <div className="new-sidebar-bottom">
-        <div className="new-sidebar-note"><span className="new-live-dot" /> Research workspace</div>
-      </div>
     </aside>
   )
 }

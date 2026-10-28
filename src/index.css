@@ -1193,11 +1193,9 @@ body.pw-dragging iframe { pointer-events: none; }
 .new-sidebar-more-toggle > svg.rotated { transform: rotate(180deg); }
 .new-sidebar-more-toggle:hover { color: #dcebf5; background: #0c1d2b; }
 .new-more-list { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 2px; }
-.new-sidebar-bottom { margin-top: auto; padding: 12px 3px 0; border-top: 1px solid #14283a; }
 .new-library-button { width: 100%; min-height: 37px; display: flex; align-items: center; gap: 9px; padding: 0 9px; color: #a9bed0; border: 1px solid #1a3145; border-radius: 8px; background: #0a1926; text-align: left; font-size: 11px; cursor: pointer; }
 .new-library-button:hover { color: #f0faff; border-color: #167ba0; }
 .new-library-search { margin-left: auto; color: #668198; }
-.new-sidebar-note { display: flex; align-items: center; gap: 8px; padding: 14px 9px 0; color: #637d91; font-size: 10px; }
 .new-live-dot { width: 7px; height: 7px; display: inline-block; flex: 0 0 7px; border-radius: 50%; background: #29d5a4; box-shadow: 0 0 10px rgba(41,213,164,.45); }
 
 .home-stage, .workspace-stage { position: relative; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; }
@@ -1336,7 +1334,6 @@ body.pw-dragging iframe { pointer-events: none; }
   .new-nav-item.sub { min-height: 26px; gap: 5px; padding: 0 5px; font-size: 9px; }
   .new-nav-subgroup { margin-left: 8px; padding-left: 4px; }
   .new-sidebar-more-toggle { min-height: 27px !important; padding: 0 5px !important; font-size: 8px !important; }
-  .new-sidebar-bottom { display: block; }
   .home-content { padding: 18px 16px 30px; }
   .home-hero { min-height: 350px; grid-template-columns: minmax(0,1fr) minmax(190px, .8fr); gap: 12px; padding: 21px; }
   .fh-glance { padding: 10px; }
@@ -1353,7 +1350,7 @@ body.pw-dragging iframe { pointer-events: none; }
   .new-header-actions { grid-column: 2; }
   .new-sidebar { width: 48px !important; flex-basis: 48px; padding: 10px 4px; }
   .new-brand-mark { width: 29px; height: 29px; flex-basis: 29px; }
-  .new-brand > div:last-child, .new-nav-item > span, .new-nav-subgroup, .new-sidebar-more, .new-sidebar-bottom { display: none; }
+  .new-brand > div:last-child, .new-nav-item > span, .new-nav-subgroup, .new-sidebar-more { display: none; }
   .new-nav-item { min-height: 37px; }
   .home-content { padding: 12px 10px 24px; }
   .home-hero { min-height: 480px; display: flex; flex-direction: column; align-items: stretch; padding: 20px; }
