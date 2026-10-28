@@ -192,7 +192,8 @@ export function LiveFeedPanel() {
           >{ch.label}</button>
         ))}
       </div>
-      <div style={{ position: 'relative', flex: 1, background: '#000', minHeight: 0 }}>
+      {/* 16:9 like the stream itself, so it fills the width with no black bars in the dock; in a taller window it grows to fill. */}
+      <div style={{ position: 'relative', flex: '1 1 auto', aspectRatio: '16 / 9', background: '#000', minHeight: 0 }}>
         <iframe
           key={active.id}
           src={`https://www.youtube.com/embed/${active.videoId}?autoplay=1&mute=1`}
