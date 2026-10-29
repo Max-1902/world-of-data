@@ -186,10 +186,20 @@ export function resizeLinked(
 
 export type TileMode = 'grid' | 'columns' | 'rows'
 
-/** Evenly fill the workspace with `n` windows. Grid: near-square; the last row's windows widen to fill it. */
+/**
+ * Evenly fill the workspace with `n` windows. Grid: near-square; the last row's windows widen to fill it.
+ * No tile is ever smaller than MIN_W × MIN_H (a smaller window would not survive a reload): the columns or
+ * rows a mode asks for are capped to what fits, and when `n` windows cannot all fit at that size the
+ * layout falls back to an overlapping cascade.
+ */
 export function tileLayout(n: number, b: Rect, mode: TileMode): Rect[] {
   if (n <= 0) return []
-  const cols = mode === 'columns' ? n : mode === 'rows' ? 1 : Math.ceil(Math.sqrt(n))
+  const maxCols = Math.max(1, Math.floor((b.w - GAP) / (MIN_W + GAP)))
+  const maxRows = Math.max(1, Math.floor((b.h - GAP) / (MIN_H + GAP)))
+  if (n > maxCols * maxRows) return cascadeLayout(n, b)
+  let cols = mode === 'columns' ? n : mode === 'rows' ? 1 : Math.ceil(Math.sqrt(n))
+  cols = Math.min(cols, maxCols)
+  if (Math.ceil(n / cols) > maxRows) cols = Math.ceil(n / maxRows)
   const rows = Math.ceil(n / cols)
   const out: Rect[] = []
   const rowH = (b.h - GAP * (rows + 1)) / rows

@@ -41,9 +41,10 @@ export function loadWindows(): PanelWin[] {
     for (const w of raw) {
       if (!w || typeof w.id !== 'string' || !PANEL_MAP.has(w.id) || seen.has(w.id)) continue
       const r = w.rect
-      if (!r || ![r.x, r.y, r.w, r.h].every(isNum) || r.w < MIN_W || r.h < MIN_H) continue
+      if (!r || ![r.x, r.y, r.w, r.h].every(isNum)) continue
       seen.add(w.id)
-      out.push({ id: w.id, rect: { x: r.x, y: r.y, w: r.w, h: r.h }, minimized: w.minimized === true, maximized: w.maximized === true, external: false })
+      // layouts saved before tiles had a minimum size may hold tiny windows: grow them rather than lose the panel
+      out.push({ id: w.id, rect: { x: r.x, y: r.y, w: Math.max(MIN_W, r.w), h: Math.max(MIN_H, r.h) }, minimized: w.minimized === true, maximized: w.maximized === true, external: false })
       if (out.length >= MAX_WINDOWS) break
     }
     return out
