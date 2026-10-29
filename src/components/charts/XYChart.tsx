@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { niceTicks } from '../../utils/countryStats'
 import { useElementWidth } from './useElementWidth'
+import { useHoverLeave } from './hoverLeave'
 import { Tooltip } from './ChartFrame'
 import { crisp, textWidth, TICK } from './format'
 
@@ -24,6 +25,7 @@ export function XYChart({ points, fit, xLabel, yLabel, fmtX, fmtY, ariaLabel }: 
 }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [hover, setHover] = useState<XYPoint | null>(null)
+  const onLeave = useHoverLeave(ref, () => setHover(null))
   if (!points.length) return <div ref={ref} className="viz-note">No overlapping years.</div>
   const pad = (lo: number, hi: number) => { const d = (hi - lo) * 0.08 || 1; return [lo - d, hi + d] as const }
   const [x0, x1] = pad(Math.min(...points.map(p => p.x)), Math.max(...points.map(p => p.x)))
@@ -56,7 +58,7 @@ export function XYChart({ points, fit, xLabel, yLabel, fmtX, fmtY, ariaLabel }: 
         {fit && <line x1={sx(x0)} x2={sx(x1)} y1={sy(clipY(fit.intercept + fit.slope * x0))} y2={sy(clipY(fit.intercept + fit.slope * x1))} stroke="var(--series-2)" strokeWidth={2} />}
         {points.map(p => (
           <circle key={p.key} cx={sx(p.x)} cy={sy(p.y)} r={p === latest ? 5 : 4} fill="var(--series-1)" fillOpacity={hover && hover !== p ? 0.35 : 0.8}
-            stroke="var(--surface)" strokeWidth={1.5} onPointerEnter={() => setHover(p)} onPointerLeave={() => setHover(null)} />
+            stroke="var(--surface)" strokeWidth={1.5} onPointerEnter={() => setHover(p)} onPointerLeave={onLeave} />
         ))}
         <text x={sx(latest.x) + 7} y={sy(latest.y) - 6} fontSize={10} fill="var(--text1)">{latest.label}</text>
       </svg>

@@ -3,6 +3,7 @@ import type { Fit, Residual, Scale } from '../../utils/countryStats'
 import { niceTicks } from '../../utils/countryStats'
 import type { IndicatorMeta } from '../../services/countryIndicators'
 import { useElementWidth } from './useElementWidth'
+import { useHoverLeave } from './hoverLeave'
 import { Tooltip } from './ChartFrame'
 import { crisp, textWidth, TICK } from './format'
 
@@ -54,6 +55,7 @@ export function ScatterChart({ points, xs, ys, xMeta, yMeta, fit, over, under, o
 }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [hover, setHover] = useState<{ p: Residual; x: number; y: number } | null>(null)
+  const onLeave = useHoverLeave(ref, () => setHover(null))
   const innerW = Math.max(60, width - M.l - M.r)
   const innerH = H - M.t - M.b
 
@@ -119,7 +121,7 @@ export function ScatterChart({ points, xs, ys, xMeta, yMeta, fit, over, under, o
             stroke="var(--surface)" strokeWidth={3} strokeLinejoin="round" paintOrder="stroke" style={{ pointerEvents: 'none' }}>{l.text}</text>
         ))}
         <rect x={M.l} y={M.t} width={innerW} height={innerH} fill="transparent" style={{ cursor: hover ? 'pointer' : 'default' }}
-          onPointerMove={onMove} onPointerLeave={() => setHover(null)} onClick={() => hover && onSelect?.(hover.p.iso3)} />
+          onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={onLeave} onClick={() => hover && onSelect?.(hover.p.iso3)} />
       </svg>
       {hover && (
         <Tooltip x={hover.x} y={hover.y} width={width}>

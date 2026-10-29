@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useElementWidth } from './useElementWidth'
+import { useHoverLeave } from './hoverLeave'
 import { Tooltip } from './ChartFrame'
 import { compact, crisp, niceAxis, tickLabel, TICK } from './format'
 import { topRounded } from './marks'
@@ -16,6 +17,8 @@ const M = { l: 34, r: 8, t: 14, b: 22 }
 export function BarsChart({ items, ariaLabel, unit, tickEvery = 1 }: { items: BarItem[]; ariaLabel: string; unit: string; tickEvery?: number }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null)
+  const onLeave = useHoverLeave(ref, () => setHover(null))
+  const place = (i: number, e: React.PointerEvent) => { const b = ref.current!.getBoundingClientRect(); setHover({ i, x: e.clientX - b.left, y: e.clientY - b.top }) }
   const innerW = Math.max(40, width - M.l - M.r)
   const innerH = H - M.t - M.b
   const { max, ticks } = niceAxis(Math.max(1, ...items.map(i => i.value)))
@@ -36,7 +39,7 @@ export function BarsChart({ items, ariaLabel, unit, tickEvery = 1 }: { items: Ba
           </g>
         ))}
         {items.map((it, i) => (
-          <g key={it.label} onPointerMove={e => { const b = ref.current!.getBoundingClientRect(); setHover({ i, x: e.clientX - b.left, y: e.clientY - b.top }) }} onPointerLeave={() => setHover(null)}>
+          <g key={it.label} onPointerMove={e => place(i, e)} onPointerDown={e => place(i, e)} onPointerLeave={onLeave}>
             <rect x={x(i) - band / 2} y={M.t} width={band} height={innerH + M.b} fill="transparent" />
             {it.value > 0 && <path d={topRounded(x(i) - barW / 2, y(it.value), barW, y(0) - y(it.value), 4)} fill="var(--series-1)" opacity={hover && hover.i !== i ? 0.5 : 1} />}
             {labelValues && it.value > 0 && <text x={x(i)} y={y(it.value) - 4} textAnchor="middle" fontSize={10} fontWeight={600} fill="var(--text1)" style={{ fontVariantNumeric: 'tabular-nums' }}>{compact(it.value)}</text>}

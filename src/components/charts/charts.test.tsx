@@ -64,6 +64,17 @@ describe('BarsChart', () => {
     expect(screen.queryByRole('status')).toBeNull()
   })
 
+  it('on touch a tap opens the readout, it survives the finger lifting, and a tap outside closes it', () => {
+    const { container } = render(<div><BarsChart items={items} ariaLabel="Fires per day" unit="fires" /><button>elsewhere</button></div>)
+    const bar = container.querySelectorAll('svg g > rect[fill="transparent"]')[2].parentElement!
+    fireEvent.pointerDown(bar, { clientX: 100, clientY: 40, pointerType: 'touch' })
+    expect(screen.getByRole('status').textContent).toContain('Wed')
+    fireEvent.pointerLeave(bar, { pointerType: 'touch' })
+    expect(screen.getByRole('status').textContent).toContain('Wed')
+    fireEvent.pointerDown(screen.getByText('elsewhere'), { pointerType: 'touch' })
+    expect(screen.queryByRole('status')).toBeNull()
+  })
+
   it('thins x labels with tickEvery', () => {
     const many = Array.from({ length: 24 }, (_, i) => ({ label: `${i}h`, value: i + 1 }))
     const { container } = render(<BarsChart items={many} ariaLabel="By hour" unit="x" tickEvery={6} />)

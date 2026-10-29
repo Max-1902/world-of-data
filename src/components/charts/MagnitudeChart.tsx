@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { GutenbergRichter } from '../../utils/dataAnalytics'
 import { useElementWidth } from './useElementWidth'
+import { useHoverLeave } from './hoverLeave'
 import { Tooltip } from './ChartFrame'
 import { crisp, TICK } from './format'
 
@@ -14,6 +15,8 @@ const M = { l: 40, r: 12, t: 10, b: 24 }
 export function MagnitudeChart({ gr }: { gr: GutenbergRichter }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [hover, setHover] = useState<{ i: number; x: number; y: number } | null>(null)
+  const onLeave = useHoverLeave(ref, () => setHover(null))
+  const place = (i: number, e: React.PointerEvent) => { const b = ref.current!.getBoundingClientRect(); setHover({ i, x: e.clientX - b.left, y: e.clientY - b.top }) }
   const pts = gr.points
   if (pts.length < 2) return <div className="viz-note">Too few earthquakes to plot a magnitude–frequency curve.</div>
   const innerW = Math.max(40, width - M.l - M.r)
@@ -43,7 +46,7 @@ export function MagnitudeChart({ gr }: { gr: GutenbergRichter }) {
         ))}
         {xTicks.map(m => <text key={m} x={x(m)} y={H - 7} textAnchor="middle" {...TICK}>{m.toFixed(1)}</text>)}
         {pts.map((p, i) => (
-          <g key={p.m} onPointerMove={e => { const b = ref.current!.getBoundingClientRect(); setHover({ i, x: e.clientX - b.left, y: e.clientY - b.top }) }} onPointerLeave={() => setHover(null)}>
+          <g key={p.m} onPointerMove={e => place(i, e)} onPointerDown={e => place(i, e)} onPointerLeave={onLeave}>
             <circle cx={x(p.m)} cy={y(p.cumulative)} r={12} fill="transparent" />
             <circle cx={x(p.m)} cy={y(p.cumulative)} r={hover?.i === i ? 5 : 4} fill="var(--series-1)" stroke="var(--surface)" strokeWidth={2} />
           </g>
