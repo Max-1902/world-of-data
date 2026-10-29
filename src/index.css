@@ -1733,5 +1733,9 @@ button.dl-rank:hover { background: var(--surface2); }
 .countries-landing { display: flex; flex-direction: column; gap: 10px; max-width: 640px; width: 100%; margin: 0 auto; padding: 28px 16px; overflow-y: auto; }
 .countries-landing > h2 { color: var(--text1); font-size: 18px; font-weight: 650; }
 .countries-landing .country-search-box { position: relative; }
+.region-browser details { border-top: 1px solid var(--border); padding: 6px 0; }
+.region-browser summary { cursor: pointer; color: var(--text1); font-size: 12px; font-weight: 600; }
+.region-browser summary span { color: var(--text3); font-weight: 400; margin-left: 6px; }
+.region-browser details[open] .viz-chips { margin-top: 8px; }
 /* Map destination: nothing else competes for room, so the country overview gets a wider card than on a crowded map. */
 .map-page .country-drawer { width: min(440px, calc(100% - 16px)) !important; max-height: calc(100% - 28px) !important; top: 14px !important; right: 14px !important; }
