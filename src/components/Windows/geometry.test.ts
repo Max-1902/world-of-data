@@ -141,6 +141,34 @@ describe('layouts', () => {
     expect(new Set(tileLayout(3, B, 'rows').map(r => r.x)).size).toBe(1)
     expect(tileLayout(0, B, 'grid')).toEqual([])
   })
+  it('no tile is smaller than the minimum window size, however many are open', () => {
+    for (const mode of ['grid', 'columns', 'rows'] as const) {
+      for (let n = 1; n <= 12; n++) {
+        const rects = tileLayout(n, B, mode)
+        expect(rects).toHaveLength(n)
+        for (const r of rects) {
+          expect(r.w).toBeGreaterThanOrEqual(MIN_W)
+          expect(r.h).toBeGreaterThanOrEqual(MIN_H)
+        }
+      }
+    }
+  })
+  it('columns wrap into rows and rows into columns once the minimum size is reached', () => {
+    const cols = tileLayout(12, B, 'columns')
+    expect(new Set(cols.map(r => r.y)).size).toBeGreaterThan(1)
+    const rows = tileLayout(12, B, 'rows')
+    expect(new Set(rows.map(r => r.x)).size).toBeGreaterThan(1)
+  })
+  it('falls back to a cascade of minimum-size windows when they cannot all be tiled', () => {
+    const small = { x: 0, y: 0, w: 600, h: 400 }
+    const rects = tileLayout(12, small, 'grid')
+    expect(rects).toHaveLength(12)
+    for (const r of rects) {
+      expect(r.w).toBeGreaterThanOrEqual(MIN_W)
+      expect(r.h).toBeGreaterThanOrEqual(MIN_H)
+      expect(clampRect(r, small)).toEqual(r)
+    }
+  })
   it('cascade and new windows stay on screen', () => {
     for (const r of [...cascadeLayout(12, B), placeNew(B, 3), placeNew(B, 0, { x: 1199, y: 849 })]) {
       expect(clampRect(r, B)).toEqual(r)
