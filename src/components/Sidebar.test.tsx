@@ -7,9 +7,9 @@ const base = { activeGroup: 'overview' as const, onGroupChange: () => {} }
 const mainNav = () => screen.getByRole('navigation', { name: 'Main' })
 
 describe('Sidebar', () => {
-  it('has seven entries, in the order of what the dashboard is for', () => {
+  it('has seven entries, in the order of what the dashboard is for, with the explore tools always listed under Explore', () => {
     render(<Sidebar {...base} />)
-    expect(within(mainNav()).getAllByRole('button').map(b => b.textContent)).toEqual(['Outlook', 'Forecasts', 'Drivers', 'Countries', 'Map', 'Explore', 'Saved'])
+    expect(within(mainNav()).getAllByRole('button').map(b => b.textContent)).toEqual(['Outlook', 'Forecasts', 'Drivers', 'Countries', 'Map', 'Explore', 'Indicators', 'Analysis', 'Datasets', 'Saved'])
   })
 
   it('no longer carries presets, a workspace list or a separate AI analyst entry', () => {
@@ -46,14 +46,10 @@ describe('Sidebar', () => {
     expect([onGroupChange.mock.lastCall![0], onFocusPanel.mock.lastCall![0]]).toEqual(['overview', 'watchlist'])
   })
 
-  it('keeps Risk monitor, Security, Infrastructure and News folded under More until opened', () => {
+  it('lists Risk monitor, Security, Infrastructure and News right away, with no collapse toggle', () => {
     const onGroupChange = vi.fn()
     render(<Sidebar {...base} activeGroup="country" onGroupChange={onGroupChange} />)
-    expect(screen.queryByRole('button', { name: /^News/ })).toBeNull()
-    const more = screen.getByRole('button', { name: /More/ })
-    expect(more.getAttribute('aria-expanded')).toBe('false')
-    fireEvent.click(more)
-    expect(more.getAttribute('aria-expanded')).toBe('true')
+    expect(screen.queryByRole('button', { name: /More/ })).toBeNull()
     for (const name of [/Risk monitor/, /Security & defence/, /Infrastructure & hazards/, /^News/]) expect(screen.getByRole('button', { name })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /^News/ }))
     expect(onGroupChange).toHaveBeenCalledWith('news')
@@ -61,15 +57,15 @@ describe('Sidebar', () => {
     expect(onGroupChange).toHaveBeenLastCalledWith('security')
   })
 
-  it('opens More by itself when you are standing in it, so the active entry is never hidden', () => {
+  it('marks the entry you are standing in under More as the current page', () => {
     render(<Sidebar {...base} activeGroup="geo" />)
     expect(screen.getByRole('button', { name: /Infrastructure & hazards/ }).getAttribute('aria-current')).toBe('page')
   })
 
-  it('shows the explore tools only while exploring, and opens the panel library from Datasets', () => {
+  it('lights the explore tools only while exploring, and opens the panel library from Datasets', () => {
     const onOpenLibrary = vi.fn(), onGroupChange = vi.fn(), onFocusPanel = vi.fn()
-    const { rerender } = render(<Sidebar {...base} activeGroup="country" />)
-    expect(screen.queryByRole('button', { name: /Datasets/ })).toBeNull()
+    const { rerender } = render(<Sidebar {...base} activeGroup="markets" focusPanel={{ id: 'drivers', n: 1 }} />)
+    expect(screen.getByRole('button', { name: /Indicators/ }).getAttribute('aria-current')).toBeNull()
     rerender(<Sidebar {...base} activeGroup="markets" focusPanel={{ id: 'economy', n: 1 }} onOpenLibrary={onOpenLibrary} onGroupChange={onGroupChange} onFocusPanel={onFocusPanel} />)
     fireEvent.click(screen.getByRole('button', { name: /Datasets/ }))
     expect(onOpenLibrary).toHaveBeenCalledOnce()
@@ -85,11 +81,10 @@ describe('Sidebar on a phone (drawer)', () => {
     expect(screen.queryByRole('button', { name: 'Close menu' })).toBeNull()
   })
 
-  it('opens with a scrim, still lists every destination (including More) and closes from the scrim', () => {
+  it('opens with a scrim, still lists every destination (including the More list) and closes from the scrim', () => {
     const onMobileClose = vi.fn()
     render(<Sidebar {...base} mobileOpen onMobileClose={onMobileClose} />)
     expect(screen.getByRole('complementary', { name: 'Main navigation' }).className).toContain('mobile-open')
-    fireEvent.click(screen.getByRole('button', { name: /More/ }))
     for (const name of [/Risk monitor/, /Security & defence/, /Infrastructure & hazards/, /^News/]) expect(screen.getByRole('button', { name })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Close menu' }))
     expect(onMobileClose).toHaveBeenCalledOnce()
