@@ -1194,7 +1194,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .new-nav-item.sub { min-height: 31px; gap: 9px; padding: 0 10px; border-radius: 7px; font-size: 11px; color: #819aad; }
 .new-nav-item.sub.active { box-shadow: none; background: rgba(24,201,244,.08); border-color: rgba(24,201,244,.12); color: #32d1f5; }
 .new-nav-subgroup { display: flex; flex-direction: column; gap: 2px; margin: 0 0 4px 17px; padding-left: 8px; border-left: 1px solid #14283a; }
-.new-sidebar-more { margin-top: 2px; padding: 7px 0; border-top: 1px solid #14283a; border-bottom: 1px solid #14283a; }
+.new-sidebar-more { margin-top: 2px; padding: 7px 0 0; border-top: 1px solid #14283a; }
 .new-sidebar-more-label { width: 100%; min-height: 30px; display: flex; align-items: center; gap: 7px; padding: 0 9px; color: #708a9f; font-size: 9px; }
 .new-more-list { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 2px; }
 .new-library-button { width: 100%; min-height: 37px; display: flex; align-items: center; gap: 9px; padding: 0 9px; color: #a9bed0; border: 1px solid #1a3145; border-radius: 8px; background: #0a1926; text-align: left; font-size: 11px; cursor: pointer; }
