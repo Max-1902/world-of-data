@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, fireEvent } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react'
 import type { Pt } from '../../utils/econAnalysis'
 import type { ForecastRecord } from '../../utils/forecastRecord'
 
@@ -39,6 +39,28 @@ describe('ForecastHome', () => {
     expect(screen.getByText(/What could change it/)).toBeTruthy()
     expect(screen.getByText(/does not change the number/)).toBeTruthy()
     expect(m.fetchSeries).toHaveBeenCalledWith(['DE'], 'NY.GDP.MKTP.KD.ZG')
+  })
+
+  it('states the model, and the predictor test result with a way to the full rule', async () => {
+    const onOpenPanel = vi.fn()
+    render(<ForecastHome onOpenPanel={onOpenPanel} />)
+    await waitFor(() => expect(screen.getByLabelText('Germany forecast at a glance')).toBeTruthy())
+    expect(screen.getByLabelText('Germany forecast at a glance').textContent).toMatch(/Model: AR\(2\)|Model: “no change”/)
+    expect(screen.getByText(/What has been tested as a predictor/)).toBeTruthy()
+    expect(screen.getByText(/candidate indicators improved/).textContent).toMatch(/\d+ of \d+/)
+    fireEvent.click(screen.getByRole('button', { name: /Full test rule and results/ }))
+    expect(onOpenPanel).toHaveBeenCalledWith('drivers')
+    expect(screen.getByText('Co-movement across countries')).toBeTruthy()
+  })
+
+  it('gives the forecast chart a table with the same values', async () => {
+    render(<ForecastHome onOpenPanel={() => {}} />)
+    await waitFor(() => expect(screen.getByLabelText('Germany forecast at a glance')).toBeTruthy())
+    const card = (await screen.findAllByLabelText(/^Germany: real GDP growth, next/)).find(e => e.tagName === 'SECTION')!
+    fireEvent.click(within(card).getByRole('button', { name: 'Table' }))
+    const table = within(card).getByRole('table')
+    expect(table.textContent).toMatch(/Range \(/)
+    expect(table.textContent).toMatch(/IMF/)
   })
 
   it('offers the Spearman matrix under the forecast without fetching its indicators until asked', async () => {

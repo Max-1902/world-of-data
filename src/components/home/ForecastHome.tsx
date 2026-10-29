@@ -8,7 +8,9 @@ import { remember } from '../../services/forecastLog'
 import { EvidenceTag, Metric, SourceLine, StatusLabel } from '../DataLabels'
 import { SinceBlock } from '../forecast/SinceBlock'
 import { LineChart } from '../charts/LineChart'
+import { ChartFrame, type TableData } from '../charts/ChartFrame'
 import { CorrMatrixCard } from '../charts/CorrMatrixCard'
+import { BACKTEST_AS_OF, BACKTEST_ROWS } from '../../data/predictorBacktest'
 
 /** An interval band wider than this many times the charted history's own range is stated in words, not drawn. */
 const MAX_BAND_RATIO = 4
@@ -82,14 +84,13 @@ export function ForecastHome({ onOpenPanel }: Props) {
 
       {ok && (
         <section className="home-section fh-section" aria-label="Forecast detail">
-          <div className="fh-card">
-            <div className="fh-chart-h">
-              <strong>{name}: real GDP growth, next {FORECAST_HORIZON} years</strong>
-              <span>{ok.headline === 'ar' ? 'AR(2) forecast' : '“No change” forecast'}{ok.imf.length ? ' · IMF projection' : ''}</span>
-            </div>
+          <ChartFrame
+            title={`${name}: real GDP growth, next ${FORECAST_HORIZON} years`}
+            subtitle={`${ok.headline === 'ar' ? 'AR(2) forecast' : '“No change” forecast'}${ok.imf.length ? ' · IMF projection' : ''}`}
+            table={forecastTable(ok, h.points, ok.imfVintage)}
+            footer={<p className="viz-verdict">{limits(ok, h.weo === null)}</p>}>
             <ForecastChart f={ok} history={h.points} name={name} vintage={ok.imfVintage} />
-            <p className="viz-verdict">{limits(ok, h.weo === null)}</p>
-          </div>
+          </ChartFrame>
 
           <div className="fh-cols">
             <div className="fh-card">{memory ? <SinceBlock memory={memory} unit="%" /> : null}</div>
@@ -98,6 +99,7 @@ export function ForecastHome({ onOpenPanel }: Props) {
               <ul className="ex-path">{ok.basis.map((b, i) => <li key={i}><EvidenceTag kind={b.kind} /><div>{b.text}</div></li>)}</ul>
               <p className="viz-verdict">These are the model’s inputs, not causes: it sees only this country’s own growth history.</p>
             </div>
+            <TestedCard onOpenPanel={onOpenPanel} />
             <div className="fh-card">
               <div className="pred-block-h">What could change it</div>
               <p className="viz-verdict">The forecast cannot see trade, prices, policy or shocks. Shock exposure traces which economies a shock reaches, step by step, from reported trade links, with the evidence behind each step labelled. It is separate from the forecast above and does not change the number: the forecast has no scenario analysis of its own yet.</p>
@@ -111,6 +113,7 @@ export function ForecastHome({ onOpenPanel }: Props) {
       )}
 
       <section className="home-section fh-section" aria-label="What moves together">
+        <div className="home-section-heading"><div><span className="section-kicker">NOT FORECAST EVIDENCE</span><h2>Co-movement across countries</h2><p>How indicators line up across economies today. This describes association; it does not show that one predicts another. Predictive evidence is the backtest above.</p></div></div>
         <div className="fh-card"><CorrMatrixCard onPick={() => onOpenPanel('countryAnalytics')} /></div>
       </section>
 
@@ -142,6 +145,20 @@ export function ForecastHome({ onOpenPanel }: Props) {
   )
 }
 
+/** The predictor backtest in one card: the honest count first, the rule and the full table one click away. */
+function TestedCard({ onOpenPanel }: { onOpenPanel: (id: string) => void }) {
+  const scored = BACKTEST_ROWS.filter(r => !r.exploratory)
+  const passed = scored.filter(r => r.passed).length
+  return (
+    <div className="fh-card">
+      <div className="pred-block-h">What has been tested as a predictor</div>
+      <p className="viz-verdict"><b>{passed} of {scored.length}</b> candidate indicators improved next-year growth forecasts over this model, judged on forecasts they had not seen (backtest run {BACKTEST_AS_OF}).
+        To pass, an indicator had to beat the model in both 1990–2009 and 2010–2024 and survive a significance test. None are added to the forecast until one does.</p>
+      <div className="fh-links"><button className="text-link" onClick={() => onOpenPanel('drivers')}>Full test rule and results <ArrowRight size={13} /></button></div>
+    </div>
+  )
+}
+
 function headlineSentence(f: HomeForecast): string {
   const a = f.forecast.points[0], z = f.forecast.points[f.forecast.points.length - 1]
   const lead = f.headline === 'ar' ? 'Projected real GDP growth' : 'Real GDP growth held at the last reported value'
@@ -166,6 +183,7 @@ function Glance({ f, weoVintage }: { f: HomeForecast; weoVintage: string | null 
       <Metric label={`${a.year} forecast`} value={f1(a.value)} unit="%" evidence="statistical" range={`${label}: ${f1(a.lo)} to ${f1(a.hi)}%`} />
       <Metric label={`${a.year} IMF projection`} value={imfFirst ? f1(imfFirst.value) : '—'} unit={imfFirst ? '%' : undefined} evidence={imfFirst ? 'statistical' : undefined}
         asOf={imfFirst && weoVintage ? weoVintage : 'no IMF figure for this year'} />
+      <div className="fh-model">Model: {f.headline === 'ar' ? 'AR(2), fitted to this country’s own growth history' : '“no change”, the last reported value carried forward'}</div>
     </div>
   )
 }
@@ -175,6 +193,19 @@ function GlanceStatus({ h }: { h: ReturnType<typeof useHomeForecast> }) {
   if (h.seriesStatus === 'error') return <StatusLabel status="error">The World Bank’s figures could not be loaded right now.</StatusLabel>
   if (h.result?.kind === 'short') return <StatusLabel status="empty">{h.country?.name ?? h.iso2} has {h.result.n} years of reported growth; a forecast needs at least 15.</StatusLabel>
   return <StatusLabel status="loading">Real GDP growth, World Bank and IMF…</StatusLabel>
+}
+
+/** Every value the forecast chart draws, as text: the reported years, then the forecast with its range and the IMF's figure. */
+function forecastTable(f: HomeForecast, history: { x: number; y: number }[], vintage: string | null): TableData {
+  const imfAt = (year: number) => { const p = f.imf.find(i => i.year === year); return p ? `${f1(p.value)}%` : '—' }
+  const label = coverageLabel(f.fallbackHorizons.includes(FORECAST_HORIZON) ? null : f.policy, FORECAST_HORIZON)
+  return {
+    columns: ['Year', 'Reported', f.headline === 'ar' ? 'AR(2) forecast' : 'No-change forecast', `Range (${label})`, vintage ? `IMF (${vintage.replace('World Economic Outlook', 'WEO')})` : 'IMF'],
+    rows: [
+      ...[...f.forecast.points].reverse().map(p => [String(p.year), '—', `${f1(p.value)}%`, `${f1(p.lo)} to ${f1(p.hi)}%`, imfAt(p.year)]),
+      ...history.filter(p => p.x >= f.last.x - HISTORY_YEARS + 1).reverse().map(p => [String(p.x), `${f1(p.y)}%`, '—', '—', p.x === f.last.x ? imfAt(p.x) : '—']),
+    ],
+  }
 }
 
 function ForecastChart({ f, history, name, vintage }: { f: HomeForecast; history: { x: number; y: number }[]; name: string; vintage: string | null }) {
