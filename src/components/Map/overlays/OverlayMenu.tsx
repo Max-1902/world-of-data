@@ -1,38 +1,39 @@
 import { useState } from 'react'
+import { Layers, Crosshair, WifiOff, Siren, Gem, ArrowLeftRight, Plane, TriangleAlert, Ship, Flame, Newspaper, Landmark, Swords, Radiation, Ban, Video, Zap, Radar, Tent, Droplet, Fuel, Anchor, Cable, SatelliteDish, Hourglass, Factory, Waves, Hexagon, Palette, Server, type LucideIcon } from 'lucide-react'
 import { LAYER_SECTIONS, MAP_ONLY, MAP_ONLY_NOTE } from '../../../utils/layerSections'
 import { PIPELINE_COLORS } from '../../../services/pipelines'
 import type { PanelState } from '../../../types'
 
 // `color` is the layer's own map colour (kept next to the layer as a literal, like the layer styles themselves)
-const OVERLAY_ITEMS: Record<keyof PanelState, { label: string; icon: string; color: string }> = {
-  outages: { label: 'Internet outages', icon: '◐', color: '#f59e0b' },
-  disasters: { label: 'Disaster alerts', icon: '⚑', color: '#f97316' },
-  resources: { label: 'Critical minerals', icon: '◭', color: '#d97706' },
-  tradeStats: { label: 'Trade profiles', icon: '⇄', color: '#22d3ee' },
-  flights: { label: 'Flights', icon: '✈', color: '#00ff88' },
-  crises: { label: 'Conflict events', icon: '⚠', color: '#ff6600' },
-  vessels: { label: 'Vessels (AIS)', icon: '⎈', color: '#00aaff' },
-  wildfires: { label: 'Wildfires', icon: '✱', color: '#ff4400' },
-  news: { label: 'News pins', icon: '◉', color: '#cccccc' },
-  stocks: { label: 'Market hubs', icon: '$', color: '#00ff88' },
-  military: { label: 'Military bases', icon: '⚔', color: '#ff2244' },
-  nuclear: { label: 'Nuclear sites', icon: '☢', color: '#ffcc00' },
-  sanctions: { label: 'Sanctions', icon: '⊗', color: '#ff3344' },
-  cameras: { label: 'Webcams', icon: '◎', color: '#aa88ff' },
-  infrastructure: { label: 'Power plants & infra', icon: '↯', color: '#ff8800' },
-  airspace: { label: 'Low air traffic', icon: '◇', color: '#44aaff' },
-  humanitarian: { label: 'Displacement', icon: '✚', color: '#ff6688' },
-  oil: { label: 'Oil', icon: '▲', color: '#ff6600' },
-  gas: { label: 'Gas', icon: '▲', color: '#00aaff' },
-  ports: { label: 'Ports', icon: '⎈', color: '#00ccff' },
-  pipelines: { label: 'Pipelines', icon: '═', color: PIPELINE_COLORS.gas },
-  gpsjam: { label: 'GPS jamming', icon: '◌', color: '#ff3344' },
-  chokepoints: { label: 'Chokepoints', icon: '⊘', color: '#ff4466' },
-  supplychain: { label: 'Supply-chain sites', icon: '◆', color: '#00ccff' },
-  shippingDensity: { label: 'Shipping lanes', icon: '≋', color: '#ff4466' },
-  analyticsHex: { label: 'Hazard hexagons', icon: '⬢', color: '#3987e5' },
-  countryAnalytics: { label: 'Colour countries by data', icon: '▦', color: '#3987e5' },
-  datacenters: { label: 'Data centers', icon: '▤', color: '#a855f7' },
+const OVERLAY_ITEMS: Record<keyof PanelState, { label: string; icon: LucideIcon; color: string }> = {
+  outages: { label: 'Internet outages', icon: WifiOff, color: '#f59e0b' },
+  disasters: { label: 'Disaster alerts', icon: Siren, color: '#f97316' },
+  resources: { label: 'Critical minerals', icon: Gem, color: '#d97706' },
+  tradeStats: { label: 'Trade profiles', icon: ArrowLeftRight, color: '#22d3ee' },
+  flights: { label: 'Flights', icon: Plane, color: '#00c8ff' },
+  crises: { label: 'Conflict events', icon: TriangleAlert, color: '#ff6600' },
+  vessels: { label: 'Vessels (AIS)', icon: Ship, color: '#00aaff' },
+  wildfires: { label: 'Wildfires', icon: Flame, color: '#ff4400' },
+  news: { label: 'News pins', icon: Newspaper, color: '#cccccc' },
+  stocks: { label: 'Market hubs', icon: Landmark, color: '#6da7ec' },
+  military: { label: 'Military bases', icon: Swords, color: '#ff2244' },
+  nuclear: { label: 'Nuclear sites', icon: Radiation, color: '#ffcc00' },
+  sanctions: { label: 'Sanctions', icon: Ban, color: '#ff3344' },
+  cameras: { label: 'Webcams', icon: Video, color: '#aa88ff' },
+  infrastructure: { label: 'Power plants & infra', icon: Zap, color: '#ff8800' },
+  airspace: { label: 'Low air traffic', icon: Radar, color: '#44aaff' },
+  humanitarian: { label: 'Displacement', icon: Tent, color: '#ff6688' },
+  oil: { label: 'Oil', icon: Droplet, color: '#ff6600' },
+  gas: { label: 'Gas', icon: Fuel, color: '#00aaff' },
+  ports: { label: 'Ports', icon: Anchor, color: '#00ccff' },
+  pipelines: { label: 'Pipelines', icon: Cable, color: PIPELINE_COLORS.gas },
+  gpsjam: { label: 'GPS jamming', icon: SatelliteDish, color: '#ff3344' },
+  chokepoints: { label: 'Chokepoints', icon: Hourglass, color: '#ff4466' },
+  supplychain: { label: 'Supply-chain sites', icon: Factory, color: '#00ccff' },
+  shippingDensity: { label: 'Shipping lanes', icon: Waves, color: '#ff4466' },
+  analyticsHex: { label: 'Hazard hexagons', icon: Hexagon, color: '#3987e5' },
+  countryAnalytics: { label: 'Colour countries by data', icon: Palette, color: '#3987e5' },
+  datacenters: { label: 'Data centers', icon: Server, color: '#a855f7' },
 }
 
 interface Props {
@@ -53,11 +54,12 @@ const DEEPSTATE_COLOR = '#ff1a3e'
 
 function Row({ id, on, onToggle }: { id: keyof PanelState; on: boolean; onToggle: () => void }) {
   const item = OVERLAY_ITEMS[id]
+  const Icon = item.icon
   const mapOnly = MAP_ONLY.has(id)
   return (
     <button className={`ov-row ${on ? 'on' : ''}`} aria-pressed={on} onClick={e => { e.stopPropagation(); onToggle() }}
       style={on ? { color: item.color } : undefined} title={mapOnly ? MAP_ONLY_NOTE : undefined}>
-      <span className="ov-icon" aria-hidden>{item.icon}</span>
+      <span className="ov-icon" aria-hidden><Icon size={14} strokeWidth={1.8} /></span>
       <span className="ov-label">{item.label}</span>
       {mapOnly && <span className="ov-tag">map only</span>}
       <span className="ov-dot" style={on ? { background: item.color, borderColor: item.color } : undefined} />
@@ -75,7 +77,7 @@ export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, 
   return (
   <div className="ov-menu" style={{ top }} onMouseDown={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}>
     <button className={`ov-launch ${showOverlays ? 'open' : ''}`} aria-expanded={showOverlays} onClick={() => setShowOverlays(v => !v)}>
-      ◈ Map layers <span className="ov-count">{activeCount}</span>
+      <Layers size={14} strokeWidth={1.8} aria-hidden /> Map layers <span className="ov-count">{activeCount}</span>
     </button>
 
     {showOverlays && (
@@ -102,7 +104,7 @@ export default function OverlayMenu({ panelState, onToggleLayer, onClearLayers, 
               <div className="ov-head ov-head-static"><span>War monitor</span></div>
               <button className={`ov-row ${deepstateMode ? 'on' : ''}`} aria-pressed={deepstateMode} title="Split the map and mirror deepstatemap.live beside it"
                 onClick={e => { e.stopPropagation(); onToggleDeepstate() }} style={deepstateMode ? { color: DEEPSTATE_COLOR } : undefined}>
-                <span className="ov-icon" aria-hidden>◆</span>
+                <span className="ov-icon" aria-hidden><Crosshair size={14} strokeWidth={1.8} /></span>
                 <span className="ov-label">DeepState Ukraine</span>
                 <span className="ov-dot" style={deepstateMode ? { background: DEEPSTATE_COLOR, borderColor: DEEPSTATE_COLOR } : undefined} />
               </button>

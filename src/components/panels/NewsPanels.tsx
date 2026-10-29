@@ -131,7 +131,7 @@ const TREND_META: Record<CrisisWatchEntry['trend'], { label: string; color: stri
   deteriorated: { label: 'DETERIORATED', color: 'var(--red)', icon: '▼' },
   alert:        { label: 'ALERT',        color: 'var(--amber)', icon: '⚠' },
   unchanged:    { label: 'UNCHANGED',    color: 'var(--amber)', icon: '●' },
-  improved:     { label: 'IMPROVED',     color: 'var(--accent)', icon: '▲' },
+  improved:     { label: 'IMPROVED',     color: 'var(--green)', icon: '▲' },
   unknown:      { label: 'MONITOR',      color: 'var(--text2)', icon: '○' },
 }
 

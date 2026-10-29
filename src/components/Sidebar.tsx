@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeftRight, Bookmark, Compass, ChevronDown, Database, Layers, MapPinned, Network, Newspaper, Radar, ShieldHalf, TrendingUp, Globe2, Activity, Telescope } from 'lucide-react'
+import { ArrowLeftRight, Bookmark, Compass, ChevronDown, Database, Layers, MapPinned, Network, Newspaper, Radar, ShieldHalf, TrendingUp, Globe2, Flag, Activity, Telescope } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PanelGroup } from '../panels/types'
 import { DEFAULT_VIEW, viewOf } from '../panels/destinations'
@@ -91,7 +91,7 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
         <NavItem icon={Compass} label="Outlook" title="The world's economic outlook at a glance" active={current === 'outlook'} onClick={then(onHome)} />
         <NavItem icon={TrendingUp} label="Forecasts" title="GDP-growth forecast and this quarter's nowcast, backtested, beside the IMF's" active={current === 'forecasts'} onClick={go('analysis', 'predictions')} />
         <NavItem icon={Network} label="Drivers" title="Which indicators improve the GDP forecast (tested out of sample), and the trade links a shock travels along" active={current === 'drivers'} onClick={go('markets', 'drivers')} />
-        <NavItem icon={Globe2} label="Countries" title="One country's full record" active={current === 'countries'} onClick={go('country', 'countries')} />
+        <NavItem icon={Flag} label="Countries" title="One country's full record" active={current === 'countries'} onClick={go('country', 'countries')} />
         <NavItem icon={MapPinned} label="Map" title="Only the map: click a country for its overview, a city or region for its local outlook" active={current === 'map'} onClick={then(onMap)} />
         <NavItem icon={Telescope} label="Explore" title="Indicators, country comparison and every dataset" active={current === 'explore'} onClick={go('markets', 'economy', true)} />
         {current === 'explore' && (

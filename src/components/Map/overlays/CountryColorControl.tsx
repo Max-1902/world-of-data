@@ -1,13 +1,23 @@
 import { useState } from 'react'
-import { SEQUENTIAL, BELOW, NEUTRAL, ABOVE } from '../../../utils/vizPalette'
+import { Palette } from 'lucide-react'
+import { BELOW, NEUTRAL, ABOVE, sequentialColor } from '../../../utils/vizPalette'
 import { WB_ECONOMY_ISO3 } from '../../../services/economies'
 import { selectForMap } from '../../../services/countryAnalytics'
-import { STALE_YEARS, type countryColors } from '../../../utils/countryStats'
+import { STALE_YEARS, TREND_Z_FULL, makeScale, type countryColors } from '../../../utils/countryStats'
 import type { useCountryAnalytics } from '../../../hooks/useCountryAnalytics'
 import type { Shading } from '../layers/countryAnalytics'
 import { NO_DATA_FILL, NO_DATA_OPACITY } from '../layers/countryAnalytics'
 import { EvidenceTag, SourceLine, StatusLabel } from '../../DataLabels'
 import { IndicatorPicker } from './IndicatorPicker'
+
+/** The ramp as drawn on the map: values start at 20% along SEQUENTIAL, so the legend bar starts there too. */
+const RAMP_STOPS = [0.2, 0.36, 0.52, 0.68, 0.84, 1].map(sequentialColor)
+
+/** The value halfway along the colour ramp, which on a log scale is the geometric middle, not the average. */
+function midpoint(lo: number, hi: number, kind: Parameters<typeof makeScale>[0]): number {
+  const sc = makeScale(kind)
+  return sc.inv((sc.fwd(lo) + sc.fwd(hi)) / 2)
+}
 
 /** The quick-pick list for "Colour countries by": the four indicators people reach for most, as a plain dropdown. */
 export const COLOUR_BY_OPTIONS = [
@@ -39,7 +49,7 @@ export default function CountryColorControl({ on, onToggle, countryData, country
       // wrapped: the app-wide `.dashboard button` rule would override a button's own absolute positioning
       <div className="cc-anchor" style={{ bottom }}>
         <button className="cc-launch" onClick={onToggle} title="Shade every country by an economic, energy, security or social indicator">
-          ▦ Colour countries by data
+          <Palette size={14} strokeWidth={1.8} aria-hidden /> Colour countries by data
         </button>
       </div>
     )
@@ -96,19 +106,23 @@ export default function CountryColorControl({ on, onToggle, countryData, country
       )}
 
       <div>
-        <div className="cc-ramp" style={{ background: trend ? `linear-gradient(90deg, ${BELOW}, ${NEUTRAL}, ${ABOVE})` : `linear-gradient(90deg, ${SEQUENTIAL.join(',')})` }} />
+        <div className="cc-ramp" style={{ background: trend ? `linear-gradient(90deg, ${BELOW}, ${NEUTRAL}, ${ABOVE})` : `linear-gradient(90deg, ${RAMP_STOPS.join(',')})` }} />
         <div className="cc-ends">
           {trend
-            ? <><span>Below trend</span><span>On trend</span><span>Above</span></>
-            : <><span>{countryShading.lo === null ? 'Low' : yMeta.format(countryShading.lo)}</span><span>{countryShading.hi === null ? 'High' : yMeta.format(countryShading.hi)}</span></>}
+            ? <><span>Below · −{TREND_Z_FULL} σ</span><span>On trend · 0</span><span>Above · +{TREND_Z_FULL} σ</span></>
+            : <>
+                <span>{countryShading.lo === null ? 'Low' : yMeta.format(countryShading.lo)}</span>
+                {countryShading.lo !== null && countryShading.hi !== null && <span>{yMeta.format(midpoint(countryShading.lo, countryShading.hi, yMeta.scale))}</span>}
+                <span>{countryShading.hi === null ? 'High' : yMeta.format(countryShading.hi)}</span>
+              </>}
         </div>
       </div>
 
       <div className="cc-ev">
         <EvidenceTag kind={trend ? 'statistical' : 'observed'} />
         <span>{trend
-          ? `Distance from a least-squares line fitted across countries, in standard deviations. An association, not a cause.`
-          : `${derived ? 'Computed from reported figures; open the panel that made it for each step' : 'As reported'}${countryShading.lo !== null ? '; colour scale clipped to the 2nd–98th percentile' : ''}.`}</span>
+          ? `Distance from a least-squares line fitted across countries, in standard deviations (σ); colour is full at ±${TREND_Z_FULL} σ. An association, not a cause.`
+          : `${derived ? 'Computed from reported figures; open the panel that made it for each step' : 'As reported'}${countryShading.lo !== null ? `; colour scale clipped to the 2nd–98th percentile${yMeta.scale === 'linear' ? '' : ' and spaced logarithmically, so the middle label is the geometric middle'}` : ''}.`}</span>
       </div>
 
       {loading ? <StatusLabel status="loading">{source} data…</StatusLabel>

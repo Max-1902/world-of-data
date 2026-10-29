@@ -299,10 +299,13 @@ export interface CountryColors {
  * percentile (on the indicator's own scale) so a few giants don't wash out everyone else. "trend" shades only the
  * countries in the pair analysis by how far they sit above (red) or below (blue) the fitted trend.
  */
+/** Distance from the trend, in standard deviations, at which the diverging ramp reaches its full colour (the legend quotes it). */
+export const TREND_Z_FULL = 2.5
+
 export function countryColors(mode: MapMode, yRows: CountryValue[], ys: Scale, analysis: PairAnalysis | null): CountryColors {
   const colors: Record<string, string> = {}
   if (mode === 'trend') {
-    for (const p of analysis?.points ?? []) colors[p.iso3] = divergingColor(Math.max(-1, Math.min(1, p.z / 2.5)))
+    for (const p of analysis?.points ?? []) colors[p.iso3] = divergingColor(Math.max(-1, Math.min(1, p.z / TREND_Z_FULL)))
     return { mode, colors, lo: null, hi: null }
   }
   const usable = yRows.filter(r => ys.valid(r.value))

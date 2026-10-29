@@ -18,6 +18,9 @@
   --text3:   #7490a6;   /* ≥4.5:1 on bg, surface and surface2 (WCAG AA for small text) */
 
   /* ── Accent / status ───────────────────────────── */
+  /* Meaning: --accent is the interface only (selection, links, focus), never a data value. --red is worse / higher
+     risk, --green is better / lower risk, --amber is caution or unchanged. A direction that can be good or bad
+     ("rising") is never coloured on its own: pair the colour with a word, arrow or value. */
   --accent:  #18c9f4;
   --accent-soft: rgba(24,201,244,0.13);
   --red:     #ef7373;
@@ -1691,7 +1694,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .ov-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 10px; font-size: 11.5px; color: var(--text2); background: none; border: none; border-bottom: 1px solid var(--border); cursor: pointer; text-align: left; }
 .ov-row:hover { color: var(--text1); background: var(--surface2); }
 .ov-row.on { background: var(--surface2); font-weight: 600; }
-.ov-icon { width: 14px; text-align: center; font-size: 11px; }
+.ov-icon { width: 14px; height: 14px; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .ov-label { flex: 1; }
 .ov-tag { font-size: 8.5px; color: var(--text3); border: 1px dashed var(--border-strong); border-radius: var(--r-pill); padding: 0 5px; white-space: nowrap; }
 .ov-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); border: 1px solid var(--border-strong); flex-shrink: 0; }
