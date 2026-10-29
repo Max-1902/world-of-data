@@ -55,6 +55,12 @@ describe('fetchDisasterAlerts', () => {
     expect(url).toContain('eventtype=EQ,TC,FL,VO,DR,WF')
     expect(url).toMatch(/fromDate=\d{4}-\d{2}-\d{2}&toDate=\d{4}-\d{2}-\d{2}/)
   })
+  it('notes that only Orange and Red alerts are requested, with the count', async () => {
+    mockFetch(() => jsonResponse({ features: [feat()] }))
+    await fetchDisasterAlerts(7)
+    const { healthTracker } = await import('./sourceHealth')
+    expect(healthTracker.getNotes().get('gdacs')?.coverage).toBe('1 Orange or Red alerts in the last 7 days (lower alert levels are not requested)')
+  })
   it('returns [] on HTTP errors and network failure', async () => {
     quietConsole()
     mockFetch(() => jsonResponse({}, { status: 500 }))

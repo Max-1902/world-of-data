@@ -45,6 +45,7 @@ In order of payoff for a skeptical reader:
 1. **Per-entry citations** for the datasets that carry numbers (`oilgas`, `tradeStats`, `military` personnel, `chokepoints`): add `source` and `asOf` fields to the types and populate them, dropping any entry that can't be cited.
 2. **Replace curated lists with free live/keyless sources** where one exists — IMF PortWatch for ports, the WRI Global Power Plant Database (CC-BY) for power, Energy Institute / OWID for oil and gas, World Bank for trade shares.
 3. **Show provenance in the UI**: surface "curated, approximate, as of …" in the popup for curated layers, as the pipelines layer already shows its OSM attribution.
+   - Panel footers (`PanelSources`) now also report what a live feed's latest response *contained*, not just that it answered: ACLED (newest event date, event count, a warning when the newest event is older than the window or nothing came back, and when only the one-year-old archive is shown), IMF WEO (edition, economies covered), GDACS (alerts in the window, Orange/Red only) and UNHCR (data year, corridors above the threshold). Services set these with `healthTracker.note(...)` only from values they measured. The other live sources still show only when they last answered; extending the same call to them is open work.
 
 ## Keeping this file honest
 

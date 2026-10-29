@@ -64,6 +64,19 @@ export interface SourceHealth {
   attempts: number
 }
 
+/**
+ * What a source's latest successful response actually contained — an HTTP 200 says the feed answered, not that its data
+ * is current or complete. Set by the service that parsed the response, only from values it measured.
+ */
+export interface DataNote {
+  /** the newest observation / edition in the response, as a short readable string ("newest event 2026-10-20") */
+  asOf?: string
+  /** how much it covered ("7,124 events", "capped sample: 500 rows") */
+  coverage?: string
+  /** a caution the reader needs ("returned nothing for the last 14 days") */
+  warn?: string
+}
+
 /** Outcomes remembered per source. Small on purpose: health should reflect "lately", not all session. */
 const WINDOW = 10
 
@@ -82,6 +95,7 @@ export function createHealthTracker(now: () => number = Date.now) {
   const records = new Map<string, Record_>()
   let list: SourceHealth[] = []
   const listeners = new Set<() => void>()
+  let notes: ReadonlyMap<string, DataNote> = new Map()
 
   function rebuild() {
     // worst first, then alphabetical, so problems are at the top of the list
@@ -101,6 +115,14 @@ export function createHealthTracker(now: () => number = Date.now) {
       records.set(rule.id, r)
       rebuild()
     },
+    /** Replace what a source's latest response contained; `null` clears it. */
+    note(id: string, note: DataNote | null) {
+      const next = new Map(notes)
+      if (note) next.set(id, note); else next.delete(id)
+      notes = next
+      listeners.forEach(l => l())
+    },
+    getNotes: () => notes,
     getAll: () => list,
     subscribe(l: () => void) { listeners.add(l); return () => { listeners.delete(l) } },
   }

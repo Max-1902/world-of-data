@@ -1,4 +1,5 @@
 import type { CrisisEvent } from '../types'
+import { healthTracker, type DataNote } from './sourceHealth'
 
 // ── ACLED OAuth ──────────────────────────────────────────────────────────────
 // Docs: https://apidocs.acleddata.com/
@@ -135,10 +136,29 @@ export function lastAcledPoll(): { rows: number; capped: boolean } | null {
   return lastPoll
 }
 
+/**
+ * What the footer says about the ACLED response: a 200 only means the feed answered. Some accounts get data that
+ * trails the present by months, so the newest event date and any shortfall are stated, never implied.
+ */
+export function acledDataNote(rows: Record<string, string>[], days: number, now: number = Date.now()): DataNote {
+  const dates = rows.map(r => r.event_date).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort()
+  const newest = dates[dates.length - 1]
+  if (!newest) {
+    return { coverage: `no events in the last ${days} days`, warn: `No events came back for the last ${days} days: the feed may be behind the present, or this window was quiet.` }
+  }
+  const age = Math.floor((now - Date.parse(newest)) / 86_400_000)
+  return {
+    asOf: `newest event ${newest}`,
+    coverage: `${rows.length} events${rows.length >= ACLED_LIMIT ? ` (capped sample of the last ${days} days, not a total)` : ''}`,
+    warn: age > days ? `The newest event is ${age} days old: this feed is behind the present, so recent events are not shown.` : undefined,
+  }
+}
+
 export async function fetchACLEDEvents(days = 14): Promise<CrisisEvent[]> {
   const rows = await fetchACLEDRows(acledDashboardQuery(days))
   if (!rows) return []
   lastPoll = { rows: rows.length, capped: rows.length >= ACLED_LIMIT }
+  healthTracker.note('acled', acledDataNote(rows, days))
   return toEvents(rows)
 }
 
@@ -168,6 +188,10 @@ export async function fetchACLEDArchive(days = 14, now: number = Date.now()): Pr
   const { from, to } = acledArchiveWindow(days, now)
   const rows = await fetchACLEDRows(acledWindowQuery(from, to))
   if (!rows?.length) return null
+  healthTracker.note('acled', {
+    asOf: `archive ${from} to ${to}`, coverage: `${rows.length} events`,
+    warn: 'The last 14 days came back empty, so this is the same window one year earlier, shown as history. It is not current.',
+  })
   return { from, to, events: toEvents(rows).map(e => ({ ...e, archived: true })) }
 }
 

@@ -57,6 +57,23 @@ describe('createHealthTracker', () => {
   })
 })
 
+describe('data notes', () => {
+  it('keep what a source\'s latest response held, replace on the next one, and notify subscribers', () => {
+    const tr = createHealthTracker()
+    const seen = vi.fn()
+    tr.subscribe(seen)
+    const before = tr.getNotes()
+    tr.note('acled', { asOf: 'newest event 2025-10-20', coverage: '120 events' })
+    expect(tr.getNotes()).not.toBe(before)
+    expect(tr.getNotes().get('acled')).toEqual({ asOf: 'newest event 2025-10-20', coverage: '120 events' })
+    tr.note('acled', { asOf: 'newest event 2026-10-27' })
+    expect(tr.getNotes().get('acled')).toEqual({ asOf: 'newest event 2026-10-27' })
+    tr.note('acled', null)
+    expect(tr.getNotes().has('acled')).toBe(false)
+    expect(seen).toHaveBeenCalledTimes(3)
+  })
+})
+
 describe('installFetchObserver', () => {
   function setup(impl: typeof fetch) {
     const target = { fetch: impl }

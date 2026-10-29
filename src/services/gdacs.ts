@@ -2,6 +2,9 @@
 // Free, no key, CORS-enabled: https://www.gdacs.org/gdacsapi/ — no billing account involved.
 // Only Orange/Red alerts are kept; Green is routine and would bury the signal.
 
+
+import { healthTracker } from './sourceHealth'
+
 export type DisasterType = 'EQ' | 'TC' | 'FL' | 'VO' | 'DR' | 'WF'
 
 export const DISASTER_LABELS: Record<DisasterType, string> = {
@@ -104,7 +107,9 @@ export async function loadDisasterAlerts(days = 14): Promise<DisasterAlert[]> {
 /** `loadDisasterAlerts` for the map layer and panel: returns [] on any failure. */
 export async function fetchDisasterAlerts(days = 14): Promise<DisasterAlert[]> {
   try {
-    return await loadDisasterAlerts(days)
+    const alerts = await loadDisasterAlerts(days)
+    healthTracker.note('gdacs', { coverage: `${alerts.length} Orange or Red alerts in the last ${days} days (lower alert levels are not requested)` })
+    return alerts
   } catch (err) {
     console.warn('[GDACS] fetch error:', err)
     return []
