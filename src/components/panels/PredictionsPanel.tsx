@@ -245,8 +245,9 @@ function Section({ target, series, period, country }: { target: Target; series: 
       </>}>
       <LineChart ariaLabel={`${target.label}, ${shown[0]?.x ?? last.x}–${last.x}, with a ${HORIZON}-year ${isAr ? '' : 'no-change '}forecast ${fcDir === 'up' ? 'rising' : fcDir === 'down' ? 'falling' : 'flat'} to ${plain(end.value)}${u}.`}
         xKind="year" height={250} fmtY={v => `${plain(v, 1)}${u}`} refLines={u === '%' ? [{ v: 0, label: '0' }] : undefined}
-        bands={[{ from: fc.points[0].year, to: end.year, label: 'Forecast period' }]}
-        areas={drawBand ? [{ key: 'ci', label: ciLabel(HORIZON), color: 'var(--series-2)', points: [{ t: last.x, lo: last.y, hi: last.y }, ...fc.points.map(p => ({ t: p.year, lo: p.lo, hi: p.hi }))] }] : []}
+        forecastBoundary={last.x + 0.5} observedLabel="Actual"
+        bands={[{ from: fc.points[0].year, to: end.year, label: 'Forecast period', opacity: 0.08 }]}
+        areas={drawBand ? [{ key: 'ci', label: ciLabel(HORIZON), color: 'var(--series-2)', opacity: 0.2, points: [{ t: last.x, lo: last.y, hi: last.y }, ...fc.points.map(p => ({ t: p.year, lo: p.lo, hi: p.hi }))] }] : []}
         series={[
           { key: 'hist', label: 'Actual', color: 'var(--series-1)', points: toLine(shown), markers: true },
           ...(trend && trend.direction !== 'flat' && trend.from >= (shown[0]?.x ?? -Infinity)

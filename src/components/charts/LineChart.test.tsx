@@ -20,6 +20,78 @@ describe('LineChart', () => {
     expect(screen.getByText('Alpha')).toBeTruthy()
     expect(screen.getByText('ECB target 2%')).toBeTruthy()
   })
+  it('distinguishes dashed series in the legend and marks the observed-to-forecast boundary', () => {
+    const { container } = render(<LineChart ariaLabel="Forecast." xKind="year" fmtY={String} forecastBoundary={2000.5}
+      series={[{ key: 'a', label: 'Observed series', color: 'red', points: pts([1, 2]) }, { key: 'b', label: 'Forecast series', color: 'blue', points: pts([2, 3]), dashed: true }]} />)
+    expect(container.querySelector('.viz-legend .sw.line.dashed')).toBeTruthy()
+    expect(screen.getByText('Observed')).toBeTruthy()
+    expect(screen.getByText('Forecast')).toBeTruthy()
+    expect(container.querySelector('line[stroke-width="1.5"]')).toBeTruthy()
+  })
+  it('names the history on the boundary with the panel\'s own word', () => {
+    render(<LineChart ariaLabel="Forecast." xKind="year" fmtY={String} forecastBoundary={2000.5} observedLabel="Reported"
+      series={[{ key: 'a', label: 'Reported', color: 'red', points: pts([1, 2]) }]} />)
+    expect(screen.getByText('Reported')).toBeTruthy()
+  })
+  describe('pinning a readout', () => {
+    const chart = () => {
+      const r = render(<LineChart ariaLabel="Pin." xKind="year" fmtY={v => `${v}%`} series={[{ key: 'a', label: 'A', color: 'red', points: pts([1, 3, 5]) }]} />)
+      const svg = screen.getByRole('img', { name: /Pin/ })
+      const hit = r.container.querySelector('rect[style*="crosshair"]') as SVGRectElement
+      hit.getBoundingClientRect = () => ({ left: 0, top: 0, width: 200, height: 100, right: 200, bottom: 100, x: 0, y: 0, toJSON: () => ({}) })
+      return { svg, hit }
+    }
+    // jsdom has no pointer capture; the browser does
+    ;(SVGElement.prototype as unknown as { setPointerCapture: () => void }).setPointerCapture = () => {}
+    it('a click pins the date so the pointer can move away, and a second click on it clears it', () => {
+      const { hit } = chart()
+      fireEvent.pointerMove(hit, { clientX: 0, pointerType: 'mouse' })
+      fireEvent.pointerDown(hit, { clientX: 0, pointerType: 'mouse' })
+      expect(screen.getByRole('status').textContent).toContain('Pinned')
+      fireEvent.pointerMove(hit, { clientX: 200, pointerType: 'mouse' })
+      expect(screen.getByRole('status').textContent).toContain('2000')
+      fireEvent.pointerDown(hit, { clientX: 0, pointerType: 'mouse' })
+      expect(screen.queryByRole('status')).toBeNull()
+    })
+    it('Escape and losing focus clear a pin', () => {
+      const { svg, hit } = chart()
+      fireEvent.pointerDown(hit, { clientX: 0, pointerType: 'mouse' })
+      fireEvent.keyDown(svg, { key: 'Escape' })
+      expect(screen.queryByRole('status')).toBeNull()
+      fireEvent.pointerDown(hit, { clientX: 0, pointerType: 'mouse' })
+      fireEvent.blur(svg)
+      expect(screen.queryByRole('status')).toBeNull()
+    })
+    it('arrow keys browse without pinning, so hovering still works afterwards', () => {
+      const { svg, hit } = chart()
+      fireEvent.keyDown(svg, { key: 'ArrowRight' })
+      expect(screen.getByRole('status').textContent).not.toContain('Pinned')
+      fireEvent.pointerMove(hit, { clientX: 200, pointerType: 'mouse' })
+      expect(screen.getByRole('status').textContent).toContain('2002')
+    })
+    it('a touch tap pins and a touch drag leaves the date it ended on pinned', () => {
+      const { hit } = chart()
+      fireEvent.pointerDown(hit, { clientX: 0, clientY: 50, pointerType: 'touch' })
+      fireEvent.pointerUp(hit, { clientX: 0, clientY: 50, pointerType: 'touch' })
+      expect(screen.getByRole('status').textContent).toContain('Pinned')
+      fireEvent.pointerLeave(hit, { pointerType: 'touch' })
+      expect(screen.getByRole('status').textContent).toContain('2000')
+      fireEvent.pointerDown(hit, { clientX: 0, clientY: 50, pointerType: 'touch' })
+      fireEvent.pointerUp(hit, { clientX: 0, clientY: 50, pointerType: 'touch' })
+      expect(screen.queryByRole('status')).toBeNull()
+      fireEvent.pointerDown(hit, { clientX: 0, clientY: 50, pointerType: 'touch' })
+      fireEvent.pointerMove(hit, { clientX: 200, clientY: 50, pointerType: 'touch' })
+      fireEvent.pointerUp(hit, { clientX: 200, clientY: 50, pointerType: 'touch' })
+      expect(screen.getByRole('status').textContent).toContain('2002')
+      expect(screen.getByRole('status').textContent).toContain('Pinned')
+    })
+    it('a vertical scroll (pointercancel) clears the preview instead of pinning', () => {
+      const { hit } = chart()
+      fireEvent.pointerDown(hit, { clientX: 0, clientY: 50, pointerType: 'touch' })
+      fireEvent.pointerCancel(hit, { pointerType: 'touch' })
+      expect(screen.queryByRole('status')).toBeNull()
+    })
+  })
   it('arrow keys read every series at a date, showing — where a series has no value', () => {
     render(<LineChart ariaLabel="Test chart." xKind="year" fmtY={v => `${v}%`}
       series={[{ key: 'a', label: 'Alpha', color: 'red', points: pts([1, 3, 5]) }, { key: 'b', label: 'Beta', color: 'blue', points: pts([2, null, 6]) }]} />)
