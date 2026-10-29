@@ -1,4 +1,3 @@
-import mapboxgl from 'mapbox-gl'
 import type { LayerCtx } from './types'
 
 export function addBaseLayers(map: mapboxgl.Map, ctx: LayerCtx): void {

@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import mapboxgl from 'mapbox-gl'
 import { FIR_REGIONS, analyzeAirspace } from '../../../services/notam'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'

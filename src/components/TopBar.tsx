@@ -24,7 +24,7 @@ interface Props {
   savedActive?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, searchQuery, onSearch, onOpenPanel, onOpenLibrary, onToggleLayer, onColorCountries, onSettingsOpen, onReloadAll, reloading, onHome, onMenu, menuOpen = false, savedActive = false }: Props) {
+export default function TopBar({ onViewMode, searchQuery, onSearch, onOpenPanel, onOpenLibrary, onToggleLayer, onColorCountries, onSettingsOpen, onReloadAll, reloading, onHome, onMenu, menuOpen = false, savedActive = false }: Props) {
   const unread = useWatchlist().alerts.filter(a => !a.read).length
   const savedLabel = unread > 0 ? `Saved countries, ${unread} new alert${unread === 1 ? '' : 's'}` : 'Saved countries'
   return (

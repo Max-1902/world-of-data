@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { esc } from '../geoPopups'
 import mapboxgl from 'mapbox-gl'
-import { type Vessel, vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../../services/aisstream'
+import { vesselTypeFromCode, detectVesselType, VESSEL_TYPE_COLORS } from '../../../services/aisstream'
 import { addVesselImages } from '../vesselImages'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'

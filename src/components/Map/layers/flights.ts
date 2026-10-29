@@ -1,7 +1,6 @@
 import { useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
-import { Flight } from '../../../types'
-import { FLIGHT_TYPE_COLORS, type FlightType } from '../../../utils/flightType'
+import { FLIGHT_TYPE_COLORS } from '../../../utils/flightType'
 import { ALL_TYPES, buildFlightGeoJSON, aircraftCache, fetchAircraftMeta, buildFlightHTML } from '../flightLayer'
 import type { LayerCtx } from './types'
 import { addFlightShapes, flightImageName } from './markShapes'
@@ -111,12 +110,12 @@ export function addFlightLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
 }
 
 /** Update flight GeoJSON */
-export function useFlightData({ mapRef, layersReadyRef, flightDataRef }: MapHandle, { flights, showFlights, filterQuery, filterTypes }: Pick<MapViewProps, 'flights' | 'showFlights'> & { filterQuery: string; filterTypes: Set<FlightType> }) {
+export function useFlightData({ mapRef, layersReadyRef, flightDataRef }: MapHandle, { flights, showFlights }: Pick<MapViewProps, 'flights' | 'showFlights'>) {
   // ── Update flight GeoJSON ─────────────────────────────────────────────────
   useEffect(() => {
     flightDataRef.current = flights
     if (!mapRef.current || !layersReadyRef.current) return
     const src = mapRef.current.getSource('flights') as mapboxgl.GeoJSONSource | undefined
-    src?.setData(buildFlightGeoJSON(flights, filterQuery, filterTypes, showFlights))
-  }, [flights, filterQuery, filterTypes, showFlights])
+    src?.setData(buildFlightGeoJSON(flights, '', undefined, showFlights))
+  }, [flights, showFlights])
 }

@@ -2,8 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import 'mapbox-gl/dist/mapbox-gl.css'
 import type { Flight } from '../../types'
-import type { FlightType } from '../../utils/flightType'
-import { ALL_TYPES } from './flightLayer'
 import {
   addAllLayers,
   type CountryAnalyticsView,
@@ -79,10 +77,6 @@ export default function MapView({
   const onPlaceClickRef = useRef(onPlaceClick)
   onPlaceClickRef.current = onPlaceClick
   const countryAnalyticsRef = useRef<CountryAnalyticsView | null>(null)
-
-  // Filter state
-  const [filterQuery, setFilterQuery] = useState('')
-  const [filterTypes, setFilterTypes] = useState<Set<FlightType>>(new Set(ALL_TYPES))
 
   // ── Fly to via Mapbox Geocoding ────────────────────────────────────────────
   function geocodeAndFly(q: string) {
@@ -164,7 +158,7 @@ export default function MapView({
 
   const handle: MapHandle = { mapRef, containerRef, layersReadyRef, mapReady, flightDataRef, popupRef, markersRef, countryAnalyticsRef }
 
-  useFlightData(handle, { flights, showFlights, filterQuery, filterTypes })
+  useFlightData(handle, { flights, showFlights })
   useWildfireData(handle, { fires, showWildfires })
   useVesselData(handle, { vessels, showVessels })
   useSelectedCountryHighlight(handle, { selectedCountry })
