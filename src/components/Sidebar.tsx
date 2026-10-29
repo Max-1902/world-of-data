@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { ArrowLeftRight, Bookmark, Compass, ChevronDown, Database, Layers, MapPinned, Network, Newspaper, Radar, ShieldHalf, TrendingUp, Globe2, Flag, Activity, Telescope } from 'lucide-react'
+import { useEffect } from 'react'
+import { ArrowLeftRight, Bookmark, Compass, Database, Layers, MapPinned, Network, Newspaper, Radar, ShieldHalf, TrendingUp, Globe2, Flag, Activity, Telescope } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PanelGroup } from '../panels/types'
 import { DEFAULT_VIEW, viewOf } from '../panels/destinations'
@@ -58,7 +58,6 @@ function NavItem({ icon: Icon, label, active, onClick, title, sub = false }: {
 }
 
 export default function Sidebar({ activeGroup, onGroupChange, isHome = false, onHome = () => {}, isMap = false, onMap = () => {}, onOpenLibrary = () => {}, onFocusPanel = () => {}, focusPanel, libraryOpen = false, mobileOpen = false, onMobileClose = () => {} }: Props) {
-  const [moreOpen, setMoreOpen] = useState(false)
   // choosing a destination closes the phone drawer; on wider screens there is no drawer state to close
   const then = (fn: () => void) => () => { fn(); onMobileClose() }
   const go = (group: PanelGroup, panel?: string, keepOpen = false) => () => {
@@ -73,9 +72,6 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
     return () => window.removeEventListener('keydown', onKey)
   }, [mobileOpen, onMobileClose])
   const current = navSection(isHome, activeGroup, focusPanel?.id, isMap)
-  const inMore = MORE.some(m => m.section === current)
-  // never hide the entry you are standing on
-  const showMore = moreOpen || inMore
 
   return (
     <>
@@ -94,25 +90,21 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
         <NavItem icon={Flag} label="Countries" title="One country's full record" active={current === 'countries'} onClick={go('country', 'countries')} />
         <NavItem icon={MapPinned} label="Map" title="Only the map: click a country for its overview, a city or region for its local outlook" active={current === 'map'} onClick={then(onMap)} />
         <NavItem icon={Telescope} label="Explore" title="Indicators, country comparison and every dataset" active={current === 'explore'} onClick={go('markets', 'economy', true)} />
-        {current === 'explore' && (
-          <div className="new-nav-subgroup">
-            <NavItem sub icon={Activity} label="Indicators" active={activeGroup === 'markets'} onClick={go('markets', 'economy')} />
-            <NavItem sub icon={ArrowLeftRight} label="Analysis" active={activeGroup === 'analysis'} onClick={go('analysis', 'countryAnalytics')} />
-            <NavItem sub icon={Database} label="Datasets" title="Every panel, searchable" active={libraryOpen} onClick={then(onOpenLibrary)} />
-          </div>
-        )}
+        <div className="new-nav-subgroup">
+          <NavItem sub icon={Activity} label="Indicators" active={current === 'explore' && activeGroup === 'markets'} onClick={go('markets', 'economy')} />
+          <NavItem sub icon={ArrowLeftRight} label="Analysis" active={current === 'explore' && activeGroup === 'analysis'} onClick={go('analysis', 'countryAnalytics')} />
+          <NavItem sub icon={Database} label="Datasets" title="Every panel, searchable" active={libraryOpen} onClick={then(onOpenLibrary)} />
+        </div>
         <NavItem icon={Bookmark} label="Saved" title="Countries you watch, with alerts" active={current === 'saved'} onClick={go('overview', 'watchlist')} />
       </nav>
 
       <div className="new-sidebar-more">
-        <button className="new-sidebar-more-toggle" onClick={() => setMoreOpen(v => !v)} aria-expanded={showMore}>
-          <Layers size={14} /> More <ChevronDown size={13} className={showMore ? 'rotated' : ''} />
-        </button>
-        {showMore && <div className="new-more-list">
+        <div className="new-sidebar-more-label"><Layers size={14} /> More</div>
+        <div className="new-more-list">
           {MORE.map(({ section, label, icon, group }) => (
             <NavItem sub key={section} icon={icon} label={label} active={current === section} onClick={go(group)} />
           ))}
-        </div>}
+        </div>
       </div>
     </aside>
     </>
