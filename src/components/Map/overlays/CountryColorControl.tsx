@@ -5,7 +5,7 @@ import { selectForMap } from '../../../services/countryAnalytics'
 import { STALE_YEARS, type countryColors } from '../../../utils/countryStats'
 import type { useCountryAnalytics } from '../../../hooks/useCountryAnalytics'
 import type { Shading } from '../layers/countryAnalytics'
-import { NO_DATA_FILL } from '../layers/countryAnalytics'
+import { NO_DATA_FILL, NO_DATA_OPACITY } from '../layers/countryAnalytics'
 import { EvidenceTag, SourceLine, StatusLabel } from '../../DataLabels'
 import { IndicatorPicker } from './IndicatorPicker'
 
@@ -116,7 +116,7 @@ export default function CountryColorControl({ on, onToggle, countryData, country
         : shading.shaded === 0 ? <StatusLabel status="empty">No countries to shade for this selection.</StatusLabel>
         : (
           <div className="cc-cover">
-            <div>{shading.shaded} countries shaded · <span className="cc-swatch" style={{ background: NO_DATA_FILL }} />{shading.noData.length} of {WB_ECONOMY_ISO3.size} World Bank economies have no value</div>
+            <div>{shading.shaded} countries shaded · <span className="cc-swatch" style={{ background: NO_DATA_FILL, opacity: NO_DATA_OPACITY + 0.2 }} />{shading.noData.length} of {WB_ECONOMY_ISO3.size} World Bank economies have no value</div>
             {cover.typicalYear !== null && (
               <div>
                 Years {cover.minYear === cover.maxYear ? cover.minYear : `${cover.minYear}–${cover.maxYear}`}, most often {cover.typicalYear}.

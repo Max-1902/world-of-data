@@ -60,7 +60,7 @@ export default function IncidentLegend({ outages, radarOutages, disasters }: Pro
             </div>
           ))}
           <div style={NOTE}>
-            Letters in the pin: {Object.entries(DISASTER_LABELS).map(([k, v]) => `${k} ${v.toLowerCase()}`).join(' · ')}. Faded = event over. Source: GDACS, last 14 days.
+            Letters in the pin: {Object.entries(DISASTER_LABELS).map(([k, v]) => `${k} ${v.toLowerCase()}`).join(' · ')}. A larger pin with “!” after the letters is a Red alert. Faded = event over. Source: GDACS, last 14 days.
           </div>
         </div>
       )}

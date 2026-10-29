@@ -4,9 +4,10 @@ import { SUPPLY_CHAIN_FACILITIES, FACILITY_TYPE_COLORS, FACILITY_TYPE_LABELS } f
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
-import { MARK_HALO } from './halo'
+import { MARK_ICON_LAYOUT, MARK_ICON_PAINT, addMarkShapes, iconSizeFor, shapeFor } from './markShapes'
 
 export function addSupplyChainLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
+  addMarkShapes(map)
   const { popupRef } = ctx
   // ── Supply Chain Facilities GeoJSON source ────────────────────────────
   map.addSource('supplychain', {
@@ -14,14 +15,13 @@ export function addSupplyChainLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     data: { type: 'FeatureCollection', features: [] },
   })
   map.addLayer({
-    id: 'supplychain-circles', type: 'circle', source: 'supplychain',
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 3.5, 5, 5, 8, 7, 12, 10],
-      'circle-color': ['get', 'color'],
-      'circle-opacity': 0.85,
-      ...MARK_HALO,
-    },
-    layout: { visibility: 'none' },
+    id: 'supplychain-circles', type: 'symbol', source: 'supplychain',
+    layout: {
+      visibility: 'none',
+      ...MARK_ICON_LAYOUT,
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 2, iconSizeFor(3.5), 5, iconSizeFor(5), 8, iconSizeFor(7), 12, iconSizeFor(10)],
+    } as Record<string, unknown>,
+    paint: { ...MARK_ICON_PAINT } as Record<string, unknown>,
   })
   map.addLayer({
     id: 'supplychain-labels', type: 'symbol', source: 'supplychain', minzoom: 4,
@@ -89,6 +89,7 @@ export function useSupplyChainData({ mapRef, layersReadyRef, mapReady }: MapHand
         name: f.name, type: f.type,
         typeLabel: FACILITY_TYPE_LABELS[f.type],
         color: FACILITY_TYPE_COLORS[f.type],
+        shape:     shapeFor(Object.keys(FACILITY_TYPE_COLORS), f.type),
         operator: f.operator, country: f.country,
         product: f.product, globalShare: f.globalShare ?? null,
         notes: f.notes ?? '', source: f.source, asOf: f.asOf,

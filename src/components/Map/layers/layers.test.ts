@@ -3,8 +3,6 @@ import { describe, it, expect, vi } from 'vitest'
 
 // mapbox-gl needs WebGL at import time in a real browser; the layer modules only touch it inside click handlers.
 vi.mock('mapbox-gl', () => ({ default: { Popup: class {}, Marker: class {} } }))
-// Image helpers draw on a canvas, which jsdom doesn't have.
-vi.mock('../flightLayer', async (orig) => ({ ...(await orig<typeof import('../flightLayer')>()), addAirplaneImage: vi.fn() }))
 vi.mock('../vesselImages', () => ({ addVesselImages: vi.fn() }))
 
 import { addAllLayers, type LayerCtx } from './index'
@@ -114,12 +112,33 @@ describe('layers do not rely on colour alone', () => {
     expect(Array.isArray(rec.specs.get('sanctions-outline')!.paint['line-width'])).toBe(true)
   })
 
-  it('outlines facility dots with an opaque white ring so they separate from satellite imagery', () => {
-    for (const id of ['military-circles', 'infra-circles', 'nuclear-circles', 'port-circles', 'supplychain-circles', 'datacenter-circles', 'humanitarian-crossings']) {
+  it('draws each facility category as its own shape, with a white halo, so type does not rest on colour', () => {
+    for (const id of ['military-circles', 'infra-circles', 'nuclear-circles', 'port-circles', 'supplychain-circles']) {
+      const spec = rec.specs.get(id)!
+      expect(spec.type, id).toBe('symbol')
+      expect(JSON.stringify(spec.layout['icon-image']), id).toContain('shape')
+      expect(spec.paint['icon-halo-color'], id).toBe('#ffffff')
+      expect(spec.paint['icon-halo-width'], id).toBeGreaterThanOrEqual(1)
+    }
+  })
+
+  it('outlines the single-category dots (data centres, crossings) with an opaque white ring', () => {
+    for (const id of ['datacenter-circles', 'humanitarian-crossings']) {
       const p = rec.specs.get(id)!.paint
       expect(p['circle-stroke-color'], id).toBe('#ffffff')
       expect(p['circle-stroke-opacity'], id).toBeGreaterThanOrEqual(0.9)
       expect(p['circle-stroke-width'], id).toBeGreaterThanOrEqual(1.5)
     }
+  })
+
+  it('draws a different aircraft silhouette for every flight type', () => {
+    const icon = JSON.stringify(rec.specs.get('flights-icons')!.layout['icon-image'])
+    for (const t of ['airline', 'cargo', 'military', 'private', 'unknown']) expect(icon).toContain(`flight-${t}`)
+  })
+
+  it('makes a Red disaster alert a larger pin marked "!", not just a redder one', () => {
+    const pins = rec.specs.get('disasters-pins')!.paint['circle-radius']
+    expect(JSON.stringify(pins)).toContain('Red')
+    expect(JSON.stringify(rec.specs.get('disasters-labels')!.layout['text-field'])).toContain('!')
   })
 })

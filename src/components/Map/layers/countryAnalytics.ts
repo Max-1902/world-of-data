@@ -10,10 +10,11 @@ import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
 
 /** Fill for a World Bank economy with nothing to shade, so "no data" reads differently from "low value". */
-export const NO_DATA_FILL = '#3a4752'
+export const NO_DATA_FILL = '#9aa7b3'
 const FILL_OPACITY = 0.78
 const STALE_OPACITY = 0.32
-const NO_DATA_OPACITY = 0.55
+/** Lighter than any low value on the ramp (about 2.1:1 against the darkest step), so "no data" is not read as "lowest". */
+export const NO_DATA_OPACITY = 0.5
 
 export interface Shading {
   /** countries given a colour */
@@ -50,7 +51,8 @@ export function addCountryAnalyticsLayers(map: mapboxgl.Map, ctx: LayerCtx): voi
   map.addLayer({
     id: 'country-analytics-outline', type: 'line',
     source: 'country-analytics-countries', 'source-layer': 'country_boundaries',
-    paint: { 'line-color': '#e5ecef', 'line-width': 0.6, 'line-opacity': 0.35 },
+    // border strong enough (about 5:1 against dark ocean) that the darkest fills still have a visible edge
+    paint: { 'line-color': '#e5ecef', 'line-width': 0.7, 'line-opacity': 0.6 },
     layout: { visibility: 'none' },
   } as Parameters<typeof map.addLayer>[0])
   map.on('click', 'country-analytics-fill', (e) => {

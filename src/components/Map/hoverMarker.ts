@@ -1,4 +1,5 @@
 import mapboxgl from 'mapbox-gl'
+import { keyboardReachable } from './layers/crisisShape'
 
 const CLOSE_DELAY_MS = 220
 
@@ -13,6 +14,10 @@ export function addHoverMarker(map: mapboxgl.Map, el: HTMLElement, lng: number, 
   const popup = new mapboxgl.Popup({ closeButton: true, closeOnClick: false, maxWidth, className: 'cy-popup geo-hover-popup', offset: 12 })
     .setHTML(html)
   const marker = new mapboxgl.Marker({ element: el }).setLngLat([lng, lat]).addTo(map)
+
+  // a pin is a labelled tab stop: Enter or Space pins its card open like a click, Escape closes it
+  keyboardReachable(el, el.getAttribute('aria-label') || el.textContent?.trim() || 'Map marker')
+  el.addEventListener('keydown', (e) => { if (e.key === 'Escape') { sticky = false; popup.remove() } })
 
   let timer: number | undefined
   let sticky = false

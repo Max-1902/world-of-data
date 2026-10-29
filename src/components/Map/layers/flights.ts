@@ -2,14 +2,15 @@ import { useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { Flight } from '../../../types'
 import { FLIGHT_TYPE_COLORS, type FlightType } from '../../../utils/flightType'
-import { ALL_TYPES, buildFlightGeoJSON, aircraftCache, fetchAircraftMeta, buildFlightHTML, addAirplaneImage } from '../flightLayer'
+import { ALL_TYPES, buildFlightGeoJSON, aircraftCache, fetchAircraftMeta, buildFlightHTML } from '../flightLayer'
 import type { LayerCtx } from './types'
+import { addFlightShapes, flightImageName } from './markShapes'
 import type { MapHandle, MapViewProps } from '../types'
 
 export function addFlightLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef, flightDataRef, onFlightClick } = ctx
-  // ── Add airplane SDF image ───────────────────────────────────────────
-  addAirplaneImage(map)
+  // ── Aircraft icons, one SDF silhouette per flight type ───────────────
+  addFlightShapes(map)
 
   // ── Flight GeoJSON source ────────────────────────────────────────────
   map.addSource('flights', {
@@ -33,16 +34,19 @@ export function addFlightLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   map.addLayer({
     id: 'flights-icons', type: 'symbol', source: 'flights',
     layout: {
-      'icon-image':            'airplane-sdf',
+      // one silhouette per type, so airline / cargo / military / private / unknown differ by outline, not only colour
+      'icon-image':            ['match', ['get', 'flightType'],
+        'airline', flightImageName('airline'), 'cargo', flightImageName('cargo'), 'military', flightImageName('military'),
+        'private', flightImageName('private'), flightImageName('unknown')],
       'icon-rotate':           ['get', 'heading'],
       // Scale from tiny at globe view up to full-size at street zoom
       'icon-size':             ['interpolate', ['linear'], ['zoom'],
-        1, 0.14,   // globe overview — tiny but identifiable as planes
-        3, 0.20,
-        5, 0.32,
-        7, 0.55,
-        10, 0.82,
-        13, 1.2,
+        1, 0.17,   // globe overview — tiny but identifiable as planes
+        3, 0.24,
+        5, 0.38,
+        7, 0.65,
+        10, 0.97,
+        13, 1.42,
       ],
       'icon-allow-overlap':    true,
       'icon-ignore-placement': true,

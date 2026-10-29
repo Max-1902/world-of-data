@@ -4,9 +4,10 @@ import { MILITARY_FACILITIES, FACILITY_COLORS, FACILITY_LABELS } from '../../../
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
-import { MARK_HALO } from './halo'
+import { MARK_ICON_LAYOUT, MARK_ICON_PAINT, addMarkShapes, iconSizeFor, shapeFor } from './markShapes'
 
 export function addMilitaryLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
+  addMarkShapes(map)
   const { popupRef } = ctx
   // ── Military facilities GeoJSON source ───────────────────────────────
   map.addSource('military', {
@@ -14,14 +15,13 @@ export function addMilitaryLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     data: { type: 'FeatureCollection', features: [] },
   })
   map.addLayer({
-    id: 'military-circles', type: 'circle', source: 'military',
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 3.5, 6, 5, 10, 8],
-      'circle-color': ['get', 'color'],
-      'circle-opacity': 0.9,
-      ...MARK_HALO,
-    },
-    layout: { visibility: 'none' },
+    id: 'military-circles', type: 'symbol', source: 'military',
+    layout: {
+      visibility: 'none',
+      ...MARK_ICON_LAYOUT,
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 2, iconSizeFor(3.5), 6, iconSizeFor(5), 10, iconSizeFor(8)],
+    } as Record<string, unknown>,
+    paint: { ...MARK_ICON_PAINT } as Record<string, unknown>,
   })
   map.addLayer({
     id: 'military-labels', type: 'symbol', source: 'military', minzoom: 7,
@@ -91,6 +91,7 @@ export function useMilitaryData({ mapRef, layersReadyRef, mapReady }: MapHandle,
         type:      f.type,
         typeLabel: FACILITY_LABELS[f.type],
         color:     FACILITY_COLORS[f.type],
+        shape:     shapeFor(Object.keys(FACILITY_COLORS), f.type),
         operator:  f.operator,
         host:      f.host,
         personnel: f.personnel ?? null,
