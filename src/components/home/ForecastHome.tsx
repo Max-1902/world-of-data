@@ -11,6 +11,7 @@ import { LineChart } from '../charts/LineChart'
 import { ChartFrame, type TableData } from '../charts/ChartFrame'
 import { CorrMatrixCard } from '../charts/CorrMatrixCard'
 import { AskAnalystButton } from '../AskAnalyst'
+import HomeTier from './HomeTier'
 import { BACKTEST_AS_OF, BACKTEST_ROWS } from '../../data/predictorBacktest'
 
 /** An interval band wider than this many times the charted history's own range is stated in words, not drawn. */
@@ -57,7 +58,7 @@ export function ForecastHome({ onOpenPanel }: Props) {
 
   return (
     <>
-      <section className="home-hero fh-hero" aria-label="Forecast">
+      <section id="outlook-forecast" className="home-hero fh-hero" aria-label="Forecast">
         <div className="hero-copy">
           <div className="home-eyebrow"><span className="new-live-dot" /> FORECAST · REAL GDP GROWTH</div>
           <h1>Where is <em>{name}</em>’s economy heading?</h1>
@@ -85,7 +86,7 @@ export function ForecastHome({ onOpenPanel }: Props) {
       </section>
 
       {ok && (
-        <section className="home-section fh-section" aria-label="Forecast detail">
+        <section id="outlook-detail" className="home-section fh-section" aria-label="Forecast detail">
           <ChartFrame
             title={`${name}: real GDP growth, next ${FORECAST_HORIZON} years`}
             subtitle={`${ok.headline === 'ar' ? 'AR(2) forecast' : '“No change” forecast'}${ok.imf.length ? ' · IMF projection' : ''}`}
@@ -95,32 +96,37 @@ export function ForecastHome({ onOpenPanel }: Props) {
           </ChartFrame>
 
           <div className="fh-cols">
-            <div className="fh-card">{memory ? <SinceBlock memory={memory} unit="%" /> : null}</div>
-            <div className="fh-card">
-              <div className="pred-block-h">What it rests on</div>
-              <ul className="ex-path">{ok.basis.map((b, i) => <li key={i}><EvidenceTag kind={b.kind} /><div>{b.text}</div></li>)}</ul>
-              <p className="viz-verdict">These are the model’s inputs, not causes: it sees only this country’s own growth history.</p>
+            <div className="fh-col">
+              <div className="fh-card">{memory ? <SinceBlock memory={memory} unit="%" /> : null}</div>
+              <div className="fh-card">
+                <div className="pred-block-h">What it rests on</div>
+                <ul className="ex-path">{ok.basis.map((b, i) => <li key={i}><EvidenceTag kind={b.kind} /><div>{b.text}</div></li>)}</ul>
+                <p className="viz-verdict">These are the model’s inputs, not causes: it sees only this country’s own growth history.</p>
+              </div>
             </div>
-            <TestedCard onOpenPanel={onOpenPanel} />
-            <div className="fh-card">
-              <div className="pred-block-h">What could change it</div>
-              <p className="viz-verdict">The forecast cannot see trade, prices, policy or shocks. Shock exposure traces which economies a shock reaches, step by step, from reported trade links, with the evidence behind each step labelled. It is separate from the forecast above and does not change the number: the forecast has no scenario analysis of its own yet.</p>
-              <div className="fh-links">
-                <button className="text-link" onClick={() => onOpenPanel('exposure')}>Trace a shock <ArrowRight size={13} /></button>
-                <button className="text-link" onClick={() => onOpenPanel('nowcast')}>GDP nowcast, EU economies <ArrowRight size={13} /></button>
+            <div className="fh-col">
+              <TestedCard onOpenPanel={onOpenPanel} />
+              <div className="fh-card">
+                <div className="pred-block-h">What could change it</div>
+                <p className="viz-verdict">The forecast cannot see trade, prices, policy or shocks. Shock exposure traces which economies a shock reaches, step by step, from reported trade links, with the evidence behind each step labelled. It is separate from the forecast above and does not change the number: the forecast has no scenario analysis of its own yet.</p>
+                <div className="fh-links">
+                  <button className="text-link" onClick={() => onOpenPanel('exposure')}>Trace a shock <ArrowRight size={13} /></button>
+                  <button className="text-link" onClick={() => onOpenPanel('nowcast')}>GDP nowcast, EU economies <ArrowRight size={13} /></button>
+                </div>
               </div>
             </div>
           </div>
         </section>
       )}
 
-      <section className="home-section fh-section" aria-label="What moves together">
+      <HomeTier label="Around the forecast" note="Co-movement and the IMF’s view. Neither changes the forecast above." />
+      <section id="outlook-comovement" className="home-section fh-section" aria-label="What moves together">
         <div className="home-section-heading"><div><span className="section-kicker">NOT FORECAST EVIDENCE</span><h2>Co-movement across countries</h2><p>How indicators line up across economies today. This describes association; it does not show that one predicts another. Predictive evidence is the backtest above.</p></div></div>
         <div className="fh-card"><CorrMatrixCard onPick={() => onOpenPanel('countryAnalytics')} /></div>
       </section>
 
       {compare && (
-        <section className="home-section fh-section" aria-label="Compare economies">
+        <section id="outlook-imf" className="home-section fh-section" aria-label="Compare economies">
           <div className="home-section-heading">
             <div><span className="section-kicker">COMPARE ECONOMIES</span><h2>The G20 on the IMF’s projections</h2><p>The IMF’s own figures, not this app’s forecast. Select an economy to see its forecast above.</p></div>
           </div>
