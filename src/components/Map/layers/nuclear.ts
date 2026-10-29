@@ -4,6 +4,7 @@ import { NUCLEAR_PLANTS, PLANT_STATUS_COLORS } from '../../../services/military'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
+import { MARK_HALO } from './halo'
 
 export function addNuclearLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -18,9 +19,7 @@ export function addNuclearLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 4, 6, 6, 10, 9],
       'circle-color': ['get', 'color'],
       'circle-opacity': 0.88,
-      'circle-stroke-width': 1.5,
-      'circle-stroke-color': ['get', 'color'],
-      'circle-stroke-opacity': 0.35,
+      ...MARK_HALO,
     },
     layout: { visibility: 'none' },
   })
