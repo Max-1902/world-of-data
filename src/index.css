@@ -1466,7 +1466,8 @@ body.pw-dragging iframe { pointer-events: none; }
 .viz-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .sw { display: inline-block; flex-shrink: 0; }
 .sw.bar { width: 9px; height: 9px; border-radius: 2px; }
-.sw.line { width: 12px; height: 2px; border-radius: 1px; }
+.sw.line { width: 16px; height: 2px; border-radius: 1px; background: currentColor; }
+.sw.line.dashed { background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); }
 .viz-ramp { display: flex; align-items: center; gap: 6px; margin-top: 4px; color: var(--text3); font-size: 9.5px; }
 .viz-ramp i { flex: 1; height: 6px; border-radius: 3px; max-width: 160px; }
 .viz-tip { position: absolute; z-index: 5; pointer-events: none; min-width: 120px; max-width: 220px; padding: 6px 8px; background: var(--surface2); border: 1px solid var(--border-strong); border-radius: var(--r-sm); box-shadow: var(--shadow-md); }

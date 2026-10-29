@@ -229,8 +229,9 @@ function ForecastChart({ f, history, name, vintage }: { f: HomeForecast; history
     <LineChart
       ariaLabel={`${name} real GDP growth, ${shown[0]?.x ?? last.x} to ${last.x}, with a ${FORECAST_HORIZON}-year forecast reaching ${f1(end.value)}%.`}
       xKind="year" height={230} fmtY={v => `${f1(v)}%`} refLines={[{ v: 0, label: '0' }]}
-      bands={[{ from: fc.points[0].year, to: end.year, label: 'Forecast period' }]}
-      areas={drawBand ? [{ key: 'ci', label, color: 'var(--series-2)', points: [{ t: last.x, lo: last.y, hi: last.y }, ...fc.points.map(p => ({ t: p.year, lo: p.lo, hi: p.hi }))] }] : []}
+      forecastBoundary={last.x + 0.5} observedLabel="Reported"
+      bands={[{ from: fc.points[0].year, to: end.year, label: 'Forecast period', opacity: 0.08 }]}
+      areas={drawBand ? [{ key: 'ci', label, color: 'var(--series-2)', opacity: 0.2, points: [{ t: last.x, lo: last.y, hi: last.y }, ...fc.points.map(p => ({ t: p.year, lo: p.lo, hi: p.hi }))] }] : []}
       series={[
         { key: 'hist', label: 'Reported', color: 'var(--series-1)', points: shown.map(p => ({ t: p.x, v: p.y })), markers: true },
         { key: 'fc', label: f.headline === 'ar' ? 'AR(2) forecast' : 'No-change forecast', color: 'var(--series-2)', points: line('value'), dashed: true, markers: true },
