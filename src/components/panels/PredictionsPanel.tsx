@@ -149,10 +149,25 @@ function Section({ target, series, period, country }: { target: Target; series: 
   const backtest = useMemo(() => backtestForecast(series, s => arForecast(s, AR_ORDER, 1), MIN_HISTORY), [series])
 
   if (series.length < MIN_HISTORY || !hf || !hf.ar || !naive) {
+    // not enough history to forecast honestly: draw the observed points we do have, and say no forecast was made
+    if (!series.length) return <div className="viz-note">{target.label}: no data reported for this country.</div>
+    const lastObs = series[series.length - 1]
+    const obsU = target.unit
+    const obsShown = inPeriod(series, period)
+    const drawn = obsShown.length ? obsShown : series
+    const why = series.length < MIN_HISTORY
+      ? `only ${series.length} year${series.length === 1 ? '' : 's'} of data (${MIN_HISTORY} are needed)`
+      : 'its recent record has gaps, so there is no unbroken run to fit'
     return (
-      <div className="viz-note">
-        {target.label}: fewer than {MIN_HISTORY} years of data ({series.length} available) — not enough history for an honest forecast.
-      </div>
+      <ChartFrame
+        title={target.label}
+        subtitle={`Observed data only, ${series[0].x}–${lastObs.x}: no forecast, because ${why}`}
+        table={{ columns: ['Year', 'Actual'], rows: [...series].reverse().map(p => [String(p.x), `${plain(p.y)}${obsU}`]) }}
+        footer={<p className="viz-verdict">Incomplete record: {series.length} year{series.length === 1 ? '' : 's'} reported, {why}. The points shown are the World Bank's own figures; nothing is filled in or estimated.</p>}>
+        <LineChart ariaLabel={`${target.label}, ${drawn[0].x}–${drawn[drawn.length - 1].x}, observed data only, no forecast.`}
+          xKind="year" height={250} fmtY={v => `${plain(v, 1)}${obsU}`} refLines={obsU === '%' ? [{ v: 0, label: '0' }] : undefined}
+          series={[{ key: 'hist', label: 'Actual', color: 'var(--series-1)', points: toLine(drawn), markers: true }]} />
+      </ChartFrame>
     )
   }
 

@@ -18,7 +18,7 @@ export function MagnitudeChart({ gr }: { gr: GutenbergRichter }) {
   const onLeave = useHoverLeave(ref, () => setHover(null))
   const place = (i: number, e: React.PointerEvent) => { const b = ref.current!.getBoundingClientRect(); setHover({ i, x: e.clientX - b.left, y: e.clientY - b.top }) }
   const pts = gr.points
-  if (pts.length < 2) return <div className="viz-note">Too few earthquakes to plot a magnitude–frequency curve.</div>
+  if (pts.length < 1) return <div className="viz-note">Too few earthquakes to plot a magnitude–frequency curve.</div>
   const innerW = Math.max(40, width - M.l - M.r)
   const innerH = H - M.t - M.b
   const mMin = pts[0].m
