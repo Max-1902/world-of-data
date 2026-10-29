@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
 import mapboxgl from 'mapbox-gl'
-import { Earthquake } from '../../../services/earthquakes'
 import { MARKET_HUBS } from '../../../services/stocks'
 import { addHoverMarker, type HoverMarker } from '../hoverMarker'
 import { NEWS_COLORS, esc, marketPinHTML, newsPinHTML } from '../geoPopups'

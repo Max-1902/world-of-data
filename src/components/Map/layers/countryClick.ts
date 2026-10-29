@@ -1,4 +1,3 @@
-import mapboxgl from 'mapbox-gl'
 import { PLACE_MIN_ZOOM, pickClickedPlace } from '../../../utils/placePick'
 import { MAPBOX_TOKEN as TOKEN } from '../token'
 import type { LayerCtx } from './types'

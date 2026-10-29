@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import mapboxgl from 'mapbox-gl'
 import { CHOKEPOINTS, SHIPPING_LANE_LABEL_IDS } from '../../../services/chokepoints'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'

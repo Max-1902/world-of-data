@@ -35,7 +35,7 @@ src/
     Map/MapView.tsx               # composition root (~220 lines): owns the map + refs, calls addAllLayers() once and each layer's use*() hook
     Map/layers/<name>.ts          # one module per map layer: add<Name>Layers(map, ctx) = sources/layers/handlers (once, on style load),
                                   #   use<Name>Data(handle, props) = visibility + data updates; layers/index.ts fixes draw order
-    Map/overlays/                 # on-map React chrome: FlightFilter, OverlayMenu, legends, Reticle, DeepStatePanel
+    Map/overlays/                 # on-map React chrome: OverlayMenu, legends, Reticle, DeepStatePanel
     Map/types.ts                  # MapViewProps + MapHandle (the map/refs every layer hook receives)
     Map/flightLayer.ts            # flight GeoJSON/popup/icon helpers (pure, no React)
     Map/vesselImages.ts           # vessel SDF icons; Map/viewModes.ts: CSS filter + overlay configs

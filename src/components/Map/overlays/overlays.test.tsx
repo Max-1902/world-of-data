@@ -1,54 +1,8 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import FlightFilter from './FlightFilter'
 import OverlayMenu from './OverlayMenu'
-import type { Flight, PanelState } from '../../../types'
-import { ALL_TYPES } from '../flightLayer'
-
-const flight = (over: Partial<Flight>): Flight => ({
-  icao24: 'abc123', callsign: 'TST1', country: 'Germany', longitude: 8, latitude: 50, altitude: 10000, velocity: 220, heading: 90, onGround: false, ...over,
-} as Flight)
-
-describe('FlightFilter', () => {
-  const setup = (over: Partial<React.ComponentProps<typeof FlightFilter>> = {}) => {
-    const setFilterQuery = vi.fn()
-    const setFilterTypes = vi.fn()
-    const props = {
-      flights: [flight({ icao24: 'a1' }), flight({ icao24: 'a2', callsign: 'RCH123' })],
-      filteredCount: 2, filterQuery: '', setFilterQuery, filterTypes: new Set(ALL_TYPES), setFilterTypes, ...over,
-    }
-    render(<FlightFilter {...props} />)
-    return { ...props, setFilterQuery, setFilterTypes }
-  }
-
-  it('starts collapsed and shows the filtered count on its button', () => {
-    setup({ filteredCount: 1234 })
-    expect(screen.getByRole('button', { name: /Filter flights/ }).textContent).toContain('1,234')
-    expect(screen.queryByPlaceholderText(/callsign/)).toBeNull()
-  })
-
-  it('opens, forwards the search text, and clears it', () => {
-    const p = setup({ filterQuery: 'RCH' })
-    fireEvent.click(screen.getByRole('button', { name: /Filter flights/ }))
-    fireEvent.change(screen.getByPlaceholderText(/callsign/), { target: { value: 'RCH1' } })
-    expect(p.setFilterQuery).toHaveBeenCalledWith('RCH1')
-    fireEvent.click(screen.getByRole('button', { name: '×' }))
-    expect(p.setFilterQuery).toHaveBeenCalledWith('')
-  })
-
-  it('toggles a flight type by updater and selects a size group', () => {
-    const p = setup()
-    fireEvent.click(screen.getByRole('button', { name: /Filter flights/ }))
-    fireEvent.click(screen.getByRole('button', { name: /Military/ }))
-    const updater = p.setFilterTypes.mock.calls[0][0] as (prev: Set<string>) => Set<string>
-    expect(updater(new Set(['military', 'cargo'])).has('military')).toBe(false)   // was on → off
-    expect(updater(new Set(['cargo'])).has('military')).toBe(true)                // was off → on
-
-    fireEvent.click(screen.getByRole('button', { name: 'Small' }))
-    expect([...(p.setFilterTypes.mock.calls[1][0] as Set<string>)].sort()).toEqual(['private', 'unknown'])
-  })
-})
+import type { PanelState } from '../../../types'
 
 describe('OverlayMenu', () => {
   const state = { flights: true, crises: false, military: true } as unknown as PanelState
