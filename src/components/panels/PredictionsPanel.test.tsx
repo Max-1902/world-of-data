@@ -110,9 +110,19 @@ describe('PredictionsPanel', () => {
     expect(card.textContent).not.toContain('AR(2) forecast')
   })
 
-  it('declines to forecast a series that is too short', () => {
+  it('declines to forecast a series that is too short, but still draws the years it has', () => {
     render(<PredictionsPanel />)
-    expect(screen.getByText(/Inflation \(CPI\): fewer than 15 years of data/)).toBeTruthy()
+    const card = screen.getByRole('region', { name: 'Inflation (CPI)' })
+    expect(card.textContent).toContain('Observed data only, 2023–2025: no forecast, because only 3 years of data (15 are needed)')
+    expect(card.textContent).toContain('nothing is filled in or estimated')
+    expect(card.querySelectorAll('svg circle').length).toBeGreaterThanOrEqual(3)
+    expect(card.textContent).not.toContain('Forecast direction')
+  })
+
+  it('says so when a country reports no data for the series at all', () => {
+    data.series['FP.CPI.TOTL.ZG'] = { points: [] }
+    render(<PredictionsPanel />)
+    expect(screen.getByText(/Inflation \(CPI\): no data reported for this country/)).toBeTruthy()
   })
 })
 
