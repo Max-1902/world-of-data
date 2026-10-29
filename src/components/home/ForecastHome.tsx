@@ -123,7 +123,7 @@ export function ForecastHome({ onOpenPanel }: Props) {
             <div><span className="section-kicker">COMPARE ECONOMIES</span><h2>The G20 on the IMF’s projections</h2><p>The IMF’s own figures, not this app’s forecast. Select an economy to see its forecast above.</p></div>
           </div>
           <div className="fh-card">
-            <div className="viz-table-wrap fh-compare"><table className="viz-table">
+            <div className="viz-table-wrap fh-compare" role="region" aria-label="G20 economies, IMF projections" tabIndex={0}><table className="viz-table">
               <thead><tr><th scope="col">Economy</th><th scope="col">{compare.years[0]}</th><th scope="col">{compare.years[1]}</th></tr></thead>
               <tbody>{compare.rows.map(r => {
                 const c = byIso3.get(r.iso3)

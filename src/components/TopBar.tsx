@@ -1,4 +1,4 @@
-import { Bookmark, Globe2, RefreshCw, Settings2 } from 'lucide-react'
+import { Bookmark, Globe2, Menu, RefreshCw, Settings2, X } from 'lucide-react'
 import type { MapViewMode, PanelState } from '../types'
 import SmartSearch from './SmartSearch'
 import SourceHealth from './SourceHealth'
@@ -16,11 +16,17 @@ interface Props {
   onReloadAll?: () => void
   reloading?: boolean
   onHome: () => void
+  /** phones: toggles the navigation drawer (the button is hidden on wider screens) */
+  onMenu?: () => void
+  menuOpen?: boolean
 }
 
-export default function TopBar({ viewMode, onViewMode, searchQuery, onSearch, onOpenPanel, onOpenLibrary, onToggleLayer, onColorCountries, onSettingsOpen, onReloadAll, reloading, onHome }: Props) {
+export default function TopBar({ viewMode, onViewMode, searchQuery, onSearch, onOpenPanel, onOpenLibrary, onToggleLayer, onColorCountries, onSettingsOpen, onReloadAll, reloading, onHome, onMenu, menuOpen = false }: Props) {
   return (
     <header className="topbar new-topbar">
+      <button className="new-icon-button new-menu-button" onClick={onMenu} aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'} aria-expanded={menuOpen} aria-controls="main-navigation">
+        {menuOpen ? <X size={18} /> : <Menu size={18} />}
+      </button>
       <button className="new-mobile-brand" onClick={onHome} aria-label="World of Data home">
         <span className="new-brand-mark"><Globe2 size={17} /></span>
         <span><strong>World of Data</strong><small>Real data, a clearer world.</small></span>
