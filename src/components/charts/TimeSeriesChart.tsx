@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useElementWidth } from './useElementWidth'
+import { useHoverLeave } from './hoverLeave'
 import { Tooltip } from './ChartFrame'
 import { crisp, niceAxis, tickLabel, textWidth, TICK } from './format'
 import { topRounded } from './marks'
@@ -50,6 +51,7 @@ export function TimeSeriesChart({ points, valueLabel, avgLabel, fmtTick, fmtTitl
 }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [active, setActive] = useState<number | null>(null)
+  const onLeave = useHoverLeave(ref, () => setActive(null))
   const n = points.length
   const innerW = Math.max(10, width - M.l - M.r)
   const innerH = H - M.t - M.b
@@ -105,7 +107,7 @@ export function TimeSeriesChart({ points, valueLabel, avgLabel, fmtTick, fmtTitl
         ))}
         {active !== null && <line x1={x(active)} x2={x(active)} y1={M.t} y2={M.t + innerH} stroke="var(--text3)" strokeWidth={1} />}
         {active !== null && ap?.avg != null && <circle cx={x(active)} cy={y(ap.avg)} r={4} fill="var(--series-2)" stroke="var(--surface)" strokeWidth={2} />}
-        <rect x={M.l} y={M.t} width={innerW} height={innerH} fill="transparent" onPointerMove={onMove} onPointerLeave={() => setActive(null)} />
+        <rect x={M.l} y={M.t} width={innerW} height={innerH} fill="transparent" style={{ touchAction: 'pan-y' }} onPointerMove={onMove} onPointerDown={onMove} onPointerLeave={onLeave} />
       </svg>
       {ap && active !== null && (
         <Tooltip x={x(active)} y={M.t + 14} width={width}>

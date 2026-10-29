@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Matrix } from '../../utils/dataAnalytics'
 import { sequentialColor, SEQUENTIAL } from '../../utils/vizPalette'
 import { useElementWidth } from './useElementWidth'
+import { useHoverLeave } from './hoverLeave'
 import { Tooltip } from './ChartFrame'
 import { textWidth, TICK } from './format'
 
@@ -23,6 +24,8 @@ export function HeatmapChart({ matrix, unit, fmtCol, onRowClick, ariaLabel }: {
 }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [hover, setHover] = useState<{ r: number; c: number; x: number; y: number } | null>(null)
+  const onLeave = useHoverLeave(ref, () => setHover(null))
+  const place = (r: number, c: number, e: React.PointerEvent) => { const b = ref.current!.getBoundingClientRect(); setHover({ r, c, x: e.clientX - b.left, y: e.clientY - b.top }) }
   const cols = matrix.cols.length
   const LABEL_W = Math.min(MAX_LABEL_W, Math.max(56, ...matrix.rows.map(r => textWidth(r, 10))) + 10)
   const maxChars = Math.floor((LABEL_W - 10) / (10 * 0.56))
@@ -46,8 +49,8 @@ export function HeatmapChart({ matrix, unit, fmtCol, onRowClick, ariaLabel }: {
                 <rect key={c} x={LABEL_W + c * cw} y={y} width={Math.max(1, cw - GAP)} height={ROW_H - GAP} rx={2}
                   fill={v > 0 ? sequentialColor(Math.sqrt(v / (matrix.max || 1))) : 'var(--surface2)'}
                   stroke={hover && hover.r === r && hover.c === c ? 'var(--text1)' : 'none'} strokeWidth={1.5}
-                  onPointerMove={e => { const b = ref.current!.getBoundingClientRect(); setHover({ r, c, x: e.clientX - b.left, y: e.clientY - b.top }) }}
-                  onPointerLeave={() => setHover(null)} onClick={() => onRowClick?.(row)} style={{ cursor: pointer }} />
+                  onPointerMove={e => place(r, c, e)} onPointerDown={e => place(r, c, e)}
+                  onPointerLeave={onLeave} onClick={() => onRowClick?.(row)} style={{ cursor: pointer }} />
               ))}
             </g>
           )
