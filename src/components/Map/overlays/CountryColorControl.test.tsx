@@ -6,6 +6,7 @@ const m = vi.hoisted(() => ({ selectForMap: vi.fn() }))
 vi.mock('../../../services/countryAnalytics', () => ({ selectForMap: m.selectForMap }))
 
 import CountryColorControl from './CountryColorControl'
+import { TREND_Z_FULL } from '../../../utils/countryStats'
 import { IndicatorPicker, matchIndicators } from './IndicatorPicker'
 import { INDICATOR_BY_ID, INDICATORS } from '../../../services/countryIndicators'
 import { fillPaint, NO_DATA_FILL, NO_DATA_OPACITY, type Shading } from '../layers/countryAnalytics'
@@ -50,6 +51,24 @@ describe('CountryColorControl', () => {
     render(<CountryColorControl on onToggle={vi.fn()} countryData={data('trend')} countryShading={{ ...colors, mode: 'trend' }} shading={shading} raised={false} />)
     expect(screen.getByText('Statistical')).toBeTruthy()
     expect(screen.getByRole('region', { name: 'Colour countries by data' }).textContent).toContain('not a cause')
+  })
+
+  it('puts numbers on the trend ramp that match where the colour saturates', () => {
+    render(<CountryColorControl on onToggle={vi.fn()} countryData={data('trend')} countryShading={{ ...colors, mode: 'trend' }} shading={shading} raised={false} />)
+    const region = screen.getByRole('region', { name: 'Colour countries by data' }).textContent!
+    expect(region).toContain(`−${TREND_Z_FULL} σ`)
+    expect(region).toContain(`+${TREND_Z_FULL} σ`)
+    expect(region).toContain(`full at ±${TREND_Z_FULL} σ`)
+  })
+
+  it('shows low, middle and high values on the value ramp, the middle being the geometric one on a log scale', () => {
+    // CO2 emissions is a log-scaled indicator: the colour halfway between 1 and 100 is 10, not 50.5
+    const log = INDICATOR_BY_ID.get('EN.GHG.CO2.MT.CE.AR5')!
+    const { container } = render(<CountryColorControl on onToggle={vi.fn()} countryData={data('value', { yMeta: log })} countryShading={{ ...colors, lo: 1, hi: 100 }} shading={shading} raised={false} />)
+    const ends = [...container.querySelectorAll('.cc-ends span')].map(e => e.textContent)
+    expect(ends).toHaveLength(3)
+    expect(ends[1]).toBe(log.format(10))
+    expect(screen.getByRole('region', { name: 'Colour countries by data' }).textContent).toContain('geometric middle')
   })
 
   it('says loading or unavailable instead of showing coverage it does not have', () => {
