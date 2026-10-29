@@ -29,7 +29,7 @@ export function XYChart({ points, fit, xLabel, yLabel, fmtX, fmtY, ariaLabel }: 
   const [x0, x1] = pad(Math.min(...points.map(p => p.x)), Math.max(...points.map(p => p.x)))
   const [y0, y1] = pad(Math.min(...points.map(p => p.y)), Math.max(...points.map(p => p.y)))
   const xt = niceTicks('linear', x0, x1), yt = niceTicks('linear', y0, y1)
-  const left = Math.max(M.l, Math.max(...yt.map(t => textWidth(fmtY(t), 10))) + 10)
+  const left = Math.max(M.l, Math.max(...yt.map(t => textWidth(fmtY(t), TICK.fontSize))) + 10)
   const innerW = Math.max(40, width - left - M.r), innerH = H - M.t - M.b
   const sx = (v: number) => left + ((v - x0) / (x1 - x0)) * innerW
   const sy = (v: number) => M.t + innerH - ((v - y0) / (y1 - y0)) * innerH

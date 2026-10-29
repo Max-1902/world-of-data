@@ -20,7 +20,7 @@ export interface LineArea { key: string; label: string; color: string; points: {
 export interface RefLine { v: number; label: string }
 export interface Band { from: number; to: number; label: string; opacity?: number }
 
-const M = { l: 44, r: 12, t: 10, b: 22 }
+const M = { l: 44, r: 16, t: 10, b: 22 }
 const YEAR_MS = 365.25 * 86_400_000
 
 /** Gap threshold: a jump of more than 1.5× the series' typical step breaks the line instead of bridging missing data. */
@@ -55,7 +55,7 @@ function yearTicks(t0: number, t1: number, width: number, isYear: boolean): numb
  * Optional reference lines (a target, zero) and shaded bands (e.g. recessions). Hover or arrow keys move a crosshair
  * that reads every series at that date. Click or tap to pin a date; `x` is a year or UTC timestamp (`xKind`).
  */
-export function LineChart({ series, areas = [], xKind, fmtY, fmtX, refLines = [], bands = [], forecastBoundary, observedLabel = 'Observed', height = 170, ariaLabel }: {
+export function LineChart({ series, areas = [], xKind, fmtY, fmtX, refLines = [], bands = [], forecastBoundary, observedLabel = 'Observed', projectedLabel = 'Forecast', height = 170, ariaLabel }: {
   series: LineSeries[]
   areas?: LineArea[]
   xKind: 'year' | 'time'
@@ -67,6 +67,8 @@ export function LineChart({ series, areas = [], xKind, fmtY, fmtX, refLines = []
   forecastBoundary?: number
   /** Name for the data left of the boundary, matching how the panel's legend names its history. */
   observedLabel?: string
+  /** Name for the data right of the boundary (e.g. 'Nowcast'). */
+  projectedLabel?: string
   height?: number
   ariaLabel: string
 }) {
@@ -87,7 +89,7 @@ export function LineChart({ series, areas = [], xKind, fmtY, fmtX, refLines = []
   const pad = (hi - lo) * 0.06
   const ticks = niceTicks('linear', lo - pad, hi + pad)
   const yMin = Math.min(lo - pad, ticks[0]), yMax = Math.max(hi + pad, ticks[ticks.length - 1])
-  const left = Math.max(M.l, Math.max(...ticks.map(t => textWidth(fmtY(t), 10))) + 10)
+  const left = Math.max(M.l, Math.max(...ticks.map(t => textWidth(fmtY(t), TICK.fontSize))) + 10)
   const innerW = Math.max(40, width - left - M.r)
   const innerH = height - top - M.b
   const t0 = xs[0], t1 = xs[xs.length - 1]
@@ -174,7 +176,7 @@ export function LineChart({ series, areas = [], xKind, fmtY, fmtX, refLines = []
         {refLines.map(r => (
           <g key={r.label}>
             <line x1={left} x2={width - M.r} y1={crisp(y(r.v))} y2={crisp(y(r.v))} stroke="var(--text2)" strokeWidth={1} strokeDasharray="4 3" />
-            <text x={width - M.r} y={y(r.v) - 4} textAnchor="end" fontSize={9.5} fill="var(--text2)">{r.label}</text>
+            <text x={width - M.r} y={y(r.v) - 4} textAnchor="end" fontSize={10.5} fill="var(--text2)">{r.label}</text>
           </g>
         ))}
         {xTicks.map(t => (
@@ -203,7 +205,7 @@ export function LineChart({ series, areas = [], xKind, fmtY, fmtX, refLines = []
           <g aria-hidden="true" fontSize={10.5} fontWeight={600} fill="var(--text1)">
             <line x1={crisp(x(forecastBoundary))} x2={crisp(x(forecastBoundary))} y1={top - 14} y2={top + innerH} stroke="var(--text2)" strokeWidth={1.5} />
             <text x={x(forecastBoundary) - 6} y={top - 5} textAnchor="end">{observedLabel}</text>
-            <text x={x(forecastBoundary) + 6} y={top - 5} textAnchor="start">Forecast</text>
+            <text x={x(forecastBoundary) + 6} y={top - 5} textAnchor="start">{projectedLabel}</text>
           </g>
         )}
         {at !== null && <line x1={x(at)} x2={x(at)} y1={top} y2={top + innerH} stroke="var(--text3)" strokeWidth={1} />}
@@ -222,7 +224,7 @@ export function LineChart({ series, areas = [], xKind, fmtY, fmtX, refLines = []
           })}
           {areas.map(a => {
             const p = a.points.find(q => Math.abs(q.t - at) <= (xKind === 'year' ? 0.5 : YEAR_MS / 24))
-            return p && <div key={a.key} className="viz-tip-r"><i className="sw bar" style={{ background: a.color, opacity: 0.35 }} /><b>{fmtY(p.lo)} to {fmtY(p.hi)}</b> {a.label}</div>
+            return p && <div key={a.key} className="viz-tip-r"><i className="sw bar" style={{ background: a.color, opacity: 0.35 }} /><b>{fmtY(p.lo)} to {fmtY(p.hi)}</b> {a.label.replace(/\s*\(.*\)$/, '')}</div>
           })}
           {bands.filter(b => at >= b.from && at <= b.to).map(b => <div key={b.label} className="viz-tip-m">{b.label}</div>)}
         </Tooltip>
