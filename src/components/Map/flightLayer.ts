@@ -1,4 +1,3 @@
-import type { Map as MapboxMap } from 'mapbox-gl'
 import { esc } from './geoPopups'
 import type { Flight } from '../../types'
 import { detectFlightType, headingToCompass, FLIGHT_TYPE_COLORS, FLIGHT_TYPE_LABELS, type FlightType } from '../../utils/flightType'
@@ -180,26 +179,4 @@ export function buildFlightHTML(p: Record<string, unknown>, meta?: AircraftMeta)
       </table>
       ${photoSection}
     </div>`
-}
-
-// ── Airplane SDF icon (allows icon-color per feature) ───────────────────────
-export function addAirplaneImage(map: MapboxMap) {
-  const size = 28
-  const canvas = document.createElement('canvas')
-  canvas.width = canvas.height = size
-  const ctx = canvas.getContext('2d')!
-  ctx.fillStyle = '#000'
-  ctx.fillRect(0, 0, size, size)
-  ctx.fillStyle = '#fff'
-  // Airplane silhouette pointing up (north)
-  ctx.beginPath()
-  ctx.moveTo(14, 1);   ctx.lineTo(16, 9)
-  ctx.lineTo(26, 14);  ctx.lineTo(16, 17)
-  ctx.lineTo(16, 22);  ctx.lineTo(18, 26)
-  ctx.lineTo(14, 24);  ctx.lineTo(10, 26)
-  ctx.lineTo(12, 22);  ctx.lineTo(12, 17)
-  ctx.lineTo(2,  14);  ctx.lineTo(12, 9)
-  ctx.closePath()
-  ctx.fill()
-  map.addImage('airplane-sdf', ctx.getImageData(0, 0, size, size), { sdf: true })
 }

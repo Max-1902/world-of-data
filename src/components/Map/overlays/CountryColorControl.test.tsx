@@ -8,7 +8,7 @@ vi.mock('../../../services/countryAnalytics', () => ({ selectForMap: m.selectFor
 import CountryColorControl from './CountryColorControl'
 import { IndicatorPicker, matchIndicators } from './IndicatorPicker'
 import { INDICATOR_BY_ID, INDICATORS } from '../../../services/countryIndicators'
-import { fillPaint, NO_DATA_FILL, type Shading } from '../layers/countryAnalytics'
+import { fillPaint, NO_DATA_FILL, NO_DATA_OPACITY, type Shading } from '../layers/countryAnalytics'
 
 const ready = { status: 'ready' as const, rows: [], error: null }
 function data(mode: 'value' | 'trend' = 'value', over: Record<string, unknown> = {}) {
@@ -112,7 +112,7 @@ describe('fillPaint', () => {
     const p = fillPaint({ DEU: '#111', FRA: '#222' }, ['AAA'], new Set(['FRA', 'ZZZ']))
     expect(p.color).toEqual(['match', ['get', 'iso_3166_1_alpha_3'], 'DEU', '#111', 'FRA', '#222', 'AAA', NO_DATA_FILL, 'rgba(0,0,0,0)'])
     const op = p.opacity as unknown[]
-    expect(op.slice(2, 6)).toEqual(['FRA', 0.32, 'AAA', 0.55]) // ZZZ isn't shaded, so isn't listed
+    expect(op.slice(2, 6)).toEqual(['FRA', 0.32, 'AAA', NO_DATA_OPACITY]) // ZZZ isn't shaded, so isn't listed
     expect(op[op.length - 1]).toBe(0.78)
   })
   it('falls back to plain values when there is nothing to match (Mapbox rejects an empty match)', () => {

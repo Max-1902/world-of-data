@@ -41,6 +41,8 @@ import {
 } from './layers'
 import type { MapHandle, MapViewProps } from './types'
 import CountryColorControl from './overlays/CountryColorControl'
+import MarkLegend from './overlays/MarkLegend'
+import IncidentLegend from './overlays/IncidentLegend'
 import HazardHexLegend from './overlays/HazardHexLegend'
 import OverlayMenu from './overlays/OverlayMenu'
 import DeepStatePanel from './overlays/DeepStatePanel'
@@ -235,6 +237,15 @@ export default function MapView({
           hexSlice={hexSlice}
           onTilt={() => { const m = mapRef.current; if (m) m.easeTo({ pitch: m.getPitch() > 10 ? 0 : 55, duration: 800 }) }}
         />
+      )}
+      {!deepstateMode && (
+        <>
+          <MarkLegend bottom={showAnalyticsHex ? 190 : 58} layers={{
+            crises: showCrises, flights: showFlights, military: showMilitary, infrastructure: showInfrastructure, nuclear: showNuclear,
+            ports: showPorts, supplyChain: showSupplyChain, humanitarian: showHumanitarian, sanctions: showSanctions,
+          }} />
+          <IncidentLegend outages={showOutages ? outages : null} radarOutages={radarOutages} disasters={showDisasters ? disasterAlerts : null} />
+        </>
       )}
       {panelState && onToggleLayer && (
         <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} suggested={suggestedLayers} top={52} />

@@ -74,7 +74,7 @@ export function useNewsMarkers({ mapRef, mapReady }: MapHandle, { newsPins, show
       const color = NEWS_COLORS[pin.items[0].category]
       const size = pin.items.length > 1 ? 20 : 14
       const el = document.createElement('div')
-      el.setAttribute('aria-label', esc(pin.items[0].article.title))
+      el.setAttribute('aria-label', `${pin.items.length > 1 ? `${pin.items.length} stories: ` : ''}${pin.items[0].article.title}`) // an attribute, not HTML: no escaping
       el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;` +
         `font:700 9px Inter,sans-serif;color:#fff;border:2px solid #fff;background:${color};`
       if (pin.items.length > 1) el.textContent = String(pin.items.length)
@@ -101,6 +101,7 @@ export function useMarketMarkers({ mapRef, mapReady }: MapHandle, { stocks, show
       el.style.cssText = `padding:2px 7px;background:#fff;border:1.5px solid ${color};border-radius:999px;color:${color};` +
         `font:700 10px Inter,sans-serif;white-space:nowrap;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.25);`
       el.textContent = q ? `${hub.exchange} ${q.change >= 0 ? '▲' : '▼'}${Math.abs(q.changePercent).toFixed(1)}%` : hub.exchange
+      el.setAttribute('aria-label', q ? `${hub.exchange}, ${q.change >= 0 ? 'up' : 'down'} ${Math.abs(q.changePercent).toFixed(1)} percent today` : `${hub.exchange}, no quote`)
       return addHoverMarker(map, el, hub.lng, hub.lat, marketPinHTML(hub, q), '260px')
     })
     return () => { marketMarkersRef.current.forEach(m => m.remove()); marketMarkersRef.current = [] }

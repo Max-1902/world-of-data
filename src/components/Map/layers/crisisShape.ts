@@ -7,13 +7,14 @@ export const CRISIS_COLORS: Record<string, string> = {
   protest: '#ffcc00', political: '#aa44ff', disaster: '#ff8800',
 }
 
-export const CRISIS_SHAPES: Record<string, { name: string; clip: string }> = {
-  war: { name: 'circle', clip: 'circle(50%)' },
-  conflict: { name: 'diamond', clip: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' },
-  terrorism: { name: 'triangle', clip: 'polygon(50% 0, 100% 100%, 0 100%)' },
-  protest: { name: 'square', clip: 'polygon(8% 8%, 92% 8%, 92% 92%, 8% 92%)' },
-  political: { name: 'inverted triangle', clip: 'polygon(0 0, 100% 0, 50% 100%)' },
-  disaster: { name: 'cross', clip: 'polygon(35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%)' },
+/** `glyph` is the matching shape name in markShapes.ts, so the map key draws the same silhouette. */
+export const CRISIS_SHAPES: Record<string, { name: string; clip: string; glyph: string }> = {
+  war: { name: 'circle', glyph: 'circle', clip: 'circle(50%)' },
+  conflict: { name: 'diamond', glyph: 'diamond', clip: 'polygon(50% 0, 100% 50%, 50% 100%, 0 50%)' },
+  terrorism: { name: 'triangle', glyph: 'triangle', clip: 'polygon(50% 0, 100% 100%, 0 100%)' },
+  protest: { name: 'square', glyph: 'square', clip: 'polygon(8% 8%, 92% 8%, 92% 92%, 8% 92%)' },
+  political: { name: 'inverted triangle', glyph: 'triangle-down', clip: 'polygon(0 0, 100% 0, 50% 100%)' },
+  disaster: { name: 'cross', glyph: 'plus', clip: 'polygon(35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%)' },
 }
 const FALLBACK = CRISIS_SHAPES.conflict
 

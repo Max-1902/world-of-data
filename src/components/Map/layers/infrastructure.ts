@@ -5,9 +5,10 @@ import { ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchAllPowe
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
-import { MARK_HALO } from './halo'
+import { MARK_ICON_LAYOUT, MARK_ICON_PAINT, addMarkShapes, iconSizeFor, shapeFor } from './markShapes'
 
 export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
+  addMarkShapes(map)
   const { popupRef } = ctx
   // ── Critical Infrastructure ───────────────────────────────────────────
   map.addSource('infrastructure', {
@@ -15,20 +16,20 @@ export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void 
     data: { type: 'FeatureCollection', features: [] },
   })
   map.addLayer({
-    id: 'infra-circles', type: 'circle', source: 'infrastructure',
-    paint: {
-      // Dot size follows plant capacity (curated dams/LNG/refineries have no MW → mid size)
-      'circle-radius': ['interpolate', ['linear'], ['zoom'],
-        2,  ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, 1.5, 1000, 3.5],
-        6,  ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, 2.5, 1000, 6],
-        10, ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, 4,   1000, 10],
+    id: 'infra-circles', type: 'symbol', source: 'infrastructure',
+    layout: {
+      visibility: 'none',
+      ...MARK_ICON_LAYOUT,
+      // Mark size follows plant capacity (curated dams/LNG/refineries have no MW → mid size)
+      'icon-size': ['interpolate', ['linear'], ['zoom'],
+        2,  ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, iconSizeFor(1.5), 1000, iconSizeFor(3.5)],
+        6,  ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, iconSizeFor(2.5), 1000, iconSizeFor(6)],
+        10, ['interpolate', ['linear'], ['coalesce', ['get', 'mw'], 800], 0, iconSizeFor(4),   1000, iconSizeFor(10)],
       ],
-      'circle-color':        ['get', 'color'],
-      'circle-opacity':      0.85,
-      ...MARK_HALO,
-    },
-    // Larger plants draw on top of small ones
-    layout: { visibility: 'none', 'circle-sort-key': ['coalesce', ['get', 'mw'], 800] },
+      // Larger plants draw on top of small ones
+      'symbol-sort-key': ['coalesce', ['get', 'mw'], 800],
+    } as Record<string, unknown>,
+    paint: { ...MARK_ICON_PAINT } as Record<string, unknown>,
   })
   map.addLayer({
     id: 'infra-labels', type: 'symbol', source: 'infrastructure', minzoom: 6,
@@ -107,6 +108,7 @@ export function useInfrastructureData({ mapRef, layersReadyRef, mapReady }: MapH
         type:      p.type,
         typeLabel: INFRA_LABELS[p.type],
         color:     INFRA_COLORS[p.type],
+        shape:     shapeFor(Object.keys(INFRA_COLORS), p.type),
         icon:      INFRA_ICONS[p.type],
         country:   p.country,
         capacity:  p.capacity  ?? null,

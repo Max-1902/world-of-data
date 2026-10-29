@@ -4,9 +4,10 @@ import { NUCLEAR_PLANTS, PLANT_STATUS_COLORS } from '../../../services/military'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
-import { MARK_HALO } from './halo'
+import { MARK_ICON_LAYOUT, MARK_ICON_PAINT, addMarkShapes, iconSizeFor, shapeFor } from './markShapes'
 
 export function addNuclearLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
+  addMarkShapes(map)
   const { popupRef } = ctx
   // ── Nuclear power plants GeoJSON source ──────────────────────────────
   map.addSource('nuclear-plants', {
@@ -14,14 +15,13 @@ export function addNuclearLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     data: { type: 'FeatureCollection', features: [] },
   })
   map.addLayer({
-    id: 'nuclear-circles', type: 'circle', source: 'nuclear-plants',
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 4, 6, 6, 10, 9],
-      'circle-color': ['get', 'color'],
-      'circle-opacity': 0.88,
-      ...MARK_HALO,
-    },
-    layout: { visibility: 'none' },
+    id: 'nuclear-circles', type: 'symbol', source: 'nuclear-plants',
+    layout: {
+      visibility: 'none',
+      ...MARK_ICON_LAYOUT,
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 2, iconSizeFor(4), 6, iconSizeFor(6), 10, iconSizeFor(9)],
+    } as Record<string, unknown>,
+    paint: { ...MARK_ICON_PAINT } as Record<string, unknown>,
   })
   map.addLayer({
     id: 'nuclear-labels', type: 'symbol', source: 'nuclear-plants', minzoom: 6,
@@ -97,6 +97,7 @@ export function useNuclearData({ mapRef, layersReadyRef, mapReady }: MapHandle, 
         notes:    p.notes,
         since:    p.since ?? null,
         color:    PLANT_STATUS_COLORS[p.status],
+        shape:     shapeFor(Object.keys(PLANT_STATUS_COLORS), p.status),
       },
     }))
     src.setData({ type: 'FeatureCollection', features })

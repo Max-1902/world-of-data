@@ -4,9 +4,10 @@ import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from '../../../services/por
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
-import { MARK_HALO } from './halo'
+import { MARK_ICON_LAYOUT, MARK_ICON_PAINT, addMarkShapes, iconSizeFor, shapeFor } from './markShapes'
 
 export function addPortLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
+  addMarkShapes(map)
   const { popupRef } = ctx
   // ── Ports GeoJSON source ────────────────────────────────────────────
   map.addSource('ports', {
@@ -14,14 +15,13 @@ export function addPortLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     data: { type: 'FeatureCollection', features: [] },
   })
   map.addLayer({
-    id: 'port-circles', type: 'circle', source: 'ports',
-    paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 3, 5, 5, 8, 7, 12, 10],
-      'circle-color': ['get', 'color'],
-      'circle-opacity': 0.85,
-      ...MARK_HALO,
-    },
-    layout: { visibility: 'none' },
+    id: 'port-circles', type: 'symbol', source: 'ports',
+    layout: {
+      visibility: 'none',
+      ...MARK_ICON_LAYOUT,
+      'icon-size': ['interpolate', ['linear'], ['zoom'], 2, iconSizeFor(3), 5, iconSizeFor(5), 8, iconSizeFor(7), 12, iconSizeFor(10)],
+    } as Record<string, unknown>,
+    paint: { ...MARK_ICON_PAINT } as Record<string, unknown>,
   })
   map.addLayer({
     id: 'port-labels', type: 'symbol', source: 'ports', minzoom: 5,
@@ -91,6 +91,7 @@ export function usePortData({ mapRef, layersReadyRef, mapReady }: MapHandle, { s
         type:        p.type,
         typeLabel:   PORT_TYPE_LABELS[p.type],
         color:       PORT_TYPE_COLORS[p.type],
+        shape:     shapeFor(Object.keys(PORT_TYPE_COLORS), p.type),
         topIndustry: p.topIndustry,
         portCalls:   p.activity?.portCalls ?? null,
         tradeMt:     p.activity?.tradeMt ?? null,

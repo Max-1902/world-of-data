@@ -30,7 +30,10 @@ export function addDisasterLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   map.addLayer({
     id: 'disasters-pins', type: 'circle', source: 'disasters',
     paint: {
-      'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 9, 6, 13],
+      // a Red alert is also a larger pin with a "!" after its type code, so Red and Orange differ by more than hue
+      'circle-radius': ['interpolate', ['linear'], ['zoom'],
+        2, ['case', ['==', ['get', 'alert'], 'Red'], 12, 9],
+        6, ['case', ['==', ['get', 'alert'], 'Red'], 17, 13]],
       'circle-color': ['get', 'color'],
       'circle-opacity': ['case', ['get', 'current'], 0.95, 0.45],
       'circle-stroke-width': 2,
@@ -43,7 +46,7 @@ export function addDisasterLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     id: 'disasters-labels', type: 'symbol', source: 'disasters',
     layout: {
       visibility: 'none',
-      'text-field': ['get', 'type'],
+      'text-field': ['case', ['==', ['get', 'alert'], 'Red'], ['concat', ['get', 'type'], '!'], ['get', 'type']],
       'text-size': ['interpolate', ['linear'], ['zoom'], 2, 8, 6, 10],
       'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-allow-overlap': true,

@@ -18,7 +18,6 @@ vi.mock('mapbox-gl', () => {
   }
   return { default: { Popup, Marker: class {} } }
 })
-vi.mock('./flightLayer', async (orig) => ({ ...(await orig<typeof import('./flightLayer')>()), addAirplaneImage: vi.fn() }))
 vi.mock('./vesselImages', () => ({ addVesselImages: vi.fn() }))
 
 import { buildFlightHTML } from './flightLayer'
