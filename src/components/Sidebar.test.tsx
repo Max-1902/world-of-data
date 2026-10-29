@@ -78,6 +78,46 @@ describe('Sidebar', () => {
   })
 })
 
+describe('Sidebar on a phone (drawer)', () => {
+  it('is a closed drawer by default, with no scrim', () => {
+    render(<Sidebar {...base} />)
+    expect(screen.getByRole('complementary', { name: 'Main navigation' }).className).not.toContain('mobile-open')
+    expect(screen.queryByRole('button', { name: 'Close menu' })).toBeNull()
+  })
+
+  it('opens with a scrim, still lists every destination (including More) and closes from the scrim', () => {
+    const onMobileClose = vi.fn()
+    render(<Sidebar {...base} mobileOpen onMobileClose={onMobileClose} />)
+    expect(screen.getByRole('complementary', { name: 'Main navigation' }).className).toContain('mobile-open')
+    fireEvent.click(screen.getByRole('button', { name: /More/ }))
+    for (const name of [/Risk monitor/, /Security & defence/, /Infrastructure & hazards/, /^News/]) expect(screen.getByRole('button', { name })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Close menu' }))
+    expect(onMobileClose).toHaveBeenCalledOnce()
+  })
+
+  it('closes on Escape, and ignores Escape while closed', () => {
+    const onMobileClose = vi.fn()
+    const { rerender } = render(<Sidebar {...base} onMobileClose={onMobileClose} />)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onMobileClose).not.toHaveBeenCalled()
+    rerender(<Sidebar {...base} mobileOpen onMobileClose={onMobileClose} />)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(onMobileClose).toHaveBeenCalledOnce()
+  })
+
+  it('closes after choosing a destination, but stays open on Explore so its tools show', () => {
+    const onMobileClose = vi.fn(), onHome = vi.fn()
+    render(<Sidebar {...base} mobileOpen onMobileClose={onMobileClose} onHome={onHome} />)
+    fireEvent.click(within(mainNav()).getByRole('button', { name: /Explore/ }))
+    expect(onMobileClose).not.toHaveBeenCalled()
+    fireEvent.click(within(mainNav()).getByRole('button', { name: /Countries/ }))
+    expect(onMobileClose).toHaveBeenCalledTimes(1)
+    fireEvent.click(within(mainNav()).getByRole('button', { name: /Outlook/ }))
+    expect(onHome).toHaveBeenCalledOnce()
+    expect(onMobileClose).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('navSection', () => {
   it('places every view under exactly one entry', () => {
     expect(navSection(true, 'markets')).toBe('outlook')

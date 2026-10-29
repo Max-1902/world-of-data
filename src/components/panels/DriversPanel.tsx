@@ -26,8 +26,8 @@ export default function DriversPanel() {
         </ol>
         An indicator with no data before 2010 (unemployment, Brent) cannot satisfy the first condition. Unemployment also fails 2010–2024 on its own: its pooled slope has a ratio below 1 (0.988) but beat AR(2) in only 45% of economies, p = 0.297.
       </div>
-      <div className="viz-table-wrap" style={{ maxHeight: 'none' }}>
-        <table className="viz-table">
+      <div className="viz-table-wrap" style={{ maxHeight: 'none' }} role="region" aria-label="Backtest results; scroll sideways for all columns" tabIndex={0}>
+        <table className="viz-table viz-table-wide">
           <thead><tr>
             <th scope="col">Indicator</th><th scope="col">Economies 1990–2009 / 2010–2024</th>
             <th scope="col">Error ratio 1990–2009, own / pooled</th><th scope="col">Error ratio 2010–2024, own / pooled</th>

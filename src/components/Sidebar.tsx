@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeftRight, Bookmark, Compass, ChevronDown, Database, Layers, MapPinned, Network, Newspaper, Radar, ShieldHalf, TrendingUp, Globe2, Activity, Telescope } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { PanelGroup } from '../panels/types'
@@ -16,6 +16,9 @@ interface Props {
   onFocusPanel?: (id: string) => void
   focusPanel?: { id: string; n: number } | null
   libraryOpen?: boolean
+  /** phones only: the sidebar is an off-canvas drawer, opened from the top bar's menu button */
+  mobileOpen?: boolean
+  onMobileClose?: () => void
 }
 
 /** The six entries of the main navigation, plus the four context workspaces folded under "More". */
@@ -54,19 +57,30 @@ function NavItem({ icon: Icon, label, active, onClick, title, sub = false }: {
   return <button className={`new-nav-item${sub ? ' sub' : ''}${active ? ' active' : ''}`} onClick={onClick} aria-current={active ? 'page' : undefined} title={title}><Icon size={sub ? 14 : 17} strokeWidth={1.8} /><span>{label}</span></button>
 }
 
-export default function Sidebar({ activeGroup, onGroupChange, isHome = false, onHome = () => {}, isMap = false, onMap = () => {}, onOpenLibrary = () => {}, onFocusPanel = () => {}, focusPanel, libraryOpen = false }: Props) {
+export default function Sidebar({ activeGroup, onGroupChange, isHome = false, onHome = () => {}, isMap = false, onMap = () => {}, onOpenLibrary = () => {}, onFocusPanel = () => {}, focusPanel, libraryOpen = false, mobileOpen = false, onMobileClose = () => {} }: Props) {
   const [moreOpen, setMoreOpen] = useState(false)
-  const go = (group: PanelGroup, panel?: string) => {
+  // choosing a destination closes the phone drawer; on wider screens there is no drawer state to close
+  const then = (fn: () => void) => () => { fn(); onMobileClose() }
+  const go = (group: PanelGroup, panel?: string, keepOpen = false) => () => {
     onGroupChange(group)
     if (panel) onFocusPanel(panel)
+    if (!keepOpen) onMobileClose()
   }
+  useEffect(() => {
+    if (!mobileOpen) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onMobileClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileOpen, onMobileClose])
   const current = navSection(isHome, activeGroup, focusPanel?.id, isMap)
   const inMore = MORE.some(m => m.section === current)
   // never hide the entry you are standing on
   const showMore = moreOpen || inMore
 
   return (
-    <aside className="sidebar expanded new-sidebar" aria-label="Main navigation">
+    <>
+    {mobileOpen && <button className="new-nav-scrim" onClick={onMobileClose} aria-label="Close menu" />}
+    <aside id="main-navigation" className={`sidebar expanded new-sidebar${mobileOpen ? ' mobile-open' : ''}`} aria-label="Main navigation">
       <div className="new-brand">
         <div className="new-brand-mark"><Globe2 size={20} strokeWidth={1.8} /></div>
         <div><strong>World of Data</strong><small>Real data, a clearer world.</small></div>
@@ -74,20 +88,20 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
 
       {/* Ordered by what the dashboard is for: the outlook, the forecasts, what drives them, then the countries and the raw data */}
       <nav className="new-primary-nav" aria-label="Main">
-        <NavItem icon={Compass} label="Outlook" title="The world's economic outlook at a glance" active={current === 'outlook'} onClick={onHome} />
-        <NavItem icon={TrendingUp} label="Forecasts" title="GDP-growth forecast and this quarter's nowcast, backtested, beside the IMF's" active={current === 'forecasts'} onClick={() => go('analysis', 'predictions')} />
-        <NavItem icon={Network} label="Drivers" title="Which indicators improve the GDP forecast (tested out of sample), and the trade links a shock travels along" active={current === 'drivers'} onClick={() => go('markets', 'drivers')} />
-        <NavItem icon={Globe2} label="Countries" title="One country's full record" active={current === 'countries'} onClick={() => go('country', 'countries')} />
-        <NavItem icon={MapPinned} label="Map" title="Only the map: click a country for its overview, a city or region for its local outlook" active={current === 'map'} onClick={onMap} />
-        <NavItem icon={Telescope} label="Explore" title="Indicators, country comparison and every dataset" active={current === 'explore'} onClick={() => go('markets', 'economy')} />
+        <NavItem icon={Compass} label="Outlook" title="The world's economic outlook at a glance" active={current === 'outlook'} onClick={then(onHome)} />
+        <NavItem icon={TrendingUp} label="Forecasts" title="GDP-growth forecast and this quarter's nowcast, backtested, beside the IMF's" active={current === 'forecasts'} onClick={go('analysis', 'predictions')} />
+        <NavItem icon={Network} label="Drivers" title="Which indicators improve the GDP forecast (tested out of sample), and the trade links a shock travels along" active={current === 'drivers'} onClick={go('markets', 'drivers')} />
+        <NavItem icon={Globe2} label="Countries" title="One country's full record" active={current === 'countries'} onClick={go('country', 'countries')} />
+        <NavItem icon={MapPinned} label="Map" title="Only the map: click a country for its overview, a city or region for its local outlook" active={current === 'map'} onClick={then(onMap)} />
+        <NavItem icon={Telescope} label="Explore" title="Indicators, country comparison and every dataset" active={current === 'explore'} onClick={go('markets', 'economy', true)} />
         {current === 'explore' && (
           <div className="new-nav-subgroup">
-            <NavItem sub icon={Activity} label="Indicators" active={activeGroup === 'markets'} onClick={() => go('markets', 'economy')} />
-            <NavItem sub icon={ArrowLeftRight} label="Analysis" active={activeGroup === 'analysis'} onClick={() => go('analysis', 'countryAnalytics')} />
-            <NavItem sub icon={Database} label="Datasets" title="Every panel, searchable" active={libraryOpen} onClick={onOpenLibrary} />
+            <NavItem sub icon={Activity} label="Indicators" active={activeGroup === 'markets'} onClick={go('markets', 'economy')} />
+            <NavItem sub icon={ArrowLeftRight} label="Analysis" active={activeGroup === 'analysis'} onClick={go('analysis', 'countryAnalytics')} />
+            <NavItem sub icon={Database} label="Datasets" title="Every panel, searchable" active={libraryOpen} onClick={then(onOpenLibrary)} />
           </div>
         )}
-        <NavItem icon={Bookmark} label="Saved" title="Countries you watch, with alerts" active={current === 'saved'} onClick={() => go('overview', 'watchlist')} />
+        <NavItem icon={Bookmark} label="Saved" title="Countries you watch, with alerts" active={current === 'saved'} onClick={go('overview', 'watchlist')} />
       </nav>
 
       <div className="new-sidebar-more">
@@ -96,10 +110,11 @@ export default function Sidebar({ activeGroup, onGroupChange, isHome = false, on
         </button>
         {showMore && <div className="new-more-list">
           {MORE.map(({ section, label, icon, group }) => (
-            <NavItem sub key={section} icon={icon} label={label} active={current === section} onClick={() => go(group)} />
+            <NavItem sub key={section} icon={icon} label={label} active={current === section} onClick={go(group)} />
           ))}
         </div>}
       </div>
     </aside>
+    </>
   )
 }

@@ -108,6 +108,8 @@ function loadGroup(): PanelGroup {
 }
 
 export default function App() {
+  const [navOpen, setNavOpen] = useState(false)
+  const closeNav = useCallback(() => setNavOpen(false), [])
   const [isHome, setIsHome] = useState(() => {
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ''))
     return params.get('home') === '1' || (!readHash().group && !readHash().country)
@@ -436,6 +438,8 @@ export default function App() {
           onReloadAll={handleReloadAll}
           reloading={reloading}
           onHome={goHome}
+          onMenu={() => setNavOpen(v => !v)}
+          menuOpen={navOpen}
         />
 
         <div className="dashboard-shell">
@@ -450,6 +454,8 @@ export default function App() {
             onFocusPanel={focusInDock}
             focusPanel={focusPanel}
             libraryOpen={libraryOpen}
+            mobileOpen={navOpen}
+            onMobileClose={closeNav}
           />
 
           {isHome ? (
