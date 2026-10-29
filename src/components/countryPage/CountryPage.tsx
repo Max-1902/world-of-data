@@ -106,17 +106,19 @@ export default function CountryPage({ country, crises, conflictFeed, flights, ar
         {tab === 'economy' && (<>
           {econLoading ? <StatusLabel status="loading">World Bank data for {country}…</StatusLabel>
             : !econData ? <StatusLabel status="empty">The World Bank has no economic data for {country}.</StatusLabel>
-            : Object.entries(groupIndicators(econData.indicators)).map(([group, inds]) => (
-                <div key={group}>
-                  <SectionLabel>{group}</SectionLabel>
-                  {inds.filter(i => i.value != null).map(i => {
-                    const fresh = i.year ? freshness(i.year, 'macro', iso2) : null
-                    const growth = i.id.includes('.ZG') || i.id === 'SP.POP.GROW'
-                    return <MetricRow key={i.id} label={i.label} value={formatEconValue(i.id, i.value!)} year={i.year}
-                      tone={growth ? (i.value! >= 0 ? 'up' : 'down') : 'neutral'} stale={fresh?.stale} staleLabel={fresh?.label ?? undefined} />
-                  })}
-                </div>
-              ))}
+            : <div className="cp-cols">
+                {Object.entries(groupIndicators(econData.indicators)).map(([group, inds]) => (
+                  <div key={group} className="cp-sec">
+                    <SectionLabel>{group}</SectionLabel>
+                    {inds.filter(i => i.value != null).map(i => {
+                      const fresh = i.year ? freshness(i.year, 'macro', iso2) : null
+                      const growth = i.id.includes('.ZG') || i.id === 'SP.POP.GROW'
+                      return <MetricRow key={i.id} label={i.label} value={formatEconValue(i.id, i.value!)} year={i.year}
+                        tone={growth ? (i.value! >= 0 ? 'up' : 'down') : 'neutral'} stale={fresh?.stale} staleLabel={fresh?.label ?? undefined} />
+                    })}
+                  </div>
+                ))}
+              </div>}
           {/* the overview above stays; everything else we hold on this economy follows it */}
           <SectionLabel>Full record</SectionLabel>
           {iso2
@@ -125,20 +127,28 @@ export default function CountryPage({ country, crises, conflictFeed, flights, ar
         </>)}
         {tab === 'forecasts' && <ForecastsTab country={country} iso2={iso2} onOpenPanel={onOpenPanel} />}
         {tab === 'trade' && <>
-          <TradeTab country={country} iso2={iso2} onOpenPanel={onOpenPanel} drawer={<Suspense fallback={null}><CountryDrawer {...drawerProps} only="trade" /></Suspense>} />
-          <TradeMore country={country} iso2={iso2} />
+          <TradeTab country={country} iso2={iso2} onOpenPanel={onOpenPanel} />
+          {/* the drawer's sections and the rest of what we hold flow together across the width */}
+          <div className="cp-cols">
+            <Suspense fallback={null}><CountryDrawer {...drawerProps} only="trade" /></Suspense>
+            <TradeMore country={country} iso2={iso2} />
+          </div>
         </>}
         {(tab === 'risk' || tab === 'infrastructure' || tab === 'activity') && (
-          <Suspense fallback={<StatusLabel status="loading">{current.label}…</StatusLabel>}><CountryDrawer {...drawerProps} only={tab} /></Suspense>
+          <div className="cp-cols">
+            <Suspense fallback={<StatusLabel status="loading">{current.label}…</StatusLabel>}><CountryDrawer {...drawerProps} only={tab} /></Suspense>
+            {/* the overview above stays as it was; what else we hold on the country follows it */}
+            {tab === 'risk' && <RiskMore country={country} crises={crises} />}
+            {tab === 'infrastructure' && <InfraMore country={country} iso2={iso2} />}
+            {tab === 'activity' && <ActivityMore country={country} iso2={iso2} />}
+          </div>
         )}
-        {/* the overview above stays as it was; what else we hold on the country follows it */}
-        {tab === 'risk' && <RiskMore country={country} crises={crises} />}
-        {tab === 'infrastructure' && <InfraMore country={country} iso2={iso2} />}
-        {tab === 'activity' && <ActivityMore country={country} iso2={iso2} />}
-        {tab === 'news' && <>
-          <CountryBrief country={country} crises={crises} articles={articles} earthquakes={earthquakes} trend={trend} />
-          <NewsMore country={country} articles={articles} />
-        </>}
+        {tab === 'news' && (
+          <div className="cp-cols">
+            <div className="cp-sec cp-sec-flow"><CountryBrief country={country} crises={crises} articles={articles} earthquakes={earthquakes} trend={trend} /></div>
+            <NewsMore country={country} articles={articles} />
+          </div>
+        )}
       </div>
 
       <PanelSources sources={current.sources} />

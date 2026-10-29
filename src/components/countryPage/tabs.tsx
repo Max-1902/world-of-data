@@ -100,7 +100,7 @@ export function ForecastsTab({ country, iso2, onOpenPanel }: { country: string; 
 const GDP_ID = 'NY.GDP.MKTP.CD'
 
 /** This country's own exposure figures from the Shock Exposure engine, then the trade profile sections. */
-export function TradeTab({ country, iso2, onOpenPanel, drawer }: { country: string; iso2: string | null; onOpenPanel: (id: string) => void; drawer: ReactNode }) {
+export function TradeTab({ country, iso2, onOpenPanel }: { country: string; iso2: string | null; onOpenPanel: (id: string) => void }) {
   const profile = iso2 ? TRADE_PROFILES.find(p => p.iso2 === iso2) ?? null : null
   const gdpSlice = useSyncExternalStore(countryAnalytics.subscribe, () => sliceOf(countryAnalytics.getState(), GDP_ID))
   useEffect(() => { if (profile) void countryAnalytics.load(GDP_ID) }, [profile])
@@ -138,7 +138,6 @@ export function TradeTab({ country, iso2, onOpenPanel, drawer }: { country: stri
           </div>
         )}
       <GoButton onClick={() => onOpenPanel('exposure')}>Trace a shock to {country} step by step in Shock Exposure</GoButton>
-      {drawer}
     </>
   )
 }

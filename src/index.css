@@ -1771,9 +1771,16 @@ button.dl-rank:hover { background: var(--surface2); }
 .cp-tabs button { padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--text2); background: none; border: none; border-radius: var(--r-sm); cursor: pointer; }
 .cp-tabs button:hover { color: var(--text1); background: var(--surface2); }
 .cp-tabs button.on { color: var(--accent); background: var(--accent-soft); }
-.cp-body { flex: 1; max-width: 980px; padding-bottom: 8px; }
-.cp-body .viz-kpis { margin-bottom: 8px; }
-.cp-body .dl-row { max-width: 640px; }
+.cp-body { flex: 1; min-width: 0; padding-bottom: 8px; }
+/* the tab uses the whole width: KPI cards sit side by side, and the sections below flow into as many columns as fit */
+.cp-body .viz-kpis { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-bottom: 8px; }
+.cp-cols { column-width: 400px; column-gap: 32px; }
+/* wrappers inside a column flow add no box of their own, so their sections flow with their neighbours */
+.cp-cols .country-tab-body, .cp-cols .cp-cols { display: contents; }
+.cp-sec, .cp-body .cd-section { break-inside: avoid; margin-bottom: 14px; }
+.cp-sec.cp-sec-flow { break-inside: auto; }
+.cp-sec .dl-section, .cp-body .cd-section-h { break-after: avoid; }
+.cp-sec > .dl-section:first-child, .cp-body .cd-section-h { margin-top: 0; }
 .cp-go { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 12px; padding: 6px 12px; font-size: 11.5px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border: 1px solid var(--accent); border-radius: var(--r-pill); cursor: pointer; }
 .cp-mapcta { align-self: flex-start; margin: 0 0 16px; padding: 0; font-size: 11.5px; color: var(--text3); background: none; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
 .cp-mapcta:hover { color: var(--accent); }
@@ -1789,13 +1796,14 @@ button.dl-rank:hover { background: var(--surface2); }
   .fh-hero p { max-width: none; }
   .fh-pick { max-width: none; }
 }
-.countries-landing { display: flex; flex-direction: column; gap: 10px; max-width: 640px; width: 100%; margin: 0 auto; padding: 28px 16px; overflow-y: auto; }
+.countries-landing { display: flex; flex-direction: column; gap: 10px; width: 100%; padding: 24px 22px; overflow-y: auto; }
 .countries-landing > h2 { color: var(--text1); font-size: 18px; font-weight: 650; }
 .countries-landing .country-search-box { position: relative; }
+.region-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 0 32px; align-items: start; }
 .region-browser details { border-top: 1px solid var(--border); padding: 6px 0; }
 .region-browser summary { cursor: pointer; color: var(--text1); font-size: 12px; font-weight: 600; }
 .region-browser summary span { color: var(--text3); font-weight: 400; margin-left: 6px; }
-.region-browser details[open] .viz-chips { margin-top: 8px; }
+.region-browser details[open] .viz-chips { margin: 8px 0 6px; }
 .region-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin: 6px 0 10px; }
 .region-filters label { display: flex; flex-direction: column; gap: 3px; color: var(--text3); font-size: 11px; flex: 1 1 150px; }
 .region-filters input, .region-filters select { background: var(--surface2); color: var(--text1); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 6px 8px; font-size: 12px; }

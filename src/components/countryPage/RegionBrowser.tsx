@@ -58,14 +58,16 @@ export default function RegionBrowser({ onPick }: { onPick: (country: string) =>
       </div>
       <div className="sr-only" role="status">{filtering ? `${shown.length} economies match` : ''}</div>
       {filtering && !shown.length && <div className="viz-note">No economy matches these filters.</div>}
+      <div className="region-list">
       {regions.map(([name, list]) => (
-        <details key={name} open={filtering || undefined}>
+        <details key={name} open>
           <summary>{name} <span>{list.length}</span></summary>
           <div className="viz-chips">
             {list.map(c => <button key={c.iso3 || c.iso2} className="cy-btn" title={c.incomeLevel || undefined} onClick={() => onPick(c.name)}>{c.name}</button>)}
           </div>
         </details>
       ))}
+      </div>
       <div className="viz-foot">Regions and income groups: World Bank country classification.</div>
     </section>
   )
