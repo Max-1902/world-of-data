@@ -3,6 +3,8 @@ import { ArrowRight, BarChart3, BookOpen, Globe2, Map, Table, Users, Wind } from
 import { fetchGlobalTrend, type GlobalTrendPoint } from '../services/globalTrends'
 import { selectForMap } from '../services/countryAnalytics'
 import { ForecastHome } from './home/ForecastHome'
+import OutlookNav from './home/OutlookNav'
+import HomeTier from './home/HomeTier'
 
 interface Props {
   map: ReactNode
@@ -60,9 +62,11 @@ export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenLibra
   return (
     <main className="home-scroll">
       <div className="home-content">
+        <OutlookNav />
         <ForecastHome onOpenPanel={onOpenPanel} />
 
-        <section className="home-section world-section">
+        <HomeTier label="Context" note="The wider picture. Not forecast evidence." />
+        <section id="outlook-map" className="home-section world-section">
           <div className="home-section-heading map-heading"><div><span className="section-kicker">COUNTRIES ON THE MAP</span><h2>Compare countries</h2><p>Colour the map by an indicator to see where a country sits. The map supports the forecast; it is not the product.</p></div><div className="map-heading-actions"><span className="map-period">Latest reported</span><button className="text-link" onClick={onOpenMap}>Full map <ArrowRight size={14} /></button></div></div>
           <div className="indicator-tabs" role="group" aria-label="Map indicator">
             {INDICATORS.map(indicator => <button key={indicator.id} className={selectedIndicator === indicator.id ? 'selected' : ''} onClick={() => { setSelectedIndicator(indicator.id); onColorCountries(indicator.id) }}>{indicator.label}</button>)}
@@ -79,14 +83,14 @@ export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenLibra
           </div>
         </section>
 
-        <section className="home-section trend-section">
+        <section id="outlook-world" className="home-section trend-section">
           <div className="home-section-heading"><div><span className="section-kicker">GLOBAL CONTEXT</span><h2>The world so far</h2></div><button className="text-link" onClick={() => onOpenPanel('predictions')}>Forecasts <ArrowRight size={14} /></button></div>
           <div className="trend-grid">
             {GLOBAL_TRENDS.map(trend => <GlobalTrendCard key={trend.id} trend={trend} points={globalTrend[trend.id]} onClick={() => { selectForMap(trend.indicator); onOpenPanel('countryAnalytics') }} />)}
           </div>
           <div className="home-footnote">World Bank World aggregate · annual observations · each card shows its latest reported year. Country-level maps use each country’s latest available year.</div>
         </section>
-        <section className="home-section topics-section">
+        <section id="outlook-browse" className="home-section topics-section">
           <div className="home-section-heading"><div><span className="section-kicker">EXPLORE</span><h2>Browse the data behind the forecast</h2><p>Indicators by theme. Each opens the panel with its sources.</p></div><button className="text-link" onClick={onOpenLibrary}>All datasets <ArrowRight size={14} /></button></div>
           <div className="topic-grid">
             {TOPICS.map(({ title, subtitle, icon: Icon, tone, panel }) => (
