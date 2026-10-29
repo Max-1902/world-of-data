@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { lastAcledPoll } from '../../services/crises'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare, ChevronDown, Maximize2, ExternalLink } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight, type ConflictFeed } from '../../types'
-import { buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption } from '../../services/openrouter'
+import { buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, fetchModelPolicy, isModelEnabled, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption, type ModelPolicy } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
@@ -126,13 +126,20 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
   const [model, setModel]         = useState(DEFAULT_MODEL)
   // Full OpenRouter catalogue (Claude, ChatGPT, …); falls back to the built-in free list if it can't load.
   const [allModels, setAllModels] = useState<ModelOption[] | null>(null)
-  useEffect(() => { fetchAllModels().then(setAllModels).catch(() => {}) }, [])
+  // What this deployment's proxy will send upstream; models outside it would be rejected, so they aren't offered.
+  const [policy, setPolicy] = useState<ModelPolicy | null>(null)
+  useEffect(() => {
+    fetchAllModels().then(setAllModels).catch(() => {})
+    fetchModelPolicy().then(setPolicy)
+  }, [])
+  const enabledModels = useMemo(() => allModels && allModels.filter(m => isModelEnabled(m.id, policy)), [allModels, policy])
   const modelGroups = useMemo(() => {
-    if (!allModels) return null
-    // A model from a loaded session that has since left the catalogue stays selectable.
-    const known = allModels.some(m => m.id === model) ? allModels : [{ id: model, label: `${model} (unlisted)`, ctx: '', priceIn: 0, priceOut: 0, free: false, created: 0 }, ...allModels]
+    if (!enabledModels) return null
+    // A model from a loaded session that has since left the catalogue (or the allowance) stays selectable.
+    const known = enabledModels.some(m => m.id === model) ? enabledModels : [{ id: model, label: `${model} (unlisted)`, ctx: '', priceIn: 0, priceOut: 0, free: false, created: 0 }, ...enabledModels]
     return groupModels(known)
-  }, [allModels, model])
+  }, [enabledModels, model])
+  const hiddenModels = allModels && enabledModels ? allModels.length - enabledModels.length : 0
   const [sessionId, setSessionId] = useState(() => newSessionId())
   const [showHistory, setShowHistory] = useState(false)
   const [pastSessions, setPastSessions] = useState<ChatSession[]>([])
@@ -472,7 +479,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
         <select
           className="ai-model-select"
           aria-label="Analysis model"
-          title="Choose analysis model — paid models bill your OpenRouter account"
+          title={`Choose analysis model — paid models bill your OpenRouter account${hiddenModels ? `. ${hiddenModels} more models are hidden because this deployment only enables free models and the ones in OPENROUTER_ALLOWED_MODELS.` : ''}`}
           value={model}
           onChange={e => setModel(e.target.value)}
           disabled={streaming}

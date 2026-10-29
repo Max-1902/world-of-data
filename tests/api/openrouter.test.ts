@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { beforeEach } from 'vitest'
-import handler, { config, isModelAllowed, resetRateLimit, RATE_LIMIT, MAX_BODY_BYTES, MAX_TOKENS_CAP } from '../../api/openrouter/chat/completions'
+import handler, { config, isModelAllowed, modelPolicy, resetRateLimit, RATE_LIMIT, MAX_BODY_BYTES, MAX_TOKENS_CAP } from '../../api/openrouter/chat/completions'
+import allowedHandler, { config as allowedConfig } from '../../api/openrouter/allowed'
 import modelsHandler, { config as modelsConfig } from '../../api/openrouter/models'
 
 function upstreamStub(body: BodyInit | null = 'data: [DONE]\n\n', init: ResponseInit = {}) {
@@ -169,5 +170,24 @@ describe('openrouter models proxy', () => {
     const calls = fn.mock.calls as unknown as [string, RequestInit | undefined][]
     expect(calls[0][0]).toBe('https://openrouter.ai/api/v1/models')
     expect(JSON.stringify(calls[0][1] ?? {})).not.toContain('sk-server')
+  })
+})
+
+describe('openrouter allowed-models endpoint', () => {
+  it('reports the extra allowance on top of :free models, and never the key', async () => {
+    expect(allowedConfig).toEqual({ runtime: 'edge' })
+    vi.stubEnv('OPENROUTER_KEY', 'sk-server')
+    vi.stubEnv('OPENROUTER_ALLOWED_MODELS', ' openai/gpt-y , anthropic/claude-x ')
+    const res = await allowedHandler()
+    const text = await res.text()
+    expect(JSON.parse(text)).toEqual({ all: false, extra: ['openai/gpt-y', 'anthropic/claude-x'] })
+    expect(text).not.toContain('sk-server')
+  })
+
+  it('reports * as all, and nothing extra when unset', async () => {
+    expect(modelPolicy('*')).toEqual({ all: true, extra: [] })
+    expect(modelPolicy('')).toEqual({ all: false, extra: [] })
+    expect(isModelAllowed('anthropic/claude-x', '*')).toBe(true)
+    expect(isModelAllowed('anthropic/claude-x', '')).toBe(false)
   })
 })

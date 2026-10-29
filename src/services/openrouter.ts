@@ -71,6 +71,25 @@ export async function fetchAllModels(): Promise<ModelOption[]> {
   return modelsCache
 }
 
+/** What the deployment's proxy accepts beyond `:free` models (see api/openrouter/allowed.ts). */
+export interface ModelPolicy { all: boolean; extra: string[] }
+
+/** The deployment's model allowance, or null when it can't be read (the picker then lists everything). */
+export async function fetchModelPolicy(): Promise<ModelPolicy | null> {
+  try {
+    const res = await fetch(`${BASE}/allowed`, { signal: AbortSignal.timeout(8000) })
+    if (!res.ok) return null
+    const json = await res.json()
+    if (typeof json?.all !== 'boolean' || !Array.isArray(json?.extra)) return null
+    return { all: json.all, extra: json.extra.filter((x: unknown): x is string => typeof x === 'string') }
+  } catch { return null }
+}
+
+/** Mirrors the proxy's rule: free (`:free`) models always, anything else only if the deployment allows it. */
+export function isModelEnabled(id: string, policy: ModelPolicy | null): boolean {
+  return !policy || policy.all || id.endsWith(':free') || policy.extra.includes(id)
+}
+
 const PROVIDER_ORDER = ['anthropic', 'openai']
 const PROVIDER_NAMES: Record<string, string> = {
   anthropic: 'Claude (Anthropic)', openai: 'ChatGPT / OpenAI', google: 'Google', 'meta-llama': 'Meta Llama',
