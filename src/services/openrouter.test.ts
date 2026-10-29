@@ -399,6 +399,32 @@ describe('model catalogue', () => {
   })
 })
 
+describe('model policy', () => {
+  it('reads the deployment allowance and mirrors the proxy rule', async () => {
+    vi.resetModules()
+    const mod = await import('./openrouter')
+    mockFetch(url => { expect(url).toBe('/api/openrouter/allowed'); return jsonResponse({ all: false, extra: ['openai/gpt-y', 7] }) })
+    const policy = await mod.fetchModelPolicy()
+    expect(policy).toEqual({ all: false, extra: ['openai/gpt-y'] })
+    expect(mod.isModelEnabled('qwen/q:free', policy)).toBe(true)
+    expect(mod.isModelEnabled('openai/gpt-y', policy)).toBe(true)
+    expect(mod.isModelEnabled('anthropic/claude-x', policy)).toBe(false)
+    expect(mod.isModelEnabled('anthropic/claude-x', { all: true, extra: [] })).toBe(true)
+  })
+
+  it('treats an unreadable policy as unknown and offers everything', async () => {
+    vi.resetModules()
+    const mod = await import('./openrouter')
+    mockFetch(() => jsonResponse({}, { status: 500 }))
+    expect(await mod.fetchModelPolicy()).toBeNull()
+    mockFetch(() => jsonResponse({ all: 'yes' }))
+    expect(await mod.fetchModelPolicy()).toBeNull()
+    mockFetch(() => { throw new Error('offline') })
+    expect(await mod.fetchModelPolicy()).toBeNull()
+    expect(mod.isModelEnabled('anthropic/claude-x', null)).toBe(true)
+  })
+})
+
 describe('describeAIError', () => {
   it.each([
     [402, '{"error":{"message":"Insufficient credits"}}', /no credits.*free model/],

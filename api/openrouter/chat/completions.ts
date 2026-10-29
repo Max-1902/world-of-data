@@ -22,11 +22,16 @@ export const RATE_WINDOW_MS   = 60_000
 
 const ROLES = new Set(['system', 'user', 'assistant'])
 
+/** The deployment's extra allowance on top of `:free` models: `all` for `*`, else the listed ids. */
+export function modelPolicy(allowList = process.env.OPENROUTER_ALLOWED_MODELS ?? ''): { all: boolean; extra: string[] } {
+  const items = allowList.split(',').map(s => s.trim()).filter(Boolean)
+  return { all: items.includes('*'), extra: items.filter(s => s !== '*') }
+}
+
 /** True when this deployment may send `model` upstream with its key. */
 export function isModelAllowed(model: string, allowList = process.env.OPENROUTER_ALLOWED_MODELS ?? ''): boolean {
-  const extra = allowList.split(',').map(s => s.trim()).filter(Boolean)
-  if (extra.includes('*')) return true
-  return model.endsWith(':free') || extra.includes(model)
+  const { all, extra } = modelPolicy(allowList)
+  return all || model.endsWith(':free') || extra.includes(model)
 }
 
 // Best-effort, per-isolate limiter: edge instances don't share memory, so this slows a

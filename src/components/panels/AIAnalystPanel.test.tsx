@@ -8,7 +8,13 @@ const runAgent = vi.fn<(o: AgentOptions) => Promise<AgentRun>>()
 vi.mock('../../services/aiAgent', async orig => ({ ...(await orig<typeof import('../../services/aiAgent')>()), runAgent: (o: AgentOptions) => runAgent(o) }))
 vi.mock('../../services/stocks', async orig => ({ ...(await orig<typeof import('../../services/stocks')>()), fetchMultipleQuotes: async () => [] }))
 vi.mock('../../hooks/useCountryAnalytics', () => ({ useCountryAnalytics: () => ({ analysis: null }) }))
-vi.mock('../../services/openrouter', async orig => ({ ...(await orig<typeof import('../../services/openrouter')>()), fetchAllModels: () => Promise.reject(new Error('offline')) }))
+const catalogue = vi.fn<() => Promise<unknown[]>>(() => Promise.reject(new Error('offline')))
+const modelPolicy = vi.fn<() => Promise<{ all: boolean; extra: string[] } | null>>(() => Promise.resolve(null))
+vi.mock('../../services/openrouter', async orig => ({
+  ...(await orig<typeof import('../../services/openrouter')>()),
+  fetchAllModels: () => catalogue(),
+  fetchModelPolicy: () => modelPolicy(),
+}))
 
 const { AIAnalystPanel } = await import('./AIAnalystPanel')
 const { setAnalystDraft } = await import('../../utils/analystDraft')
@@ -19,7 +25,36 @@ const result: ToolResult = {
   chart: { kind: 'rank', unit: 'events', items: [{ label: 'Sudan', value: 2, text: '2' }, { label: 'Chad', value: 1, text: '1' }] },
 }
 
-beforeEach(() => { runAgent.mockReset(); localStorage.clear() })
+beforeEach(() => {
+  runAgent.mockReset(); localStorage.clear()
+  catalogue.mockImplementation(() => Promise.reject(new Error('offline')))
+  modelPolicy.mockImplementation(() => Promise.resolve(null))
+})
+
+describe('AIAnalystPanel model picker', () => {
+  const m = (id: string, free = false) => ({ id, label: id, ctx: '8k', priceIn: free ? 0 : 3, priceOut: free ? 0 : 15, free, created: 1 })
+  const offered = () => screen.getAllByRole('option').map(o => (o as HTMLOptionElement).value)
+
+  it('offers only the models this deployment will accept', async () => {
+    catalogue.mockResolvedValue([m('anthropic/claude-x'), m('openai/gpt-y'), m('qwen/q:free', true)])
+    modelPolicy.mockResolvedValue({ all: false, extra: ['openai/gpt-y'] })
+    render(<AIAnalystPanel crises={[]} flights={[]} />)
+    await vi.waitFor(() => expect(offered()).toContain('openai/gpt-y'))
+    expect(offered()).toEqual(expect.arrayContaining(['openai/gpt-y', 'qwen/q:free']))
+    expect(offered()).not.toContain('anthropic/claude-x')
+  })
+
+  it('offers everything when every model is allowed, or when the allowance cannot be read', async () => {
+    catalogue.mockResolvedValue([m('anthropic/claude-x'), m('qwen/q:free', true)])
+    modelPolicy.mockResolvedValue({ all: true, extra: [] })
+    const first = render(<AIAnalystPanel crises={[]} flights={[]} />)
+    await vi.waitFor(() => expect(offered()).toContain('anthropic/claude-x'))
+    first.unmount()
+    modelPolicy.mockResolvedValue(null)
+    render(<AIAnalystPanel crises={[]} flights={[]} />)
+    await vi.waitFor(() => expect(offered()).toContain('anthropic/claude-x'))
+  })
+})
 
 describe('AIAnalystPanel', () => {
   it('investigates with tools, shows the trail, and renders the answer with the chart it placed', async () => {
