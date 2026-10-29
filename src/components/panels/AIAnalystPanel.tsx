@@ -19,6 +19,7 @@ import { AIMarkdown } from './aiAnalyst/AIMarkdown'
 import { AIChart } from './aiAnalyst/AIChart'
 import { InvestigationTrail } from './aiAnalyst/InvestigationTrail'
 import { useAnalystWindow } from './aiAnalyst/AnalystWindow'
+import { onAnalystDraft, takeAnalystDraft } from '../../utils/analystDraft'
 
 // ── Watchlist card — rule-based trajectory forecast, rendered inside AIAnalystPanel ──
 function WatchlistCard({ entry, onExplain, disabled = false }: { entry: TrajectoryEntry; onExplain: () => void; disabled?: boolean }) {
@@ -111,6 +112,13 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
   panelState?: PanelState
 }) {
   const [input, setInput]         = useState('')
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  // a question handed over by "Ask the analyst" elsewhere: shown for the reader to edit, never sent for them
+  useEffect(() => {
+    const take = () => { const d = takeAnalystDraft(); if (d) { setInput(d); inputRef.current?.focus() } }
+    take()
+    return onAnalystDraft(take)
+  }, [])
   const [streaming, setStreaming] = useState(false)
   const [turns, setTurns]         = useState<ChatTurn[]>([])
   const [live, setLive]           = useState<LiveTurn | null>(null)
@@ -695,6 +703,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
       {/* Input */}
       <div style={{ padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-end', flexShrink: 0 }}>
         <textarea
+          ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKey}

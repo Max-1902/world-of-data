@@ -1109,7 +1109,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .text-link::before, .text-link::after,
 .dashboard button:focus-visible { outline-color: rgba(24,201,244,.85); }
 .new-topbar::after { display: none; }
-.new-menu-button, .new-nav-scrim { display: none; }
+.new-icon-button.new-menu-button, .new-nav-scrim { display: none; }
 .new-mobile-brand { display: flex; align-items: center; gap: 9px; justify-self: start; padding: 0; border: 0; background: transparent; color: var(--text1); text-align: left; cursor: pointer; }
 .new-mobile-brand .new-brand-mark { width: 32px; height: 32px; flex: 0 0 32px; }
 .new-mobile-brand strong { display: block; color: #f0f8ff; font-size: 13px; font-weight: 700; }
@@ -1163,6 +1163,9 @@ body.pw-dragging iframe { pointer-events: none; }
 }
 .new-icon-button:hover { border-color: #1d3a51; background: #0c1b29; color: var(--accent); }
 .new-icon-button:disabled { opacity: .5; cursor: wait; }
+.new-icon-button { position: relative; }
+.new-icon-button.active { color: #36d6ff; border-color: rgba(26,151,230,.3); background: rgba(0,130,255,.16); }
+.new-icon-badge { position: absolute; top: 1px; right: 0; min-width: 15px; height: 15px; padding: 0 4px; display: grid; place-items: center; border-radius: 999px; background: var(--red); color: #fff; font-size: 9px; font-weight: 700; line-height: 1; }
 .new-avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; color: #eaf7ff; background: linear-gradient(145deg, #1d6ca0, #163d63); font-size: 12px; font-weight: 700; }
 .dashboard-shell { display: flex; flex: 1 1 0; min-height: 0; overflow: hidden; }
 .new-sidebar {
@@ -1226,6 +1229,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .home-hero h1 em { color: #18cef5; font-style: normal; text-shadow: 0 0 30px rgba(24,206,245,.17); }
 .home-hero p { max-width: 390px; color: #a8bfd0; font-size: 13px; line-height: 1.65; }
 .home-primary-cta { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 11px 16px; color: #03121c; border: 0; border-radius: 999px; background: linear-gradient(110deg,#12bbfa,#28dbf2); box-shadow: 0 8px 24px rgba(0,177,244,.19); font-size: 11px; font-weight: 750; cursor: pointer; }
+.fh-ask { display: flex; width: fit-content; margin-top: 10px; }
 .home-primary-cta:hover { filter: brightness(1.11); transform: translateY(-1px); }
 
 .home-section { margin-top: 27px; }
@@ -1350,7 +1354,7 @@ body.pw-dragging iframe { pointer-events: none; }
   .new-header-actions .source-health, .new-header-actions .cy-btn { display: none; }
   /* the sidebar becomes an off-canvas drawer, opened from the menu button, with full labels */
   .new-topbar { grid-template-columns: auto minmax(0,1fr) auto; gap: 8px; }
-  .new-menu-button { grid-column: 1; grid-row: 1; display: grid; width: 38px; height: 38px; }
+  .new-icon-button.new-menu-button { grid-column: 1; grid-row: 1; display: grid; width: 38px; height: 38px; }
   .new-mobile-brand { display: none; } /* Outlook in the drawer is home; the room goes to search */
   .new-topbar > .new-search-shell { grid-column: 2; grid-row: 1; margin-left: 0; }
   .new-search-shell .search-wrap > button { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

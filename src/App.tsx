@@ -17,7 +17,7 @@ import { useWatchEvaluator } from './hooks/useWatchlist'
 import AlertToasts from './components/AlertToasts'
 import MapView      from './components/Map/MapView'
 import TopBar       from './components/TopBar'
-import Sidebar      from './components/Sidebar'
+import Sidebar, { navSection } from './components/Sidebar'
 import { DEFAULT_VIEW, viewOf, type DockView } from './panels/destinations'
 import PanelDock    from './components/PanelDock/PanelDock'
 import WindowLayer from './components/Windows/WindowLayer'
@@ -37,6 +37,8 @@ import { selectForMap } from './services/countryAnalytics'
 import { summarizeKeyEvents } from './utils/keyEvents'
 import { useDisasterAlerts } from './hooks/useDisasterAlerts'
 import { OpenMapContext } from './components/OpenMapContext'
+import { AskAnalystContext } from './components/AskAnalyst'
+import { setAnalystDraft } from './utils/analystDraft'
 import { GROUP_ORDER, PANEL_MAP, layersForGroup } from './panels/registry'
 import { decodeHash, encodeHash, enabledLayers, isViewMode, layersToPanelState, type DecodedState } from './utils/urlState'
 
@@ -184,6 +186,7 @@ export default function App() {
     if (windows.ids.has(id)) windows.actions.open(id)
     else focusInDock(id)
   }, [windows.ids, windows.actions, focusInDock])
+  const askAnalyst = useCallback((draft: string) => { setAnalystDraft(draft); openPanel('analyst') }, [openPanel])
   const showInDock = useCallback((id: string) => {
     windows.actions.close(id)
     focusInDock(id)
@@ -423,6 +426,7 @@ export default function App() {
 
   return (
     <OpenMapContext.Provider value={openMap}>
+    <AskAnalystContext.Provider value={askAnalyst}>
     <div className="dashboard">
       <AnalystWindowProvider panelProps={cornerProps}>
         <TopBar
@@ -440,6 +444,7 @@ export default function App() {
           onHome={goHome}
           onMenu={() => setNavOpen(v => !v)}
           menuOpen={navOpen}
+          savedActive={navSection(isHome, activeGroup, focusPanel?.id, isMapPage) === 'saved'}
         />
 
         <div className="dashboard-shell">
@@ -533,6 +538,7 @@ export default function App() {
         <WindowLayer layout={windows} panelProps={cornerProps} />
       </AnalystWindowProvider>
     </div>
+    </AskAnalystContext.Provider>
     </OpenMapContext.Provider>
   )
 }

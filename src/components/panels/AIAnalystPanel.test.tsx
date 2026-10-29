@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import type { AgentOptions, AgentRun } from '../../services/aiAgent'
 import type { ToolResult } from '../../services/aiTools'
 
@@ -11,6 +11,7 @@ vi.mock('../../hooks/useCountryAnalytics', () => ({ useCountryAnalytics: () => (
 vi.mock('../../services/openrouter', async orig => ({ ...(await orig<typeof import('../../services/openrouter')>()), fetchAllModels: () => Promise.reject(new Error('offline')) }))
 
 const { AIAnalystPanel } = await import('./AIAnalystPanel')
+const { setAnalystDraft } = await import('../../utils/analystDraft')
 
 const result: ToolResult = {
   id: 'R1', call: '[DATA:conflict]', tool: 'conflict', args: [], ok: true, at: Date.UTC(2026, 9, 16, 9),
@@ -66,5 +67,14 @@ describe('AIAnalystPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Daily brief' }))
     await screen.findByText(/The model returned an error: Provider returned error/)
     expect(screen.getByText('Investigated 1 dataset')).toBeTruthy()
+  })
+
+  it('shows a question handed over by "Ask the analyst" in the input, unsent — whether it arrived before or after mounting', () => {
+    setAnalystDraft('Explain the Brazil forecast')
+    render(<AIAnalystPanel crises={[]} flights={[]} />)
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Explain the Brazil forecast')
+    act(() => setAnalystDraft('Briefing on Chile'))
+    expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('Briefing on Chile')
+    expect(runAgent).not.toHaveBeenCalled()
   })
 })
