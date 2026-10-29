@@ -5,6 +5,7 @@ import { ALL_INFRA_POINTS, INFRA_COLORS, INFRA_LABELS, INFRA_ICONS, fetchAllPowe
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
+import { MARK_HALO } from './halo'
 
 export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -24,8 +25,7 @@ export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void 
       ],
       'circle-color':        ['get', 'color'],
       'circle-opacity':      0.85,
-      'circle-stroke-width': 0.6,
-      'circle-stroke-color': 'rgba(0,0,0,0.45)',
+      ...MARK_HALO,
     },
     // Larger plants draw on top of small ones
     layout: { visibility: 'none', 'circle-sort-key': ['coalesce', ['get', 'mw'], 800] },

@@ -5,14 +5,7 @@ import { MARKET_HUBS } from '../../../services/stocks'
 import { addHoverMarker, type HoverMarker } from '../hoverMarker'
 import { NEWS_COLORS, esc, marketPinHTML, newsPinHTML } from '../geoPopups'
 import type { MapHandle, MapViewProps } from '../types'
-
-const CRISIS_COLORS: Record<string, string> = {
-  war:'#ff1a2e', conflict:'#ff6600', terrorism:'#cc0033',
-  protest:'#ffcc00', political:'#aa44ff', disaster:'#ff8800',
-}
-
-const SEV_SIZE: Record<string, number> = { critical: 16, high: 11, medium: 8, low: 5 }
-
+import { CRISIS_COLORS, crisisMarkerEl, crisisTypeLabel, keyboardReachable } from './crisisShape'
 
 /** Crisis / earthquake markers */
 export function useCrisisMarkers({ mapRef, markersRef }: MapHandle, { crises, earthquakes, showCrises, onCrisisClick }: Pick<MapViewProps, 'crises' | 'earthquakes' | 'showCrises' | 'onCrisisClick'>) {
@@ -35,16 +28,12 @@ export function useCrisisMarkers({ mapRef, markersRef }: MapHandle, { crises, ea
 
     crises.forEach((c) => {
       const color = CRISIS_COLORS[c.type] || '#ff6600'
-      const size  = SEV_SIZE[c.severity]  || 8
-      const el    = document.createElement('div')
-      // Archived (year-old) ACLED events: a dashed, faded ring with no glow, so they never read as live events.
-      el.style.cssText = c.archived
-        ? `width:${size}px;height:${size}px;border-radius:50%;background:${color}22;border:1.5px dashed ${color};opacity:.7;cursor:pointer;`
-        : `width:${size}px;height:${size}px;border-radius:50%;background:${color};border:1px solid rgba(255,255,255,0.3);cursor:pointer;box-shadow:0 0 ${size + 4}px ${color}66;`
+      const el    = crisisMarkerEl({ type: c.type, severity: c.severity, archived: c.archived, label: `${c.title}, ${c.country}` })
       const popup = `<div style="padding:9px;font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;line-height:1.5;">
         ${c.archived ? `<span style="display:inline-block;margin-bottom:4px;padding:1px 6px;border-radius:4px;background:#f3f4f6;color:#4b5563;font-size:9px;font-weight:600;letter-spacing:.08em;">ARCHIVE · ABOUT 1 YEAR OLD</span><br>` : ''}
         <b style="color:${color};font-size:13px;">${esc(c.title)}</b><br>
         <span style="color:#6b7280;font-size:10px;letter-spacing:.1em;">${esc(c.country)} · ${new Date(c.date).toLocaleDateString()}</span>
+        <br><span style="color:#374151;font-size:10px;font-weight:600;">${esc(crisisTypeLabel(c.type))} · ${esc(c.severity)} severity</span>
         ${c.fatalities ? `<br><span style="color:#dc2626;">⚠ ${c.fatalities} fatalities</span>` : ''}
         ${c.description ? `<br><span style="opacity:.85;font-size:10px;">${esc(c.description.slice(0,140))}…</span>` : ''}
         <br><span style="color:#9ca3af;font-size:10px;">src: ${esc(c.source)}${c.archived ? ' (current events not available on this account)' : ''}</span></div>`
@@ -58,6 +47,7 @@ export function useCrisisMarkers({ mapRef, markersRef }: MapHandle, { crises, ea
       const color = mag >= 7 ? '#ff0022' : mag >= 6 ? '#ff6600' : mag >= 5 ? '#ffcc00' : '#88aaff'
       const el    = document.createElement('div')
       el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;border:2px solid ${color};background:transparent;cursor:pointer;box-shadow:0 0 ${size}px ${color}44;`
+      keyboardReachable(el, `Magnitude ${mag.toFixed(1)} earthquake, ${eq.place}`)
       const popup = `<div style="padding:9px;font-family:'Inter',-apple-system,sans-serif;font-size:11px;color:#14161a;">
         <b style="color:${color};">M${mag.toFixed(1)} Earthquake</b><br>
         ${eq.place}<br>

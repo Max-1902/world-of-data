@@ -4,6 +4,7 @@ import { PORTS, PORT_TYPE_COLORS, PORT_TYPE_LABELS } from '../../../services/por
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
+import { MARK_HALO } from './halo'
 
 export function addPortLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -18,8 +19,7 @@ export function addPortLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 3, 5, 5, 8, 7, 12, 10],
       'circle-color': ['get', 'color'],
       'circle-opacity': 0.85,
-      'circle-stroke-width': 1.5,
-      'circle-stroke-color': 'rgba(255,255,255,0.2)',
+      ...MARK_HALO,
     },
     layout: { visibility: 'none' },
   })

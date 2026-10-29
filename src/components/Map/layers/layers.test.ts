@@ -9,20 +9,22 @@ vi.mock('../vesselImages', () => ({ addVesselImages: vi.fn() }))
 
 import { addAllLayers, type LayerCtx } from './index'
 import { hasFeatureClickMarker } from './countryClick'
+import { SANCTION_FILL_OPACITY, SANCTION_LINE_WIDTH } from './sanctions'
 
 interface Recorded {
   sources: string[]
   layers: { id: string; type: string; source?: string; atIndex: number }[]
   handlers: { event: string; layer: string | string[] | null }[]
   order: string[]
+  specs: Map<string, Record<string, any>>
 }
 
 /** A map that records what the layer modules register, without needing WebGL. */
 function fakeMap() {
-  const rec: Recorded = { sources: [], layers: [], handlers: [], order: [] }
+  const rec: Recorded = { sources: [], layers: [], handlers: [], order: [], specs: new Map() }
   const map = {
     addSource: (id: string) => { rec.sources.push(id); rec.order.push(`source:${id}`) },
-    addLayer: (l: { id: string; type: string; source?: string }) => { rec.layers.push({ id: l.id, type: l.type, source: l.source, atIndex: rec.order.length }); rec.order.push(`layer:${l.id}`) },
+    addLayer: (l: { id: string; type: string; source?: string }) => { rec.specs.set(l.id, l as Record<string, any>); rec.layers.push({ id: l.id, type: l.type, source: l.source, atIndex: rec.order.length }); rec.order.push(`layer:${l.id}`) },
     on: (event: string, a: unknown, b?: unknown) => { rec.handlers.push({ event, layer: typeof b === 'function' ? (a as string | string[]) : null }) },
     setTerrain: vi.fn(), setFog: vi.fn(), addImage: vi.fn(), hasImage: () => true,
     getCanvas: () => ({ style: {} }), getZoom: () => 2, getLayer: () => undefined, getSource: () => undefined,
@@ -82,5 +84,42 @@ describe('addAllLayers', () => {
   it('installs the generic country click last, and every popup path can mark a feature click', () => {
     expect(rec.handlers.filter(h => h.event === 'click' && h.layer === null)).toHaveLength(1)
     expect(hasFeatureClickMarker(map as unknown as Parameters<typeof hasFeatureClickMarker>[0])).toBe(true)
+  })
+})
+
+/** Meaning that colour alone would carry: each layer below also says it by width, dash, opacity or an outline. */
+describe('layers do not rely on colour alone', () => {
+  const { map, rec } = fakeMap()
+  addAllLayers(map as never, ctx())
+
+  it('gives every crossing status its own dash pattern', () => {
+    const dash = rec.specs.get('humanitarian-crossing-path')!.paint['line-dasharray'] as unknown[]
+    const patterns = dash.filter((_, i) => i >= 2 && (i % 2 === 1 || i === dash.length - 1)).map(p => JSON.stringify((p as { literal?: unknown }) ?? p))
+    expect(new Set(patterns).size).toBe(4)
+  })
+
+  it('names the crossing status in the label text', () => {
+    const field = JSON.stringify(rec.specs.get('humanitarian-crossings-labels')!.layout['text-field'])
+    expect(field).toContain('status')
+  })
+
+  it('varies sanctions fill and outline weight with severity, not only hue', () => {
+    expect(SANCTION_FILL_OPACITY.critical).toBeGreaterThan(SANCTION_FILL_OPACITY.high)
+    expect(SANCTION_FILL_OPACITY.high).toBeGreaterThan(SANCTION_FILL_OPACITY.medium)
+    expect(SANCTION_FILL_OPACITY.medium).toBeGreaterThan(SANCTION_FILL_OPACITY.low)
+    expect(SANCTION_LINE_WIDTH.critical).toBeGreaterThan(SANCTION_LINE_WIDTH.high)
+    expect(SANCTION_LINE_WIDTH.high).toBeGreaterThan(SANCTION_LINE_WIDTH.medium)
+    expect(SANCTION_LINE_WIDTH.medium).toBeGreaterThan(SANCTION_LINE_WIDTH.low)
+    expect(Array.isArray(rec.specs.get('sanctions-fill')!.paint['fill-opacity'])).toBe(true)
+    expect(Array.isArray(rec.specs.get('sanctions-outline')!.paint['line-width'])).toBe(true)
+  })
+
+  it('outlines facility dots with an opaque white ring so they separate from satellite imagery', () => {
+    for (const id of ['military-circles', 'infra-circles', 'nuclear-circles', 'port-circles', 'supplychain-circles', 'datacenter-circles', 'humanitarian-crossings']) {
+      const p = rec.specs.get(id)!.paint
+      expect(p['circle-stroke-color'], id).toBe('#ffffff')
+      expect(p['circle-stroke-opacity'], id).toBeGreaterThanOrEqual(0.9)
+      expect(p['circle-stroke-width'], id).toBeGreaterThanOrEqual(1.5)
+    }
   })
 })

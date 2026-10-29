@@ -6,6 +6,7 @@ import { destinationPoint } from '../flightLayer'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
+import { MARK_HALO } from './halo'
 
 export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -60,7 +61,8 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       'line-color':     ['get', 'statusColor'],
       'line-width':     ['interpolate', ['linear'], ['zoom'], 4, 1.4, 8, 2.2, 12, 3],
       'line-opacity':   0.95,
-      'line-dasharray': ['match', ['get', 'status'], 'closed', ['literal', [1, 1.4]], ['literal', [3, 1.6]]],
+      // one dash pattern per status, so the four states differ by more than hue: open solid, restricted long dashes, closed dots, unknown sparse dots
+      'line-dasharray': ['match', ['get', 'status'], 'open', ['literal', [1, 0]], 'restricted', ['literal', [3, 1.6]], 'closed', ['literal', [1, 1.4]], ['literal', [0.4, 2.4]]],
     },
     layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
   })
@@ -80,16 +82,16 @@ export function addHumanitarianLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
     paint: {
       'circle-radius':       ['interpolate', ['linear'], ['zoom'], 1, 3, 6, 5, 10, 7],
       'circle-color':        ['get', 'statusColor'],
-      'circle-opacity':      0.85,
-      'circle-stroke-width': 1.2,
-      'circle-stroke-color': 'rgba(0,0,0,0.55)',
+      'circle-opacity':      1,
+      ...MARK_HALO,
     },
     layout: { visibility: 'none' },
   })
   map.addLayer({
     id: 'humanitarian-crossings-labels', type: 'symbol', source: 'humanitarian-crossings', minzoom: 5,
     layout: {
-      'text-field':         ['get', 'name'],
+      // the status in words, so open / restricted / closed does not depend on the colour of the label
+      'text-field':         ['concat', ['get', 'name'], ' · ', ['upcase', ['get', 'status']]],
       'text-font':          ['Open Sans Bold', 'Arial Unicode MS Bold'],
       'text-size':          7.5,
       'text-offset':        [0, 1.3],

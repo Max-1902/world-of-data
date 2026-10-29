@@ -4,6 +4,7 @@ import { MILITARY_FACILITIES, FACILITY_COLORS, FACILITY_LABELS } from '../../../
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
+import { MARK_HALO } from './halo'
 
 export function addMilitaryLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -18,8 +19,7 @@ export function addMilitaryLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       'circle-radius': ['interpolate', ['linear'], ['zoom'], 2, 3.5, 6, 5, 10, 8],
       'circle-color': ['get', 'color'],
       'circle-opacity': 0.9,
-      'circle-stroke-width': 1,
-      'circle-stroke-color': 'rgba(255,255,255,0.25)',
+      ...MARK_HALO,
     },
     layout: { visibility: 'none' },
   })

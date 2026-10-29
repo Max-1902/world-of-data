@@ -1,9 +1,13 @@
 import { useEffect } from 'react'
 import mapboxgl from 'mapbox-gl'
-import { SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2 } from '../../../services/sanctions'
+import { SANCTIONED_COUNTRIES, SANCTION_COLORS, SANCTIONS_BY_ISO2, type SanctionSeverity } from '../../../services/sanctions'
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
+
+/** Stronger fill and a heavier outline for harsher regimes; the ordering is the same one the colour ramp encodes. */
+export const SANCTION_FILL_OPACITY: Record<SanctionSeverity, number> = { critical: 0.45, high: 0.38, medium: 0.32, low: 0.28 }
+export const SANCTION_LINE_WIDTH: Record<SanctionSeverity, number> = { critical: 3.2, high: 2.4, medium: 1.8, low: 1.2 }
 
 export function addSanctionsLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -22,7 +26,8 @@ export function addSanctionsLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
         ...SANCTIONED_COUNTRIES.flatMap(c => [c.iso2, SANCTION_COLORS[c.severity]]),
         'transparent',
       ],
-      'fill-opacity': 0.28,
+      // severity is also carried by how strongly the country is filled and how heavy its outline is, not by hue alone
+      'fill-opacity': ['match', ['get', 'iso_3166_1'], ...SANCTIONED_COUNTRIES.flatMap(c => [c.iso2, SANCTION_FILL_OPACITY[c.severity]]), 0],
     },
     layout: { visibility: 'none' },
   } as Parameters<typeof map.addLayer>[0])
@@ -36,8 +41,8 @@ export function addSanctionsLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
         ...SANCTIONED_COUNTRIES.flatMap(c => [c.iso2, SANCTION_COLORS[c.severity]]),
         'transparent',
       ],
-      'line-width': 1.2,
-      'line-opacity': 0.6,
+      'line-width': ['match', ['get', 'iso_3166_1'], ...SANCTIONED_COUNTRIES.flatMap(c => [c.iso2, SANCTION_LINE_WIDTH[c.severity]]), 1],
+      'line-opacity': 0.85,
     },
     layout: { visibility: 'none' },
   } as Parameters<typeof map.addLayer>[0])

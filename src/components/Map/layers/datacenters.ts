@@ -5,6 +5,7 @@ import { fetchDataCenters, type DataCenterPoint } from '../../../services/datace
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
+import { MARK_HALO } from './halo'
 
 export function addDatacenterLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -19,8 +20,7 @@ export function addDatacenterLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
       'circle-radius':       ['interpolate', ['linear'], ['zoom'], 2, 2.5, 6, 4.5, 10, 7],
       'circle-color':        '#a855f7',
       'circle-opacity':      0.9,
-      'circle-stroke-width': 1.2,
-      'circle-stroke-color': 'rgba(0,0,0,0.5)',
+      ...MARK_HALO,
     },
     layout: { visibility: 'none' },
   })
