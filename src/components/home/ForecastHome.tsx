@@ -10,6 +10,7 @@ import { SinceBlock } from '../forecast/SinceBlock'
 import { LineChart } from '../charts/LineChart'
 import { ChartFrame, type TableData } from '../charts/ChartFrame'
 import { CorrMatrixCard } from '../charts/CorrMatrixCard'
+import { AskAnalystButton } from '../AskAnalyst'
 import { BACKTEST_AS_OF, BACKTEST_ROWS } from '../../data/predictorBacktest'
 
 /** An interval band wider than this many times the charted history's own range is stated in words, not drawn. */
@@ -75,6 +76,7 @@ export function ForecastHome({ onOpenPanel }: Props) {
             )}
           </div>
           <button className="home-primary-cta" onClick={() => onOpenPanel('predictions')}>Full forecast, backtest and IMF comparison <ArrowRight size={16} /></button>
+          {ok && <AskAnalystButton className="cy-btn fh-ask" draft={`Explain the ${name} real GDP growth forecast: what it rests on, how the model has done in backtests, and what it cannot see.`} />}
         </div>
 
         <aside className="fh-glance" aria-label={`${name} forecast at a glance`}>

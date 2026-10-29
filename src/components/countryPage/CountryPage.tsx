@@ -10,6 +10,7 @@ import { computeTrajectories } from '../../utils/trajectory'
 import { Metric, MetricRow, SectionLabel, StatusLabel } from '../DataLabels'
 import PanelSources from '../PanelSources'
 import WatchButton from '../WatchButton'
+import { AskAnalystButton } from '../AskAnalyst'
 import CloseButton from '../CloseButton'
 import CountryBrief from '../CountryBrief'
 import type { PanelSource } from '../../panels/types'
@@ -79,6 +80,7 @@ export default function CountryPage({ country, crises, conflictFeed, flights, ar
         </div>
         <div className="cp-actions">
           <WatchButton country={country} />
+          <AskAnalystButton draft={`Give me a briefing on ${country}: the economy, risks and recent events on the dashboard, with the data behind each point.`} />
           <button className="cy-btn" onClick={onShowMap} title={`Show ${country} on the map`}><MapIcon size={12} /> Show on map</button>
           <CloseButton onClick={onClose} label={`Close ${country}`} />
         </div>

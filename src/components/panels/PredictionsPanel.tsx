@@ -6,6 +6,7 @@ import { arForecast, backtestForecast, median, naiveForecast, trendTest, type Di
 import { AR_ORDER, FORECAST_HORIZON as HORIZON, INTERVAL_RECENT, MIN_HISTORY, coverageLabel, headlineForecast } from '../../utils/forecastPolicy'
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart, type LinePoint } from '../charts/LineChart'
+import { AskAnalystButton } from '../AskAnalyst'
 import { Kpi, Method, PERIODS, inPeriod, plain, toLine, type Period } from './countryLookup/shared'
 import { WEO_FOR_WB, fetchWeo, weoPoints, type WeoPayload } from '../../services/imfWeo'
 import { recordsFor, remember } from '../../services/forecastLog'
@@ -301,6 +302,7 @@ export function PredictionsPanel({ iso2 }: { iso2?: string } = {}) {
             <h2 className="cl-name">{name}</h2>
             <p className="viz-sub">Statistical projections from {name}'s own World Bank history — not an AI forecast, and not a claim about what will happen.</p>
           </>}
+          {!embedded && c.data && <AskAnalystButton draft={`Explain the ${name} forecasts: how they were made and how far to trust them.`} />}
         </div>
         <div className="viz-toggle" role="group" aria-label="Years shown in charts (models always use the full history)">
           {PERIODS.map(p => <button key={p.id} className={period === p.id ? 'on' : ''} aria-pressed={period === p.id} onClick={() => setPeriod(p.id)}>{p.label}</button>)}
