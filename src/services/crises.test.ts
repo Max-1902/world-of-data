@@ -16,6 +16,46 @@ const acledRow = (o: Record<string, string> = {}) => ({
   notes: 'Something happened', fatalities: '3', ...o,
 })
 
+describe('ACLED data note', () => {
+  beforeEach(() => quietConsole())
+  const NOW = Date.UTC(2026, 9, 28)
+  const noteOf = async () => (await import('./sourceHealth')).healthTracker.getNotes().get('acled')
+
+  it('states the newest event, the count, and that a capped poll is a sample', async () => {
+    const { acledDataNote, ACLED_LIMIT } = await load()
+    const rows = [acledRow({ event_date: '2026-10-20' }), acledRow({ event_date: '2026-10-26' })]
+    expect(acledDataNote(rows, 14, NOW)).toEqual({ asOf: 'newest event 2026-10-26', coverage: '2 events', warn: undefined })
+    const capped = Array.from({ length: ACLED_LIMIT }, () => acledRow({ event_date: '2026-10-26' }))
+    expect(acledDataNote(capped, 14, NOW).coverage).toContain('capped sample')
+  })
+
+  it('warns when the newest event is older than the window, and when nothing came back', async () => {
+    const { acledDataNote } = await load()
+    const old = acledDataNote([acledRow({ event_date: '2025-10-20' })], 14, NOW)
+    expect(old.asOf).toBe('newest event 2025-10-20')
+    expect(old.warn).toContain('373 days old')
+    const none = acledDataNote([], 14, NOW)
+    expect(none.asOf).toBeUndefined()
+    expect(none.warn).toContain('No events came back for the last 14 days')
+  })
+
+  it('is recorded on the live poll and replaced by the archive note when only history is available', async () => {
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({ status: 200, data: [acledRow({ event_date: '2025-10-20' })] }))
+    const { fetchACLEDEvents, fetchACLEDArchive } = await load()
+    await fetchACLEDEvents()
+    expect((await noteOf())?.asOf).toBe('newest event 2025-10-20')
+    await fetchACLEDArchive(14, NOW)
+    expect((await noteOf())?.warn).toContain('one year earlier')
+  })
+
+  it('leaves the note alone when the request fails', async () => {
+    mockFetch(url => url === TOKEN_URL ? okToken() : jsonResponse({}, { status: 500 }))
+    const { fetchACLEDEvents } = await load()
+    await fetchACLEDEvents()
+    expect(await noteOf()).toBeUndefined()
+  })
+})
+
 describe('fetchACLEDEvents', () => {
   beforeEach(() => quietConsole())
 

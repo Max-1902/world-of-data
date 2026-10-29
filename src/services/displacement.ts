@@ -16,6 +16,7 @@
  *    how a host registers people; it is not a count of new crossings.
  */
 import anchorsFile from '../data/country-anchors.json'
+import { healthTracker } from './sourceHealth'
 
 const UNHCR_API = 'https://api.unhcr.org/population/v1/population/'
 
@@ -209,6 +210,7 @@ export function fetchDisplacement(now = Date.now()): Promise<DisplacementSnapsho
         const snap = buildSnapshot(cur, prev, year, now)
         if (!snap.corridors.length) return null
         cached = { at: now, snap }
+        healthTracker.note('unhcr', { asOf: `UNHCR annual figures for ${snap.year}`, coverage: `${snap.corridors.length} corridors of ${MIN_CORRIDOR.toLocaleString('en-US')}+ people` })
         return snap
       }
       return null

@@ -13,6 +13,13 @@ describe('fetchWeo', () => {
     expect(fn).toHaveBeenCalledTimes(1)
     expect(String(fn.mock.calls[0][0])).toBe('/api/imf-weo?indicator=NGDP_RPCH')
   })
+  it('notes the edition and how many economies it covers', async () => {
+    mockFetch(() => jsonResponse(PAYLOAD))
+    const { fetchWeo } = await load()
+    await fetchWeo('NGDP_RPCH')
+    const { healthTracker } = await import('./sourceHealth')
+    expect(healthTracker.getNotes().get('imfweo')).toEqual({ asOf: 'World Economic Outlook (October 2026)', coverage: '1 economies' })
+  })
   it('returns null on HTTP errors, malformed payloads and network failure', async () => {
     mockFetch(() => jsonResponse({ error: 'x' }, { status: 502 }))
     expect(await (await load()).fetchWeo('LUR')).toBeNull()

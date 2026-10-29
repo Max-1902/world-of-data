@@ -7,6 +7,9 @@
  * The API does not say, per country, which years are IMF estimates and which are projections. A year from the
  * edition's own year on (2026 in the October 2026 edition) is a projection; earlier years may be either.
  */
+
+import { healthTracker } from './sourceHealth'
+
 /** What /api/imf-weo returns (shape defined in api/imf-weo.ts). */
 export interface WeoPayload {
   indicator: 'NGDP_RPCH' | 'PCPIPCH' | 'LUR'
@@ -43,6 +46,7 @@ export function fetchWeo(indicator: WeoPayload['indicator']): Promise<WeoPayload
       const data = await res.json() as WeoPayload
       if (!data || typeof data.values !== 'object' || typeof data.vintage !== 'string') return null
       cache.set(indicator, { at: Date.now(), data })
+      healthTracker.note('imfweo', { asOf: data.vintage, coverage: `${Object.keys(data.values).length} economies` })
       return data
     } catch { return null }
   })().finally(() => inflight.delete(indicator))

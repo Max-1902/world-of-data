@@ -84,6 +84,14 @@ describe('fetchDisplacement', () => {
     expect(snap?.corridors[0]).toMatchObject({ count: 300_000, prev: 200_000, trend: 'rising' })
   })
 
+  it('notes the year of the UNHCR figures and the corridor threshold', async () => {
+    mockFetch(() => jsonResponse({ items: [pair('SDN', 'TCD', { refugees: 300_000 })] }))
+    const { fetchDisplacement } = await load()
+    await fetchDisplacement(NOW)
+    const { healthTracker } = await import('./sourceHealth')
+    expect(healthTracker.getNotes().get('unhcr')).toEqual({ asOf: 'UNHCR annual figures for 2025', coverage: '1 corridors of 50,000+ people' })
+  })
+
   it('falls back a year when the latest has no rows yet', async () => {
     mockFetch(url => jsonResponse({ items: yearOf(url) === 2025 ? [] : [pair('SYR', 'TUR', { refugees: 100_000 })] }))
     const { fetchDisplacement } = await load()
