@@ -29,6 +29,9 @@ vi.mock('./services/countryLookup', async orig => ({
   fetchCountryList: () => Promise.resolve([{ iso2: 'UA', iso3: 'UKR', name: 'Ukraine', region: 'Europe', incomeLevel: '', capital: '' }]),
 }))
 
+// jsdom has no scrollIntoView; the dock calls it on the frame after a sidebar click focuses a panel
+Element.prototype.scrollIntoView = () => {}
+
 // App renders a "Mapbox token required" screen instead of the map without a token. A developer's .env has one, CI
 // doesn't, so the test sets a placeholder (the map is mocked above; nothing is sent to Mapbox). In beforeEach because
 // the config's unstubEnvs resets stubbed env vars before every test.

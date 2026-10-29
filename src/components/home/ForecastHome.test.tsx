@@ -34,7 +34,8 @@ describe('ForecastHome', () => {
     await waitFor(() => expect(screen.getByText(/What it rests on/)).toBeTruthy())
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Germany')
     expect(screen.getByText(/Projected real GDP growth/)).toBeTruthy()
-    expect(screen.getByText(/First shown on this device/)).toBeTruthy()
+    // the "since" card fills in on the render after the basis card, so wait for it rather than reading it synchronously
+    expect(await screen.findByText(/First shown on this device/)).toBeTruthy()
     expect(screen.getByText(/What could change it/)).toBeTruthy()
     expect(screen.getByText(/does not change the number/)).toBeTruthy()
     expect(m.fetchSeries).toHaveBeenCalledWith(['DE'], 'NY.GDP.MKTP.KD.ZG')

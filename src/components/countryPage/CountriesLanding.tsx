@@ -1,4 +1,5 @@
 import CountrySearchBox from '../CountrySearchBox'
+import RegionBrowser from './RegionBrowser'
 import { useWatchlist } from '../../hooks/useWatchlist'
 
 /** The Countries destination before a country is picked: choose one, and its full record opens as a page. */
@@ -17,6 +18,7 @@ export default function CountriesLanding({ onPick }: { onPick: (country: string)
           </div>
         </section>
       )}
+      <RegionBrowser onPick={onPick} />
     </div>
   )
 }
