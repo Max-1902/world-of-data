@@ -112,6 +112,7 @@ export default function NowcastPanel() {
           <LineChart xKind="time" height={220} ariaLabel={`${name} quarterly GDP growth with the ${nc.quarter} nowcast`}
             fmtX={t => { const dt = new Date(t); return `${dt.getUTCFullYear()}-Q${Math.floor(dt.getUTCMonth() / 3) + 1}` }}
             fmtY={v => `${pct(v)}%`} refLines={[{ v: 0, label: '0' }]}
+            forecastBoundary={lastQ ? (qTime(lastQ[0]) + qTime(nc.quarter)) / 2 : undefined} observedLabel="Published" projectedLabel="Nowcast"
             areas={nc.range !== null && lastQ ? [{ key: 'range', label: '80% range', color: 'var(--series-2)', points: [{ t: qTime(lastQ[0]), lo: lastQ[1], hi: lastQ[1] }, { t: qTime(nc.quarter), lo: nc.value - nc.range, hi: nc.value + nc.range }] }] : []}
             series={[
               { key: 'gdp', label: 'Published', color: 'var(--series-1)', points: recent.map(([q, v]) => ({ t: qTime(q), v })), markers: true },

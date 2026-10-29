@@ -35,7 +35,7 @@ export const tickLabel = (n: number) => n < 1e4 ? n.toLocaleString('en-US') : co
 export const crisp = (v: number) => Math.round(v - 0.5) + 0.5
 
 /** Axis tick text: muted, tabular so stacked numbers line up. */
-export const TICK = { fontSize: 10, fill: 'var(--text3)', style: { fontVariantNumeric: 'tabular-nums' } } as const
+export const TICK = { fontSize: 11, fill: 'var(--text3)', style: { fontVariantNumeric: 'tabular-nums' } } as const
 
 /** Rough rendered width of a label (Inter at `size` px) for layout before the text is in the DOM. */
 export const textWidth = (s: string, size: number) => s.length * size * 0.56

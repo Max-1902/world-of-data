@@ -28,7 +28,7 @@ function timeTicks(points: TimePoint[], band: number, fmt: (t: number) => string
   const edge = (i: number) => (i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle') as 'start' | 'middle' | 'end'
   const step = n > 1 ? points[1].t - points[0].t : DAY
   if (step < DAY && points[n - 1].t - points[0].t >= 2 * DAY) {
-    const room = textWidth(fmt(points[0].t), 10) + 16
+    const room = textWidth(fmt(points[0].t), TICK.fontSize) + 16
     const every = Math.max(1, Math.ceil(room / (band * (DAY / step))))
     const mids = points.map((p, i) => (p.t % DAY === 0 ? i : -1)).filter(i => i >= 0).filter((_, k) => k % every === 0)
     // keep labels clear of the plot edges, where a centred label would hang outside the svg
