@@ -45,6 +45,10 @@ export function prevQuarter(q: Quarter): Quarter {
   const y = Number(q.slice(0, 4)), n = Number(q.slice(6))
   return n === 1 ? `${y - 1}-Q4` : `${y}-Q${n - 1}`
 }
+export function nextQuarter(q: Quarter): Quarter {
+  const y = Number(q.slice(0, 4)), n = Number(q.slice(6))
+  return n === 4 ? `${y + 1}-Q1` : `${y}-Q${n + 1}`
+}
 export const isPandemic = (q: Quarter) => q >= '2020-Q1' && q <= '2021-Q4'
 
 /** Mean of a quarter's IP months using only the first `known` of them, carrying the last known month forward; null if month 1 is missing. */
@@ -152,8 +156,7 @@ export interface Nowcast {
 export function nowcast(gdp: Series<Quarter>, ip: Series<Month>): Nowcast | null {
   const lastQ = [...gdp.keys()].sort().pop()
   if (!lastQ) return null
-  const [y, n] = [Number(lastQ.slice(0, 4)), Number(lastQ.slice(6))]
-  const quarter: Quarter = n === 4 ? `${y + 1}-Q1` : `${y}-Q${n + 1}`
+  const quarter = nextQuarter(lastQ)
   const known = monthsKnown(ip, quarter)
   if (known === 0) return null
   const x = ipGrowth(ip, quarter, known)
@@ -165,6 +168,26 @@ export function nowcast(gdp: Series<Quarter>, ip: Series<Month>): Nowcast | null
   const calm = bt.folds.filter(f => !isPandemic(f.q))
   const range = rangeHalfWidth(calm.map(f => (headline === 'model' ? f.model : f.naive) - f.actual))
   return { quarter, known, headline, value: headline === 'model' ? model!.value : naive.value, range, model, naive, backtest: bt }
+}
+
+/** Months of a quarter's industrial production out when Eurostat's GDP flash lands (~30 days after the quarter; IP lags ~45). */
+export const FLASH_MONTHS_KNOWN = 2
+
+export interface Scorecard { quarter: Quarter; actual: number; said: Nowcast; inRange: boolean | null }
+
+/**
+ * What the nowcast said for the last published quarter, just before its GDP figure came out: the same rule re-run on
+ * data cut back to then (earlier GDP, IP up to month FLASH_MONTHS_KNOWN of that quarter). Uses today's revised figures,
+ * not the archived live number. Null when that quarter could not have been nowcast.
+ */
+export function scoreLastQuarter(gdp: Series<Quarter>, ip: Series<Month>, known: 1 | 2 | 3 = FLASH_MONTHS_KNOWN): Scorecard | null {
+  const q = [...gdp.keys()].sort().pop()
+  if (!q) return null
+  const cut = monthsOf(q)[known - 1]
+  const said = nowcast(new Map([...gdp].filter(([k]) => k < q)), new Map([...ip].filter(([m]) => m <= cut)))
+  if (!said || said.quarter !== q) return null
+  const actual = gdp.get(q)!
+  return { quarter: q, actual, said, inRange: said.range === null ? null : Math.abs(actual - said.value) <= said.range }
 }
 
 /** Eurostat JSON-stat (one series) → period → value. */
