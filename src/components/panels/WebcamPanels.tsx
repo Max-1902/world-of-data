@@ -246,13 +246,13 @@ export function LiveFeedPanel() {
         <button type="submit" className="news-tab" disabled={!link.trim()}>ADD</button>
       </form>
       {error && <div style={{ padding: '2px 8px', fontSize: 10, color: 'var(--red)' }}>{error}</div>}
-      {/* Square box; the 16:9 stream is scaled to the box height and centred, so it fills the square (the outer edges of the picture are cropped). */}
-      <div style={{ position: 'relative', flex: '0 0 auto', aspectRatio: '1 / 1', overflow: 'hidden', background: '#000' }}>
+      {/* The player fills the box and YouTube fits the whole 16:9 picture inside it (letterboxed, never cropped). */}
+      <div style={{ position: 'relative', flex: 1, minHeight: 180, overflow: 'hidden', background: '#000' }}>
         <iframe
           key={active.id}
           src={embedSrc(active)}
           title={`${active.label} live feed`}
-          style={{ position: 'absolute', top: 0, left: '50%', width: '177.78%', height: '100%', transform: 'translateX(-50%)', border: 'none', display: 'block' }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', display: 'block' }}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
           allowFullScreen
         />
