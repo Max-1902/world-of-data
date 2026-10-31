@@ -1,5 +1,5 @@
 import type { CrisisEvent, Flight } from '../types'
-import { isBaseline, type TrajectoryEntry } from '../utils/trajectory'
+import { LIVE_WINDOW, isBaseline, type TrajectoryEntry } from '../utils/trajectory'
 import { resourceCapabilitySummary } from './resources'
 
 const BASE = '/api/openrouter'
@@ -344,6 +344,8 @@ export function buildDashboardContext(crises: CrisisEvent[], flights: Flight[], 
   const risingTrend = trajectories.filter(t => t.trend === 'rising')
   const unusualHigh = trajectories.filter(t => t.unusual === 'high')
   const ownNormal = trajectories.find(t => t.baseline)?.baseline
+  const win = trajectories[0]?.window ?? LIVE_WINDOW
+  const monthly = win !== LIVE_WINDOW
   const trajectoryLines = trajectories.map(t =>
     `  • ${t.country}: ${t.trend.toUpperCase()}${t.unusual ? ` · UNUSUALLY ${t.unusual.toUpperCase()} FOR THIS COUNTRY` : ''} (velocity ${t.velocity}/100) — ${t.reason}`
   ).join('\n')
@@ -373,9 +375,10 @@ Timestamp (UTC): ${now}
 ${notMeasuredBlock}
 ${conflicts}
 ${reference}${trajectories.length > 0 ? `
-TRAJECTORY SIGNALS (rule-based, last 3d vs prior 7d — computed locally, not model-generated)
+TRAJECTORY SIGNALS (rule-based, ${win.source}: ${win.recent} vs ${win.prior} — computed locally, not model-generated)${monthly ? `
+  The live conflict feed has no current events, so these come from UCDP's monthly release: lethal organised violence only (no protests or political events), under a month behind. They say nothing about the last few days.` : ''}
   ${risingTrend.length} of ${trajectories.length} tracked regions trending upward${ownNormal ? `
-  Each country is also compared with its own last ${ownNormal.days} days of event counts (its own normal, allowing for its usual day-to-day swings); ${unusualHigh.length} ${unusualHigh.length === 1 ? 'is' : 'are'} unusually high. That is a rough flag from a short history, not a calibrated probability — do not quote it as a percentage chance. The list is ordered by how unusual, not by size. This is a statistical flag, not a validated forecast.` : trajectories[0]?.sampled ? `
+  Each country is also compared with its own ${ownNormal.span} of event counts (its own normal, allowing for its usual swings); ${unusualHigh.length} ${unusualHigh.length === 1 ? 'is' : 'are'} unusually high. That is a rough flag from a short history, not a calibrated probability — do not quote it as a percentage chance. The list is ordered by how unusual, not by size. This is a statistical flag, not a validated forecast.` : trajectories[0]?.sampled ? `
   Own-normal comparison: NOT MEASURED — the conflict feed hit its row cap, so these counts are a sample, not totals, and no country is flagged.` : `
   Own-normal comparison: NOT MEASURED — the feed does not reach back far enough to know each country's normal.`}
 ${trajectoryLines}` : ''}
@@ -413,7 +416,7 @@ DASHBOARD LAYERS (what the map can show — their data is NOT in this context un
  * so the offline eval harness sends exactly what the app sends.
  */
 export function buildSystemPrompt(context: string, opts: { tools?: string } = {}): string {
-  return `You are the analyst in World of Data, a live world monitoring dashboard. You receive the dashboard's current data below, including locally calculated regional activity trends for the last 72 hours compared with the prior week. Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style: specific and direct, but thorough. The user wants depth, not a summary of a summary: use the full breadth of the data you have, explain the mechanism behind each development, connect related signals across datasets and regions, and give historical and geopolitical context from your own knowledge (tagged [background]). Don't pad, but never cut an answer short when the data supports more. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
+  return `You are the analyst in World of Data, a live world monitoring dashboard. You receive the dashboard's current data below, including locally calculated regional activity trends (the context states which windows they cover: the last 72 hours against the prior week, or, when the live feed has nothing current, the latest UCDP month against the months before). Ground your analysis in this information. Distinguish current activity from changes in activity, and explain what evidence supports each assessment. Write in a clear, measured briefing style: specific and direct, but thorough. The user wants depth, not a summary of a summary: use the full breadth of the data you have, explain the mechanism behind each development, connect related signals across datasets and regions, and give historical and geopolitical context from your own knowledge (tagged [background]). Don't pad, but never cut an answer short when the data supports more. Do not use emojis, terminal-style status text, decorative symbols, or unsupported confidence scores.
 
 Anything listed under NOT MEASURED is unknown, not zero or absent: never state or imply a count, an absence, a decline or an anomaly for it. If the question depends on it, say in one sentence that the dashboard did not measure it, then answer the rest. Only cite numbers that appear in the data below; anything from your own knowledge must be marked as such and must not be presented as a live reading.
 

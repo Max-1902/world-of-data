@@ -1,5 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Minus, Radar } from 'lucide-react'
-import { computeTrajectories, isFlaggedUp } from '../utils/trajectory'
+import { LIVE_WINDOW, isFlaggedUp } from '../utils/trajectory'
+import { UCDP_SNAPSHOT, conflictTrajectories, conflictWindow } from '../utils/monthlyTrajectory'
+import { SourceLine } from './DataLabels'
 import { formatDistanceToNow } from 'date-fns'
 import { useHistory, PREVIOUS_VISIT } from '../hooks/useHistory'
 import { changesSince, scoreByCountry } from '../services/history'
@@ -38,16 +40,18 @@ interface Props {
 
 export default function OutlookCard({ crises, conflictFeed, conflictArchive, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, pinnedCountry, onSelectCountry, onClose }: Props) {
   const subject = selectedPlace ? null : selectedCountry
-  const entries = computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { limit: 6, articles, focusCountry: subject, capped: conflictFeed?.capped })
+  const entries = conflictTrajectories(crises, conflictFeed, { limit: 6, articles, focusCountry: subject })
   const rising = entries.filter(isFlaggedUp)
   const snaps = useHistory()
   const since = PREVIOUS_VISIT !== null && Date.now() - PREVIOUS_VISIT >= MIN_AWAY_MS
     ? changesSince(snaps, PREVIOUS_VISIT, scoreByCountry(crises))
     : null
   const pinned = !subject && !selectedPlace && pinnedCountry
-    ? computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { limit: 6, articles, focusCountry: pinnedCountry, capped: conflictFeed?.capped })[0]
+    ? conflictTrajectories(crises, conflictFeed, { limit: 6, articles, focusCountry: pinnedCountry })[0]
     : undefined
   const others = (rising.length ? rising : entries).filter(e => e.country !== pinned?.country)
+  const win = conflictWindow(crises, conflictFeed)
+  const scope = win === LIVE_WINDOW ? 'conflict events, 72h vs prior week' : `UCDP lethal violence, ${win.recent} vs ${win.prior}`
   const featured = subject ? entries : pinned ? [pinned, ...others.slice(0, 2)] : (rising.length ? rising : entries).slice(0, 2)
 
   return (
@@ -57,7 +61,7 @@ export default function OutlookCard({ crises, conflictFeed, conflictArchive, fli
           <span className="outlook-icon"><Radar size={13} /></span>
           <div>
             <div className="outlook-eyebrow">{selectedPlace ? selectedPlace.name : selectedCountry ? selectedCountry : 'Regional activity'}</div>
-            <div className="outlook-subtitle">{selectedPlace ? `${[selectedPlace.region, selectedPlace.country].filter(Boolean).join(', ')} · local brief` : selectedCountry ? 'Country brief · news and facts' : pinned ? `Worldwide · conflict events, 72h vs prior week · ${pinned.country} first` : 'Worldwide · conflict events, 72h vs prior week'}</div>
+            <div className="outlook-subtitle">{selectedPlace ? `${[selectedPlace.region, selectedPlace.country].filter(Boolean).join(', ')} · local brief` : selectedCountry ? 'Country brief · news and facts' : pinned ? `Worldwide · ${scope} · ${pinned.country} first` : `Worldwide · ${scope}`}</div>
           </div>
         </div>
         <span className="outlook-live"><i /> {selectedCountry || selectedPlace ? 'Live' : 'Rule-based'}</span>
@@ -85,7 +89,7 @@ export default function OutlookCard({ crises, conflictFeed, conflictArchive, fli
                 <div className="outlook-detail">
                   <div className="outlook-country">
                     {entry.country}
-                    {entry.unusual && <span className="outlook-news-badge" title={`Unusually ${entry.unusual} for this country, measured against its own last ${entry.baseline?.days} days`}>UNUSUAL</span>}
+                    {entry.unusual && <span className="outlook-news-badge" title={`Unusually ${entry.unusual} for this country, measured against its own ${entry.baseline?.span}`}>UNUSUAL</span>}
                     {entry.newsHit && <span className="outlook-news-badge" title={entry.newsHit}>NEWS</span>}
                   </div>
                   <div className="outlook-reason">{entry.reason}</div>
@@ -107,6 +111,13 @@ export default function OutlookCard({ crises, conflictFeed, conflictArchive, fli
             ? 'No trend to show: no conflict events came back from ACLED for the last 14 days (the feed may be off, unreachable or behind). This is a gap in the feed, not evidence that nothing happened.'
             : 'No country has conflict events in the last 10 days, so there is no trend to show.'}
           {' '}The long-running conflicts on the map are hand-entered reference markers and are not counted.</div>
+      )}
+
+      {!selectedCountry && !selectedPlace && win !== LIVE_WINDOW && (
+        <div className="outlook-source">
+          ACLED has no current events on this account, so this is UCDP’s monthly release: deaths in organised violence only, about a month behind, not the last few days.
+          <SourceLine source="UCDP Candidate Events (CC BY 4.0)" asOf={`retrieved ${UCDP_SNAPSHOT.retrieved}`} />
+        </div>
       )}
 
       {!selectedCountry && !selectedPlace && since && since.movers.length > 0 && (

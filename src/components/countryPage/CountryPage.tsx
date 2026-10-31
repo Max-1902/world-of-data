@@ -6,7 +6,7 @@ import type { FirePoint } from '../../services/wildfires'
 import { formatEconValue, groupIndicators, resolveISO2, type EconIndicator } from '../../services/worldbank'
 import { useCountryLiveData } from '../countryDrawer/useCountryDrawerData'
 import { freshness } from '../../utils/freshness'
-import { computeTrajectories } from '../../utils/trajectory'
+import { conflictTrajectories } from '../../utils/monthlyTrajectory'
 import { Metric, MetricRow, SectionLabel, StatusLabel } from '../DataLabels'
 import PanelSources from '../PanelSources'
 import WatchButton from '../WatchButton'
@@ -67,7 +67,7 @@ export default function CountryPage({ country, crises, conflictFeed, flights, ar
   const iso2 = resolveISO2(country)
   const { econData, econLoading } = useCountryLiveData(country)
   const byId = useMemo(() => new Map((econData?.indicators ?? []).map(i => [i.id, i])), [econData])
-  const trend = useMemo(() => computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { limit: 6, articles, focusCountry: country, capped: conflictFeed?.capped })[0], [conflictFeed, crises, articles, country])
+  const trend = useMemo(() => conflictTrajectories(crises, conflictFeed, { limit: 6, articles, focusCountry: country })[0], [conflictFeed, crises, articles, country])
   const current = TABS.find(t => t.id === tab)!
   const drawerProps = { country, crises, flights, earthquakes, fires, onClose, onFlyTo, embedded: true }
 

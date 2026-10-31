@@ -599,6 +599,8 @@ input::placeholder { color: var(--text3); opacity: 1; }
 .outlook-since-country { flex: 1; min-width: 0; overflow: hidden; color: var(--text1); font-size: 10px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
 .outlook-since-score { flex: 0 0 auto; color: var(--text3); font: 500 9px 'Inter', -apple-system, sans-serif; }
 .outlook-empty { padding: 13px 11px; color: var(--text2); font-size: 10px; }
+.outlook-source { padding: 6px 11px 8px; border-top: 1px solid var(--hairline); color: var(--text3); font-size: 9.5px; line-height: 1.45; }
+.outlook-source .dl-src { margin-top: 3px; }
 
 /* Country brief (bottom-left card while a country is selected) */
 .outlook-card-country { display: flex; flex-direction: column; max-height: min(66vh, 560px); }

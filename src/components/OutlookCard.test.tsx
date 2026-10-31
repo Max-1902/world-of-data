@@ -3,10 +3,19 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
 const entry = (country: string, trend: 'rising' | 'flat' = 'rising') => ({ country, recentScore: 5, priorScore: 1, delta: 4, trend, reason: `${country} reason` })
-const m = vi.hoisted(() => ({ calls: [] as (string | null | undefined)[], empty: false }))
+const { LIVE, UCDP } = vi.hoisted(() => ({
+  LIVE: { source: 'ACLED (live)', recent: '72h', prior: 'the prior week' },
+  UCDP: { source: 'UCDP Candidate Events', recent: 'September 2026', prior: 'the 6 months before' },
+}))
+const m = vi.hoisted(() => ({ calls: [] as (string | null | undefined)[], empty: false, window: null as unknown }))
 vi.mock('../utils/trajectory', () => ({
   isFlaggedUp: (e: { trend: string }) => e.trend === 'rising',
-  computeTrajectories: (_c: unknown, o: { focusCountry?: string | null }) => {
+  LIVE_WINDOW: LIVE,
+}))
+vi.mock('../utils/monthlyTrajectory', () => ({
+  UCDP_SNAPSHOT: { retrieved: '2026-10-30' },
+  conflictWindow: () => m.window ?? LIVE,
+  conflictTrajectories: (_c: unknown, _f: unknown, o: { focusCountry?: string | null }) => {
     m.calls.push(o.focusCountry)
     if (m.empty) return []
     return o.focusCountry ? [entry(o.focusCountry, 'flat')] : [entry('Sudan'), entry('Haiti'), entry('Myanmar')]
@@ -45,6 +54,15 @@ describe('OutlookCard', () => {
     render(<OutlookCard {...base} conflictFeed={{ events: [], capped: false }} conflictArchive={{ events: [], from: '2025-10-16', to: '2025-10-30' }} />)
     m.empty = false
     expect(screen.getByText(/stops about a year back \(the map shows 2025-10-16 to 2025-10-30 as history\)\. This is a gap in the feed, not a quiet world/)).toBeTruthy()
+  })
+
+  it('names UCDP\'s monthly window and says why when the live feed has nothing current', () => {
+    m.window = UCDP
+    render(<OutlookCard {...base} conflictFeed={{ events: [], capped: false }} />)
+    m.window = null
+    expect(screen.getByText('Worldwide · UCDP lethal violence, September 2026 vs the 6 months before')).toBeTruthy()
+    expect(screen.getByText(/ACLED has no current events on this account, so this is UCDP’s monthly release/)).toBeTruthy()
+    expect(screen.getByText(/retrieved 2026-10-30/)).toBeTruthy()
   })
 
   it('shows a clicked city as its own local brief, not the country data', () => {

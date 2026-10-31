@@ -9,7 +9,8 @@ import { buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, QUI
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
-import { computeTrajectories, isBaseline, isFlaggedUp, type TrajectoryEntry } from '../../utils/trajectory'
+import { LIVE_WINDOW, isBaseline, isFlaggedUp, type TrajectoryEntry } from '../../utils/trajectory'
+import { conflictTrajectories } from '../../utils/monthlyTrajectory'
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
 import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
 import { summarizeForAI } from '../../utils/countryStats'
@@ -35,7 +36,7 @@ function WatchlistCard({ entry, onExplain, disabled = false }: { entry: Trajecto
         <Icon size={14} color={color} style={{ flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)', flex: 1 }}>{entry.country}</span>
         {entry.unusual && (
-          <span className={`ai-trend-badge ${entry.unusual === 'high' ? 'rising' : 'falling'}`} title={`Measured against ${entry.country}'s own last ${entry.baseline?.days} days`}>
+          <span className={`ai-trend-badge ${entry.unusual === 'high' ? 'rising' : 'falling'}`} title={`Measured against ${entry.country}'s own ${entry.baseline?.span}`}>
             unusual
           </span>
         )}
@@ -162,7 +163,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
 
   // Rule-based trajectory scoring — recomputes automatically as crises/flights refresh.
   // No prompt required; this is what makes the panel proactive rather than ask-only.
-  const trajectories = useMemo(() => computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { capped: conflictFeed?.capped }), [crises, conflictFeed])
+  const trajectories = useMemo(() => conflictTrajectories(crises, conflictFeed), [crises, conflictFeed])
   // Same rule as the AI context: an unmeasured feed reads "not measured", never 0 (and baseline markers aren't incidents).
   const missing = notMeasured(crises, flights, { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises })
   const incidentsLabel = missing.some(m => m.what === 'Live conflict events') ? 'not measured' : crises.filter(c => !isBaseline(c)).length.toLocaleString()
@@ -593,8 +594,12 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {trajectories.map(t => (
                 <WatchlistCard key={t.country} entry={t} disabled={!hasKey} onExplain={() => {
-                  const own = t.baseline ? ` Against its own last ${t.baseline.days} days it would normally see ~${Math.round(t.baseline.expected * 10) / 10} events in 72h (${t.unusual ? `unusually ${t.unusual}` : 'within its normal range'}).` : ''
-                  ask(`Investigate the ${t.trend} trend for ${t.country}: ${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore}).${own} What's driving this, what does the wider data (outages, disasters, news, economy) say, and what should I watch for next?`)
+                  const w = t.window ?? LIVE_WINDOW
+                  const own = t.baseline ? ` Against its own ${t.baseline.span} it would normally see ~${Math.round(t.baseline.expected * 10) / 10} events in ${w === LIVE_WINDOW ? '72h' : 'a month'} (${t.unusual ? `unusually ${t.unusual}` : 'within its normal range'}).` : ''
+                  const counts = w === LIVE_WINDOW
+                    ? `${t.recentCount} events in the last 72h (score ${t.recentScore}) vs ${t.priorCount} in the prior week (score ${t.priorScore})`
+                    : `${t.reason} (${w.source}, lethal organised violence only)`
+                  ask(`Investigate the ${t.trend} trend for ${t.country}: ${counts}.${own} What's driving this, what does the wider data (outages, disasters, news, economy) say, and what should I watch for next?`)
                 }} />
               ))}
             </div>

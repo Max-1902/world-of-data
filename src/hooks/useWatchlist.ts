@@ -1,7 +1,7 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import type { ConflictFeed, CrisisEvent, NewsArticle } from '../types'
 import { watchStore, type WatchAlert } from '../services/watchlist'
-import { computeTrajectories } from '../utils/trajectory'
+import { conflictTrajectories } from '../utils/monthlyTrajectory'
 
 export function useWatchlist() {
   return useSyncExternalStore(watchStore.subscribe, watchStore.getState)
@@ -23,7 +23,7 @@ export function useWatchEvaluator(crises: CrisisEvent[], feed: ConflictFeed, art
   useEffect(() => {
     if (crises.length === 0) return
     const { feed: f, articles: a } = latest.current
-    const trajectories = computeTrajectories(f.events.length ? f.events : crises, { limit: 200, articles: a, capped: f.capped })
+    const trajectories = conflictTrajectories(crises, f, { limit: 200, articles: a })
     const fresh = watchStore.evaluate(crises, trajectories)
     if (fresh.length > 0 && watchStore.getState().notify) notifyBrowser(fresh)
   }, [crises])
