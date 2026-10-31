@@ -3,11 +3,12 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 
 const entry = (country: string, trend: 'rising' | 'flat' = 'rising') => ({ country, recentScore: 5, priorScore: 1, delta: 4, trend, reason: `${country} reason` })
-const m = vi.hoisted(() => ({ calls: [] as (string | null | undefined)[] }))
+const m = vi.hoisted(() => ({ calls: [] as (string | null | undefined)[], empty: false }))
 vi.mock('../utils/trajectory', () => ({
   isFlaggedUp: (e: { trend: string }) => e.trend === 'rising',
   computeTrajectories: (_c: unknown, o: { focusCountry?: string | null }) => {
     m.calls.push(o.focusCountry)
+    if (m.empty) return []
     return o.focusCountry ? [entry(o.focusCountry, 'flat')] : [entry('Sudan'), entry('Haiti'), entry('Myanmar')]
   },
 }))
@@ -21,14 +22,22 @@ import OutlookCard from './OutlookCard'
 const base = { crises: [], flights: [], articles: [], onSelectCountry: vi.fn(), onClose: vi.fn() }
 
 describe('OutlookCard', () => {
-  it('stays the regional outlook for a clicked country, with that country first and no country brief', () => {
+  it('stays the regional activity view for a clicked country, with that country first and no country brief', () => {
     const { container } = render(<OutlookCard {...base} pinnedCountry="Ukraine" />)
-    expect(screen.getByText('Regional outlook')).toBeTruthy()
+    expect(screen.getByText('Regional activity')).toBeTruthy()
     expect(screen.queryByTestId('country-brief')).toBeNull()
     const names = [...container.querySelectorAll('.outlook-entry-btn')].map(b => b.textContent ?? '')
     expect(names[0]).toContain('Ukraine')
     expect(names.length).toBe(3)
     expect(names.slice(1).join()).toContain('Sudan')
+  })
+
+  it('names its scope, and says why there is no trend when the conflict feed is empty', () => {
+    m.empty = true
+    render(<OutlookCard {...base} conflictFeed={{ events: [], capped: false }} />)
+    m.empty = false
+    expect(screen.getByText('Worldwide · conflict events, 72h vs prior week')).toBeTruthy()
+    expect(screen.getByText(/conflict feed \(ACLED\) returned no recent events/)).toBeTruthy()
   })
 
   it('shows a clicked city as its own local brief, not the country data', () => {
