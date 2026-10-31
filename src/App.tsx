@@ -111,6 +111,8 @@ function loadGroup(): PanelGroup {
 
 export default function App() {
   const [navOpen, setNavOpen] = useState(false)
+  // the home map's country colouring has its own switch, so its × closes it without touching the full map's layers
+  const [homeColouring, setHomeColouring] = useState(true)
   const closeNav = useCallback(() => setNavOpen(false), [])
   const [isHome, setIsHome] = useState(() => {
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ''))
@@ -399,7 +401,7 @@ export default function App() {
     />
   )
   const homeOnlyPanelState = Object.fromEntries(Object.keys(panelState).map(key => [key, false])) as unknown as PanelState
-  homeOnlyPanelState.countryAnalytics = true
+  homeOnlyPanelState.countryAnalytics = homeColouring
   const homeMapView = cloneElement(mapView, {
     showFlights: false, showCrises: false, showNews: false, showStocks: false,
     showWildfires: false, showMilitary: false, showNuclear: false, showSanctions: false,
@@ -407,8 +409,9 @@ export default function App() {
     showHumanitarian: false, showVessels: false, showOil: false, showGas: false, showGPSJam: false,
     showPorts: false, showPipelines: false, showChokepoints: false, showSupplyChain: false,
     showShippingDensity: false, showOutages: false, showDisasters: false, showResources: false,
-    showTradeStats: false, showAnalyticsHex: false, showCountryAnalytics: true,
+    showTradeStats: false, showAnalyticsHex: false, showCountryAnalytics: homeColouring,
     panelState: homeOnlyPanelState,
+    onToggleLayer: (layer: keyof PanelState) => { if (layer === 'countryAnalytics') setHomeColouring(on => !on); else toggleLayer(layer) },
     deepstateMode: false,
   })
 
@@ -471,7 +474,7 @@ export default function App() {
                 onOpenMap={openMap}
                 onOpenCountry={selectCountry}
                 onOpenLibrary={() => setLibraryOpen(true)}
-                onColorCountries={colorCountries}
+                onColorCountries={id => { colorCountries(id); setHomeColouring(true) }}
                 projectionMode={projectionMode}
                 onProjectionMode={setProjectionMode}
               />
