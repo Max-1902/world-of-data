@@ -1747,7 +1747,7 @@ button.dl-rank:hover { background: var(--surface2); }
 :root[data-theme="light"] .new-nav-item.active { background: var(--accent-soft); border-color: rgba(10,123,163,.18); }
 :root[data-theme="light"] .new-icon-button.active { border-color: rgba(10,123,163,.3); background: var(--accent-soft); }
 :root[data-theme="light"] .ai-response-line strong { color: var(--amber); }
-:root[data-theme="light"] .home-hero { background-image: linear-gradient(90deg, rgba(255,255,255,.97) 0%, rgba(247,250,252,.93) 48%, rgba(238,242,246,.84) 100%), url('/images/home-earth.jpg'); box-shadow: var(--shadow-md); }
+:root[data-theme="light"] .home-hero { background-image: linear-gradient(90deg, rgba(255,255,255,.95) 0%, rgba(247,250,252,.86) 38%, rgba(247,250,252,.4) 66%, rgba(238,242,246,.18) 100%), url('/images/home-earth.jpg'); box-shadow: var(--shadow-md); }
 :root[data-theme="light"] .home-hero::before { background: none; }
 :root[data-theme="light"] .home-hero::after { box-shadow: none; opacity: .6; }
 :root[data-theme="light"] .home-hero h1, :root[data-theme="light"] .home-hero h2 { color: var(--text1); }
