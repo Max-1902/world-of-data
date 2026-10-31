@@ -242,7 +242,7 @@ export default function MapView({
         </>
       )}
       {panelState && onToggleLayer && (
-        <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} suggested={suggestedLayers} top={52} />
+        <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} suggested={suggestedLayers} top={10} />
       )}
       </div>
 
