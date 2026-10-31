@@ -69,9 +69,12 @@ describe('AIAnalystPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Daily brief' }))
 
     await screen.findByText('Bottom line')
+    // the default model is free: compact instructions, the free tool set and limits
     const sent = runAgent.mock.calls[0][0]
-    expect(sent.messages[0].content).toContain('INVESTIGATING WITH DATA TOOLS')
+    expect(sent.messages[0].content).toContain('GETTING DATA')
+    expect(sent.messages[0].content).not.toContain('INVESTIGATING WITH DATA TOOLS')
     expect(sent.messages[0].content).toContain('[DATA:series|')
+    expect(sent).toMatchObject({ maxRounds: 2, perRound: 4 })
     expect(screen.getByText('Investigated 1 dataset')).toBeTruthy()
     expect(screen.getByRole('heading', { name: 'Conflict events by country' })).toBeTruthy() // the placed chart
     expect(screen.getByText('dashboard').className).toContain('ai-src-tag')
@@ -82,6 +85,21 @@ describe('AIAnalystPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'R1' }))
     expect(screen.getByText('Live events: 3 in 2 countries.')).toBeTruthy()
 
+  })
+
+  it('a paid model gets the full instructions, every tool and the full limits', async () => {
+    catalogue.mockResolvedValue([{ id: 'anthropic/claude-x', label: 'Claude X', ctx: '200k', priceIn: 3, priceOut: 15, free: false, created: 1 }])
+    runAgent.mockResolvedValue({ answer: 'ok', answeredBy: 'anthropic/claude-x', transcript: [], results: [], steps: 1 })
+    render(<AIAnalystPanel crises={[]} flights={[]} />)
+    await vi.waitFor(() => expect(screen.getAllByRole('option').map(o => (o as HTMLOptionElement).value)).toContain('anthropic/claude-x'))
+    fireEvent.change(screen.getByRole('combobox', { name: 'Analysis model' }), { target: { value: 'anthropic/claude-x' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Daily brief' }))
+    await vi.waitFor(() => expect(runAgent).toHaveBeenCalled())
+    const sent = runAgent.mock.calls[0][0]
+    expect(sent.model).toBe('anthropic/claude-x')
+    expect(sent.messages[0].content).toContain('INVESTIGATING WITH DATA TOOLS')
+    expect(sent.messages[0].content).toContain('[DATA:catalog]')
+    expect(sent).toMatchObject({ maxRounds: 4, perRound: 6 })
   })
 
   it('adds the charts of the data used when the answer placed none', async () => {

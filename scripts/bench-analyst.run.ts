@@ -17,8 +17,8 @@
 import fs from 'node:fs'
 import { it } from 'vitest'
 import { runAgent } from '../src/services/aiAgent'
-import { toolCatalogue } from '../src/services/aiTools'
-import { buildDashboardContext, buildSystemPrompt, DEFAULT_MODEL, type DSMessage } from '../src/services/openrouter'
+import { analystSystemPrompt } from '../src/services/analystTiers'
+import { buildDashboardContext, DEFAULT_MODEL, type DSMessage } from '../src/services/openrouter'
 import { BENCH_QUESTIONS, renderReport, scoreRun, type BenchScore } from '../src/services/analystBench'
 
 const OUT = process.env.BENCH_OUT
@@ -36,16 +36,15 @@ it('runs the analyst benchmark', async () => {
   globalThis.fetch = ((input, init) => realFetch(typeof input === 'string' && input.startsWith('/') ? BASE + input : input, init)) as typeof fetch
 
   const ctx = { crises: [], flights: [], trajectories: [], flightsLayer: false, crisesLayer: false }
-  const system: DSMessage = {
-    role: 'system',
-    content: buildSystemPrompt(buildDashboardContext([], [], [], '', '', '', { flightsLayer: false, crisesLayer: false }), { tools: toolCatalogue() }),
-  }
+  // the same instructions and limits the app uses for this model's tier (free or paid)
+  const { prompt, profile } = analystSystemPrompt(buildDashboardContext([], [], [], '', '', '', { flightsLayer: false, crisesLayer: false }), MODEL)
+  const system: DSMessage = { role: 'system', content: prompt }
 
   const scores: BenchScore[] = []
   for (const q of questions) {
     process.stderr.write(`${q.id} … `)
     try {
-      const run = await runAgent({ messages: [system, { role: 'user', content: q.question }], model: MODEL, ctx })
+      const run = await runAgent({ messages: [system, { role: 'user', content: q.question }], model: MODEL, ctx, maxRounds: profile.rounds, perRound: profile.perRound })
       const score = scoreRun(q, run)
       scores.push(score)
       process.stderr.write(score.passed ? 'ok\n' : `failed: ${score.checks.filter(c => !c.pass).map(c => c.id).join(', ')}\n`)

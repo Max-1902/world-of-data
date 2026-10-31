@@ -13,14 +13,21 @@ export interface DSMessage {
 // OpenRouter's free-tier catalog rotates — these IDs are checked live against
 // GET /api/v1/models. If chat requests start 404ing again, the slugs below
 // have likely been retired; re-verify against that endpoint.
+// Ordered by expected answer quality, which is also the fallback order. The default is the one free model with
+// a measured record: in the 2026-10-16 grounding eval (23 questions × 2) Nemotron Super passed 40 of 46 and
+// LFM 2.6B, the previous default, 14 of 46, with no usable answer in 30. The Gemma and Omni order is by size only.
 export const FREE_MODELS: { id: string; label: string; ctx: string }[] = [
-  { id: 'liquid/lfm-2.5-2.6b:free',                           label: 'LFM 2.6B',          ctx: '32k' },
-  { id: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', label: 'Nemotron Omni 30B', ctx: '32k' },
   { id: 'nvidia/nemotron-3-super-120b-a12b:free',             label: 'Nemotron Super 120B', ctx: '32k' },
-  { id: 'google/gemma-4-26b-a4b-it:free',                     label: 'Gemma 4 26B',       ctx: '32k' },
   { id: 'google/gemma-4-31b-it:free',                         label: 'Gemma 4 31B',       ctx: '32k' },
+  { id: 'google/gemma-4-26b-a4b-it:free',                     label: 'Gemma 4 26B',       ctx: '32k' },
+  { id: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', label: 'Nemotron Omni 30B', ctx: '32k' },
+  { id: 'liquid/lfm-2.5-2.6b:free',                           label: 'LFM 2.6B',          ctx: '32k' },
 ]
 export const DEFAULT_MODEL = FREE_MODELS[0].id
+
+/** Free (`:free`) models get the compact analyst instructions and settings; every other model the full ones. */
+export type AnalystTier = 'free' | 'paid'
+export const tierOf = (model: string): AnalystTier => (model.endsWith(':free') ? 'free' : 'paid')
 
 // ── Full catalogue (free + paid) ───────────────────────────────────────────
 // Everything OpenRouter lists, fetched live via /api/openrouter/models. Paid models
@@ -153,8 +160,15 @@ export function describeAIError(err: unknown): string {
   return 'The analysis request could not be completed. Check your connection and try again.'
 }
 
-/** Sampling settings for every analyst call — exported so run logs and the eval harness record what was actually sent. */
-export const CHAT_PARAMS = { max_tokens: 4000, temperature: 0.65 } as const
+/**
+ * Sampling settings per tier. Free models are small and often "reasoning" variants whose hidden thinking counts
+ * against max_tokens: low reasoning effort leaves the budget for the answer, and a lower temperature keeps them on
+ * the instructions. Paid models get room for a full briefing (the proxy caps max_tokens at 8000).
+ */
+export const CHAT_PARAMS: Record<AnalystTier, { max_tokens: number; temperature: number; reasoning?: { effort: 'low' } }> = {
+  free: { max_tokens: 4000, temperature: 0.4, reasoning: { effort: 'low' } },
+  paid: { max_tokens: 8000, temperature: 0.65 },
+}
 
 // ── Streaming call ─────────────────────────────────────────────────────────
 // Some free models are "reasoning" variants that stream their internal
@@ -179,7 +193,7 @@ export async function streamAI(
       model,
       messages,
       stream:      true,
-      ...CHAT_PARAMS,
+      ...CHAT_PARAMS[tierOf(model)],
     }),
     signal,
   })
@@ -232,9 +246,10 @@ const sleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, 
 
 /**
  * streamAI with rate-limit resilience. A rate-limited (429) free model is retried once, then the
- * other free models are tried in turn. Paid models are never swapped — switching one to another
- * would change what gets billed — they just get the one retry. Falls over only before any text
- * has streamed, so an answer is never spliced from two models. Returns the model that answered.
+ * other free models are tried in turn; a free model OpenRouter no longer offers (404 — the free
+ * catalogue rotates) goes straight to the next one. Paid models are never swapped — switching one
+ * to another would change what gets billed — they just get the one retry. Falls over only before
+ * any text has streamed, so an answer is never spliced from two models. Returns the model that answered.
  */
 export async function streamAIWithFallback(
   messages: DSMessage[],
@@ -242,7 +257,7 @@ export async function streamAIWithFallback(
   signal:   AbortSignal | undefined,
   model:    string,
   onReasoning?: (token: string) => void,
-  onFallback?: (from: string, to: string) => void,
+  onFallback?: (from: string, to: string, why: 'rate-limited' | 'unavailable') => void,
   retryDelayMs = 1500,
 ): Promise<string> {
   let started = false
@@ -253,6 +268,7 @@ export async function streamAIWithFallback(
   let lastErr: unknown
   for (let i = 0; i < candidates.length; i++) {
     const id = candidates[i]
+    let why: 'rate-limited' | 'unavailable' = 'rate-limited'
     for (let attempt = 0; attempt < (i === 0 ? 2 : 1); attempt++) {
       try {
         if (attempt > 0) await sleep(retryDelayMs, signal)
@@ -261,10 +277,12 @@ export async function streamAIWithFallback(
       } catch (err) {
         lastErr = err
         const rateLimited = err instanceof OpenRouterError && err.status === 429
-        if (!rateLimited || started) throw err
+        const retired = err instanceof OpenRouterError && err.status === 404 && isFree(id)
+        if ((!rateLimited && !retired) || started) throw err
+        if (retired) { why = 'unavailable'; break }
       }
     }
-    if (i + 1 < candidates.length) onFallback?.(id, candidates[i + 1])
+    if (i + 1 < candidates.length) onFallback?.(id, candidates[i + 1], why)
   }
   throw lastErr
 }

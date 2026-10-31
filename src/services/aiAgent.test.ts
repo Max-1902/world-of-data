@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { runAgent, LAST_ROUND_NOTE, type AgentEvent } from './aiAgent'
+import { runAgent, LAST_ROUND_NOTE, EMPTY_ANSWER_NOTE, type AgentEvent } from './aiAgent'
 import type { ToolCall, ToolResult, ToolContext } from './aiTools'
 import type { DSMessage } from './openrouter'
 
@@ -50,6 +50,29 @@ describe('runAgent', () => {
     expect(run.results).toHaveLength(2)
     expect(sent[2][sent[2].length - 1].content).toContain(LAST_ROUND_NOTE)
     expect(sent[1][sent[1].length - 1].content).not.toContain(LAST_ROUND_NOTE)
+  })
+
+  it('asks once more when the final turn has no answer text, and returns that answer', async () => {
+    const { stream, sent } = scripted(['[DATA:news|a]', '[DATA:news|b]', 'The answer.'])
+    const run = await runAgent({ messages: base, model: 'm:free', ctx, stream, run: fakeRun, maxRounds: 1 })
+    expect(run.answer).toBe('The answer.')
+    expect(run.steps).toBe(3)
+    expect(run.results).toHaveLength(1) // the request after the limit is still not honoured
+    expect(sent[2][sent[2].length - 1].content).toBe(EMPTY_ANSWER_NOTE)
+  })
+
+  it('asks only once: a second empty reply is returned as it is', async () => {
+    const { stream } = scripted(['', ''])
+    const run = await runAgent({ messages: base, model: 'm:free', ctx, stream, run: fakeRun })
+    expect(run).toMatchObject({ answer: '', steps: 2 })
+    expect(stream).toHaveBeenCalledTimes(2)
+  })
+
+  it('honours the per-round limit it is given and tells the model what was dropped', async () => {
+    const { stream, sent } = scripted(['[DATA:news|a]\n[DATA:news|b]\n[DATA:news|c]', 'done'])
+    const run = await runAgent({ messages: base, model: 'm:free', ctx, stream, run: fakeRun, perRound: 2 })
+    expect(run.results).toHaveLength(2)
+    expect(sent[1][sent[1].length - 1].content).toContain('1 further request dropped: at most 2 per turn')
   })
 
   it('reuses a result when the same query is repeated, so ids stay unique and stable', async () => {

@@ -7,10 +7,10 @@
  * do not support function calling on OpenRouter) and paid ones behave the same, and the server proxy keeps its fixed
  * request shape (api/openrouter/chat/completions.ts).
  */
-import { streamAIWithFallback, type DSMessage } from './openrouter'
+import { streamAIWithFallback, visibleText, type DSMessage } from './openrouter'
 import { parseToolCalls, runTool, formatToolResults, MAX_CALLS_PER_STEP, type ToolCall, type ToolContext, type ToolResult } from './aiTools'
 
-/** Data rounds before the model must answer. Each round is one model call; the answer is one more. */
+/** Data rounds before the model must answer. Each round is one model call; the answer is one more. (Paid models; free ones get fewer, see analystTiers.ts.) */
 export const MAX_DATA_ROUNDS = 4
 
 export type AgentEvent =
@@ -18,7 +18,7 @@ export type AgentEvent =
   | { type: 'text'; step: number; raw: string }
   | { type: 'tools'; step: number; calls: ToolCall[] }
   | { type: 'result'; step: number; result: ToolResult }
-  | { type: 'fallback'; from: string; to: string }
+  | { type: 'fallback'; from: string; to: string; why: 'rate-limited' | 'unavailable' }
 
 export interface AgentRun {
   /** raw text of the final turn (command and chart lines included) */
@@ -39,17 +39,23 @@ export interface AgentOptions {
   signal?: AbortSignal
   onEvent?: (e: AgentEvent) => void
   maxRounds?: number
+  /** data requests honoured per round (default MAX_CALLS_PER_STEP) */
+  perRound?: number
   /** injectable for tests */
   stream?: typeof streamAIWithFallback
   run?: typeof runTool
 }
 
 export const LAST_ROUND_NOTE = 'That was the last data round. Write the final answer now from the data you have, with no further [DATA:…] requests.'
+/** Sent once when a final turn has no answer text (only data requests, a tool-call block, or nothing after hidden reasoning). */
+export const EMPTY_ANSWER_NOTE = 'Your last reply contained no answer text. Write the answer to my question now, in plain text, from the data above. Do not request more data.'
 
 export async function runAgent(o: AgentOptions): Promise<AgentRun> {
   const stream = o.stream ?? streamAIWithFallback
   const run = o.run ?? runTool
   const maxRounds = o.maxRounds ?? MAX_DATA_ROUNDS
+  const perRound = o.perRound ?? MAX_CALLS_PER_STEP
+  let nudged = false
   const transcript = [...o.messages]
   const results: ToolResult[] = []
   // same query twice in one investigation → same result (and id); ids are assigned before any await so they never collide
@@ -64,14 +70,22 @@ export async function runAgent(o: AgentOptions): Promise<AgentRun> {
       transcript,
       t => { raw += t; o.onEvent?.({ type: 'text', step, raw }) },
       o.signal, model, undefined,
-      (from, to) => o.onEvent?.({ type: 'fallback', from, to }),
+      (from, to, why) => o.onEvent?.({ type: 'fallback', from, to, why }),
     )
     // a rate-limit fallback moved to another free model: stay on it for the rest of this investigation
     model = answeredBy
-    const calls = step < maxRounds ? parseToolCalls(raw) : []
-    if (!calls.length) return { answer: raw, answeredBy, transcript, results, steps: step + 1 }
+    const calls = step < maxRounds && !nudged ? parseToolCalls(raw) : []
+    if (!calls.length) {
+      // small models sometimes end on data requests past the limit, a native tool-call block, or nothing at all:
+      // ask once more for the answer itself rather than showing the reader an empty reply
+      if (visibleText(raw).trim() || nudged) return { answer: raw, answeredBy, transcript, results, steps: step + 1 }
+      nudged = true
+      if (raw.trim()) transcript.push({ role: 'assistant', content: raw })
+      transcript.push({ role: 'user', content: EMPTY_ANSWER_NOTE })
+      continue
+    }
 
-    const take = calls.slice(0, MAX_CALLS_PER_STEP)
+    const take = calls.slice(0, perRound)
     o.onEvent?.({ type: 'tools', step, calls: take })
     const round = await Promise.all(take.map(c => {
       const key = `${c.tool}|${c.args.join('|').toLowerCase()}`
@@ -85,7 +99,7 @@ export async function runAgent(o: AgentOptions): Promise<AgentRun> {
     if (o.signal?.aborted) throw new DOMException('Aborted', 'AbortError')
     transcript.push(
       { role: 'assistant', content: raw },
-      { role: 'user', content: formatToolResults(round, calls.length - take.length) + (step + 1 >= maxRounds ? `\n\n${LAST_ROUND_NOTE}` : '') },
+      { role: 'user', content: formatToolResults(round, calls.length - take.length, perRound) + (step + 1 >= maxRounds ? `\n\n${LAST_ROUND_NOTE}` : '') },
     )
   }
 }

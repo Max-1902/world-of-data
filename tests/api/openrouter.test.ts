@@ -75,6 +75,19 @@ describe('openrouter edge proxy', () => {
     expect(sent.messages).toEqual([{ role: 'user', content: 'hi' }])
   })
 
+  it('passes a reasoning effort through, rebuilt, and drops any other reasoning field', async () => {
+    vi.stubEnv('OPENROUTER_KEY', 'k')
+    const fetchMock = upstreamStub()
+    const send = async (reasoning: unknown) => {
+      fetchMock.mockClear()
+      await handler(req(JSON.stringify({ model: 'x/y:free', messages: [{ role: 'user', content: 'hi' }], reasoning })))
+      return JSON.parse((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body as string).reasoning
+    }
+    expect(await send({ effort: 'low', max_tokens: 99999, exclude: false })).toEqual({ effort: 'low' })
+    expect(await send({ effort: 'extreme' })).toBeUndefined()
+    expect(await send('high')).toBeUndefined()
+  })
+
   it.each([
     ['not json', 400],
     ['{"messages":[{"role":"user","content":"hi"}]}', 400],
