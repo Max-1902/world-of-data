@@ -8,13 +8,13 @@ vi.mock('../../services/eurostatNowcast', async orig => ({ ...await orig<typeof 
 import NowcastPanel from './NowcastPanel'
 
 // synthetic: GDP growth tracks IP growth closely, so the model qualifies; IP is out for Jul–Aug 2026
-function data(signal = true) {
+function data(signal = true, ipEnd = '2026-08', gdpEnd = '2026-Q2') {
   const ip = new Map<string, number>()
   let level = 100, s = 7
   const rnd = () => { s = (s * 16807) % 2147483647; return s / 2147483647 - 0.5 }
   for (let y = 1995; y <= 2026; y++) for (let mo = 1; mo <= 12; mo++) {
     const k = `${y}-${String(mo).padStart(2, '0')}`
-    if (k > '2026-08') break
+    if (k > ipEnd) break
     level *= 1 + rnd() * 0.03
     ip.set(k, level)
   }
@@ -22,7 +22,7 @@ function data(signal = true) {
   let g = 0.5
   for (let y = 1995; y <= 2026; y++) for (let n = 1; n <= 4; n++) {
     const q = `${y}-Q${n}`
-    if (q > '2026-Q2') break
+    if (q > gdpEnd) break
     const x = ipGrowth(ip, q, 3)
     if (x === null) continue
     g = signal ? 0.2 + 0.3 * x + rnd() * 0.05 : 0.97 * g + 0.015 + rnd() * 0.1
@@ -50,6 +50,18 @@ describe('NowcastPanel', () => {
     m.fetch.mockResolvedValue(data(false))
     render(<NowcastPanel />)
     expect(await screen.findByText(/the bridge model did not beat it in both test periods/)).toBeTruthy()
+  })
+
+  it('between a GDP release and the next quarter\'s first IP month, says why and scores the quarter just published', async () => {
+    m.fetch.mockResolvedValue(data(true, '2026-08', '2026-Q3'))
+    render(<NowcastPanel />)
+    expect(await screen.findByText('2026-Q3 published')).toBeTruthy()
+    const t = document.body.textContent!
+    expect(t).toContain('2026-Q3 GDP is published, and no industrial production month for 2026-Q4 is out yet')
+    expect(t).toContain('around mid-December 2026')
+    expect(screen.getByText('2026-Q3 nowcast')).toBeTruthy()
+    expect(t).toContain('2 of 3 months of industrial production (Jul 2026, Aug 2026)')
+    expect(t).toMatch(/80% range\.|outside its 80% range/)
   })
 
   it('loads the economy picked, and offers a retry when Eurostat fails', async () => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { backtestNowcast, fitBridge, ipGrowth, isPandemic, monthsKnown, monthsOf, nowcast, parseEurostat, prevQuarter, quarterIp, quarterOf, rangeHalfWidth, MIN_TRAIN } from './nowcast'
+import { backtestNowcast, fitBridge, ipGrowth, isPandemic, monthsKnown, monthsOf, nextQuarter, nowcast, scoreLastQuarter, parseEurostat, prevQuarter, quarterIp, quarterOf, rangeHalfWidth, MIN_TRAIN } from './nowcast'
 
 // Synthetic only: IP drifts with a seeded wobble, and GDP growth = 0.2 + 0.3 × IP growth + small noise.
 function rng(seed: number) { let a = seed >>> 0; return () => { a = (a + 0x6d2b79f5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296 - 0.5 } }
@@ -28,6 +28,8 @@ describe('calendar helpers', () => {
     expect(quarterOf('2026-08')).toBe('2026-Q3')
     expect(monthsOf('2026-Q3')).toEqual(['2026-07', '2026-08', '2026-09'])
     expect(prevQuarter('2026-Q1')).toBe('2025-Q4')
+    expect(nextQuarter('2026-Q4')).toBe('2027-Q1')
+    expect(nextQuarter('2026-Q3')).toBe('2026-Q4')
     expect(isPandemic('2020-Q2')).toBe(true)
     expect(isPandemic('2022-Q1')).toBe(false)
   })
@@ -80,6 +82,18 @@ describe('bridge model and backtest (synthetic)', () => {
   })
   it('gives no nowcast before the quarter\'s first month is out', () => {
     expect(nowcast(gdp, synth('2026-Q2', '2026-06').ip)).toBeNull()
+  })
+  it('scores the last published quarter as the nowcast saw it, with only the months out before the GDP flash', () => {
+    const s = synth('2026-Q3', '2026-09')
+    const sc = scoreLastQuarter(s.gdp, s.ip)!
+    expect([sc.quarter, sc.said.quarter, sc.said.known, sc.said.headline]).toEqual(['2026-Q3', '2026-Q3', 2, 'model'])
+    expect(sc.actual).toBe(s.gdp.get('2026-Q3'))
+    // identical to the live nowcast made with GDP to Q2 and IP to August
+    const live = nowcast(new Map([...s.gdp].filter(([q]) => q <= '2026-Q2')), new Map([...s.ip].filter(([m]) => m <= '2026-08')))!
+    expect(sc.said.value).toBe(live.value)
+    expect(scoreLastQuarter(s.gdp, s.ip, 3)!.said.value).not.toBe(live.value)
+    expect(typeof sc.inRange).toBe('boolean')
+    expect(scoreLastQuarter(new Map(), s.ip)).toBeNull()
   })
 })
 

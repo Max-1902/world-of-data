@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { NOWCAST_ECONOMIES, fetchNowcastData, type NowcastData } from '../../services/eurostatNowcast'
-import { BACKTEST_FROM, MIN_SCORED, SPLIT, backtestNowcast, monthsOf, nowcast, type Backtest, type Quarter } from '../../utils/nowcast'
+import { BACKTEST_FROM, MIN_SCORED, SPLIT, backtestNowcast, monthsOf, nextQuarter, nowcast, scoreLastQuarter, type Backtest, type Quarter, type Scorecard } from '../../utils/nowcast'
 import { ChartFrame } from '../charts/ChartFrame'
 import { LineChart } from '../charts/LineChart'
 import { Metric, StatusLabel } from '../DataLabels'
@@ -28,6 +28,43 @@ function useNowcastData(geo: string) {
     return () => { live = false }
   }, [geo, tick])
   return { ...state, retry: () => setTick(t => t + 1) }
+}
+
+/** Eurostat usually publishes a month's industrial production about six weeks after it ends. */
+function ipDue(m: string): string {
+  const i = Number(m.slice(5, 7)) + 1, y = Number(m.slice(0, 4)) + (i >= 12 ? 1 : 0)
+  return `mid-${['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][i % 12]} ${y}`
+}
+
+/** Between a GDP release and the next quarter's first IP month: what the nowcast said for the quarter just published. */
+function GapView({ lastQ, sc, updated }: { lastQ: Quarter; sc: Scorecard | null; updated: string | null }) {
+  const next = nextQuarter(lastQ), first = monthsOf(next)[0]
+  const months = sc ? monthsOf(sc.quarter).slice(0, sc.said.known).map(monthName) : []
+  const miss = sc ? sc.actual - sc.said.value : 0
+  return <>
+    <StatusLabel status="empty">
+      {lastQ} GDP is published, and no industrial production month for {next} is out yet, so there is no {next} nowcast.
+      {' '}{monthName(first).split(' ')[0]}'s figure, the first one, usually comes about six weeks after the month ends (around {ipDue(first)}).
+    </StatusLabel>
+    {sc && <>
+      <div className="viz-kpis">
+        <Metric label={`${sc.quarter} nowcast`} value={pct(sc.said.value)} unit="% q/q" evidence="statistical"
+          range={sc.said.range !== null ? `80% range ${pct(sc.said.value - sc.said.range)} to ${pct(sc.said.value + sc.said.range)}%` : 'range: too few past errors'}
+          asOf={`${sc.said.known} of 3 months of industrial production (${months.join(', ')})`}
+          detail={sc.said.headline === 'model' ? 'Bridge model on industrial production' : '"Same as last quarter": the model did not pass the backtest rule here'} />
+        <Metric label={`${sc.quarter} published`} value={pct(sc.actual)} unit="% q/q" evidence="observed" asOf={updated ? `Eurostat, updated ${updated.slice(0, 10)}` : 'Eurostat'} />
+      </div>
+      <p className="viz-verdict">
+        With the {months.join(' and ')} figures, the nowcast for {sc.quarter} was <b>{pct(sc.said.value)}%</b>; Eurostat has published <b>{pct(sc.actual)}%</b>,
+        {' '}{Math.abs(miss) < 0.05 ? 'the same to one decimal' : <>{Math.abs(miss).toFixed(1)} points {miss > 0 ? 'higher' : 'lower'}</>}
+        {sc.inRange === null ? '.' : sc.inRange ? ', inside its 80% range.' : ', outside its 80% range (about 1 quarter in 5 should be).'}
+        {' '}One quarter says little about the method; the backtest is the real test.
+      </p>
+      <Method caveats={<>Re-run on today's figures with the data cut back to just before the {sc.quarter} release, so it can differ slightly from what the panel showed live: Eurostat revises both series. The first GDP estimate is itself revised later.</>}>
+        The same rule as the live nowcast, given earlier GDP quarters and the first {sc.said.known} months of {sc.quarter} industrial production, which is what is normally out when the GDP flash estimate lands.
+      </Method>
+    </>}
+  </>
 }
 
 function BacktestTable({ rows }: { rows: Backtest[] }) {
@@ -57,6 +94,7 @@ export default function NowcastPanel() {
   const name = NOWCAST_ECONOMIES.find(e => e.geo === geo)?.name ?? geo
   const d = useNowcastData(geo)
   const nc = useMemo(() => (d.data ? nowcast(d.data.gdp, d.data.ip) : null), [d.data])
+  const sc = useMemo(() => (d.data && !nc ? scoreLastQuarter(d.data.gdp, d.data.ip) : null), [d.data, nc])
   const allK = useMemo(() => (d.data && nc ? ([1, 2, 3] as const).map(k => k === nc.known ? nc.backtest : backtestNowcast(d.data!.gdp, d.data!.ip, k)) : []), [d.data, nc])
 
   const months = nc ? monthsOf(nc.quarter).slice(0, nc.known).map(monthName) : []
@@ -76,7 +114,9 @@ export default function NowcastPanel() {
 
       {d.status === 'loading' && <StatusLabel status="loading">Eurostat GDP and industrial production for {name}…</StatusLabel>}
       {d.status === 'error' && <StatusLabel status="error">Eurostat could not be reached ({d.error}). <button className="cy-btn" onClick={d.retry}><RefreshCw size={11} /> Retry</button></StatusLabel>}
-      {d.status === 'ready' && !nc && <StatusLabel status="empty">No industrial production month is out yet for the quarter after {lastQ?.[0] ?? 'the last published one'}, or the history is too short, so there is nothing to nowcast.</StatusLabel>}
+      {d.status === 'ready' && !nc && (lastQ
+        ? <GapView lastQ={lastQ[0]} sc={sc} updated={d.data!.updated.gdp} />
+        : <StatusLabel status="empty">Eurostat returned no GDP figures for {name}, so there is nothing to nowcast.</StatusLabel>)}
 
       {nc && d.data && (
         <ChartFrame
