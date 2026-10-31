@@ -756,9 +756,9 @@ const TOOLS: ToolDef[] = [
 export const TOOL_BY_NAME = new Map(TOOLS.map(t => [t.name, t]))
 export const TOOL_NAMES = TOOLS.map(t => t.name)
 
-/** The tool list as it appears in the system prompt. */
-export function toolCatalogue(): string {
-  return TOOLS.map(t => `${t.usage} — ${t.describe}`).join('\n')
+/** The tool list as it appears in the system prompt; `only` limits it to those tools (in catalogue order). */
+export function toolCatalogue(only?: readonly string[]): string {
+  return TOOLS.filter(t => !only || only.includes(t.name)).map(t => `${t.usage} — ${t.describe}`).join('\n')
 }
 
 // ── Parsing ──────────────────────────────────────────────────────────────────
@@ -808,11 +808,11 @@ export async function runTool(call: ToolCall, id: string, ctx: ToolContext): Pro
 }
 
 /** The tool results as the model reads them, in one user message. */
-export function formatToolResults(results: ToolResult[], dropped = 0): string {
+export function formatToolResults(results: ToolResult[], dropped = 0, perRound = MAX_CALLS_PER_STEP): string {
   return [
     'TOOL RESULTS — fetched or computed by the dashboard just now (not model-generated). Cite their numbers with [dashboard]. Place a chart of a result on its own line with [CHART:<id>].',
     ...results.map(r => `--- ${r.id} · ${r.call}${r.ok ? ` · ${r.title} · source: ${r.source}${r.chart ? ' · chartable' : ''}` : ''}\n${r.text}`),
-    dropped ? `(${dropped} further request${dropped === 1 ? '' : 's'} dropped: at most ${MAX_CALLS_PER_STEP} per turn.)` : '',
+    dropped ? `(${dropped} further request${dropped === 1 ? '' : 's'} dropped: at most ${perRound} per turn.)` : '',
   ].filter(Boolean).join('\n\n')
 }
 

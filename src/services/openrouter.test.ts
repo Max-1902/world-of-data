@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { streamAI, buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, NOT_IN_CONTEXT } from './openrouter'
+import { streamAI, CHAT_PARAMS, tierOf, buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, FREE_MODELS, DEFAULT_MODEL, QUICK_PROMPTS, OpenRouterError, describeAIError, streamAIWithFallback, groupModels, formatModelPrice, NOT_IN_CONTEXT } from './openrouter'
 import { mockFetch, streamResponse, textResponse, jsonResponse } from '../test/helpers'
 import type { CrisisEvent, Flight } from '../types'
 import type { TrajectoryEntry } from '../utils/trajectory'
@@ -108,6 +108,10 @@ describe('streamAI', () => {
 describe('model catalogue and prompts', () => {
   it('default model is a listed free model', () => {
     expect(FREE_MODELS.map(m => m.id)).toContain(DEFAULT_MODEL)
+  })
+  it('defaults to the free model with the best measured answers, not the 2.6B one that mostly returned nothing', () => {
+    expect(DEFAULT_MODEL).toBe('nvidia/nemotron-3-super-120b-a12b:free')
+    expect(FREE_MODELS[FREE_MODELS.length - 1].id).toBe('liquid/lfm-2.5-2.6b:free')
   })
   it('every model is free-tier, has a label, and ids are unique', () => {
     for (const m of FREE_MODELS) {
@@ -462,6 +466,27 @@ describe('describeAIError', () => {
   })
 })
 
+describe('settings per tier', () => {
+  const sent = async (model: string) => {
+    const fetchMock = mockFetch(() => streamResponse(['data: [DONE]\n\n']))
+    await streamAI([], () => {}, undefined, model)
+    return JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body))
+  }
+
+  it('a :free model is the free tier, anything else paid', () => {
+    expect(tierOf('x/y:free')).toBe('free')
+    expect(tierOf('anthropic/claude-x')).toBe('paid')
+  })
+
+  it('free models get low reasoning effort and a steadier temperature; paid models room for a full briefing', async () => {
+    expect(await sent('x/y:free')).toMatchObject({ max_tokens: 4000, temperature: 0.4, reasoning: { effort: 'low' } })
+    const paid = await sent('anthropic/claude-x')
+    expect(paid).toMatchObject({ max_tokens: 8000, temperature: 0.65 })
+    expect(paid.reasoning).toBeUndefined()
+    expect(CHAT_PARAMS.paid.max_tokens).toBeLessThanOrEqual(8000) // the proxy's cap
+  })
+})
+
 describe('streamAIWithFallback', () => {
   const msgs = [{ role: 'user' as const, content: 'hi' }]
   const limited = () => jsonResponse({ error: { message: 'rate limited' } }, { status: 429 })
@@ -487,6 +512,26 @@ describe('streamAIWithFallback', () => {
     mockFetch((_url, init) => { seen.push(JSON.parse(String(init?.body)).model); return limited() })
     await expect(streamAIWithFallback(msgs, () => {}, undefined, 'anthropic/claude-x', undefined, undefined, 0)).rejects.toMatchObject({ status: 429 })
     expect(seen).toEqual(['anthropic/claude-x', 'anthropic/claude-x'])
+  })
+
+  it('moves a free model OpenRouter no longer offers (404) straight to the next one, and says why', async () => {
+    const seen: string[] = []
+    mockFetch((_url, init) => {
+      const model = JSON.parse(String(init?.body)).model
+      seen.push(model)
+      return model === FREE_MODELS[0].id ? jsonResponse({ error: { message: 'No endpoints found' } }, { status: 404 }) : streamResponse([tok('ok'), 'data: [DONE]\n\n'])
+    })
+    const fallbacks: string[][] = []
+    const used = await streamAIWithFallback(msgs, () => {}, undefined, FREE_MODELS[0].id, undefined, (a, b, why) => fallbacks.push([a, b, why]), 0)
+    expect(used).toBe(FREE_MODELS[1].id)
+    expect(seen).toEqual([FREE_MODELS[0].id, FREE_MODELS[1].id])
+    expect(fallbacks).toEqual([[FREE_MODELS[0].id, FREE_MODELS[1].id, 'unavailable']])
+  })
+
+  it('never swaps a paid model that 404s', async () => {
+    const fetchMock = mockFetch(() => jsonResponse({ error: { message: 'gone' } }, { status: 404 }))
+    await expect(streamAIWithFallback(msgs, () => {}, undefined, 'anthropic/claude-x', undefined, undefined, 0)).rejects.toMatchObject({ status: 404 })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
   it('does not fall over on non-rate-limit errors', async () => {

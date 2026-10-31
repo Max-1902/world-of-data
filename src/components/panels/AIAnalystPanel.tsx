@@ -5,7 +5,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { lastAcledPoll } from '../../services/crises'
 import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, MessageSquare, ChevronDown, Maximize2, ExternalLink } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight, type ConflictFeed } from '../../types'
-import { buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, fetchModelPolicy, isModelEnabled, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption, type ModelPolicy } from '../../services/openrouter'
+import { buildDashboardContext, notMeasured, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, fetchModelPolicy, isModelEnabled, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption, type ModelPolicy } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
@@ -14,8 +14,9 @@ import { conflictTrajectories } from '../../utils/monthlyTrajectory'
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
 import { useCountryAnalytics } from '../../hooks/useCountryAnalytics'
 import { summarizeForAI } from '../../utils/countryStats'
-import { runAgent, MAX_DATA_ROUNDS } from '../../services/aiAgent'
-import { toolCatalogue, CHART_LINE, MAX_CALLS_PER_STEP, type ToolCall, type ToolResult } from '../../services/aiTools'
+import { runAgent } from '../../services/aiAgent'
+import { CHART_LINE, type ToolCall, type ToolResult } from '../../services/aiTools'
+import { analystSystemPrompt, profileFor } from '../../services/analystTiers'
 import { AIMarkdown } from './aiAnalyst/AIMarkdown'
 import { AIChart } from './aiAnalyst/AIChart'
 import { InvestigationTrail } from './aiAnalyst/InvestigationTrail'
@@ -80,8 +81,8 @@ const AUTO_CHARTS = 2
 const MARKET_QUESTION = /\b(stocks?|markets?|equit(?:y|ies)|shares?|invest\w*|portfolio|sectors?|etfs?|oil|gold|crypto\w*|bitcoin|forex|currenc\w*|bonds?|prices?|trad(?:e|ing)|returns?)\b/i
 
 /** The model's view of earlier turns: question and visible answer only (tool data is re-fetched when needed). */
-function historyOf(turns: ChatTurn[]): DSMessage[] {
-  return turns.filter(t => t.answer).flatMap(t => [{ role: 'user' as const, content: t.question }, { role: 'assistant' as const, content: t.answer }]).slice(-10)
+function historyOf(turns: ChatTurn[], keep = 5): DSMessage[] {
+  return turns.filter(t => t.answer).flatMap(t => [{ role: 'user' as const, content: t.question }, { role: 'assistant' as const, content: t.answer }]).slice(-2 * keep)
 }
 
 /** Sessions saved before the analyst could fetch data have messages only — rebuild their turns from those. */
@@ -139,6 +140,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
   const [showOutlook, setShowOutlook] = useState(true)
   /** expanded tool result per turn, opened from the trail or from a reference in the answer */
   const [openRef, setOpenRef]   = useState<{ turn: string; id: string } | null>(null)
+  const tier = profileFor(model)
   const modelName = (id: string) => FREE_MODELS.find(m => m.id === id)?.label ?? allModels?.find(m => m.id === id)?.label ?? id
   // pop-out controls (null when rendered without the window provider)
   const popout = useAnalystWindow()
@@ -272,8 +274,9 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
     }
     const layers   = { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises, conflictCapped: lastAcledPoll()?.capped ?? false }
     const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot, countryAnalyticsSummary, layers)
-    const sysMsg: DSMessage = { role: 'system', content: buildSystemPrompt(context, { tools: toolCatalogue() }) }
-    const messages: DSMessage[] = [sysMsg, ...historyOf(turns), { role: 'user', content: prompt }]
+    // free and paid models get separate instructions and limits (services/analystTiers.ts)
+    const { prompt: system, profile } = analystSystemPrompt(context, model)
+    const messages: DSMessage[] = [{ role: 'system', content: system }, ...historyOf(turns, profile.historyTurns), { role: 'user', content: prompt }]
 
     let raw = ''
     let answeredBy: string | null = null
@@ -285,7 +288,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
     let runError: string | undefined
     try {
       const run = await runAgent({
-        messages, model, signal: ctrl.signal,
+        messages, model, signal: ctrl.signal, maxRounds: profile.rounds, perRound: profile.perRound,
         ctx: { crises, flights, trajectories, flightsLayer: panelState?.flights, crisesLayer: panelState?.crises },
         onEvent: e => {
           if (!current()) return
@@ -304,7 +307,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
             const r = e.result
             setLive(l => l && { ...l, results: [...l.results, r], pending: l.pending.filter(c => c.raw !== r.call) })
           } else if (e.type === 'fallback') {
-            setNotice(`${modelName(e.from)} is rate-limited — switched to ${modelName(e.to)}.`)
+            setNotice(`${modelName(e.from)} is ${e.why === 'unavailable' ? 'no longer offered by OpenRouter' : 'rate-limited'} — switched to ${modelName(e.to)}.`)
           }
         },
       })
@@ -590,7 +593,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
           <div className="ai-turn">
             <div className="ai-user-bubble"><span>{live.question}</span></div>
             <InvestigationTrail turnId={live.id} results={live.results} pending={live.pending} notes={live.notes} />
-            {liveStatus && <div className="ai-loading"><span className="ai-loading-dot" />{liveStatus}{live.step > 0 && <span className="ai-step">round {live.step + 1} of up to {MAX_DATA_ROUNDS + 1}</span>}</div>}
+            {liveStatus && <div className="ai-loading"><span className="ai-loading-dot" />{liveStatus}{live.step > 0 && <span className="ai-step">round {Math.min(live.step + 1, tier.rounds + 1)} of up to {tier.rounds + 1}</span>}</div>}
             {live.text && <AIMarkdown text={live.text} results={live.results} streaming />}
           </div>
         )}
@@ -625,7 +628,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
         <div className="ai-context-items">
           <span><i className="incidents" />incidents {incidentsLabel}</span>
           <span><i className="flights" />flights {flightsLabel}</span>
-          <span className="ai-live-status" title={`Up to ${MAX_DATA_ROUNDS} data rounds × ${MAX_CALLS_PER_STEP} queries per question`}><i />Live data + tools</span>
+          <span className="ai-live-status" title={`${tier.tier === 'free' ? 'Free model: compact instructions, ' : ''}up to ${tier.rounds} data rounds × ${tier.perRound} queries per question`}><i />Live data + tools</span>
         </div>
         {turns.length > 0 && (
           <button

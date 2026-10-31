@@ -16,7 +16,7 @@ export const config = { runtime: 'edge' }
 
 export const MAX_BODY_BYTES   = 256 * 1024
 export const MAX_MESSAGES     = 80
-export const MAX_TOKENS_CAP   = 4000
+export const MAX_TOKENS_CAP   = 8000
 export const RATE_LIMIT       = 20      // requests per IP per window
 export const RATE_WINDOW_MS   = 60_000
 
@@ -90,6 +90,10 @@ export default async function handler(req: Request): Promise<Response> {
   }
   if (typeof input.temperature === 'number') body.temperature = Math.min(Math.max(input.temperature, 0), 2)
   if (typeof input.top_p === 'number') body.top_p = Math.min(Math.max(input.top_p, 0), 1)
+  // reasoning effort only (the analyst sets it low on free models so hidden thinking leaves room for the answer);
+  // rebuilt rather than passed through, like everything else here
+  const effort = (input.reasoning as { effort?: unknown } | undefined)?.effort
+  if (effort === 'low' || effort === 'medium' || effort === 'high') body.reasoning = { effort }
 
   const upstream = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
