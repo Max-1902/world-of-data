@@ -59,17 +59,23 @@ export function ForecastHome({ onOpenPanel, onOpenCountry }: Props) {
     setMemory({ ...remember(rec), now: rec })
   }, [ok, h.country, h.points, weoReady])
 
-  const compare = useMemo(() => weoReady ? g20Projections(weoReady) : null, [weoReady])
   const byIso3 = useMemo(() => new Map(h.countries.map(c => [c.iso3, c])), [h.countries])
 
-  // a G20 row expands to the country's general figures; inflation and unemployment load on the first expand only
+  // a G20 row expands to the country's general figures; inflation and unemployment load the first time a row expands
+  // or the table switches to either measure
+  const [measure, setMeasure] = useState<Measure>('gdp')
   const [expanded, setExpanded] = useState<string | null>(null)
   const [extra, setExtra] = useState<{ cpi: WeoPayload | null; lur: WeoPayload | null } | 'loading' | null>(null)
   useEffect(() => {
-    if (!expanded || extra) return
+    if ((!expanded && measure === 'gdp') || extra) return
     setExtra('loading')
     void Promise.all([fetchWeo('PCPIPCH'), fetchWeo('LUR')]).then(([cpi, lur]) => setExtra({ cpi, lur }))
-  }, [expanded, extra])
+  }, [expanded, measure, extra])
+  const measured = measure === 'gdp' ? weoReady : extra && extra !== 'loading' ? extra[measure] : extra === 'loading' ? 'loading' : null
+  const compareGdp = useMemo(() => weoReady ? g20Projections(weoReady) : null, [weoReady])
+  const compareMeasured = useMemo(() => measured && measured !== 'loading' ? g20Projections(measured) : null, [measured])
+  const compare = measure === 'gdp' ? compareGdp : compareMeasured
+  const measureLabel = WEO_ROWS.find(([k]) => k === measure)![1]
   const toggleRow = (iso3: string, c: WbCountry | undefined) => {
     if (expanded === iso3) { setExpanded(null); return }
     setExpanded(iso3)
@@ -146,14 +152,20 @@ export function ForecastHome({ onOpenPanel, onOpenCountry }: Props) {
         <div className="fh-card"><CorrMatrixCard onPick={() => onOpenPanel('countryAnalytics')} /></div>
       </section>
 
-      {compare && (
+      {compareGdp && (
         <section id="outlook-imf" className="home-section fh-section" aria-label="Compare economies">
           <div className="home-section-heading">
             <div><span className="section-kicker">COMPARE ECONOMIES</span><h2>The G20 on the IMF’s projections</h2><p>The IMF’s own figures, not this app’s forecast. Select an economy for its key figures and to see its forecast above.</p></div>
+            <div className="viz-toggle" role="group" aria-label="G20 measure">
+              {WEO_ROWS.map(([k]) => <button key={k} className={measure === k ? 'on' : ''} aria-pressed={measure === k} onClick={() => setMeasure(k)}>{MEASURE_SHORT[k]}</button>)}
+            </div>
           </div>
           <div className="fh-card">
-            <div className="viz-table-wrap fh-compare" role="region" aria-label="G20 economies, IMF projections" tabIndex={0}><table className="viz-table">
-              <thead><tr><th scope="col">Economy</th><th scope="col">{compare.years[0]}</th><th scope="col">{compare.years[1]}</th></tr></thead>
+            {measured === 'loading' && <StatusLabel status="loading">Loading the IMF’s {measureLabel.toLowerCase()} figures…</StatusLabel>}
+            {measured === null && <StatusLabel status="error">The IMF’s {measureLabel.toLowerCase()} figures could not be loaded.</StatusLabel>}
+            {compare && measured && measured !== 'loading' && <>
+            <div className="viz-table-wrap fh-compare" role="region" aria-label={`G20 economies, IMF projections: ${measureLabel}`} tabIndex={0}><table className="viz-table">
+              <thead><tr><th scope="col">Economy</th><th scope="col">{compare.years[0]} <span className="fh-proj">proj.</span></th><th scope="col">{compare.years[1]} <span className="fh-proj">proj.</span></th></tr></thead>
               <tbody>{compare.rows.map(r => {
                 const c = byIso3.get(r.iso3)
                 const open = expanded === r.iso3
@@ -170,7 +182,7 @@ export function ForecastHome({ onOpenPanel, onOpenCountry }: Props) {
                     </tr>
                     {open && (
                       <tr className="fh-detail" id={`fh-detail-${r.iso3}`}>
-                        <td colSpan={3}><CountryBrief iso3={r.iso3} country={c} gdp={weoReady!} extra={extra} years={compare.years} /></td>
+                        <td colSpan={3}><CountryBrief iso3={r.iso3} country={c} gdp={weoReady!} extra={extra} years={compareGdp.years} /></td>
                       </tr>
                     )}
                   </Fragment>
@@ -182,8 +194,9 @@ export function ForecastHome({ onOpenPanel, onOpenCountry }: Props) {
                 {pageCountry.name}: full country page <ArrowRight size={16} />
               </button>
             )}
-            <div className="cc-ev"><EvidenceTag kind="statistical" /><span>Real GDP growth, projected by the IMF. A forecast made with far more information than this app’s model, not a measurement.</span></div>
-            <SourceLine source={`IMF, ${weoReady!.vintage}`} asOf={weoReady!.lastModified ? `updated ${weoReady!.lastModified.slice(0, 10)}` : undefined} />
+            <div className="cc-ev"><EvidenceTag kind="statistical" /><span>{measureLabel}, projected by the IMF and ranked by {compare.years[1]}, highest first. A forecast made with far more information than this app’s model, not a measurement.</span></div>
+            <SourceLine source={`IMF, ${measured.vintage}`} asOf={measured.lastModified ? `updated ${measured.lastModified.slice(0, 10)}` : undefined} />
+            </>}
           </div>
         </section>
       )}
@@ -192,6 +205,8 @@ export function ForecastHome({ onOpenPanel, onOpenCountry }: Props) {
 }
 
 const WEO_ROWS = [['gdp', 'Real GDP growth'], ['cpi', 'Inflation (consumer prices)'], ['lur', 'Unemployment rate']] as const
+type Measure = typeof WEO_ROWS[number][0]
+const MEASURE_SHORT: Record<Measure, string> = { gdp: 'GDP growth', cpi: 'Inflation', lur: 'Unemployment' }
 
 /**
  * A G20 row's expanded view: the World Bank's facts about the country and the IMF's figures for growth, inflation and
