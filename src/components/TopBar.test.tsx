@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { installLocalStorage } from '../test/helpers'
 import { render, screen, fireEvent } from '@testing-library/react'
 
 const watch = vi.hoisted(() => ({ alerts: [] as { read: boolean }[] }))
@@ -27,5 +28,19 @@ describe('TopBar Saved shortcut', () => {
     const btn = screen.getByRole('button', { name: 'Saved countries, 2 new alerts' })
     expect(btn.textContent).toBe('2')
     expect(btn.getAttribute('aria-current')).toBe('page')
+  })
+})
+
+describe('TopBar theme toggle', () => {
+  beforeEach(() => { installLocalStorage(); delete document.documentElement.dataset.theme })
+
+  it('switches <html data-theme> between dark and light and remembers the choice', () => {
+    render(<TopBar {...props} onOpenPanel={() => {}} onToggleLayer={() => {}} />)
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to light theme' }))
+    expect(document.documentElement.dataset.theme).toBe('light')
+    expect(localStorage.getItem('ws-theme')).toBe('light')
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to dark theme' }))
+    expect(document.documentElement.dataset.theme).toBe('dark')
   })
 })
