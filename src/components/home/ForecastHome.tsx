@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight } from 'lucide-react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
+import { ArrowRight, ChevronDown } from 'lucide-react'
 import { useHomeForecast } from '../../hooks/useHomeForecast'
 import { FLAGSHIP_SERIES, g20Projections, type HomeForecast } from '../../utils/homeForecast'
 import { FORECAST_HORIZON, coverageLabel } from '../../utils/forecastPolicy'
 import { makeRecord, type ForecastRecord } from '../../utils/forecastRecord'
 import { remember } from '../../services/forecastLog'
+import { fetchWeo, type WeoPayload } from '../../services/imfWeo'
+import type { WbCountry } from '../../services/countryLookup'
 import { EvidenceTag, Metric, SourceLine, StatusLabel } from '../DataLabels'
 import { SinceBlock } from '../forecast/SinceBlock'
 import { LineChart } from '../charts/LineChart'
@@ -21,14 +23,18 @@ const HISTORY_YEARS = 25
 const f1 = (v: number) => `${v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)}`
 const today = () => new Date().toISOString().slice(0, 10)
 
-interface Props { onOpenPanel: (id: string) => void }
+interface Props {
+  onOpenPanel: (id: string) => void
+  /** opens a country's full page (takes the World Bank name) */
+  onOpenCountry: (name: string) => void
+}
 
 /**
  * The home page's forecast: what we expect (real GDP growth, three years, with its range), what changed since it was
  * last shown, what it rests on, what it cannot see, and how the G20 compare on the IMF's own projections. It reads
  * the same functions as the Predictions panel, so the number here is the number there.
  */
-export function ForecastHome({ onOpenPanel }: Props) {
+export function ForecastHome({ onOpenPanel, onOpenCountry }: Props) {
   const h = useHomeForecast()
   const name = h.country?.name ?? h.iso2
   const ok = h.result?.kind === 'ok' ? h.result : null
@@ -55,6 +61,21 @@ export function ForecastHome({ onOpenPanel }: Props) {
 
   const compare = useMemo(() => weoReady ? g20Projections(weoReady) : null, [weoReady])
   const byIso3 = useMemo(() => new Map(h.countries.map(c => [c.iso3, c])), [h.countries])
+
+  // a G20 row expands to the country's general figures; inflation and unemployment load on the first expand only
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [extra, setExtra] = useState<{ cpi: WeoPayload | null; lur: WeoPayload | null } | 'loading' | null>(null)
+  useEffect(() => {
+    if (!expanded || extra) return
+    setExtra('loading')
+    void Promise.all([fetchWeo('PCPIPCH'), fetchWeo('LUR')]).then(([cpi, lur]) => setExtra({ cpi, lur }))
+  }, [expanded, extra])
+  const toggleRow = (iso3: string, c: WbCountry | undefined) => {
+    if (expanded === iso3) { setExpanded(null); return }
+    setExpanded(iso3)
+    if (c) pick(c.iso2)
+  }
+  const pageCountry = (expanded ? byIso3.get(expanded) : null) ?? h.country
 
   return (
     <>
@@ -128,28 +149,84 @@ export function ForecastHome({ onOpenPanel }: Props) {
       {compare && (
         <section id="outlook-imf" className="home-section fh-section" aria-label="Compare economies">
           <div className="home-section-heading">
-            <div><span className="section-kicker">COMPARE ECONOMIES</span><h2>The G20 on the IMF’s projections</h2><p>The IMF’s own figures, not this app’s forecast. Select an economy to see its forecast above.</p></div>
+            <div><span className="section-kicker">COMPARE ECONOMIES</span><h2>The G20 on the IMF’s projections</h2><p>The IMF’s own figures, not this app’s forecast. Select an economy for its key figures and to see its forecast above.</p></div>
           </div>
           <div className="fh-card">
             <div className="viz-table-wrap fh-compare" role="region" aria-label="G20 economies, IMF projections" tabIndex={0}><table className="viz-table">
               <thead><tr><th scope="col">Economy</th><th scope="col">{compare.years[0]}</th><th scope="col">{compare.years[1]}</th></tr></thead>
               <tbody>{compare.rows.map(r => {
                 const c = byIso3.get(r.iso3)
+                const open = expanded === r.iso3
                 return (
-                  <tr key={r.iso3} className={c?.iso2 === h.iso2 ? 'fh-selected' : undefined}>
-                    <th scope="row">{c ? <button className="fh-row-btn" onClick={() => pick(c.iso2)}>{c.name}</button> : r.iso3}</th>
-                    <td>{r.thisYear == null ? '—' : `${f1(r.thisYear)}%`}</td>
-                    <td>{r.nextYear == null ? '—' : `${f1(r.nextYear)}%`}</td>
-                  </tr>
+                  <Fragment key={r.iso3}>
+                    <tr className={c?.iso2 === h.iso2 ? 'fh-selected' : undefined}>
+                      <th scope="row">
+                        <button className="fh-row-btn" aria-expanded={open} aria-controls={`fh-detail-${r.iso3}`} onClick={() => toggleRow(r.iso3, c)}>
+                          <ChevronDown size={14} strokeWidth={1.8} className={open ? 'fh-chev open' : 'fh-chev'} aria-hidden />{c ? c.name : r.iso3}
+                        </button>
+                      </th>
+                      <td>{r.thisYear == null ? '—' : `${f1(r.thisYear)}%`}</td>
+                      <td>{r.nextYear == null ? '—' : `${f1(r.nextYear)}%`}</td>
+                    </tr>
+                    {open && (
+                      <tr className="fh-detail" id={`fh-detail-${r.iso3}`}>
+                        <td colSpan={3}><CountryBrief iso3={r.iso3} country={c} gdp={weoReady!} extra={extra} years={compare.years} /></td>
+                      </tr>
+                    )}
+                  </Fragment>
                 )
               })}</tbody>
             </table></div>
+            {pageCountry && (
+              <button className="home-primary-cta fh-page-cta" onClick={() => onOpenCountry(pageCountry.name)}>
+                {pageCountry.name}: full country page <ArrowRight size={16} />
+              </button>
+            )}
             <div className="cc-ev"><EvidenceTag kind="statistical" /><span>Real GDP growth, projected by the IMF. A forecast made with far more information than this app’s model, not a measurement.</span></div>
             <SourceLine source={`IMF, ${weoReady!.vintage}`} asOf={weoReady!.lastModified ? `updated ${weoReady!.lastModified.slice(0, 10)}` : undefined} />
           </div>
         </section>
       )}
     </>
+  )
+}
+
+const WEO_ROWS = [['gdp', 'Real GDP growth'], ['cpi', 'Inflation (consumer prices)'], ['lur', 'Unemployment rate']] as const
+
+/**
+ * A G20 row's expanded view: the World Bank's facts about the country and the IMF's figures for growth, inflation and
+ * unemployment around the edition's year. Years before the edition's may be IMF estimates; the rest are projections.
+ */
+function CountryBrief({ iso3, country, gdp, extra, years }: {
+  iso3: string; country: WbCountry | undefined; gdp: WeoPayload
+  extra: { cpi: WeoPayload | null; lur: WeoPayload | null } | 'loading' | null; years: [number, number]
+}) {
+  const cols = [years[0] - 1, years[0], years[1]]
+  const facts = country ? [['Region', country.region], ['Income level', country.incomeLevel], ['Capital', country.capital]].filter(([, v]) => v) : []
+  const payload = (k: typeof WEO_ROWS[number][0]) => k === 'gdp' ? gdp : extra && extra !== 'loading' ? extra[k] : null
+  return (
+    <div className="fh-brief">
+      {facts.length > 0 && (
+        <dl className="fh-facts">{facts.map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{v}</dd></div>)}</dl>
+      )}
+      <table className="fh-brief-table">
+        <thead><tr><th scope="col">IMF</th>{cols.map(y => <th key={y} scope="col">{y}</th>)}</tr></thead>
+        <tbody>{WEO_ROWS.map(([k, label]) => {
+          const data = payload(k)
+          const vals = data?.values[iso3]
+          return (
+            <tr key={k}>
+              <th scope="row">{label}</th>
+              {cols.map(y => {
+                const v = vals?.[String(y)]
+                return <td key={y}>{typeof v === 'number' ? `${f1(v)}%` : k !== 'gdp' && extra === 'loading' ? '…' : '—'}</td>
+              })}
+            </tr>
+          )
+        })}</tbody>
+      </table>
+      <p className="fh-brief-note">{cols[0]} may be an IMF estimate; {cols[1]} and {cols[2]} are projections. Country facts: World Bank.</p>
+    </div>
   )
 }
 
