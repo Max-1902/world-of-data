@@ -3,14 +3,17 @@ import { Loader2 } from 'lucide-react'
 
 /** How long a retrieval must run before the overlay appears, so quick loads don't flash it. */
 export const LOADING_OVERLAY_DELAY_MS = 1000
+/** Longest the overlay stays up for one busy stretch; a retrieval still running after this is left to finish quietly. */
+export const LOADING_OVERLAY_MAX_MS = 10_000
 
-/** Centred "Loading map data" pill, shown only once `busy` has stayed true for LOADING_OVERLAY_DELAY_MS. */
+/** Centred "Loading map data" pill, shown once `busy` has stayed true for LOADING_OVERLAY_DELAY_MS, for at most LOADING_OVERLAY_MAX_MS. */
 export default function MapLoadingOverlay({ busy }: { busy: boolean }) {
   const [shown, setShown] = useState(false)
   useEffect(() => {
     if (!busy) { setShown(false); return }
-    const timer = setTimeout(() => setShown(true), LOADING_OVERLAY_DELAY_MS)
-    return () => clearTimeout(timer)
+    const show = setTimeout(() => setShown(true), LOADING_OVERLAY_DELAY_MS)
+    const hide = setTimeout(() => setShown(false), LOADING_OVERLAY_DELAY_MS + LOADING_OVERLAY_MAX_MS)
+    return () => { clearTimeout(show); clearTimeout(hide) }
   }, [busy])
   if (!shown) return null
   return (
