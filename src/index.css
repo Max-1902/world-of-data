@@ -63,6 +63,7 @@
   --grad-b:  #091520;
   --hairline: rgba(152,170,180,.1);
   --scrim:   rgba(2,7,11,.72);
+  --scroll-shadow: rgba(0,0,0,.5); /* edge shade on scrollable tables */
 }
 
 /* Light theme: toggled from the TopBar (useTheme sets data-theme on <html>). */
@@ -103,6 +104,7 @@
   --grad-b:  #f7fafc;
   --hairline: rgba(15,28,39,.08);
   --scrim:   rgba(15,28,39,.35);
+  --scroll-shadow: rgba(15,28,39,.18);
 }
 
 html, body, #root {
@@ -1446,12 +1448,12 @@ body.pw-dragging iframe { pointer-events: none; }
   background:
     linear-gradient(to right, var(--surface) 30%, transparent) left center / 28px 100% no-repeat local,
     linear-gradient(to left, var(--surface) 30%, transparent) right center / 28px 100% no-repeat local,
-    radial-gradient(farthest-side at 0 50%, rgba(0,0,0,.5), transparent) left center / 10px 100% no-repeat scroll,
-    radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.5), transparent) right center / 10px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 0 50%, var(--scroll-shadow), transparent) left center / 10px 100% no-repeat scroll,
+    radial-gradient(farthest-side at 100% 50%, var(--scroll-shadow), transparent) right center / 10px 100% no-repeat scroll,
     linear-gradient(var(--surface) 30%, transparent) top center / 100% 22px no-repeat local,
     linear-gradient(to top, var(--surface) 30%, transparent) bottom center / 100% 22px no-repeat local,
-    radial-gradient(farthest-side at 50% 0, rgba(0,0,0,.5), transparent) top center / 100% 9px no-repeat scroll,
-    radial-gradient(farthest-side at 50% 100%, rgba(0,0,0,.5), transparent) bottom center / 100% 9px no-repeat scroll;
+    radial-gradient(farthest-side at 50% 0, var(--scroll-shadow), transparent) top center / 100% 9px no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, var(--scroll-shadow), transparent) bottom center / 100% 9px no-repeat scroll;
 }
 .viz-table-wrap:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* many columns: keep a readable width and scroll, with the row label pinned so values stay tied to it */
