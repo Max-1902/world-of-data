@@ -293,6 +293,11 @@ export default function App() {
     selectForMap(indicatorId)
     setPanelState(prev => prev.countryAnalytics ? prev : { ...prev, countryAnalytics: true })
   }, [])
+  // stable, because HomeDashboard re-runs its first colouring whenever this changes
+  const colorHomeCountries = useCallback((indicatorId: string) => {
+    colorCountries(indicatorId)
+    setHomeColouring(true)
+  }, [colorCountries])
 
   // A screen switched: saved screens restore their exact layer set, built-in ones add the layers their panels draw.
   const applyLayers = useCallback((layers: (keyof PanelState)[], exact: boolean) => {
@@ -474,7 +479,7 @@ export default function App() {
                 onOpenMap={openMap}
                 onOpenCountry={selectCountry}
                 onOpenLibrary={() => setLibraryOpen(true)}
-                onColorCountries={id => { colorCountries(id); setHomeColouring(true) }}
+                onColorCountries={colorHomeCountries}
                 projectionMode={projectionMode}
                 onProjectionMode={setProjectionMode}
               />

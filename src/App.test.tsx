@@ -5,8 +5,11 @@ import { render, screen, fireEvent, waitFor, within } from '@testing-library/rea
 // Stand-ins for the heavy pieces: the map just exposes a "click a country" button, the country page (now rendered
 // in the right panel, not over the map) its two actions, and the outlook card reports which subject it shows.
 vi.mock('./components/Map/MapView', () => ({
-  default: ({ onCountryClick }: { onCountryClick: (c: string) => void }) => (
-    <button onClick={() => onCountryClick('Ukraine')}>pick-country</button>
+  default: ({ onCountryClick, showCountryAnalytics, onToggleLayer }: { onCountryClick: (c: string) => void; showCountryAnalytics: boolean; onToggleLayer?: (l: string) => void }) => (
+    <>
+      <button onClick={() => onCountryClick('Ukraine')}>pick-country</button>
+      <button data-testid="colouring" onClick={() => onToggleLayer?.('countryAnalytics')}>{showCountryAnalytics ? 'colouring-on' : 'colouring-off'}</button>
+    </>
   ),
 }))
 vi.mock('./components/countryPage/CountryPage', () => ({
@@ -119,5 +122,24 @@ describe('the analysis (forecasting) workspace', () => {
     fireEvent.click(await screen.findByText('Open Map'))
     expect(await screen.findByText('pick-country')).toBeTruthy()
     expect(screen.getByTestId('card').textContent).toContain('REGIONAL OUTLOOK')
+  })
+})
+
+describe('the home map', () => {
+  beforeEach(() => { vi.stubEnv('VITE_MAPBOX_TOKEN', 'pk.test-placeholder'); history.replaceState(null, '', '#') })
+
+  it("closes its country colouring with the card's × and keeps it closed while the app re-renders", async () => {
+    const { default: App } = await import('./App')
+    render(<App />)
+    fireEvent.click(within(screen.getByRole('navigation', { name: 'Main' })).getByRole('button', { name: /Home|Outlook/ }))
+    const toggle = await screen.findByTestId('colouring')
+    expect(toggle.textContent).toBe('colouring-on')
+    fireEvent.click(toggle)
+    await waitFor(() => expect(screen.getByTestId('colouring').textContent).toBe('colouring-off'))
+    // a later render (live data arriving) must not switch it back on
+    await new Promise(r => setTimeout(r, 50))
+    expect(screen.getByTestId('colouring').textContent).toBe('colouring-off')
+    fireEvent.click(screen.getByTestId('colouring'))
+    await waitFor(() => expect(screen.getByTestId('colouring').textContent).toBe('colouring-on'))
   })
 })
