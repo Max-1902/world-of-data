@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 
 export type Theme = 'dark' | 'light'
 const KEY = 'ws-theme'
@@ -26,4 +26,15 @@ export function useTheme() {
   }, [theme])
   const toggle = useCallback(() => setTheme(t => (t === 'dark' ? 'light' : 'dark')), [])
   return { theme, toggle }
+}
+
+/** The theme currently on <html data-theme>, read-only, for components that draw with literal colours (SVG charts). */
+export function useActiveTheme(): Theme {
+  return useSyncExternalStore(subscribeTheme, readTheme, () => 'dark')
+}
+const readTheme = (): Theme => (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark')
+function subscribeTheme(onChange: () => void) {
+  const obs = new MutationObserver(onChange)
+  obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+  return () => obs.disconnect()
 }
