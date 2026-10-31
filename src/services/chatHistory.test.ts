@@ -56,6 +56,16 @@ describe('chatHistory', () => {
     expect(ids).toContain('s5')
   })
 
+  it('trims by last update, so a reopened old conversation that was just saved is kept', () => {
+    for (let i = 0; i < 50; i++) saveSession(session(`s${i}`, i + 10))
+    saveSession(session('s0', 1000)) // the oldest-created one, reopened and continued
+    saveSession(session('new', 1001))
+    const ids = listSessions().map(s => s.id)
+    expect(ids).toHaveLength(50)
+    expect(ids).toContain('s0')
+    expect(ids).not.toContain('s1')
+  })
+
   it('recovers from corrupted JSON in storage', () => {
     ctx.store.set(LS_KEY, '{not json')
     expect(listSessions()).toEqual([])

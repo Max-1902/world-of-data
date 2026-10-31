@@ -196,7 +196,15 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
     setNotice('')
   }
 
+  /** Ends the running question, if any, without letting it write into the thread that replaces it. */
+  function dropRun() {
+    abortRef.current?.abort()
+    abortRef.current = null
+    setStreaming(false)
+  }
+
   function loadSession(s: ChatSession) {
+    dropRun()
     resetThread()
     setTurns(turnsOf(s))
     setModel(s.model)
@@ -205,7 +213,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
   }
 
   function startNewSession() {
-    abortRef.current?.abort()
+    dropRun()
     resetThread()
     setTurns([])
     setSessionId(newSessionId())
@@ -245,7 +253,10 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
     setNotice('')
     setStreaming(true)
     setShowOutlook(false)
-    abortRef.current = new AbortController()
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
+    // false once a new conversation, a loaded one or a newer question has taken over: this run then writes nothing
+    const current = () => abortRef.current === ctrl
     const turnId = `${Date.now()}`
     setLive({ id: turnId, question: prompt, text: '', notes: [], results: [], pending: [], step: 0 })
 
@@ -274,9 +285,10 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
     let runError: string | undefined
     try {
       const run = await runAgent({
-        messages, model, signal: abortRef.current.signal,
+        messages, model, signal: ctrl.signal,
         ctx: { crises, flights, trajectories, flightsLayer: panelState?.flights, crisesLayer: panelState?.crises },
         onEvent: e => {
+          if (!current()) return
           if (e.type === 'step') { stepText = ''; setLive(l => l && { ...l, text: '', step: e.step }) }
           else if (e.type === 'text') {
             stepText = visibleText(e.raw)
@@ -296,6 +308,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
           }
         },
       })
+      if (!current()) return
       raw = run.answer
       answeredBy = run.answeredBy
       results = run.results
@@ -307,6 +320,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
       }
       setTurns(prev => [...prev, { id: turnId, question: prompt, answer, results, notes, model: answeredBy ?? model }])
     } catch (err) {
+      if (!current()) return
       if ((err as Error).name !== 'AbortError') {
         runError = describeAIError(err)
         setError(runError)
@@ -317,8 +331,10 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
         setTurns(prev => [...prev, { id: turnId, question: prompt, answer: stepText.trim(), results: gathered, notes, error: runError ? undefined : 'Stopped before the answer was finished.' }])
       }
     } finally {
-      setLive(null)
-      setStreaming(false)
+      if (current()) {
+        setLive(null)
+        setStreaming(false)
+      }
     }
   }
 
@@ -328,7 +344,12 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
   }
 
   function handleKey(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); ask(input); setInput('') }
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return
+    e.preventDefault()
+    // while an answer is running the question stays in the box instead of being cleared unsent
+    if (streaming || !input.trim()) return
+    ask(input)
+    setInput('')
   }
 
   // A reference like (R2) in an answer opens that result in the turn's trail and scrolls to it.

@@ -104,6 +104,34 @@ describe('AIAnalystPanel', () => {
     expect(screen.getByText('Investigated 1 dataset')).toBeTruthy()
   })
 
+  it('a question stopped by "New conversation" writes nothing into the new one', async () => {
+    let fail!: (e: Error) => void
+    runAgent.mockImplementation(o => new Promise((_, reject) => {
+      o.onEvent?.({ type: 'result', step: 0, result })
+      fail = reject
+    }))
+    render(<AIAnalystPanel crises={[]} flights={[]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Daily brief' }))
+    await screen.findByText('Investigated 1 dataset')
+    fireEvent.click(screen.getByRole('button', { name: 'New conversation' }))
+    await act(async () => fail(new DOMException('Aborted', 'AbortError')))
+    expect(screen.queryByText('Investigated 1 dataset')).toBeNull()
+    expect(screen.queryByText(/Stopped before the answer/)).toBeNull()
+    expect(screen.getByText('What would you like to understand?')).toBeTruthy()
+  })
+
+  it('Enter while an answer is running keeps the typed question instead of clearing it unsent', async () => {
+    runAgent.mockImplementation(() => new Promise(() => {}))
+    render(<AIAnalystPanel crises={[]} flights={[]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Daily brief' }))
+    await screen.findByRole('button', { name: 'Stop' })
+    const box = screen.getByRole('textbox') as HTMLTextAreaElement
+    fireEvent.change(box, { target: { value: 'And Chad?' } })
+    fireEvent.keyDown(box, { key: 'Enter' })
+    expect(box.value).toBe('And Chad?')
+    expect(runAgent).toHaveBeenCalledTimes(1)
+  })
+
   it('shows a question handed over by "Ask the analyst" in the input, unsent — whether it arrived before or after mounting', () => {
     setAnalystDraft('Explain the Brazil forecast')
     render(<AIAnalystPanel crises={[]} flights={[]} />)

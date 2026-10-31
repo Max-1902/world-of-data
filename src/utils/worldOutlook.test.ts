@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildWorldOutlook, direction, worldSentences } from './worldOutlook'
+import { buildWorldOutlook, direction, worldContext, worldSentences } from './worldOutlook'
 import type { WeoPayload } from '../services/imfWeo'
 
 const years = (from: number, to: number, f: (y: number) => number) =>
@@ -55,5 +55,15 @@ describe('worldSentences', () => {
   it('leaves out what the IMF did not publish instead of guessing it', () => {
     const s = worldSentences(buildWorldOutlook(gdp({ WEOWORLD: { '2026': 3.1 } }), null)!).join(' ')
     expect(s).toBe('The IMF projects world real GDP growth of 3.1% in 2026.')
+  })
+})
+
+describe('worldContext', () => {
+  it('gives the analyst the page’s sentences and every group figure, naming the ones the IMF did not publish', () => {
+    const c = worldContext(buildWorldOutlook(gdp(GROUPS), CPI)!)
+    expect(c).toContain('The IMF projects world real GDP growth of 3.1% in 2026')
+    expect(c).toContain('  • World: 3.1% in 2026, 3.4% in 2027')
+    expect(c).toContain('  • Euro area: 1.1% in 2026, no figure in 2027')
+    expect(c).toContain('  • Emerging and developing Asia: no figure in 2026, no figure in 2027')
   })
 })

@@ -52,6 +52,11 @@ describe('streamAI', () => {
     expect(tokens).toEqual(['ok'])
   })
 
+  it('skips a data line that is not JSON instead of ending the answer', async () => {
+    const tokens = await run([tok('a'), 'data: {not json\n\n', tok('b')])
+    expect(tokens).toEqual(['a', 'b'])
+  })
+
   it('tolerates deltas with no content and events with no choices', async () => {
     const tokens = await run([sse({ choices: [{ delta: { role: 'assistant' } }] }), sse({}), tok('x')])
     expect(tokens).toEqual(['x'])
