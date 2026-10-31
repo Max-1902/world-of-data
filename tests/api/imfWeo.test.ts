@@ -2,13 +2,17 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import handler, { parseWeo, resetCache } from '../../api/imf-weo'
 import { mockReq, mockRes } from './helpers'
 
-const DATA = { values: { NGDP_RPCH: { DEU: { '2025': 0.2, '2026': 1.3, x: 5 }, USA: { '2026': 2.3, '2027': null }, WEOWORLD: { '2026': 3 }, EU: { '2026': 1 } } } }
+const DATA = { values: { NGDP_RPCH: { DEU: { '2025': 0.2, '2026': 1.3, x: 5 }, USA: { '2026': 2.3, '2027': null }, WEOWORLD: { '2026': 3, '2027': null }, EU: { '2026': 1 }, ADVEC: { x: 1 } } } }
 const META = { indicators: { NGDP_RPCH: { label: 'Real GDP growth', unit: 'Annual percent change', source: 'World Economic Outlook (October 2026)', 'last-modified': '2026-10-08 14:43:32' } } }
 
 describe('parseWeo', () => {
-  it('keeps countries only, numeric years only, and the stated edition', () => {
+  it('keeps countries, numeric years only, and the stated edition', () => {
     const p = parseWeo('NGDP_RPCH', DATA, META)
     expect(p.values).toEqual({ DEU: { '2025': 0.2, '2026': 1.3 }, USA: { '2026': 2.3 } })
+  })
+  it('keeps the allowlisted IMF aggregates apart from countries, and drops every other group', () => {
+    const p = parseWeo('NGDP_RPCH', DATA, META)
+    expect(p.groups).toEqual({ WEOWORLD: { '2026': 3 } })   // EU is not allowlisted; ADVEC has no numeric year
     expect(p.vintage).toBe('World Economic Outlook (October 2026)')
     expect(p.lastModified).toBe('2026-10-08 14:43:32')
   })

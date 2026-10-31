@@ -1165,7 +1165,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .home-hero, .home-section { scroll-margin-top: 56px; }
 /* how the sections below relate to the forecast above */
 .home-tier { display: flex; align-items: baseline; gap: 12px; margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--border-strong); }
-.home-tier + .home-section { margin-top: 14px; }
+.home-tier + .home-section, .home-tier + .home-hero { margin-top: 14px; }
 .home-tier-label { color: var(--text2); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; white-space: nowrap; }
 .home-tier-note { color: var(--text3); font-size: 11px; }
 .home-hero {
@@ -1188,10 +1188,11 @@ body.pw-dragging iframe { pointer-events: none; }
 .home-hero::after { content: ''; position: absolute; left: 8%; right: 27%; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(40,209,255,.7), rgba(255,157,51,.55), transparent); box-shadow: 0 0 22px rgba(0,181,255,.4); }
 .hero-copy { position: relative; z-index: 2; align-self: start; max-width: 540px; padding-top: 5px; }
 .home-eyebrow, .section-kicker { display: flex; align-items: center; gap: 8px; color: var(--text3); font-size: 9px; font-weight: 750; letter-spacing: .16em; }
-.home-hero h1 { margin: 17px 0 10px; color: #f4f9ff; font-size: clamp(34px, 4.1vw, 53px); line-height: .99; letter-spacing: -.055em; font-weight: 720; }
-.home-hero h1 em { color: #18cef5; font-style: normal; text-shadow: 0 0 30px rgba(24,206,245,.17); }
+.home-hero h1, .home-hero h2 { margin: 17px 0 10px; color: #f4f9ff; font-size: clamp(34px, 4.1vw, 53px); line-height: .99; letter-spacing: -.055em; font-weight: 720; }
+.home-hero h1 em, .home-hero h2 em { color: #18cef5; font-style: normal; text-shadow: 0 0 30px rgba(24,206,245,.17); }
 .home-hero p { max-width: 390px; color: #a8bfd0; font-size: 13px; line-height: 1.65; }
 .home-primary-cta { display: inline-flex; align-items: center; gap: 10px; margin-top: 18px; padding: 11px 16px; color: #03121c; border: 0; border-radius: 999px; background: linear-gradient(110deg,#12bbfa,#28dbf2); box-shadow: 0 8px 24px rgba(0,177,244,.19); font-size: 11px; font-weight: 750; cursor: pointer; }
+.wo-ev { margin-top: 10px; max-width: 540px; }
 .fh-ask { display: flex; width: fit-content; margin-top: 10px; }
 .home-primary-cta:hover { filter: brightness(1.11); transform: translateY(-1px); }
 
@@ -1237,7 +1238,7 @@ body.pw-dragging iframe { pointer-events: none; }
 /* Forecast-first home: the flagship GDP-growth forecast, what changed, what it rests on, what it cannot see */
 .fh-hero { min-height: 0; background-image: linear-gradient(90deg, rgba(4,11,18,.97) 0%, rgba(4,12,21,.92) 48%, rgba(4,12,21,.66) 100%), url('/images/home-earth.jpg'); }
 .fh-hero .hero-copy { max-width: 620px; }
-.fh-hero h1 { font-size: clamp(26px, 3vw, 40px); line-height: 1.1; letter-spacing: -.04em; }
+.fh-hero h1, .fh-hero h2 { font-size: clamp(26px, 3vw, 40px); line-height: 1.1; letter-spacing: -.04em; }
 .fh-hero p { max-width: 540px; }
 .fh-pick { margin-top: 14px; max-width: 340px; }
 .fh-pick .viz-field { flex: 1; }
@@ -1357,7 +1358,7 @@ body.pw-dragging iframe { pointer-events: none; }
   .new-sidebar-more-label { min-height: 40px !important; padding: 0 12px !important; font-size: 13px !important; }
   .home-content { --home-pad: 10px; --home-pt: 12px; padding: var(--home-pt) var(--home-pad) 24px; }
   .home-hero { min-height: 480px; display: flex; flex-direction: column; align-items: stretch; padding: 20px; }
-  .hero-copy { padding-top: 0; }.home-hero h1 { font-size: 38px; }.home-hero p { max-width: 300px; font-size: 12px; }
+  .hero-copy { padding-top: 0; }.home-hero h1, .home-hero h2 { font-size: 38px; }.home-hero p { max-width: 300px; font-size: 12px; }
   .fh-glance { width: 100%; padding: 10px; }
   .home-section { margin-top: 21px; }.home-section-heading h2 { font-size: 17px; }.home-section-heading { align-items: start; }
   .topic-grid { gap: 8px; }.topic-card { height: 130px; }.topic-art { height: 68px; }.topic-card-copy { padding: 0 9px 10px; }.topic-card-copy strong { font-size: 10px; }.topic-card-copy span { font-size: 8px; }

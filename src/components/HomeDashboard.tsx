@@ -3,6 +3,7 @@ import { ArrowRight, BarChart3, BookOpen, Globe2, Map, Table, Users, Wind } from
 import { fetchGlobalTrend, type GlobalTrendPoint } from '../services/globalTrends'
 import { selectForMap } from '../services/countryAnalytics'
 import { ForecastHome } from './home/ForecastHome'
+import { WorldOutlook } from './home/WorldOutlook'
 import OutlookNav from './home/OutlookNav'
 import HomeTier from './home/HomeTier'
 
@@ -64,6 +65,8 @@ export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenCount
     <main className="home-scroll">
       <div className="home-content">
         <OutlookNav />
+        <WorldOutlook />
+        <HomeTier label="One economy" note="This app’s own forecast for a country you pick, with the IMF’s figure beside it." />
         <ForecastHome onOpenPanel={onOpenPanel} onOpenCountry={onOpenCountry} />
 
         <HomeTier label="Context" note="The wider picture. Not forecast evidence." />

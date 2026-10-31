@@ -3,14 +3,17 @@
 // so the browser can't read it directly. No key, no billing account.
 //
 // This fetches only the fixed host and an allowlist of three indicators (not an open proxy), keeps each in memory for
-// six hours, and returns just countries (ISO 3166 alpha-3 codes; the API's region/group aggregates are dropped) with
-// the edition the figures come from, e.g. "World Economic Outlook (October 2026)".
+// six hours, and returns countries (ISO 3166 alpha-3 codes) plus an allowlist of the IMF's own group aggregates (the
+// world, advanced and emerging economies, the euro area, emerging Asia; every other group is dropped) with the edition
+// the figures come from, e.g. "World Economic Outlook (October 2026)".
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const BASE = 'https://www.imf.org/external/datamapper/api/v1'
 /** Real GDP growth, average CPI inflation, unemployment rate. */
 export const WEO_INDICATORS = ['NGDP_RPCH', 'PCPIPCH', 'LUR'] as const
 export type WeoIndicator = (typeof WEO_INDICATORS)[number]
+/** The IMF's aggregates kept, by its DataMapper group code. These are the IMF's own figures, not sums made here. */
+export const WEO_GROUPS = ['WEOWORLD', 'ADVEC', 'OEMDC', 'EURO', 'DA'] as const
 
 export interface WeoPayload {
   indicator: WeoIndicator
@@ -21,6 +24,8 @@ export interface WeoPayload {
   lastModified: string | null
   /** ISO3 → year → value */
   values: Record<string, Record<string, number>>
+  /** WEO_GROUPS code → year → value; a group the IMF publishes no figure for is absent */
+  groups: Record<string, Record<string, number>>
 }
 
 const TIMEOUT_MS = 20_000
@@ -37,21 +42,23 @@ async function getJson(url: string): Promise<unknown> {
   return res.json()
 }
 
-/** Pure: the API's `{ values: { IND: { ISO: { year: v } } } }` plus its indicator metadata → a country-only payload. */
+/** Pure: the API's `{ values: { IND: { ISO: { year: v } } } }` plus its indicator metadata → countries and the allowlisted groups. */
 export function parseWeo(indicator: WeoIndicator, data: unknown, meta: unknown): WeoPayload {
   const raw = (data as { values?: Record<string, Record<string, Record<string, unknown>>> })?.values?.[indicator]
   if (!raw || typeof raw !== 'object') throw new Error('Unexpected IMF response shape')
   const values: WeoPayload['values'] = {}
+  const groups: WeoPayload['groups'] = {}
   for (const [code, years] of Object.entries(raw)) {
-    if (!ISO3.test(code) || !years || typeof years !== 'object') continue
+    const target = ISO3.test(code) ? values : (WEO_GROUPS as readonly string[]).includes(code) ? groups : null
+    if (!target || !years || typeof years !== 'object') continue
     const row: Record<string, number> = {}
     for (const [y, v] of Object.entries(years)) if (YEAR.test(y) && typeof v === 'number' && Number.isFinite(v)) row[y] = v
-    if (Object.keys(row).length) values[code] = row
+    if (Object.keys(row).length) target[code] = row
   }
   const m = (meta as { indicators?: Record<string, { label?: unknown; unit?: unknown; source?: unknown; 'last-modified'?: unknown }> })?.indicators?.[indicator]
   const str = (v: unknown, fallback: string) => (typeof v === 'string' && v.trim() ? v.trim() : fallback)
   return {
-    indicator, values,
+    indicator, values, groups,
     label: str(m?.label, indicator), unit: str(m?.unit, ''),
     vintage: str(m?.source, 'World Economic Outlook (edition not stated)'),
     lastModified: typeof m?.['last-modified'] === 'string' ? m['last-modified'] : null,

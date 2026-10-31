@@ -20,6 +20,8 @@ export interface WeoPayload {
   lastModified: string | null
   /** ISO3 → year → value */
   values: Record<string, Record<string, number>>
+  /** the IMF's own aggregates (WEOWORLD, ADVEC, OEMDC, EURO, DA) → year → value; absent from older cached payloads */
+  groups?: Record<string, Record<string, number>>
 }
 
 /** World Bank series → the WEO indicator that measures the same thing. */

@@ -32,7 +32,7 @@ describe('ForecastHome', () => {
   it('answers what we expect, what changed, what it rests on and what could change it, for the chosen country', async () => {
     render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByText(/What it rests on/)).toBeTruthy())
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Germany')
+    expect(screen.getByRole('heading', { level: 2, name: /economy heading/ }).textContent).toContain('Germany')
     expect(screen.getByText(/Projected real GDP growth/)).toBeTruthy()
     // the "since" card fills in on the render after the basis card, so wait for it rather than reading it synchronously
     expect(await screen.findByText(/First shown on this device/)).toBeTruthy()
@@ -117,7 +117,7 @@ describe('ForecastHome', () => {
     fireEvent.click(india)
     await waitFor(() => expect(m.fetchSeries).toHaveBeenCalledWith(['IN'], 'NY.GDP.MKTP.KD.ZG'))
     expect(localStorage.getItem('country-lookup-iso2')).toBe('IN')
-    await waitFor(() => expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('India'))
+    await waitFor(() => expect(screen.getByRole('heading', { level: 2, name: /economy heading/ }).textContent).toContain('India'))
   })
 
   it('expands a G20 row into the country’s key figures and opens its full page from below the table', async () => {
