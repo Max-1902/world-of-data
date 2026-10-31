@@ -74,7 +74,7 @@ export default function CommandPalette({ open, onClose, panelState, onOpenPanel,
   return (
     <div
       onMouseDown={onClose}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(2,7,11,0.72)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '12vh' }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'var(--scrim)', backdropFilter: 'blur(5px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', paddingTop: '12vh' }}
     >
       <div
         role="dialog"
