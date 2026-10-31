@@ -6,6 +6,7 @@ import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
 import { MARK_HALO } from './halo'
+import { trackMapLoad } from '../mapLoading'
 
 export function addDatacenterLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -73,7 +74,7 @@ export function useDatacenterData({ mapRef, layersReadyRef, mapReady }: MapHandl
   useEffect(() => {
     if (!showDatacenters) return
     let cancelled = false
-    fetchDataCenters().then(pts => { if (!cancelled) setDatacenters(pts) }).catch(err => console.warn('[DataCenters] load failed:', err))
+    trackMapLoad(fetchDataCenters()).then(pts => { if (!cancelled) setDatacenters(pts) }).catch(err => console.warn('[DataCenters] load failed:', err))
     return () => { cancelled = true }
   }, [showDatacenters])
 
