@@ -37,7 +37,14 @@ describe('OutlookCard', () => {
     render(<OutlookCard {...base} conflictFeed={{ events: [], capped: false }} />)
     m.empty = false
     expect(screen.getByText('Worldwide · conflict events, 72h vs prior week')).toBeTruthy()
-    expect(screen.getByText(/conflict feed \(ACLED\) returned no recent events/)).toBeTruthy()
+    expect(screen.getByText(/no conflict events came back from ACLED.*not evidence that nothing happened/)).toBeTruthy()
+  })
+
+  it('says the feed is a year behind, not that the world is quiet, when last year\'s window came back instead', () => {
+    m.empty = true
+    render(<OutlookCard {...base} conflictFeed={{ events: [], capped: false }} conflictArchive={{ events: [], from: '2025-10-16', to: '2025-10-30' }} />)
+    m.empty = false
+    expect(screen.getByText(/stops about a year back \(the map shows 2025-10-16 to 2025-10-30 as history\)\. This is a gap in the feed, not a quiet world/)).toBeTruthy()
   })
 
   it('shows a clicked city as its own local brief, not the country data', () => {
