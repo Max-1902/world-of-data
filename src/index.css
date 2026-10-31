@@ -1193,8 +1193,9 @@ body.pw-dragging iframe { pointer-events: none; }
 .fh-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .fh-model { margin-top: 4px; color: var(--text2); font-size: 12px; line-height: 1.4; }
 .fh-links { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 8px; }
-.viz-table-wrap.fh-compare { max-height: 340px; }
-.fh-compare .viz-table { max-width: 620px; }
+/* all G20 rows at full card width, no inner scroll, clear of the evidence line below */
+.viz-table-wrap.fh-compare { max-height: none; margin-bottom: 12px; }
+.fh-compare .viz-table th:not(:first-child), .fh-compare .viz-table td { width: 110px; }
 .fh-row-btn { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .fh-row-btn:hover, .fh-row-btn:focus-visible { color: var(--accent); }
 .fh-selected th, .fh-selected td { background: var(--accent-soft); }
