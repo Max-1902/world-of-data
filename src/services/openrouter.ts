@@ -296,6 +296,8 @@ export interface ContextOptions {
   crisesLayer?: boolean
   /** The last ACLED poll hit its row cap, so event counts are a sample of the window, not totals. */
   conflictCapped?: boolean
+  /** utils/worldOutlook.ts worldContext(): the IMF's world figures. null = the IMF request failed; omitted = no block. */
+  worldEconomy?: string | null
 }
 
 /**
@@ -399,7 +401,10 @@ TRAJECTORY SIGNALS (rule-based, ${win.source}: ${win.recent} vs ${win.prior} —
   Own-normal comparison: NOT MEASURED — the feed does not reach back far enough to know each country's normal.`}
 ${trajectoryLines}` : ''}
 
-${countryAnalytics ? `
+${opts.worldEconomy !== undefined ? `
+WORLD ECONOMY (IMF World Economic Outlook: the IMF's published projections for the world and its country groups, the same figures as the Outlook page; not computed here and not this app's forecast. Direction words and the 2000–2019 average are worked out locally from the IMF's own series.)
+${opts.worldEconomy ?? '  NOT AVAILABLE: the IMF request failed or has not answered yet. Do not state world growth or inflation figures as dashboard data.'}
+` : ''}${countryAnalytics ? `
 COUNTRY ANALYTICS — the comparison currently open in the Country Analytics panel (computed locally from World Bank / Our World in Data / Ember; not model-generated. For data questions, cite these numbers and say they come from here.)
   ${countryAnalytics}
 ` : ''}${dataHealth ? `
@@ -438,7 +443,7 @@ Anything listed under NOT MEASURED is unknown, not zero or absent: never state o
 
 Label where each claim comes from. End every sentence that states a fact with one tag: [dashboard] when it rests on the data below, [background] when it rests on your general knowledge (which may be out of date), [inference] when it is your own reasoning. Example: "Sudan has the most live conflict events in the current data, 41 [dashboard]. The war began in April 2023 [background]. Fighting may spread toward El Fasher [inference]."
 
-Don't refuse or open with a disclaimer because some data is missing; answer from what you have. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For data questions about countries, ground the answer in a COUNTRY ANALYTICS block when one is present, quoting its numbers and naming the countries it lists, then add context from your own knowledge clearly marked as such. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
+Don't refuse or open with a disclaimer because some data is missing; answer from what you have. Always give the user a substantive answer from whatever data you do have plus your own general knowledge, clearly separating what the live data shows from what is your inference. For data questions about countries, ground the answer in a COUNTRY ANALYTICS block when one is present, quoting its numbers and naming the countries it lists, then add context from your own knowledge clearly marked as such. For questions about where the world economy is heading, ground the answer in the WORLD ECONOMY block when one is present: quote its IMF figures, say they are the IMF's projections, and keep your own reasons for them tagged [background] or [inference]. For market questions, cite only prices from a MARKET SNAPSHOT block when one is present; otherwise give the risk-driven sector read (which sectors conflict and trend signals tend to affect, and how) without inventing any price, level or return.
 
 You cannot move the map, open panels or toggle layers: the reader stays in this conversation while you work. Never write map or panel commands; answer in text and charts only.
 ${opts.tools ? `\n${toolInstructions(opts.tools)}\n` : ''}

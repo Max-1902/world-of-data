@@ -21,6 +21,7 @@ describe('analyst tiers', () => {
     expect(prompt).toMatch(/NOT MEASURED or NOT AVAILABLE is unknown, not zero/)
     expect(prompt).toMatch(/\[dashboard\].*\[background\].*\[inference\]/)
     expect(prompt).toMatch(/cannot move the map/)
+    expect(prompt).toMatch(/WORLD ECONOMY block are the IMF's projections/)
     expect(prompt).not.toMatch(/\[(FLY|COUNTRY|LAYER|DEEPSTATE):/)
   })
 

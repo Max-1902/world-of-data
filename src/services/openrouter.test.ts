@@ -244,6 +244,13 @@ describe('buildDashboardContext', () => {
     expect(ctx).not.toMatch(/Do NOT mention these/)
   })
 
+  it('includes the IMF world block only when asked, and says plainly when the IMF figures are missing', () => {
+    expect(buildDashboardContext([], [])).not.toContain('WORLD ECONOMY')
+    expect(buildDashboardContext([], [], [], '', '', '', { worldEconomy: '  The IMF projects world real GDP growth of 3.1% in 2026.' })).toMatch(/WORLD ECONOMY \(IMF[^\n]*\n  The IMF projects/)
+    expect(buildDashboardContext([], [], [], '', '', '', { worldEconomy: null })).toMatch(/WORLD ECONOMY[^\n]*\n  NOT AVAILABLE/)
+    expect(buildSystemPrompt('')).toContain('WORLD ECONOMY block')
+  })
+
   it('includes a market snapshot only when one is given', () => {
     expect(buildDashboardContext([], [])).not.toContain('MARKET SNAPSHOT')
     expect(buildDashboardContext([], [], [], '', '  • Brent: 80.00 USD, +1.00% today')).toContain('MARKET SNAPSHOT')
