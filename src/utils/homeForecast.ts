@@ -73,7 +73,7 @@ export const G20_ISO3 = ['ARG', 'AUS', 'BRA', 'CAN', 'CHN', 'FRA', 'DEU', 'IND',
 export interface CompareRow { iso3: string; thisYear: number | null; nextYear: number | null }
 
 /**
- * The IMF's own growth projections for the G20, for the edition's year and the next. Entirely the IMF's figures,
+ * The IMF's own projections of one indicator (growth, inflation or unemployment) for the G20, for the edition's year and the next. Entirely the IMF's figures,
  * ranked by the later year; economies the edition has no figure for are listed last, not dropped.
  */
 export function g20Projections(weo: WeoPayload): { years: [number, number]; rows: CompareRow[] } | null {

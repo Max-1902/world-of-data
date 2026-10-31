@@ -1196,6 +1196,7 @@ body.pw-dragging iframe { pointer-events: none; }
 /* all G20 rows at full card width, no inner scroll, clear of the evidence line below */
 .viz-table-wrap.fh-compare { max-height: none; margin-bottom: 12px; }
 .fh-compare .viz-table th:not(:first-child), .fh-compare .viz-table td { width: 110px; }
+.fh-proj { color: var(--text3); font-size: 9px; font-weight: 450; }
 .fh-row-btn { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .fh-row-btn:hover, .fh-row-btn:focus-visible { color: var(--accent); }
 .fh-selected th, .fh-selected td { background: var(--accent-soft); }

@@ -141,6 +141,21 @@ describe('ForecastHome', () => {
     expect(document.getElementById('fh-detail-IND')).toBeNull()
   })
 
+  it('switches the G20 table to another IMF measure, loading it only when asked, and says when it fails', async () => {
+    const cpi = { ...weo, indicator: 'PCPIPCH', label: 'Inflation', values: { IND: { '2026': 4.1, '2027': 4.0 } } }
+    m.fetchWeo.mockImplementation(async (ind: string) => ind === 'PCPIPCH' ? cpi : ind === 'LUR' ? null : weo)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
+    await screen.findByRole('button', { name: 'India' })
+    expect(m.fetchWeo).not.toHaveBeenCalledWith('PCPIPCH')
+    fireEvent.click(screen.getByRole('button', { name: 'Inflation' }))
+    const table = await screen.findByRole('region', { name: /IMF projections: Inflation/ })
+    expect(within(table).getByRole('button', { name: 'India' }).closest('tr')!.textContent).toBe('India4.1%4.0%')
+    expect(screen.getByRole('button', { name: 'Inflation' }).getAttribute('aria-pressed')).toBe('true')
+    fireEvent.click(screen.getByRole('button', { name: 'Unemployment' }))
+    expect(screen.getByText(/unemployment rate figures could not be loaded/)).toBeTruthy()
+    expect(screen.queryByRole('region', { name: /IMF projections/ })).toBeNull()
+  })
+
   it('opens the full forecast and the shock-exposure panel', async () => {
     const open = vi.fn()
     render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={open} />)
