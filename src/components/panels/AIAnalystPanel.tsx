@@ -3,7 +3,7 @@
  */
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { lastAcledPoll } from '../../services/crises'
-import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, Navigation, Layers, Info, Radio, MessageSquare, ChevronDown, Maximize2, ExternalLink } from 'lucide-react'
+import { TrendingUp, TrendingDown, Minus, Send, Square, History, Trash2, Plus, MessageSquare, ChevronDown, Maximize2, ExternalLink } from 'lucide-react'
 import { CrisisEvent, PanelState, Flight, type ConflictFeed } from '../../types'
 import { buildDashboardContext, buildSystemPrompt, notMeasured, visibleText, QUICK_PROMPTS, FREE_MODELS, DEFAULT_MODEL, fetchAllModels, fetchModelPolicy, isModelEnabled, describeAIError, groupModels, formatModelPrice, type DSMessage, type ModelOption, type ModelPolicy } from '../../services/openrouter'
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
@@ -61,14 +61,6 @@ function WatchlistCard({ entry, onExplain, disabled = false }: { entry: Trajecto
   )
 }
 
-// ── Action log entry — one row per dashboard command the AI has executed ───
-interface ActionLogEntry {
-  id: string
-  kind: 'fly' | 'country' | 'layer' | 'deepstate'
-  label: string
-  at: number
-}
-
 /** The turn being worked on: everything the thread shows while the analyst is still investigating. */
 interface LiveTurn {
   id: string
@@ -105,11 +97,9 @@ function turnsOf(s: ChatSession): ChatTurn[] {
   return out
 }
 
-export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onCountryClick, onToggleLayer, panelState }: {
+// The analyst never moves the map or opens panels: the reader stays in the conversation while it works.
+export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
   crises: CrisisEvent[]; conflictFeed?: ConflictFeed; flights: Flight[]
-  onGeoSearch?: (q: string) => void
-  onCountryClick?: (country: string) => void
-  onToggleLayer?: (id: keyof PanelState) => void
   panelState?: PanelState
 }) {
   const [input, setInput]         = useState('')
@@ -144,7 +134,6 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
   const [sessionId, setSessionId] = useState(() => newSessionId())
   const [showHistory, setShowHistory] = useState(false)
   const [pastSessions, setPastSessions] = useState<ChatSession[]>([])
-  const [actionLog, setActionLog] = useState<ActionLogEntry[]>([])
   const [followUps, setFollowUps] = useState<string[]>([])
   const [notice, setNotice]     = useState('')
   const [showOutlook, setShowOutlook] = useState(true)
@@ -178,7 +167,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
   useEffect(() => {
     const el = scrollRef.current
     if (el && stickRef.current) el.scrollTop = el.scrollHeight
-  }, [live, turns, actionLog, streaming])
+  }, [live, turns, streaming])
 
   // Persist the running conversation to localStorage after each turn
   useEffect(() => {
@@ -202,7 +191,6 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
     setLive(null)
     setError('')
     setShowHistory(false)
-    setActionLog([])
     setFollowUps([])
     setOpenRef(null)
     setNotice('')
@@ -226,9 +214,9 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
 
   // Contextual follow-up chips — derived client-side from the answer, the data used and live dashboard state,
   // not another model call. Keeps the "next question" always one tap away instead of a blank input box.
-  function deriveFollowUps(text: string, cmds: ActionLogEntry[], results: ToolResult[]): string[] {
+  function deriveFollowUps(text: string, prompt: string, results: ToolResult[]): string[] {
     const suggestions: string[] = []
-    const place = cmds.find(c => c.kind === 'fly' || c.kind === 'country')?.label
+    const place = findCountryInText(prompt)
       ?? results.find(r => r.ok && r.args[0] && ['profile', 'conflict', 'trade', 'series', 'energy'].includes(r.tool))?.args[0]?.split(',')[0]
     const used = new Set(results.map(r => r.tool))
     if (place && !used.has('forecast')) suggestions.push(`Forecast GDP growth for ${place} and show how reliable the model is`)
@@ -248,52 +236,9 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
     if (id === sessionId) startNewSession()
   }
 
-  // Map commands the model writes ([FLY:…], [COUNTRY:…], [LAYER:…], [DEEPSTATE:…]), run once each per question.
-  function runCommands(full: string, executed: Set<string>, logged: ActionLogEntry[]) {
-    for (const line of full.split('\n')) {
-      const trimmed = line.trim()
-      if (executed.has(trimmed)) continue
-      const push = (entry: ActionLogEntry) => { logged.push(entry); setActionLog(prev => [...prev, entry]) }
-
-      const flyMatch = trimmed.match(/^\[FLY:(.+)\]$/)
-      if (flyMatch) {
-        executed.add(trimmed)
-        const loc = flyMatch[1].trim()
-        onGeoSearch?.(loc)
-        push({ id: `${Date.now()}-fly-${loc}`, kind: 'fly', label: loc, at: Date.now() })
-        continue
-      }
-      const countryMatch = trimmed.match(/^\[COUNTRY:(.+)\]$/)
-      if (countryMatch) {
-        executed.add(trimmed)
-        const name = countryMatch[1].trim()
-        onCountryClick?.(name)
-        push({ id: `${Date.now()}-country-${name}`, kind: 'country', label: name, at: Date.now() })
-        continue
-      }
-      const layerMatch = trimmed.match(/^\[LAYER:(\w+):(on|off)\]$/)
-      if (layerMatch && onToggleLayer && panelState) {
-        const layerId = layerMatch[1] as keyof PanelState
-        const wantOn = layerMatch[2] === 'on'
-        if (layerId in panelState && panelState[layerId] !== wantOn) {
-          executed.add(trimmed)
-          onToggleLayer(layerId)
-          push({ id: `${Date.now()}-layer-${layerId}`, kind: 'layer', label: `${layerId} ${wantOn ? 'on' : 'off'}`, at: Date.now() })
-        }
-        continue
-      }
-      const dsMatch = trimmed.match(/^\[DEEPSTATE:(on|off)\]$/)
-      if (dsMatch) {
-        executed.add(trimmed)
-        push({ id: `${Date.now()}-deepstate`, kind: 'deepstate', label: `Ukraine frontline ${dsMatch[1]}`, at: Date.now() })
-      }
-    }
-  }
-
   async function ask(prompt: string) {
     if (!prompt.trim() || streaming) return
     setError('')
-    setActionLog([])
     setFollowUps([])
     setOpenRef(null)
     stickRef.current = true
@@ -303,18 +248,6 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
     abortRef.current = new AbortController()
     const turnId = `${Date.now()}`
     setLive({ id: turnId, question: prompt, text: '', notes: [], results: [], pending: [], step: 0 })
-
-    // A country named in the user's message always goes to the map and the country drawer —
-    // done here, before the model runs, so it never depends on a small model emitting commands.
-    const mentioned = findCountryInText(prompt)
-    const loggedActions: ActionLogEntry[] = []
-    if (mentioned) {
-      onGeoSearch?.(mentioned)
-      onCountryClick?.(mentioned)
-      const at = Date.now()
-      loggedActions.push({ id: `${at}-fly`, kind: 'fly', label: mentioned, at }, { id: `${at}-country`, kind: 'country', label: mentioned, at })
-      setActionLog([...loggedActions])
-    }
 
     // Market questions get a fresh quote snapshot (same free feed the Markets panel uses); if it
     // can't be reached the analyst still answers from the crisis data — it never refuses over it.
@@ -339,7 +272,6 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
     const gathered: ToolResult[] = []
     let stepText = ''
     let runError: string | undefined
-    const executedCmds = new Set<string>()
     try {
       const run = await runAgent({
         messages, model, signal: abortRef.current.signal,
@@ -347,7 +279,6 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
         onEvent: e => {
           if (e.type === 'step') { stepText = ''; setLive(l => l && { ...l, text: '', step: e.step }) }
           else if (e.type === 'text') {
-            runCommands(e.raw, executedCmds, loggedActions)
             stepText = visibleText(e.raw)
             setLive(l => l && { ...l, text: stepText })
           } else if (e.type === 'tools') {
@@ -372,7 +303,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
       if (!answer) {
         setError('The selected model did not return a briefing. Try a different model.')
       } else {
-        setFollowUps(deriveFollowUps(answer, loggedActions, results))
+        setFollowUps(deriveFollowUps(answer, prompt, results))
       }
       setTurns(prev => [...prev, { id: turnId, question: prompt, answer, results, notes, model: answeredBy ?? model }])
     } catch (err) {
@@ -412,39 +343,12 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
     })
   }
 
-  // Live action timeline — every dashboard command the AI has executed for the current question
-  function renderActions() {
-    if (!actionLog.length) return null
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
-        {actionLog.map(a => {
-          const Icon = a.kind === 'fly' ? Navigation : a.kind === 'country' ? Info : a.kind === 'layer' ? Layers : Radio
-          return (
-            <div key={a.id} className="ai-action-row" style={{
-              display: 'flex', alignItems: 'center', gap: 7, fontSize: 12,
-              padding: '6px 10px', borderRadius: 'var(--r-sm)',
-              background: 'var(--accent-soft)', color: 'var(--accent)',
-              border: '1px solid rgba(24,201,244,0.22)',
-            }}>
-              <Icon size={12} style={{ flexShrink: 0 }} />
-              <span style={{ fontWeight: 600 }}>
-                {a.kind === 'fly' ? 'Map moved to' : a.kind === 'country' ? 'Opened country overview' : a.kind === 'layer' ? 'Map layer updated' : 'Frontline view updated'}
-              </span>
-              <span style={{ color: 'var(--text1)' }}>{a.label}</span>
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
   function renderTurn(t: ChatTurn, isLast: boolean) {
     const placed = new Set(t.answer.split('\n').map(l => l.trim().match(CHART_LINE)?.[1]?.toUpperCase()).filter(Boolean))
     const extra = placed.size ? [] : t.results.filter(r => r.ok && r.chart).slice(0, AUTO_CHARTS)
     return (
       <div key={t.id} className="ai-turn">
         <div className="ai-user-bubble"><span>{t.question}</span></div>
-        {isLast && renderActions()}
         <InvestigationTrail
           turnId={t.id} results={t.results} notes={t.notes}
           open={openRef?.turn === t.id ? openRef.id : null}
@@ -664,7 +568,6 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
         {live && (
           <div className="ai-turn">
             <div className="ai-user-bubble"><span>{live.question}</span></div>
-            {renderActions()}
             <InvestigationTrail turnId={live.id} results={live.results} pending={live.pending} notes={live.notes} />
             {liveStatus && <div className="ai-loading"><span className="ai-loading-dot" />{liveStatus}{live.step > 0 && <span className="ai-step">round {live.step + 1} of up to {MAX_DATA_ROUNDS + 1}</span>}</div>}
             {live.text && <AIMarkdown text={live.text} results={live.results} streaming />}
