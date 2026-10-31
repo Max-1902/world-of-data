@@ -8,6 +8,7 @@ import PlaceBrief from './PlaceBrief'
 import CloseButton from './CloseButton'
 import type { Earthquake } from '../services/earthquakes'
 import type { FirePoint } from '../services/wildfires'
+import type { AcledArchive } from '../services/crises'
 import type { ConflictFeed, CrisisEvent, Flight, NewsArticle, SelectedPlace } from '../types'
 
 /** Don't report "since last visit" for a reload a few minutes after the previous one. */
@@ -17,6 +18,8 @@ interface Props {
   crises: CrisisEvent[]
   /** unthinned live events with the cap flag, for trend scoring; falls back to `crises` */
   conflictFeed?: ConflictFeed
+  /** last year's ACLED window, fetched only when the live window came back empty: proof the feed is behind */
+  conflictArchive?: AcledArchive | null
   flights: Flight[]
   articles: NewsArticle[]
   earthquakes?: Earthquake[]
@@ -33,7 +36,7 @@ interface Props {
   onClose: () => void
 }
 
-export default function OutlookCard({ crises, conflictFeed, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, pinnedCountry, onSelectCountry, onClose }: Props) {
+export default function OutlookCard({ crises, conflictFeed, conflictArchive, flights, articles, earthquakes = [], fires = [], selectedCountry, selectedPlace, pinnedCountry, onSelectCountry, onClose }: Props) {
   const subject = selectedPlace ? null : selectedCountry
   const entries = computeTrajectories(conflictFeed?.events.length ? conflictFeed.events : crises, { limit: 6, articles, focusCountry: subject, capped: conflictFeed?.capped })
   const rising = entries.filter(isFlaggedUp)
@@ -98,9 +101,12 @@ export default function OutlookCard({ crises, conflictFeed, flights, articles, e
           })}
         </div>
       ) : (
-        <div className="outlook-empty">{conflictFeed && conflictFeed.events.length === 0
-          ? 'No trend to show: the conflict feed (ACLED) returned no recent events. The long-running conflicts on the map are hand-entered reference markers and are not counted.'
-          : 'No country has conflict events in the last 10 days, so there is no trend to show.'}</div>
+        <div className="outlook-empty">{conflictArchive
+          ? `No trend to show: ACLED's data on this account stops about a year back (the map shows ${conflictArchive.from} to ${conflictArchive.to} as history). This is a gap in the feed, not a quiet world.`
+          : conflictFeed && conflictFeed.events.length === 0
+            ? 'No trend to show: no conflict events came back from ACLED for the last 14 days (the feed may be off, unreachable or behind). This is a gap in the feed, not evidence that nothing happened.'
+            : 'No country has conflict events in the last 10 days, so there is no trend to show.'}
+          {' '}The long-running conflicts on the map are hand-entered reference markers and are not counted.</div>
       )}
 
       {!selectedCountry && !selectedPlace && since && since.movers.length > 0 && (

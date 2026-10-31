@@ -492,7 +492,7 @@ export default function App() {
                   <div className="map-card">{mapView}
                     {crisisArchive && panelState.crises && <div className="map-archive-note" role="status">Conflict events: ACLED archive, {crisisArchive.from} to {crisisArchive.to} (about 1 year old). Current events aren't available on this ACLED account.</div>}
                   </div>
-                  {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} pinnedCountry={selectedCountry} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
+                  {dismissedCard !== cardKey && <OutlookCard crises={crises} conflictFeed={conflictFeed} conflictArchive={crisisArchive} flights={flights} articles={articles} earthquakes={earthquakes} fires={fires} selectedCountry={null} selectedPlace={selectedPlace} pinnedCountry={selectedCountry} onSelectCountry={selectCountry} onClose={() => setDismissedCard(cardKey)} />}
                   {selectedCountry && (
                     <Suspense fallback={null}>
                       <CountryDrawer country={selectedCountry} crises={crises} flights={flights} earthquakes={earthquakes} fires={fires} onClose={() => setSelectedCountry(null)} onFlyTo={handleGeoSearch} />
