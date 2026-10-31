@@ -7,6 +7,8 @@ import type { ToolResult } from '../../services/aiTools'
 const runAgent = vi.fn<(o: AgentOptions) => Promise<AgentRun>>()
 vi.mock('../../services/aiAgent', async orig => ({ ...(await orig<typeof import('../../services/aiAgent')>()), runAgent: (o: AgentOptions) => runAgent(o) }))
 vi.mock('../../services/stocks', async orig => ({ ...(await orig<typeof import('../../services/stocks')>()), fetchMultipleQuotes: async () => [] }))
+const fetchWeo = vi.fn<(i: string) => Promise<unknown>>(async () => null)
+vi.mock('../../services/imfWeo', async orig => ({ ...(await orig<typeof import('../../services/imfWeo')>()), fetchWeo: (i: string) => fetchWeo(i) }))
 vi.mock('../../hooks/useCountryAnalytics', () => ({ useCountryAnalytics: () => ({ analysis: null }) }))
 const catalogue = vi.fn<() => Promise<unknown[]>>(() => Promise.reject(new Error('offline')))
 const modelPolicy = vi.fn<() => Promise<{ all: boolean; extra: string[] } | null>>(() => Promise.resolve(null))
@@ -27,6 +29,7 @@ const result: ToolResult = {
 
 beforeEach(() => {
   runAgent.mockReset(); localStorage.clear()
+  fetchWeo.mockReset(); fetchWeo.mockImplementation(async () => null)
   catalogue.mockImplementation(() => Promise.reject(new Error('offline')))
   modelPolicy.mockImplementation(() => Promise.resolve(null))
 })
@@ -57,6 +60,28 @@ describe('AIAnalystPanel model picker', () => {
 })
 
 describe('AIAnalystPanel', () => {
+  it('gives the analyst the IMF world figures, and says when they could not be loaded', async () => {
+    runAgent.mockImplementation(async o => ({ answer: 'ok', answeredBy: o.model, transcript: o.messages, results: [], steps: 1 }))
+    const base = { label: '', unit: '%', vintage: 'World Economic Outlook (October 2026)', lastModified: null, values: {} }
+    fetchWeo.mockImplementation(async i => i === 'PCPIPCH'
+      ? { ...base, indicator: i, groups: { WEOWORLD: { '2026': 4.7, '2027': 4.1 } } }
+      : { ...base, indicator: i, groups: { WEOWORLD: { '2026': 3.1, '2027': 3.4 }, ADVEC: { '2026': 2.1, '2027': 1.8 } } })
+    const first = render(<AIAnalystPanel crises={[]} flights={[]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Daily brief' }))
+    await vi.waitFor(() => expect(runAgent).toHaveBeenCalled())
+    const sys = runAgent.mock.calls[0][0].messages[0].content
+    expect(sys).toContain('WORLD ECONOMY (IMF World Economic Outlook')
+    expect(sys).toContain('The IMF projects world real GDP growth of 3.1% in 2026')
+    expect(sys).toContain('• Advanced economies: 2.1% in 2026, 1.8% in 2027')
+    first.unmount()
+
+    runAgent.mockClear(); fetchWeo.mockImplementation(async () => null)
+    render(<AIAnalystPanel crises={[]} flights={[]} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Daily brief' }))
+    await vi.waitFor(() => expect(runAgent).toHaveBeenCalled())
+    expect(runAgent.mock.calls[0][0].messages[0].content).toMatch(/WORLD ECONOMY[^\n]*\n  NOT AVAILABLE/)
+  })
+
   it('investigates with tools, shows the trail, and renders the answer with the chart it placed', async () => {
     runAgent.mockImplementation(async o => {
       o.onEvent?.({ type: 'step', step: 0 })

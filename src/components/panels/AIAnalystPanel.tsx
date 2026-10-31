@@ -9,6 +9,8 @@ import { buildDashboardContext, notMeasured, visibleText, QUICK_PROMPTS, FREE_MO
 import { listSessions, saveSession, deleteSession, newSessionId, type ChatSession, type ChatTurn } from '../../services/chatHistory'
 import { fetchMultipleQuotes, MARKET_HUBS } from '../../services/stocks'
 import { findCountryInText } from '../../services/worldbank'
+import { fetchWeo, type WeoPayload } from '../../services/imfWeo'
+import { buildWorldOutlook, worldContext } from '../../utils/worldOutlook'
 import { LIVE_WINDOW, isBaseline, isFlaggedUp, type TrajectoryEntry } from '../../utils/trajectory'
 import { conflictTrajectories } from '../../utils/monthlyTrajectory'
 import { healthTracker, healthSummary } from '../../services/sourceHealth'
@@ -76,6 +78,8 @@ interface LiveTurn {
 
 /** At most this many charts are added under an answer that placed none itself. */
 const AUTO_CHARTS = 2
+/** How long a question waits for the IMF's world figures before going without them. */
+const WORLD_WAIT_MS = 4_000
 
 // ── AI Analyst Panel (OpenRouter) ─────────────────────────────────────────
 const MARKET_QUESTION = /\b(stocks?|markets?|equit(?:y|ies)|shares?|invest\w*|portfolio|sectors?|etfs?|oil|gold|crypto\w*|bitcoin|forex|currenc\w*|bonds?|prices?|trad(?:e|ing)|returns?)\b/i
@@ -272,7 +276,12 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, panelState }: {
         marketSnapshot = quotes.map(q => `  • ${q.name} (${q.symbol}): ${q.price.toFixed(2)} ${q.currency}, ${q.changePercent >= 0 ? '+' : ''}${q.changePercent.toFixed(2)}% on the last session (last trade ${q.lastUpdated.slice(0, 16).replace('T', ' ')} UTC)`).join('\n')
       } catch { /* answer without it */ }
     }
-    const layers   = { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises, conflictCapped: lastAcledPoll()?.capped ?? false }
+    // The IMF's world figures (cached for six hours after the first load). A slow IMF doesn't hold the question up:
+    // after a few seconds the block says it isn't available, and the request keeps filling the cache for next time.
+    const [gdpW, cpiW] = await Promise.all((['NGDP_RPCH', 'PCPIPCH'] as const).map(i =>
+      Promise.race([fetchWeo(i), new Promise<WeoPayload | null>(r => setTimeout(() => r(null), WORLD_WAIT_MS))])))
+    const world    = gdpW ? buildWorldOutlook(gdpW, cpiW) : null
+    const layers   = { flightsLayer: panelState?.flights, crisesLayer: panelState?.crises, conflictCapped: lastAcledPoll()?.capped ?? false, worldEconomy: world ? worldContext(world) : null }
     const context  = buildDashboardContext(crises, flights, trajectories, healthSummary(healthTracker.getAll()), marketSnapshot, countryAnalyticsSummary, layers)
     // free and paid models get separate instructions and limits (services/analystTiers.ts)
     const { prompt: system, profile } = analystSystemPrompt(context, model)
