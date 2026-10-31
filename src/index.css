@@ -1253,7 +1253,8 @@ body.pw-dragging iframe { pointer-events: none; }
 .fh-links { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 8px; }
 /* all G20 rows at full card width, no inner scroll, clear of the evidence line below */
 .viz-table-wrap.fh-compare { max-height: none; margin-bottom: 12px; }
-.fh-compare .viz-table th:not(:first-child), .fh-compare .viz-table td { width: 110px; }
+/* child combinators: the expanded row holds its own table (.fh-brief-table), which these must not reach */
+.fh-compare .viz-table > thead > tr > th:not(:first-child), .fh-compare .viz-table > tbody > tr > td { width: 110px; }
 .fh-proj { color: var(--text3); font-size: 9px; font-weight: 450; }
 .fh-row-btn { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .fh-row-btn:hover, .fh-row-btn:focus-visible { color: var(--accent); }
@@ -1261,7 +1262,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .fh-row-btn { display: inline-flex; align-items: center; gap: 6px; }
 .fh-chev { flex-shrink: 0; color: var(--text3); transition: transform .15s; }
 .fh-chev.open { transform: rotate(180deg); color: var(--accent); }
-.fh-compare .viz-table .fh-detail td { width: auto; padding: 10px 6px 14px 26px; text-align: left; background: var(--surface2); }
+.fh-compare .viz-table > tbody > .fh-detail > td { width: auto; padding: 10px 6px 14px 26px; text-align: left; background: var(--surface2); }
 .fh-brief { display: flex; flex-wrap: wrap; gap: 14px 32px; align-items: flex-start; }
 .fh-facts { display: grid; grid-template-columns: repeat(3, minmax(0, auto)); gap: 4px 24px; margin: 0; }
 .fh-facts dt { color: var(--text3); font-size: .85em; }
@@ -1269,7 +1270,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .fh-brief-table { flex: 1; min-width: 280px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .fh-brief-table th, .fh-brief-table td { padding: 3px 8px; border-bottom: 1px solid var(--border); text-align: right; color: var(--text2); }
 .fh-brief-table th:first-child { text-align: left; }
-.fh-brief-table thead th { color: var(--text3); font-weight: 600; }
+.fh-brief-table thead th { position: static; background: transparent; color: var(--text3); font-weight: 600; }
 .fh-brief-table tbody th { color: var(--text1); font-weight: 500; }
 .fh-brief-note { flex-basis: 100%; margin: 0; color: var(--text3); font-size: .85em; }
 .fh-page-cta { margin: 0 0 12px; }
@@ -1475,7 +1476,9 @@ body.pw-dragging iframe { pointer-events: none; }
 .pred-dirs { display: grid; gap: 4px; margin-top: 8px; font-size: 11.5px; line-height: 1.55; color: var(--text1); }
 .pred-dirs p { margin: 0; }
 .pred-dir-k { display: block; color: var(--text3); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; }
-.pred-dir { display: inline-flex; align-items: center; gap: 4px; font-weight: 650; color: var(--text1); }
+/* plain inline, not inline-flex: a flex box takes its baseline from the icon and sits off the sentence line */
+.pred-dir { font-weight: 650; color: var(--text1); }
+.pred-dir svg { vertical-align: -2px; }
 .pred-warn { margin-top: 8px; padding: 6px 8px; border-radius: var(--r-sm); background: var(--amber-soft); border-left: 2px solid var(--amber); }
 .pred-warn svg { vertical-align: -2px; color: var(--amber); }
 
