@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 
 /** The Outlook page's sections, in page order. A section that is not on the page right now (still loading, no data) gets no link. */
 export const OUTLOOK_SECTIONS = [
-  { id: 'outlook-forecast', label: 'Forecast' },
+  { id: 'outlook-world-economy', label: 'World economy' },
+  { id: 'outlook-world-detail', label: 'World by group' },
+  { id: 'outlook-forecast', label: 'Country forecast' },
   { id: 'outlook-detail', label: 'Forecast detail' },
   { id: 'outlook-comovement', label: 'Co-movement' },
   { id: 'outlook-imf', label: 'IMF compare' },
@@ -12,7 +14,7 @@ export const OUTLOOK_SECTIONS = [
 ] as const
 
 /**
- * A bar that stays at the top of the Outlook page: jump to a section, and always get back to the forecast. It marks
+ * A bar that stays at the top of the Outlook page: jump to a section, and always get back to the top. It marks
  * the section being read. It only moves the scroll position; it changes no data and hides nothing.
  */
 export default function OutlookNav() {

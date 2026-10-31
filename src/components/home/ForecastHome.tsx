@@ -88,7 +88,7 @@ export function ForecastHome({ onOpenPanel, onOpenCountry }: Props) {
       <section id="outlook-forecast" className="home-hero fh-hero" aria-label="Forecast">
         <div className="hero-copy">
           <div className="home-eyebrow"><span className="new-live-dot" /> FORECAST · REAL GDP GROWTH</div>
-          <h1>Where is <em>{name}</em>’s economy heading?</h1>
+          <h2>Where is <em>{name}</em>’s economy heading?</h2>
           <p>{ok ? headlineSentence(ok) : 'A statistical projection from the country’s own history, with its range, its track record and the IMF’s figure beside it.'}</p>
           <div className="fh-pick cl-search">
             <label className="viz-field">
