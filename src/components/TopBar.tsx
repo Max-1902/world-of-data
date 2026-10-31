@@ -1,8 +1,9 @@
-import { Bookmark, Globe2, Menu, RefreshCw, Settings2, X } from 'lucide-react'
+import { Bookmark, Globe2, Menu, Moon, RefreshCw, Settings2, Sun, X } from 'lucide-react'
 import type { MapViewMode, PanelState } from '../types'
 import SmartSearch from './SmartSearch'
 import SourceHealth from './SourceHealth'
 import { useWatchlist } from '../hooks/useWatchlist'
+import { useTheme } from '../hooks/useTheme'
 
 interface Props {
   viewMode: MapViewMode
@@ -26,6 +27,8 @@ interface Props {
 
 export default function TopBar({ onViewMode, searchQuery, onSearch, onOpenPanel, onOpenLibrary, onToggleLayer, onColorCountries, onSettingsOpen, onReloadAll, reloading, onHome, onMenu, menuOpen = false, savedActive = false }: Props) {
   const unread = useWatchlist().alerts.filter(a => !a.read).length
+  const { theme, toggle: toggleTheme } = useTheme()
+  const themeLabel = theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'
   const savedLabel = unread > 0 ? `Saved countries, ${unread} new alert${unread === 1 ? '' : 's'}` : 'Saved countries'
   return (
     <header className="topbar new-topbar">
@@ -50,6 +53,9 @@ export default function TopBar({ onViewMode, searchQuery, onSearch, onOpenPanel,
       </div>
       <div className="new-header-actions">
         <SourceHealth />
+        <button onClick={toggleTheme} className="new-icon-button" title={themeLabel} aria-label={themeLabel}>
+          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+        </button>
         <button onClick={onReloadAll} disabled={reloading} className="new-icon-button" title="Reload data" aria-label="Reload data">
           <RefreshCw size={16} className={reloading ? 'animate-spin' : ''} />
         </button>
