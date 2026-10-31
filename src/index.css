@@ -4,8 +4,8 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* Dark is the default theme. The home hero sits on a dark photograph, so it keeps the dark tokens in both themes. */
-:root, .home-hero {
+/* Dark is the default theme. The home hero sits on a dark photograph, so it keeps the dark tokens unless the light theme is on (it then gets a light wash, see the light-theme rules at the end). */
+:root, :root:not([data-theme="light"]) .home-hero {
   color-scheme: dark;
   /* ── Core surfaces ─────────────────────────────── */
   --bg:      #050b12;   /* app shell background */
@@ -1747,3 +1747,10 @@ button.dl-rank:hover { background: var(--surface2); }
 :root[data-theme="light"] .new-nav-item.active { background: var(--accent-soft); border-color: rgba(10,123,163,.18); }
 :root[data-theme="light"] .new-icon-button.active { border-color: rgba(10,123,163,.3); background: var(--accent-soft); }
 :root[data-theme="light"] .ai-response-line strong { color: var(--amber); }
+:root[data-theme="light"] .home-hero { background-image: linear-gradient(90deg, rgba(255,255,255,.97) 0%, rgba(247,250,252,.93) 48%, rgba(238,242,246,.84) 100%), url('/images/home-earth.jpg'); box-shadow: var(--shadow-md); }
+:root[data-theme="light"] .home-hero::before { background: none; }
+:root[data-theme="light"] .home-hero::after { box-shadow: none; opacity: .6; }
+:root[data-theme="light"] .home-hero h1, :root[data-theme="light"] .home-hero h2 { color: var(--text1); }
+:root[data-theme="light"] .home-hero h1 em, :root[data-theme="light"] .home-hero h2 em { color: var(--accent); text-shadow: none; }
+:root[data-theme="light"] .home-hero p { color: var(--text2); }
+:root[data-theme="light"] .fh-glance { background: color-mix(in srgb, var(--surface), transparent 4%); }
