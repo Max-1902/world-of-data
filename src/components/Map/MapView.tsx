@@ -44,6 +44,8 @@ import IncidentLegend from './overlays/IncidentLegend'
 import HazardHexLegend from './overlays/HazardHexLegend'
 import OverlayMenu from './overlays/OverlayMenu'
 import DeepStatePanel from './overlays/DeepStatePanel'
+import MapLoadingOverlay from './overlays/MapLoadingOverlay'
+import { useMapLoadPending } from './mapLoading'
 import { MAPBOX_TOKEN as TOKEN } from './token'
 
 export default function MapView({
@@ -67,6 +69,8 @@ export default function MapView({
   const markersRef     = useRef<mapboxgl.Marker[]>([])
   const layersReadyRef = useRef(false)
   const [mapReady, setMapReady] = useState(false)
+  // false until the style and first tiles have rendered
+  const [firstIdle, setFirstIdle] = useState(false)
   const popupRef       = useRef<mapboxgl.Popup | null>(null)
   const flightDataRef  = useRef<Flight[]>([])
   // Handlers are read through refs so the once-only map init below always calls the latest prop.
@@ -139,6 +143,8 @@ export default function MapView({
     map.addControl(new mapboxgl.NavigationControl({ showCompass: true }), 'top-right')
     map.addControl(new mapboxgl.ScaleControl({ unit: 'metric' }), 'bottom-right')
 
+    map.once('idle', () => setFirstIdle(true))
+
     map.on('load', () => {
       addAllLayers(map, { popupRef, flightDataRef, countryAnalyticsRef, onFlightClick: f => onFlightClickRef.current(f), onCountryClickRef, onPlaceClickRef })
 
@@ -153,6 +159,7 @@ export default function MapView({
       markersRef.current.forEach((m) => m.remove())
       map.remove()
       layersReadyRef.current = false
+      setFirstIdle(false)
     }
   }, [])
 
@@ -192,6 +199,12 @@ export default function MapView({
   useCrisisMarkers(handle, { crises, earthquakes, showCrises, onCrisisClick })
   useNewsMarkers(handle, { newsPins, showNews })
   useMarketMarkers(handle, { stocks, showStocks })
+
+  // Loading overlay: the first render, any tracked layer fetch, or a shaded layer's first retrieval (later refreshes keep the old data on screen)
+  const fetchesPending = useMapLoadPending()
+  const countryLoading = showCountryAnalytics && [countryData.xSlice, countryData.ySlice].some(sl => sl.status === 'loading' && !sl.rows.length)
+  const hexLoading = showAnalyticsHex && hexSlice.status === 'loading' && !hexSlice.cells.length
+  const mapBusy = !firstIdle || fetchesPending || countryLoading || hexLoading
 
   if (!TOKEN) {
     return (
@@ -241,6 +254,7 @@ export default function MapView({
           <IncidentLegend outages={showOutages ? outages : null} radarOutages={radarOutages} disasters={showDisasters ? disasterAlerts : null} />
         </>
       )}
+      <MapLoadingOverlay busy={mapBusy} />
       {panelState && onToggleLayer && (
         <OverlayMenu panelState={panelState} onToggleLayer={onToggleLayer} onClearLayers={onClearLayers} deepstateMode={deepstateMode} onToggleDeepstate={onToggleDeepstate} suggested={suggestedLayers} top={10} />
       )}

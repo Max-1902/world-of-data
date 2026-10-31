@@ -5,6 +5,7 @@ import { PIPELINE_COLORS, PIPELINE_LABELS, PIPELINE_ATTRIBUTION, PIPELINE_DETAIL
 import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
+import { trackMapLoad } from '../mapLoading'
 
 export function addPipelineLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   const { popupRef } = ctx
@@ -118,7 +119,7 @@ export function usePipelineData({ mapRef, layersReadyRef, mapReady }: MapHandle,
     }
     if (!showPipelines) { src.setData({ type: 'FeatureCollection', features: [] }); return }
     let cancelled = false
-    fetchTrunkPipelines().then(fc => { if (!cancelled) src.setData(fc) })
+    trackMapLoad(fetchTrunkPipelines()).then(fc => { if (!cancelled) src.setData(fc) })
     return () => { cancelled = true }
   }, [showPipelines, mapReady])
 
@@ -141,7 +142,7 @@ export function usePipelineData({ mapRef, layersReadyRef, mapReady }: MapHandle,
       const byId = new Map<string, PipelineFeature>()
       const POOL = 3
       for (let i = 0; i < cells.length && mine === seq; i += POOL) {
-        const chunk = await Promise.all(cells.slice(i, i + POOL).map(fetchPipelineCell))
+        const chunk = await trackMapLoad(Promise.all(cells.slice(i, i + POOL).map(fetchPipelineCell)))
         if (mine !== seq) return
         for (const feats of chunk) for (const f of feats) byId.set(f.properties.osm, f)
         detail.setData({ type: 'FeatureCollection', features: [...byId.values()] })

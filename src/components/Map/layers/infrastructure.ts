@@ -6,6 +6,7 @@ import type { LayerCtx } from './types'
 import type { MapHandle, MapViewProps } from '../types'
 import { markFeatureClick } from './countryClick'
 import { MARK_ICON_LAYOUT, MARK_ICON_PAINT, addMarkShapes, iconSizeFor, shapeFor } from './markShapes'
+import { trackMapLoad } from '../mapLoading'
 
 export function addInfrastructureLayers(map: mapboxgl.Map, ctx: LayerCtx): void {
   addMarkShapes(map)
@@ -83,7 +84,7 @@ export function useInfrastructureData({ mapRef, layersReadyRef, mapReady }: MapH
   useEffect(() => {
     if (!showInfrastructure) return
     let cancelled = false
-    fetchAllPowerPlants().then(pts => { if (!cancelled) setPowerPlants(pts) }).catch(() => {})
+    trackMapLoad(fetchAllPowerPlants()).then(pts => { if (!cancelled) setPowerPlants(pts) }).catch(() => {})
     return () => { cancelled = true }
   }, [showInfrastructure])
 
