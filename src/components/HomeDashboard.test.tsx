@@ -10,7 +10,7 @@ vi.mock('../services/globalTrends', () => ({
 const { default: HomeDashboard } = await import('./HomeDashboard')
 const { countryAnalytics } = await import('../services/countryAnalytics')
 
-const props = { map: null, onOpenMap: vi.fn(), onOpenLibrary: vi.fn(), onColorCountries: vi.fn(), projectionMode: 'globe' as const, onProjectionMode: vi.fn() }
+const props = { map: null, onOpenMap: vi.fn(), onOpenCountry: vi.fn(), onOpenLibrary: vi.fn(), onColorCountries: vi.fn(), projectionMode: 'globe' as const, onProjectionMode: vi.fn() }
 
 describe('The world so far', () => {
   beforeEach(() => vi.clearAllMocks())

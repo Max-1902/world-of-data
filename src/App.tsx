@@ -469,6 +469,7 @@ export default function App() {
                 map={homeMapView}
                 onOpenPanel={openPanel}
                 onOpenMap={openMap}
+                onOpenCountry={selectCountry}
                 onOpenLibrary={() => setLibraryOpen(true)}
                 onColorCountries={colorCountries}
                 projectionMode={projectionMode}

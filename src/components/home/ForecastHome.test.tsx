@@ -30,7 +30,7 @@ describe('ForecastHome', () => {
   })
 
   it('answers what we expect, what changed, what it rests on and what could change it, for the chosen country', async () => {
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByText(/What it rests on/)).toBeTruthy())
     expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('Germany')
     expect(screen.getByText(/Projected real GDP growth/)).toBeTruthy()
@@ -43,7 +43,7 @@ describe('ForecastHome', () => {
 
   it('states the model, and the predictor test result with a way to the full rule', async () => {
     const onOpenPanel = vi.fn()
-    render(<ForecastHome onOpenPanel={onOpenPanel} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={onOpenPanel} />)
     await waitFor(() => expect(screen.getByLabelText('Germany forecast at a glance')).toBeTruthy())
     expect(screen.getByLabelText('Germany forecast at a glance').textContent).toMatch(/Model: AR\(2\)|Model: “no change”/)
     expect(screen.getByText(/What has been tested as a predictor/)).toBeTruthy()
@@ -54,7 +54,7 @@ describe('ForecastHome', () => {
   })
 
   it('gives the forecast chart a table with the same values', async () => {
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByLabelText('Germany forecast at a glance')).toBeTruthy())
     const card = (await screen.findAllByLabelText(/^Germany: real GDP growth, next/)).find(e => e.tagName === 'SECTION')!
     fireEvent.click(within(card).getByRole('button', { name: 'Table' }))
@@ -64,7 +64,7 @@ describe('ForecastHome', () => {
   })
 
   it('offers the Spearman matrix under the forecast without fetching its indicators until asked', async () => {
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByText(/What it rests on/)).toBeTruthy())
     expect(screen.getByText('What moves together')).toBeTruthy()
     expect(screen.getByRole('button', { name: /Compute \(loads \d+ indicators\)/ })).toBeTruthy()
@@ -72,7 +72,7 @@ describe('ForecastHome', () => {
   })
 
   it('shows the interval with the coverage it actually held, and the IMF figure beside it', async () => {
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByLabelText('Germany forecast at a glance')).toBeTruthy())
     const glance = screen.getByLabelText('Germany forecast at a glance')
     expect(glance.textContent).toMatch(/held 93\.1% of outcomes in backtests since 2010/)
@@ -81,7 +81,7 @@ describe('ForecastHome', () => {
   })
 
   it('records the forecast with the IMF vintage once the IMF request has settled', async () => {
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(m.remember).toHaveBeenCalled())
     const rec = m.remember.mock.calls[0][0] as ForecastRecord
     expect(rec.key).toBe('DE|NY.GDP.MKTP.KD.ZG')
@@ -90,7 +90,7 @@ describe('ForecastHome', () => {
 
   it('says so, and still shows the forecast, when the IMF request fails', async () => {
     m.fetchWeo.mockResolvedValue(null)
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByText(/IMF’s figures could not be loaded/)).toBeTruthy())
     expect(screen.getByText(/Projected real GDP growth/)).toBeTruthy()
     expect(screen.queryByText(/The G20 on the IMF/)).toBeNull()
@@ -99,7 +99,7 @@ describe('ForecastHome', () => {
 
   it('states why there is no forecast when the history is too short', async () => {
     m.fetchSeries.mockImplementation(async (codes: string[]) => ({ [codes[0]]: { name: 'GDP growth', points: pts(8, 2015) } }))
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByText(/has 8 years of reported growth; a forecast needs at least 15/)).toBeTruthy())
     expect(screen.queryByText(/What it rests on/)).toBeNull()
     expect(m.remember).not.toHaveBeenCalled()
@@ -107,12 +107,12 @@ describe('ForecastHome', () => {
 
   it('says the World Bank figures could not be loaded rather than staying on "loading"', async () => {
     m.fetchSeries.mockRejectedValue(new Error('HTTP 500'))
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     await waitFor(() => expect(screen.getByText(/World Bank’s figures could not be loaded/)).toBeTruthy())
   })
 
   it('switches country from the G20 table, and shares the choice with the Predictions panel', async () => {
-    render(<ForecastHome onOpenPanel={() => {}} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={() => {}} />)
     const india = await screen.findByRole('button', { name: 'India' })
     fireEvent.click(india)
     await waitFor(() => expect(m.fetchSeries).toHaveBeenCalledWith(['IN'], 'NY.GDP.MKTP.KD.ZG'))
@@ -120,9 +120,30 @@ describe('ForecastHome', () => {
     await waitFor(() => expect(screen.getByRole('heading', { level: 1 }).textContent).toContain('India'))
   })
 
+  it('expands a G20 row into the country’s key figures and opens its full page from below the table', async () => {
+    const cpi = { ...weo, indicator: 'PCPIPCH', label: 'Inflation', values: { IND: { '2025': 2.9, '2026': 4.1, '2027': 4.0 } } }
+    const lur = { ...weo, indicator: 'LUR', label: 'Unemployment', values: {} }
+    m.fetchWeo.mockImplementation(async (ind: string) => ind === 'PCPIPCH' ? cpi : ind === 'LUR' ? lur : weo)
+    const onOpenCountry = vi.fn()
+    render(<ForecastHome onOpenPanel={() => {}} onOpenCountry={onOpenCountry} />)
+    const india = await screen.findByRole('button', { name: 'India' })
+    expect(india.getAttribute('aria-expanded')).toBe('false')
+    fireEvent.click(india)
+    expect(india.getAttribute('aria-expanded')).toBe('true')
+    const detail = document.getElementById('fh-detail-IND')!
+    expect(detail.textContent).toContain('South Asia')
+    await waitFor(() => expect(detail.textContent).toContain('4.1%'))
+    expect(within(detail).getByText('Unemployment rate').closest('tr')!.textContent).toBe('Unemployment rate———')
+    expect(m.fetchWeo).toHaveBeenCalledWith('LUR')
+    fireEvent.click(screen.getByRole('button', { name: /India: full country page/ }))
+    expect(onOpenCountry).toHaveBeenCalledWith('India')
+    fireEvent.click(india)
+    expect(document.getElementById('fh-detail-IND')).toBeNull()
+  })
+
   it('opens the full forecast and the shock-exposure panel', async () => {
     const open = vi.fn()
-    render(<ForecastHome onOpenPanel={open} />)
+    render(<ForecastHome onOpenCountry={() => {}} onOpenPanel={open} />)
     await screen.findByText(/What could change it/)
     fireEvent.click(screen.getByRole('button', { name: /Full forecast, backtest and IMF comparison/ }))
     fireEvent.click(screen.getByRole('button', { name: /Trace a shock/ }))

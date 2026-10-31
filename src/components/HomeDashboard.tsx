@@ -10,6 +10,7 @@ interface Props {
   map: ReactNode
   onOpenPanel: (id: string) => void
   onOpenMap: () => void
+  onOpenCountry: (name: string) => void
   onOpenLibrary: () => void
   onColorCountries: (indicatorId: string) => void
   projectionMode: 'globe' | 'mercator'
@@ -41,7 +42,7 @@ const GLOBAL_TRENDS = [
 type TrendId = typeof GLOBAL_TRENDS[number]['id']
 type TrendState = Partial<Record<TrendId, GlobalTrendPoint[]>>
 
-export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenLibrary, onColorCountries, projectionMode, onProjectionMode }: Props) {
+export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenCountry, onOpenLibrary, onColorCountries, projectionMode, onProjectionMode }: Props) {
   const [selectedIndicator, setSelectedIndicator] = useState(INDICATORS[0].id)
   const [globalTrend, setGlobalTrend] = useState<TrendState>({})
 
@@ -63,7 +64,7 @@ export default function HomeDashboard({ map, onOpenPanel, onOpenMap, onOpenLibra
     <main className="home-scroll">
       <div className="home-content">
         <OutlookNav />
-        <ForecastHome onOpenPanel={onOpenPanel} />
+        <ForecastHome onOpenPanel={onOpenPanel} onOpenCountry={onOpenCountry} />
 
         <HomeTier label="Context" note="The wider picture. Not forecast evidence." />
         <section id="outlook-map" className="home-section world-section">
