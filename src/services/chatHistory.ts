@@ -42,8 +42,9 @@ function readAll(): ChatSession[] {
 
 function writeAll(sessions: ChatSession[]) {
   // Tool results with chart data make sessions bigger than plain chat; when storage is full, drop the oldest
-  // conversations until it fits rather than losing the save (and every later one).
-  let keep = sessions.slice(-MAX_SESSIONS)
+  // conversations until it fits rather than losing the save (and every later one). Oldest = least recently updated,
+  // so a reopened old conversation that was just saved is never the one dropped.
+  let keep = [...sessions].sort((a, b) => a.updatedAt - b.updatedAt).slice(-MAX_SESSIONS)
   while (keep.length) {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify(keep))

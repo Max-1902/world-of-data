@@ -108,3 +108,11 @@ export function worldSentences(w: WorldOutlook): string[] {
   }
   return out
 }
+
+/** The analyst's WORLD ECONOMY block: the same sentences as the Outlook page, then the group figures line by line. */
+export function worldContext(w: WorldOutlook): string {
+  const { now, next } = w.years
+  const rows = [['World', w.growth.now, w.growth.next] as const, ...w.groups.map(r => [r.label, r.now, r.next] as const)]
+    .map(([label, a, b]) => `  • ${label}: ${a == null ? 'no figure' : `${f1(a)}%`} in ${now}, ${b == null ? 'no figure' : `${f1(b)}%`} in ${next}`)
+  return [`  ${worldSentences(w).join(' ')}`, `  Real GDP growth by group (IMF projections):`, ...rows].join('\n')
+}

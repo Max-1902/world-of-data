@@ -207,21 +207,19 @@ export async function streamAI(
       if (!line.startsWith('data: ')) continue
       const data = line.slice(6).trim()
       if (data === '[DONE]') return
-      try {
-        const json  = JSON.parse(data)
-        if (json.error) {
-          // Provider errors can arrive mid-stream with their own HTTP-style code (429 rate limit, …).
-          if (typeof json.error.code === 'number') throw new OpenRouterError(json.error.code, JSON.stringify({ error: json.error }))
-          throw new Error(json.error.message || 'Upstream provider error')
-        }
-        const delta = json.choices?.[0]?.delta ?? {}
-        const token = delta.content ?? ''
-        if (token) { gotContent = true; onToken(token) }
-        else if (!gotContent && typeof delta.reasoning === 'string' && delta.reasoning) {
-          onReasoning?.(delta.reasoning)
-        }
-      } catch (e) {
-        if (e instanceof Error && e.message !== 'Unexpected end of JSON input') throw e
+      // a line that isn't JSON is skipped (the parse error's wording differs per browser, so it isn't matched on)
+      let json: any
+      try { json = JSON.parse(data) } catch { continue }
+      if (json?.error) {
+        // Provider errors can arrive mid-stream with their own HTTP-style code (429 rate limit, …).
+        if (typeof json.error.code === 'number') throw new OpenRouterError(json.error.code, JSON.stringify({ error: json.error }))
+        throw new Error(json.error.message || 'Upstream provider error')
+      }
+      const delta = json?.choices?.[0]?.delta ?? {}
+      const token = typeof delta.content === 'string' ? delta.content : ''
+      if (token) { gotContent = true; onToken(token) }
+      else if (!gotContent && typeof delta.reasoning === 'string' && delta.reasoning) {
+        onReasoning?.(delta.reasoning)
       }
     }
   }
@@ -485,7 +483,7 @@ export const QUICK_PROMPTS: { label: string; prompt: string }[] = [
   },
   {
     label:  'Air Traffic',
-    prompt: 'Based on current flight data, what anomalies or noteworthy patterns can you identify? Are there any airspace restrictions or unusual military air activity worth noting?',
+    prompt: 'Using the live flight data and the airspace low-traffic check, what stands out: where tracked aircraft are registered and which regions have unusually little traffic? Say what this data cannot show: it does not identify military aircraft or official airspace closures.',
   },
   {
     label:  'Geo Risk',
