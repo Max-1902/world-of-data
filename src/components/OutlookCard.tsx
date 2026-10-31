@@ -22,10 +22,10 @@ interface Props {
   earthquakes?: Earthquake[]
   fires?: FirePoint[]
   selectedCountry?: string | null
-  /** a picked city; takes over the card from the regional outlook */
+  /** a picked city; takes over the card from the regional activity view */
   selectedPlace?: SelectedPlace | null
   /**
-   * A country clicked on the map. The card stays the regional outlook (what is rising across regions), with this
+   * A country clicked on the map. The card stays the regional activity view (what is rising across regions), with this
    * country's own activity trend first; its general data opens beside the map, not in the card.
    */
   pinnedCountry?: string | null
@@ -48,17 +48,17 @@ export default function OutlookCard({ crises, conflictFeed, flights, articles, e
   const featured = subject ? entries : pinned ? [pinned, ...others.slice(0, 2)] : (rising.length ? rising : entries).slice(0, 2)
 
   return (
-    <section className={`outlook-card${selectedCountry || selectedPlace ? ' outlook-card-country' : ''}`} aria-label={selectedPlace ? `${selectedPlace.name} brief` : selectedCountry ? `${selectedCountry} brief` : 'Regional activity outlook'}>
+    <section className={`outlook-card${selectedCountry || selectedPlace ? ' outlook-card-country' : ''}`} aria-label={selectedPlace ? `${selectedPlace.name} brief` : selectedCountry ? `${selectedCountry} brief` : 'Regional activity'}>
       <div className="outlook-head">
         <div className="outlook-title">
           <span className="outlook-icon"><Radar size={13} /></span>
           <div>
-            <div className="outlook-eyebrow">{selectedPlace ? selectedPlace.name : selectedCountry ? selectedCountry : 'Regional outlook'}</div>
-            <div className="outlook-subtitle">{selectedPlace ? `${[selectedPlace.region, selectedPlace.country].filter(Boolean).join(', ')} · local brief` : selectedCountry ? 'Country brief · news and facts' : pinned ? `Activity trend · 72 hours · ${pinned.country} first` : 'Activity trend · 72 hours'}</div>
+            <div className="outlook-eyebrow">{selectedPlace ? selectedPlace.name : selectedCountry ? selectedCountry : 'Regional activity'}</div>
+            <div className="outlook-subtitle">{selectedPlace ? `${[selectedPlace.region, selectedPlace.country].filter(Boolean).join(', ')} · local brief` : selectedCountry ? 'Country brief · news and facts' : pinned ? `Worldwide · conflict events, 72h vs prior week · ${pinned.country} first` : 'Worldwide · conflict events, 72h vs prior week'}</div>
           </div>
         </div>
         <span className="outlook-live"><i /> {selectedCountry || selectedPlace ? 'Live' : 'Rule-based'}</span>
-        <CloseButton onClick={onClose} label={selectedPlace ? `Close ${selectedPlace.name} brief` : selectedCountry ? `Close ${selectedCountry} brief` : 'Close regional outlook'} />
+        <CloseButton onClick={onClose} label={selectedPlace ? `Close ${selectedPlace.name} brief` : selectedCountry ? `Close ${selectedCountry} brief` : 'Close regional activity'} />
       </div>
 
       {selectedPlace ? (
@@ -98,7 +98,9 @@ export default function OutlookCard({ crises, conflictFeed, flights, articles, e
           })}
         </div>
       ) : (
-        <div className="outlook-empty">No recent regional activity trend is available.</div>
+        <div className="outlook-empty">{conflictFeed && conflictFeed.events.length === 0
+          ? 'No trend to show: the conflict feed (ACLED) returned no recent events. The long-running conflicts on the map are hand-entered reference markers and are not counted.'
+          : 'No country has conflict events in the last 10 days, so there is no trend to show.'}</div>
       )}
 
       {!selectedCountry && !selectedPlace && since && since.movers.length > 0 && (

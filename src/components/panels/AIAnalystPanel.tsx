@@ -586,7 +586,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
       {trajectories.length > 0 && (
         <div className="ai-watchlist" style={{ padding: showOutlook ? '12px 14px' : '7px 14px', borderBottom: '1px solid var(--border)', flexShrink: 0, maxHeight: showOutlook ? '38%' : undefined, overflowY: 'auto' }}>
           <button className="ai-section-heading ai-outlook-toggle" onClick={() => setShowOutlook(v => !v)} aria-expanded={showOutlook} style={{ marginBottom: showOutlook ? 9 : 0 }}>
-            <span>Regional outlook · {trajectories.filter(isFlaggedUp).length} {trajectories[0]?.baseline ? 'unusually high' : 'rising'}</span>
+            <span>Regional activity · {trajectories.filter(isFlaggedUp).length} {trajectories[0]?.baseline ? 'unusually high' : 'rising'}</span>
             <span>72-hour activity trends <ChevronDown size={11} style={{ transform: showOutlook ? 'rotate(180deg)' : undefined, verticalAlign: -2 }} /></span>
           </button>
           {showOutlook && (
@@ -688,7 +688,7 @@ export function AIAnalystPanel({ crises, conflictFeed, flights, onGeoSearch, onC
       {/* Context pill */}
       {!hasKey && (
         <div className="ai-key-notice">
-          Set up OpenRouter from Settings → API Keys to enable chat. The regional outlook remains available.
+          Set up OpenRouter from Settings → API Keys to enable chat. The regional activity watchlist remains available.
         </div>
       )}
 
