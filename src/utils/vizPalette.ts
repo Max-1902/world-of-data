@@ -26,8 +26,10 @@ export const sequentialColor = (t: number) => rampColor(SEQUENTIAL, t)
 export const BELOW = '#3987e5'
 export const ABOVE = '#e66767'
 export const NEUTRAL = '#2a3d49'
+/** The midpoint on the light theme's white surfaces, where the dark NEUTRAL would swallow dark text. */
+export const NEUTRAL_LIGHT = '#e6ebef'
 /** v in −1..1: negative → blue, positive → red, 0 → neutral. */
-export const divergingColor = (v: number) => v >= 0 ? rampColor([NEUTRAL, ABOVE], v) : rampColor([NEUTRAL, BELOW], -v)
+export const divergingColor = (v: number, neutral: string = NEUTRAL) => v >= 0 ? rampColor([neutral, ABOVE], v) : rampColor([neutral, BELOW], -v)
 
 const lum = (hex: string) => {
   const [r, g, b] = rgb(hex).map(v => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 })

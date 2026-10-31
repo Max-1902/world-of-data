@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CorrMatrix } from '../../utils/countryStats'
-import { BELOW, ABOVE, NEUTRAL, divergingColor, inkOn } from '../../utils/vizPalette'
+import { BELOW, ABOVE, NEUTRAL, NEUTRAL_LIGHT, divergingColor, inkOn } from '../../utils/vizPalette'
+import { useActiveTheme } from '../../hooks/useTheme'
 import { useElementWidth } from './useElementWidth'
 import { Tooltip } from './ChartFrame'
 
@@ -19,6 +20,7 @@ export function CorrMatrixChart({ matrix, labels, names, onPick }: {
 }) {
   const [ref, width] = useElementWidth<HTMLDivElement>()
   const [hover, setHover] = useState<{ i: number; j: number; x: number; y: number } | null>(null)
+  const neutral = useActiveTheme() === 'light' ? NEUTRAL_LIGHT : NEUTRAL
   const k = matrix.ids.length
   const cell = Math.max(18, Math.min(36, (width - LABEL_W - 36) / k))   // right margin leaves room for the rotated column labels
   const height = TOP + k * cell + 4
@@ -35,7 +37,7 @@ export function CorrMatrixChart({ matrix, labels, names, onPick }: {
         ))}
         {matrix.rho.map((row, i) => row.map((r, j) => {
           const diag = i === j
-          const fill = r === null || diag ? null : divergingColor(r)
+          const fill = r === null || diag ? null : divergingColor(r, neutral)
           return (
             <g key={`${i}-${j}`} style={{ cursor: !diag && r !== null && onPick ? 'pointer' : 'default' }}
               onPointerMove={e => { const b = ref.current!.getBoundingClientRect(); setHover({ i, j, x: e.clientX - b.left, y: e.clientY - b.top }) }}
@@ -54,7 +56,7 @@ export function CorrMatrixChart({ matrix, labels, names, onPick }: {
       </svg>
       <div className="viz-ramp" aria-hidden="true">
         <span>−1</span>
-        <i style={{ background: `linear-gradient(90deg, ${BELOW}, ${NEUTRAL}, ${ABOVE})` }} />
+        <i style={{ background: `linear-gradient(90deg, ${BELOW}, ${neutral}, ${ABOVE})` }} />
         <span>+1</span>
       </div>
       {hv && hover && (
