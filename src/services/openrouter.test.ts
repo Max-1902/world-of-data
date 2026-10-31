@@ -125,6 +125,12 @@ describe('buildSystemPrompt', () => {
     expect(p).toMatch(/Only cite numbers that appear in the data below/)
   })
 
+  it('offers no map or panel commands: the reader stays in the conversation', () => {
+    const p = buildSystemPrompt('')
+    expect(p).not.toMatch(/\[(FLY|COUNTRY|LAYER|DEEPSTATE):/)
+    expect(p).toMatch(/cannot move the map/)
+  })
+
   it('requires a source tag on every factual sentence, with an example of each tag', () => {
     const p = buildSystemPrompt('')
     expect(p).toMatch(/\[dashboard\] when it rests on the data below/)
