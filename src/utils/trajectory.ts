@@ -25,11 +25,26 @@ export interface TrajectoryEntry {
   baseline: OwnBaseline | null
   /** 'high' / 'low' when the 72h count is that unlikely under the country's own normal (p < UNUSUAL_P), else null. */
   unusual: 'high' | 'low' | null
+  /** which windows the counts cover; absent means the live rule, the last 72h against the prior week */
+  window?: TrendWindow
 }
+
+/** The windows behind an entry, in words the UI and the analyst can quote. */
+export interface TrendWindow {
+  source: string
+  /** the window `recentCount` covers, e.g. "72h" or "September 2026" */
+  recent: string
+  /** what it is compared with, e.g. "the prior week" */
+  prior: string
+}
+
+export const LIVE_WINDOW: TrendWindow = { source: 'ACLED (live)', recent: '72h', prior: 'the prior week' }
 
 export interface OwnBaseline {
   /** whole days of history the normal was measured over (the days just before the 72h window) */
   days: number
+  /** that history in words, e.g. "last 28 days" or "last 6 months" */
+  span: string
   /** events this country's own normal predicts for a 72h window */
   expected: number
   /** P(a 72h count at least this high | the country's normal) */
@@ -154,7 +169,7 @@ export function ownBaseline(dailyCounts: number[], recentCount: number): OwnBase
   // treats the three days as independent, which understates a sustained surge's rarity a little (conservative)
   const expected = rate * windowDays
   const { pHigh, pLow } = countTails(recentCount, expected, dayVar * windowDays)
-  return { days, expected, pHigh, pLow }
+  return { days, span: `last ${days} days`, expected, pHigh, pLow }
 }
 
 export function unusualness(b: OwnBaseline | null): TrajectoryEntry['unusual'] {
@@ -175,8 +190,8 @@ const fmtExpected = (x: number) => x < 10 ? String(Math.round(x * 10) / 10) : St
 
 // No percentage is shown. pHigh/pLow come from 7–28 days of counts and treat the three days as independent, so they
 // rank countries and set the flag but are not calibrated probabilities; no replay has measured how often a flag is right.
-function baselineClause(b: OwnBaseline, unusual: TrajectoryEntry['unusual']): string {
-  const vs = `~${fmtExpected(b.expected)} expected from its own last ${b.days} days`
+export function baselineClause(b: OwnBaseline, unusual: TrajectoryEntry['unusual']): string {
+  const vs = `~${fmtExpected(b.expected)} expected from its own ${b.span}`
   if (unusual === 'high') return `unusually high for this country (${vs}; a rough flag from a short history, not a measured probability)`
   if (unusual === 'low') return `unusually quiet for this country (${vs}; a rough flag from a short history, not a measured probability)`
   return `within this country's normal range (${vs})`
@@ -203,7 +218,7 @@ function reasonFor(recentCount: number, priorCount: number, trend: TrajectoryEnt
 
 const RECENT_NEWS_WINDOW_MS = 48 * 60 * 60 * 1000  // last 48h
 
-function findNewsHit(country: string, articles: NewsArticle[], now: number): NewsArticle | undefined {
+export function findNewsHit(country: string, articles: NewsArticle[], now: number): NewsArticle | undefined {
   return articles.find(a => {
     const t = Date.parse(a.publishedAt)
     if (!Number.isNaN(t) && now - t > RECENT_NEWS_WINDOW_MS) return false

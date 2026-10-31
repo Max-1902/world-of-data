@@ -207,7 +207,7 @@ describe('own-normal surprise', () => {
   })
 
   it('isFlaggedUp uses the own-normal flag when known, else the rising rule', () => {
-    const b = { days: 10, expected: 1, pHigh: 0.5, pLow: 0.5 }
+    const b = { days: 10, span: 'last 10 days', expected: 1, pHigh: 0.5, pLow: 0.5 }
     expect(isFlaggedUp({ trend: 'rising', baseline: null, unusual: null })).toBe(true)
     expect(isFlaggedUp({ trend: 'rising', baseline: b, unusual: null })).toBe(false)
     expect(isFlaggedUp({ trend: 'flat', baseline: b, unusual: 'high' })).toBe(true)

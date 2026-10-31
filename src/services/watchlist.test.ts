@@ -11,7 +11,7 @@ const traj = (country: string, trend: TrajectoryEntry['trend'], reason = 'r', o:
   country, recentScore: 0, priorScore: 0, delta: 0, trend, velocity: 0, recentCount: 0, priorCount: 0, reason,
   baseline: null, unusual: null, sampled: false, ...o,
 })
-const normal = { days: 20, expected: 3, pHigh: 0.4, pLow: 0.7 }
+const normal = { days: 20, span: 'last 20 days', expected: 3, pHigh: 0.4, pLow: 0.7 }
 const empty = { seen: null, trends: {} }
 
 describe('evaluateWatch', () => {
