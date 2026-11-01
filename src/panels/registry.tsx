@@ -49,6 +49,7 @@ const NowcastPanel = lazy(() => import('../components/panels/NowcastPanel'))
 const GasStorageForecastPanel = lazy(() => import('../components/panels/GasStorageForecast').then(m => ({ default: m.GasStorageForecastPanel })))
 const InventoriesPanel = lazy(() => import('../components/panels/InventoriesPanel').then(m => ({ default: m.InventoriesPanel })))
 const ExposurePanel = lazy(() => import('../components/panels/ExposurePanel'))
+const DisasterMarketsPanel = lazy(() => import('../components/panels/DisasterMarketsPanel').then(m => ({ default: m.DisasterMarketsPanel })))
 const WatchlistPanel = lazy(() => import('../components/panels/WatchlistPanel').then(m => ({ default: m.WatchlistPanel })))
 
 /* ── Registry ──────────────────────────────────────────────────────────────── */
@@ -106,6 +107,12 @@ const PANELS: PanelDef[] = [
     id: 'exposure', title: 'Shock Exposure', group: 'markets', section: 'exposure', map: 'inline', sources: ['worldbank', { name: 'UN Comtrade and World Bank (trade snapshot)', asOf: 'retrieved 2026-10-08' }, { name: 'EIA World Oil Transit Chokepoints', asOf: '2024 flows' }],
     dotColor: 'orange', desc: 'Pick a shock (a buyer, a supplier, an oil chokepoint) and trace which economies it reaches, step by step',
     render: (p) => <ExposurePanel panelState={p.panelState} onToggleLayer={p.onToggleLayer} />,
+  },
+  {
+    id: 'disasterMarkets', title: 'Disasters & Markets', group: 'markets', section: 'exposure', map: ['disasters'],
+    sources: ['gdacs', 'yahoo', { name: 'US-listed single-country funds (iShares, Global X, VanEck), names checked on Yahoo Finance', asOf: '2026-11-01' }],
+    dotColor: 'orange', desc: 'After a major earthquake, storm, flood or eruption: did the affected country\'s stock market move unusually, and how often has that happened before?',
+    render: () => <DisasterMarketsPanel />,
   },
   {
     id: 'tradePartnersByCountry', title: 'Trade Partners', group: 'markets', section: 'trade', map: ['tradeStats'], sources: [{ name: 'UN Comtrade and World Bank (trade snapshot)', asOf: 'retrieved 2026-10-08' }],

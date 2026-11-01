@@ -1655,6 +1655,10 @@ body.pw-dragging iframe { pointer-events: none; }
 .ex-gain { color: var(--green) !important; }
 .ex-caveats { margin: 2px 0 0; padding-left: 14px; }
 
+/* ── Disasters & Markets (panels/DisasterMarketsPanel.tsx) ── */
+.dm-meta { color: var(--text3); font-size: 9.5px; font-weight: 400; }
+.dm-headline { display: flex; gap: 6px; align-items: baseline; margin: 2px 0 8px; color: var(--text1); font-size: 11.5px; line-height: 1.45; }
+
 /* ── Predictions: IMF benchmark, what changed, track record ── */
 .pred-block { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
 .pred-block-h { font-size: 9px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }

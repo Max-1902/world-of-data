@@ -13,6 +13,8 @@ export const DISASTER_LABELS: Record<DisasterType, string> = {
 
 export interface DisasterAlert {
   id: string
+  /** one per event, shared by all its episodes (`id` is per episode) */
+  eventKey: string
   type: DisasterType
   name: string
   country: string
@@ -67,14 +69,17 @@ export function parseDisasterAlerts(json: unknown): DisasterAlert[] {
     if (!Number.isFinite(lat) || !Number.isFinite(lng) || (lat === 0 && lng === 0)) continue
     const type = p.eventtype as DisasterType
     if (!(type in DISASTER_LABELS)) continue
-    if (p.alertlevel !== 'Orange' && p.alertlevel !== 'Red') continue
+    // GDACS spells levels both ways ("Orange" for earthquakes, "ORANGE" for floods)
+    const alert = typeof p.alertlevel === 'string' ? p.alertlevel.toLowerCase() : ''
+    if (alert !== 'orange' && alert !== 'red') continue
     const report = p.url?.report ?? ''
     out.push({
       id: `${type}-${p.eventid}-${p.episodeid ?? 0}`,
+      eventKey: `${type}-${p.eventid}`,
       type,
       name: p.name || p.eventname || DISASTER_LABELS[type],
       country: p.country ?? '',
-      alert: p.alertlevel,
+      alert: alert === 'red' ? 'Red' : 'Orange',
       score: typeof p.alertscore === 'number' ? p.alertscore : 0,
       latitude: lat,
       longitude: lng,
@@ -102,6 +107,46 @@ export async function loadDisasterAlerts(days = 14): Promise<DisasterAlert[]> {
   const res = await fetch(url, { signal: AbortSignal.timeout(20_000) })
   if (!res.ok) throw new Error(`GDACS ${res.status}`)
   return parseDisasterAlerts(await res.json())
+}
+
+/** GDACS returns at most this many events per page of a search. */
+const PAGE = 100
+/** Disasters that strike at a known moment; droughts and wildfires build up over weeks, so they have no event day. */
+export const SUDDEN_ONSET: DisasterType[] = ['EQ', 'TC', 'FL', 'VO']
+
+async function searchYear(year: number, page: number): Promise<{ alerts: DisasterAlert[]; full: boolean }> {
+  const url = `${BASE}?eventtype=${SUDDEN_ONSET.join(',')}&fromDate=${year}-01-01&toDate=${year}-12-31&alertlevel=Orange;Red&pagenumber=${page}`
+  const res = await fetch(url, { signal: AbortSignal.timeout(40_000) })
+  if (!res.ok) throw new Error(`GDACS ${res.status}`)
+  const json = await res.json() as { features?: unknown[] }
+  return { alerts: parseDisasterAlerts(json), full: (json.features?.length ?? 0) >= PAGE }
+}
+
+/**
+ * Every Orange/Red sudden-onset alert from `fromYear` to now, one entry per event (its first episode GDACS lists),
+ * oldest first. Throws when any year can't be loaded, so a gap in history is never mistaken for a quiet year.
+ */
+export async function loadAlertHistory(fromYear: number, now = new Date()): Promise<DisasterAlert[]> {
+  const years: number[] = []
+  for (let y = fromYear; y <= now.getUTCFullYear(); y++) years.push(y)
+  const byEvent = new Map<string, DisasterAlert>()
+  for (let i = 0; i < years.length; i += 4) {
+    const chunks = await Promise.all(years.slice(i, i + 4).map(async y => {
+      const out: DisasterAlert[] = []
+      for (let page = 1; page <= 10; page++) {
+        const r = await searchYear(y, page)
+        out.push(...r.alerts)
+        if (!r.full) break
+      }
+      return out
+    }))
+    for (const a of chunks.flat()) {
+      if (!SUDDEN_ONSET.includes(a.type)) continue
+      const seen = byEvent.get(a.eventKey)
+      if (!seen || a.from < seen.from) byEvent.set(a.eventKey, a)
+    }
+  }
+  return [...byEvent.values()].sort((a, b) => a.from.localeCompare(b.from))
 }
 
 /** `loadDisasterAlerts` for the map layer and panel: returns [] on any failure. */

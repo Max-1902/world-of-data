@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fetchDisasterAlerts, loadDisasterAlerts, parseDisasterAlerts } from './gdacs'
+import { fetchDisasterAlerts, loadAlertHistory, loadDisasterAlerts, parseDisasterAlerts } from './gdacs'
 import { mockFetch, jsonResponse, quietConsole } from '../test/helpers'
 
 const feat = (o: Record<string, unknown> = {}, coords: unknown = [33.6, 0.76], geomType = 'Point') => ({
@@ -42,6 +42,10 @@ describe('parseDisasterAlerts', () => {
     const out = parseDisasterAlerts({ features: [feat({ eventid: 1, url: { report: 'https://evil.example/x' } }), feat({ eventid: 2, url: {} })] })
     expect(out.map(a => a.reportUrl)).toEqual(['', ''])
   })
+  it('reads alert levels in either case (GDACS sends "ORANGE"/"RED" for floods)', () => {
+    const out = parseDisasterAlerts({ features: [feat({ eventid: 1, eventtype: 'FL', alertlevel: 'ORANGE' }), feat({ eventid: 2, alertlevel: 'RED' }), feat({ eventid: 3, alertlevel: 'GREEN' })] })
+    expect(out.map(a => [a.id, a.alert, a.eventKey])).toEqual([['DR-2-7', 'Red', 'DR-2'], ['FL-1-7', 'Orange', 'FL-1']])
+  })
   it('tolerates malformed payloads', () => {
     for (const bad of [null, undefined, {}, { features: 'no' }, []]) expect(parseDisasterAlerts(bad)).toEqual([])
   })
@@ -71,5 +75,31 @@ describe('fetchDisasterAlerts', () => {
   it('loadDisasterAlerts throws instead, so a caller can tell a failure from no alerts', async () => {
     mockFetch(() => jsonResponse({}, { status: 500 }))
     await expect(loadDisasterAlerts()).rejects.toThrow('GDACS 500')
+  })
+})
+
+describe('loadAlertHistory', () => {
+  const NOW = new Date(Date.UTC(2011, 5, 1))
+
+  it('pages through each year, keeps sudden-onset types only and one entry per event, oldest first', async () => {
+    const full = Array.from({ length: 100 }, (_, i) => feat({ eventtype: 'EQ', eventid: 100 + i, fromdate: '2010-06-01T00:00:00' }))
+    const f = mockFetch(url => {
+      if (url.includes('fromDate=2010') && url.includes('pagenumber=1')) return jsonResponse({ features: full })
+      if (url.includes('fromDate=2010') && url.includes('pagenumber=2')) return jsonResponse({ features: [
+        feat({ eventtype: 'EQ', eventid: 100, episodeid: 8, fromdate: '2010-06-02T00:00:00' }),
+        feat({ eventtype: 'DR', eventid: 5 }),
+      ] })
+      return jsonResponse({ features: [feat({ eventtype: 'TC', eventid: 7, fromdate: '2011-01-05T00:00:00' })] })
+    })
+    const out = await loadAlertHistory(2010, NOW)
+    expect(out).toHaveLength(101)
+    expect(out.find(a => a.eventKey === 'EQ-100')?.id).toBe('EQ-100-7')
+    expect(out.some(a => a.type === 'DR')).toBe(false)
+    expect(out[out.length - 1]?.eventKey).toBe('TC-7')
+    expect(f.mock.calls.map(c => String(c[0])).filter(u => u.includes('fromDate=2010'))).toHaveLength(2)
+  })
+  it('throws when any year fails, so missing history never looks like a quiet year', async () => {
+    mockFetch(url => url.includes('fromDate=2011') ? jsonResponse({}, { status: 503 }) : jsonResponse({ features: [] }))
+    await expect(loadAlertHistory(2010, NOW)).rejects.toThrow('GDACS 503')
   })
 })

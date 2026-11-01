@@ -14,6 +14,7 @@ import * as imfWeo from '../api/imf-weo'
 import * as nyt from '../api/nyt'
 import * as openskyToken from '../api/opensky-token'
 import * as rss from '../api/rss'
+import * as yahooChart from '../api/yahoo-chart'
 import * as openrouterAllowed from '../api/openrouter/allowed'
 import * as openrouterModels from '../api/openrouter/models'
 import * as openrouterChat from '../api/openrouter/chat/completions'
@@ -35,6 +36,7 @@ export const ROUTES: Record<string, ApiModule> = {
   'nyt': nyt,
   'opensky-token': openskyToken,
   'rss': rss,
+  'yahoo-chart': yahooChart,
   'openrouter/allowed': openrouterAllowed,
   'openrouter/models': openrouterModels,
   'openrouter/chat/completions': openrouterChat,

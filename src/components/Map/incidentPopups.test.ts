@@ -16,7 +16,7 @@ const outage = (over: Partial<OutageEvent> = {}): OutageEvent => ({
 })
 
 const disaster = (over: Partial<DisasterAlert> = {}): DisasterAlert => ({
-  id: 'TC-1-3', type: 'TC', name: 'Tropical Cyclone SIMON-26', country: 'Mexico', alert: 'Red', score: 3,
+  id: 'TC-1-3', eventKey: 'TC-1', type: 'TC', name: 'Tropical Cyclone SIMON-26', country: 'Mexico', alert: 'Red', score: 3,
   latitude: 18.2, longitude: -104.5, from: '2026-10-07T15:00:00', to: '2026-10-08T03:00:00',
   reportUrl: 'https://www.gdacs.org/report.aspx?eventid=1', severityText: 'Tropical Storm (maximum wind speed of 204 km/h)',
   source: 'NOAA', affectedCountries: ['Mexico'], isCurrent: true, ...over,
