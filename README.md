@@ -1,34 +1,67 @@
-# Macroeconomic Forecasting System
+# World of Data
 
-A monitoring and analysis system for macroeconomic, political and industrial data — trade, sanctions, debt dynamics, conflict, hazards — on a 3D globe, with forecasts of GDP growth, inflation and unemployment whose model was chosen by an out-of-sample backtest on every World Bank economy: AR(2) for GDP growth, which beats a naive baseline on average but not the IMF, and "no change" for inflation and unemployment, where no model tested beat it.
+An economic outlook dashboard. It forecasts GDP growth for 217 economies, tests every forecast against a naive baseline and the IMF, and traces how a shock spreads through sourced trade links. A map, country pages and an AI analyst sit on top of the same data.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6) ![React](https://img.shields.io/badge/React-18-61dafb) ![Mapbox](https://img.shields.io/badge/Mapbox_GL-v3-000000) ![Vite](https://img.shields.io/badge/Vite-6-646cff)
 
-![Satellite globe in the Economy workspace with live exchange tags (TSX, NASDAQ, LSE, XETRA) and the Markets panel's regional equity ETF quotes](docs/screenshots/markets-globe.jpg)
+![Outlook: where the world economy is heading, from the IMF's World Economic Outlook, with world, advanced and emerging growth since 2000](docs/screenshots/01-outlook.png)
+
+Every number is computed in the browser from public data. Each one is labelled as **observed** (as the source reports it), **statistical** (estimated, with its uncertainty) or **assumption** (set by the user or a scenario), and carries its source and year.
 
 ## Forecasts
 
-Computed in the browser, each with the backtest that decides whether it is shown. Statistical projections, not AI output.
+Statistical projections with the backtest that decides whether each is shown. Not AI output.
 
-![Next week's US natural-gas storage change: reported changes against the model's forecasts made a week earlier, with its 80% range, the forecast and the backtest verdict](docs/screenshots/gas-storage-forecast.jpg)
+![Forecasts: Germany's real GDP growth since 2000 with the AR(2) forecast, the naive baseline, the IMF's projection and a 95% interval labelled with the coverage it achieved](docs/screenshots/02-forecast.png)
 
-**Gas storage, next week.** The five-year seasonal norm plus a share of last week's departure from it, refit every week on earlier data only. Over 561 out-of-sample weekly forecasts (2016–2026) its average miss was 29.3 Bcf against 30.9 Bcf for the seasonal norm (Diebold–Mariano with a 52-week HAC correction, p = 0.004), it beat the norm in both 2016–2020 and 2021–2026, and its 80% range held 81.4% of outcomes. A 5% gain, shown as one: weather is left out, and market consensus estimates are not compared.
-
-**GDP, inflation and unemployment for 217 economies.** The headline model for each series was picked by a rolling-origin backtest across every World Bank economy: AR(2) for GDP growth (8% below "no change" one year ahead on average; the IMF still beats it in 142 of 185 economies), "no change" for inflation and unemployment, where no model tested beat it. Intervals were calibrated on forecasts made before 2010, and the label shows what they held since. Each card also backtests the model on the selected country and says when it doesn't win: for the US, AR(2)'s one-year error was 1.44 pp against 1.78 pp for "no change", not a significant difference (p = 0.09).
+**GDP, inflation and unemployment for 217 economies.** The model for each series was picked by a rolling-origin backtest across every World Bank economy. AR(2) won for GDP growth: 8% below "no change" one year ahead on average, though the IMF still beats it in 142 of 185 economies. For inflation and unemployment no model tested beat "no change", so that is what is shown. Intervals were calibrated on forecasts made before 2010, and the label states what they held since. Each card also backtests the model on the selected country and says when it doesn't win.
 
 | | |
 |---|---|
-| ![Predictions panel for the United States: real GDP growth since 2000 with a three-year AR(2) forecast, its interval and the naive baseline](docs/screenshots/predictions-gdp.jpg) | ![EIA weekly commercial crude and motor gasoline stocks over the last year against their five-year average and range](docs/screenshots/energy-inventories.jpg) |
-| **The forecast card**: history, the AR(2) path, the naive baseline and an interval labelled with the coverage it actually achieved | **Energy inventories**: EIA weekly crude, gasoline, distillate, SPR and gas stocks against the same week's five-year average and range, the data the gas forecast is built on |
+| ![GDP nowcast: this quarter's real GDP growth for an EU economy from the months of industrial production already published](docs/screenshots/03-nowcast.png) | ![Gas storage forecast: next week's US natural-gas storage change against the model's earlier forecasts, with its 80% range and backtest verdict](docs/screenshots/04-gas-storage.png) |
+| **GDP nowcast (EU)**: this quarter's growth before Eurostat publishes it, from industrial production. The rule was committed before any real data was scored. It is the headline only where it beat "same as last quarter" in both 2005–2014 and 2015 on (16 of 27 economies on the first run). | **Gas storage, next week**: the five-year seasonal norm plus a share of last week's departure from it. Over 563 out-of-sample weeks (2016–2026, as of 30 Oct 2026) its average miss was 29.2 Bcf against 30.9 Bcf for the norm (Diebold–Mariano, p = 0.004), and its 80% range held 81.5% of outcomes. |
+
+**Forecast memory.** The app records each forecast in the browser when its inputs change, says what changed since the last visit (new data, a model switch, a new IMF edition), and scores past forecasts once their outcome is published. Nothing is backfilled, so the track record starts empty.
+
+## Drivers and shocks
+
+![Drivers: a backtest of six candidate indicators added to the GDP forecast, none of which improved it out of sample](docs/screenshots/05-drivers.png)
+
+**What drives growth.** Six candidate indicators (inflation, private credit, current account, unemployment, real interest rate, world growth) were each added to AR(2) and scored on forecasts the model had not seen. The pass bar was fixed before any accuracy was computed. None of the six passed, and the page says so. See [`docs/predictor-backtest-results.md`](docs/predictor-backtest-results.md).
+
+![Shock exposure: a demand shock traced to the economies it reaches, each step labelled as observed data, a statistical estimate or an assumption](docs/screenshots/06-shock-exposure.png)
+
+**How shocks spread.** Pick a shock ("China buys less", "supply from Russia is cut", "Hormuz closes") and see which economies it reaches, through which link, and how much as a share of their GDP. Each step is shown with its source and year. Shares outside a country's reported top partners become ranges, never guesses. With an assumed shock size, the implied change in GDP growth is added as a statistical step, with its interval. Results are first-order: goods only, no rerouting.
+
+## Countries, map and comparisons
+
+| | |
+|---|---|
+| ![Country page for Germany: World Bank figures with their year, the IMF's projections and the forecast, with tabs for trade, risk, infrastructure and news](docs/screenshots/07-country-page.png) | ![Map with every country coloured by one indicator, its legend, coverage and reporting year](docs/screenshots/08-map.png) |
+| **Country pages**: the economy first (World Bank figures with year and freshness, IMF projections, the forecast), then trade exposure, risk and security, infrastructure, live activity and news. | **The map** colours countries by any of 50 indicators (World Bank, Our World in Data, Ember), either by value or by distance from the trend. It shows coverage and fades stale values. Overlays add conflict events, disasters, outages, energy infrastructure, trade routes and chokepoints. |
+
+![Co-movement: a Spearman rank correlation matrix of twelve country indicators, each cell printed with its value](docs/screenshots/09-comovement.png)
+
+**What moves together**: Spearman rank correlations across countries for twelve indicators, with a scatter, trend line and outliers for any pair you click. This is association between countries at one point in time. It is not evidence that one indicator predicts another; the Drivers page tests that.
+
+## AI analyst
+
+![The AI analyst answering a question with the data it requested, each result cited by id and its chart drawn from that result](docs/screenshots/10-ai-analyst.png)
+
+The analyst answers by requesting the dashboard's own data, not from memory. It writes a request such as `[DATA:series|Germany,France|GDP growth]`. The browser runs it against the same services the panels use and returns the result with an id (R1, R2, …) for the model to cite, for up to four rounds. Forecasts, statistics and charts are computed locally. The model writes `[CHART:R2]` and the panel draws that result's data, so it cannot supply a plotted value. Every answer shows its investigation trail: each query, its source and the exact text the model received.
+
+It runs on any OpenRouter model, and the default is a free one. A rule-based Watchlist sits beside the chat and flags countries whose conflict activity is unusually high for them, without a prompt.
+
+**Not measured:** whether the analyst's answers are accurate. [`src/services/analystBench.ts`](src/services/analystBench.ts) holds twelve questions and an offline scorer for known failure classes (answering a change question from levels, citing results never fetched, stating figures no result contains). No benchmark results have been published yet.
 
 ## How it works
 
 ```mermaid
 flowchart LR
-  UI["Browser: panels, 3D globe, local statistics (forecasts, backtests, correlations)"]
+  UI["Browser: panels, map, forecasts, backtests, statistics"]
   AG["Analyst loop, in the browser"]
-  FREE["Keyless sources: World Bank, Our World in Data, USGS, GDACS, ..."]
-  PX["/api functions: keys stay server-side"]
+  FREE["Keyless sources: World Bank, IMF, Eurostat, Our World in Data, USGS, GDACS, ..."]
+  PX["/api functions: server-side keys, CORS"]
   KEYED["Finnhub, EIA, NYT, ACLED, OpenSky, FIRMS, Cloudflare Radar, RSS"]
   LLM["OpenRouter: language model"]
   UI -->|"direct, no key"| FREE
@@ -37,98 +70,20 @@ flowchart LR
   AG -->|"/api/openrouter"| LLM
 ```
 
-The analyst never computes or plots a number itself:
+There is no database and no application server. State lives in the browser. A few small functions in `api/` keep API keys off the client and add CORS headers where a source has none. Every data source is free. Where a key is needed, it is on the provider's free tier.
 
-```mermaid
-flowchart LR
-  Q["Question"] --> M["Model writes DATA requests"]
-  M --> T["Browser runs each tool against the same services the panels use"]
-  T --> R["Results R1, R2, ... with their source"]
-  R -->|"up to 4 rounds"| M
-  R --> A["Answer cites R ids; CHART:R2 is drawn by the panel from R2's data"]
-```
-
-## An AI analyst that shows its evidence
-
-The analyst (any OpenRouter model, free by default) answers by requesting the dashboard's own data, not from memory. Asked:
-
-> *Which economies have inflation rising fastest relative to GDP growth, and what does the forecast say for Germany? Show the chart.*
-
-| | |
-|---|---|
-| ![The investigation trail: six datasets queried, R1 inflation highest 15 and R2 GDP growth lowest 15 from the World Bank, with R2 expanded into a bar chart and the raw text the model received](docs/screenshots/ai-analyst-trail.jpg) | ![The answer: the R1 inflation chart, then a table of four economies on both lists with their inflation, growth and the gap between them, the gap labelled as the model's own arithmetic](docs/screenshots/ai-analyst-answer.jpg) |
-| **The investigation trail**: every query the model made, with an id (R1, R2…) and its source. R2's chart is drawn by the panel from the World Bank rows; the model only chose where to place it | **The answer** cites R1 and R2 in its table, tags the gap column as its own arithmetic (*inference*), and flags that South Sudan's growth figure is from 2015, so it can't be compared with 2024 inflation |
-
-One question, one run: an illustration, not a benchmark. It also shows a limit: the question asked where inflation is *rising*, and the model answered with current levels (highest inflation, lowest growth), not changes.
-
-That failure class is now checkable. `src/services/analystBench.ts` holds twelve questions about rates, periods, cross-country comparisons and plain levels, and a scorer that flags a run which answers a change question from snapshot data only, cites results it never fetched, states a figure no fetched result contains (unless it labels it `[background]` or `[inference]`), or leaves out a country or period it was asked about. The scorer is unit-tested offline. Producing a report needs a real model call, so it is run on purpose: start `npm run dev`, then `BENCH_OUT=docs/analyst-benchmark.md npm run bench:analyst` (free default model; `BENCH_MODEL` overrides it and a paid model bills your OpenRouter key). The checks catch specific mistakes; they do not grade whether an answer is right, and no benchmark results have been published yet.
-
-### It can investigate on its own
-
-Since 2026-10-16 the analyst does more than read the summary it is given. It can query every dataset the dashboard holds: live conflict events, internet outages (IODA alerts, plus Cloudflare Radar's verified outages with their stated cause), disaster alerts (GDACS), earthquakes (USGS), wildfires (FIRMS), GPS interference, headlines, market quotes, any World Bank series for any country, cross-country rankings, trade, energy, sanctions, military, resources, chokepoints, ports and UNHCR. It writes a request line (`[DATA:series|Germany,France|GDP growth]`). The browser runs the query against the same free services the panels use and returns the result, with an id (R1, R2…), for the model to cite. A single question can take up to four rounds of requests. Statistics and forecasts are computed locally, never by the model. The forecast tool uses the Predictions panel's model choice (`utils/forecastPolicy.ts`) and reports AR(2)'s out-of-sample backtest against a naive baseline on that country, so a forecast that doesn't beat "no change" is labelled as such.
-
-Charts follow the same rule. The model writes `[CHART:R2]` to place a chart, and the panel draws it from that result's data, so the model can't supply or change a plotted value. Every answer shows an **investigation trail** listing each query, its source, success or failure, and the exact text the model received. Clicking a reference such as (R2) in the answer opens that evidence.
-
-**Not measured:** whether the tool-using analyst is more accurate, better grounded or more useful than the single-shot version.
-
-## 30 overlays in 5 categories
-
-![Europe, North Africa and the Middle East with the infrastructure overlays on: energy sites, pipelines, ports and chokepoints from Gibraltar and the Bosphorus to Suez, Bab el-Mandeb and Hormuz](docs/screenshots/infrastructure-europe.jpg)
-
-| Category | Overlays |
-|---|---|
-| **Live tracking** | flights (OpenSky), vessels (AIS), webcams |
-| **Events & hazards** | crises, news, wildfires (NASA FIRMS), disaster alerts (GDACS), humanitarian, GPS jamming, internet outages, hazard hexagons |
-| **Security & defence** | military sites, force size, nuclear, sanctions, airspace (low-traffic heuristic, not NOTAMs) |
-| **Economy** | markets, trade, resources, oil, gas, supply chain, country data |
-| **Infrastructure** | energy sites, infrastructure access, data centres, pipelines, ports, chokepoints, shipping density |
-
-Panels add what isn't a map layer, e.g. weekly energy inventories (EIA). Curated layers (military sites, energy sites, sanctions…) are hand-entered from named sources and not all re-verified; [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md) says which.
-
-Split view: the satellite map beside the embedded DeepState Ukraine battlefield monitor, with a live news feed in the dock.
-
-![The Americas shaded by electricity generated per year, from the Power Output panel, with the country ranking in the dock](docs/screenshots/power-output-map.jpg)
-
-Infrastructure workspace, Power Output shown on the map: each country is shaded by the electricity it generates per year (lighter = more), and the dock ranks them (China 10,583 TWh, United States 4,520 TWh, India 2,082 TWh) with each one's low-carbon share (Ember via Our World in Data). *Vs trend* switches the map to generation against what GDP per capita predicts.
-
-## Analytics
-
-Pick any two of **50 country indicators** (World Bank, Our World in Data, Ember) and get the trend, Spearman correlation with a 95% interval, the biggest outliers, and a globe shaded by the result. Charts have a table view; all maths is unit-tested.
-
-| | |
-|---|---|
-| ![Globe coloured red and blue by how far each country's life expectancy is above or below the trend predicted by GDP per capita, with the scatter in the dock](docs/screenshots/country-analytics-map.jpg) | ![Globe turned to Asia, every country shaded by GDP in US dollars from the Economy panel, with the panel's country list in the dock](docs/screenshots/economy-gdp-map.jpg) |
-| **Wealth vs health**, 214 countries, ρ = 0.86. Map in *Vs trend* mode: red lives longer than income predicts, blue shorter | **Economy data on the map**: the Economy panel's *Show on map* shades 214 countries by GDP (US$); *Vs trend* switches to the residual view |
-
-![Spearman rank correlation matrix of twelve country indicators, blue negative and red positive, with the value printed in each cell](docs/screenshots/correlation-matrix.jpg)
-
-**What moves together**: a 12×12 Spearman matrix over the countries each pair has in common; click a cell to plot that pair. GDP per capita goes with life expectancy (ρ = 0.86), internet use (0.83) and energy use (0.86), and against resource rents (−0.52).
-
-Also: ~120,000 NASA FIRMS wildfire detections binned into 3D hexagons in the browser, plus earthquakes with a Gutenberg–Richter fit.
-
-## Country Lookup
-
-One country's full World Bank record since 1960 by category, ECB/Eurostat/BIS series for Europe, and a single-country analysis (trend tests, cycle, Okun, Phillips, debt dynamics, anomalies), each with method, n and caveats.
-
-![Germany in Country Lookup: Okun's law scatter with its fitted line, the inflation history with a detected regime shift in 1984, and the method and caveats under each](docs/screenshots/country-lookup-okun.jpg)
-
-Germany: each extra 1% of real growth went with unemployment falling about 0.16 pp (95% CI −0.26 to −0.05, R² 0.30, n = 25). Average inflation shifted in 1984, from 3.9% to 2.0% (Quandt–Andrews sup-F test), and the Phillips curve shows no reliable trade-off (p = 0.95).
-
-Not a decision tool: correlation is not causation, and many series are years old for some countries.
+Curated datasets (military sites, energy sites, sanctions, …) are entered by hand from named sources. [`DATA_PROVENANCE.md`](DATA_PROVENANCE.md) lists each source and what has been re-verified. Architecture and conventions are in [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ## Run it
 
 ```bash
 npm install
 cp .env.example .env   # only VITE_MAPBOX_TOKEN is required; every other key is optional
-npm run dev            # Vite + the small /api functions that keep secrets out of the bundle
-npm test               # about 1,700 tests, fully offline
+npm run dev            # Vite plus the /api functions, on http://localhost:3000
+npm test               # about 2,000 tests, fully offline
+npm run typecheck
 ```
 
-![Terminal: the full test suite passing offline, 1716 tests in 114 files in under 10 seconds](docs/screenshots/tests-offline.jpg)
+The test suite is hermetic: any network call a test doesn't mock fails, so it runs offline and in CI with no keys.
 
-The suite is hermetic: any network call a test doesn't mock fails, so it runs offline and in CI with no keys.
-
-Keys that only the owner can register (EIA) are tracked in [`TODO.md`](TODO.md).
-
-Stack: Vite, React 18, TypeScript (strict), Mapbox GL v3, plain SVG charts. No database; state lives in the browser. A few serverless functions in `api/` keep API keys off the client and forward requests (ACLED, OpenSky, Finnhub, EIA, NYT, GPSJAM, RSS, OpenRouter). Architecture and conventions are in [`ARCHITECTURE.md`](ARCHITECTURE.md).
+Stack: Vite, React 18, TypeScript (strict), Mapbox GL v3, plain SVG charts.

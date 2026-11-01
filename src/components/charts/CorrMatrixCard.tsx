@@ -32,7 +32,8 @@ export function CorrMatrixCard({ onPick }: { onPick?: (x: string, y: string) => 
       return { name: NAMES[i], span: years.length ? `${Math.min(...years)}–${Math.max(...years)}` : 'no data' }
     })
   }, [show, state])
-  const loading = show && MATRIX_IDS.some(id => ['idle', 'loading'].includes(sliceOf(state, id).status))
+  const pending = show ? MATRIX_IDS.filter(id => ['idle', 'loading'].includes(sliceOf(state, id).status)).length : 0
+  const loading = pending > 0
   const failed = show ? MATRIX_IDS.filter(id => sliceOf(state, id).status === 'error').length : 0
 
   return (
@@ -43,13 +44,13 @@ export function CorrMatrixCard({ onPick }: { onPick?: (x: string, y: string) => 
         columns: ['Indicator', ...LABELS],
         rows: matrix ? MATRIX_IDS.map((id, i) => [INDICATOR_BY_ID.get(id)!.short, ...matrix.rho[i].map(r => (r === null ? '—' : r.toFixed(2)))]) : [],
       }}
-      footer={matrix ? (
+      footer={matrix && !loading ? (
         <>
           <p>
             <b>Association between countries, not a forecast.</b> A cell says that countries ranking high on one indicator tend to rank high or low on the other, at one point in time. It does not show cause, and it is not a test of what predicts a country's future GDP growth: the Drivers page tests that, and found no gain.
           </p>
           <p>
-            Blank cells ("–") have fewer than 12 countries in common.{failed ? ` ${failed} indicator${failed === 1 ? '' : 's'} could not be loaded.` : ''} Each country contributes its latest available value, so reporting years differ by country.
+            A dash ("–") marks a pair with fewer than 12 countries in common; the diagonal is each indicator with itself.{failed ? ` ${failed} indicator${failed === 1 ? '' : 's'} could not be loaded.` : ''} Each country contributes its latest available value, so reporting years differ by country.
           </p>
           <details>
             <summary>Years covered per indicator</summary>
@@ -59,11 +60,11 @@ export function CorrMatrixCard({ onPick }: { onPick?: (x: string, y: string) => 
       ) : undefined}
     >
       {!show ? (
-        <button className="cy-btn" onClick={() => setShow(true)} title={`Fetches ${MATRIX_IDS.length} indicators`}>Compute (loads {MATRIX_IDS.length} indicators)</button>
+        <button className="cy-btn bordered" onClick={() => setShow(true)} title={`Fetches ${MATRIX_IDS.length} indicators`}>Compute (loads {MATRIX_IDS.length} indicators)</button>
       ) : matrix && !loading ? (
         <CorrMatrixChart matrix={matrix} labels={LABELS} names={NAMES}
           onPick={(i, j) => { c.setSelection(MATRIX_IDS[j], MATRIX_IDS[i]); onPick?.(MATRIX_IDS[j], MATRIX_IDS[i]) }} />
-      ) : <div className="viz-note" role="status">Loading the indicators…</div>}
+      ) : <div className="viz-note" role="status">{loading ? `Loading the indicators… ${MATRIX_IDS.length - pending} of ${MATRIX_IDS.length} done` : 'None of the indicators could be loaded.'}</div>}
     </ChartFrame>
   )
 }

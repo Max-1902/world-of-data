@@ -291,6 +291,8 @@ html, body, #root {
 
 .cy-btn:hover { color: var(--text1); background: var(--surface2); }
 .cy-btn.active { color: var(--accent); background: var(--accent-soft); }
+.cy-btn.bordered { border-color: var(--border-strong); color: var(--text1); background: var(--surface); padding: 6px 12px; font-size: 12px; }
+.cy-btn.bordered:hover { border-color: var(--accent); }
 
 /* ── news-tab alias ─────────────────────────────── */
 .news-tab {
