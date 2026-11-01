@@ -1,5 +1,6 @@
 import type { NewsArticle } from '../types'
 import { getCountryNewsSources, RSS_FEEDS, CRISISWATCH_FEEDS } from './newsSources'
+import { NEWSAPI_KEY } from '../runtimeEnv'
 
 /**
  * Feed links are third-party text rendered as <a href>. React 18 does not block javascript: URLs, so only
@@ -15,8 +16,6 @@ export function httpUrl(u: unknown): string {
 
 // Feed lists moved to newsSources.ts; re-exported so existing imports keep working.
 export { RSS_FEEDS, COUNTRY_NEWS_SOURCES, CRISISWATCH_FEEDS, getCountryNewsSources, type CountryNewsSource, type CountryNewsEntry } from './newsSources'
-
-const NEWSAPI_KEY = import.meta.env.VITE_NEWSAPI_KEY || ''
 
 // ── NewsAPI ──────────────────────────────────────────────────────────────────
 export async function searchNewsAPI(query: string): Promise<NewsArticle[]> {

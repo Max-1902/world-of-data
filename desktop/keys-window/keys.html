@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'" />
+    <title>API keys — World of Data</title>
+    <style>
+      /* Same tokens as src/index.css (this page is local and can't load the app's stylesheet). */
+      :root {
+        color-scheme: dark;
+        --bg: #050b12; --surface: #091520; --surface2: #0d1c2b; --border: #14283a; --border-strong: #23415a;
+        --text1: #edf6ff; --text2: #9cb3c5; --text3: #7490a6; --accent: #18c9f4;
+        --red: #ef7373; --red-soft: rgba(239,115,115,0.12); --amber: #f7a54a; --amber-soft: rgba(225,182,108,0.12);
+        --green: #69c9a7; --green-soft: rgba(105,201,167,0.12);
+        --r-sm: 6px; --r-md: 8px; --r-pill: 999px;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          color-scheme: light;
+          --bg: #eef2f6; --surface: #ffffff; --surface2: #f4f7fa; --border: #dde4eb; --border-strong: #c5d0db;
+          --text1: #0f1c27; --text2: #3d5163; --text3: #5b6e7f; --accent: #0a7ba3;
+          --red: #c43d3d; --amber: #a95f00; --green: #1b7f5c;
+        }
+      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text1); font: 13px/1.45 Inter, -apple-system, 'Segoe UI', sans-serif; }
+      main { max-width: 600px; margin: 0 auto; padding: 24px 20px 96px; }
+      h1 { font-size: 18px; margin: 0 0 6px; }
+      .lede { color: var(--text2); margin: 0 0 18px; }
+      .note { font-size: 12px; padding: 8px 10px; border-radius: var(--r-md); margin-bottom: 16px; }
+      .note.warn { color: var(--amber); background: var(--amber-soft); }
+      .field { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 10px 12px; margin-bottom: 8px; }
+      .field-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+      label { font-weight: 600; font-size: 12.5px; }
+      .tag { font-size: 9px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: var(--r-pill); color: var(--red); background: var(--red-soft); }
+      .get { margin-left: auto; font-size: 11.5px; color: var(--accent); background: none; border: 0; cursor: pointer; padding: 0; }
+      .get:hover { text-decoration: underline; }
+      .help { color: var(--text3); font-size: 11.5px; margin-top: 5px; }
+      input { width: 100%; padding: 7px 9px; font: 12px 'IBM Plex Mono', ui-monospace, monospace; color: var(--text1); background: var(--surface2); border: 1px solid var(--border-strong); border-radius: var(--r-sm); }
+      input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+      footer { position: fixed; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: var(--surface); border-top: 1px solid var(--border); }
+      .show { display: flex; align-items: center; gap: 6px; color: var(--text2); font-size: 12px; }
+      #status { flex: 1; font-size: 12px; color: var(--text2); }
+      #status.ok { color: var(--green); }
+      #status.err { color: var(--red); }
+      .secondary { padding: 6px 12px; font: 500 12px Inter, -apple-system, sans-serif; color: var(--text1); background: var(--surface2); border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer; }
+      .secondary:hover { border-color: var(--accent); }
+      .save { padding: 7px 16px; font: 600 12.5px Inter, -apple-system, sans-serif; color: var(--bg); background: var(--accent); border: 0; border-radius: var(--r-sm); cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>API keys</h1>
+      <p class="lede">Only the Mapbox token is required. Every service here has a free tier; leave a key empty and the panels that need it stay off. Keys stay on this computer.</p>
+      <div id="encryption" class="note warn" hidden>This system has no keychain available, so keys are saved unencrypted in the app's data folder (readable only by your user account).</div>
+      <form id="form"></form>
+    </main>
+    <footer>
+      <label class="show"><input id="reveal" type="checkbox" style="width:auto" /> Show keys</label>
+      <button id="import" class="secondary" type="button">Import from .env…</button>
+      <span id="status" role="status"></span>
+      <button class="save" type="submit" form="form">Save and reload</button>
+    </footer>
+    <script src="keys.js"></script>
+  </body>
+</html>

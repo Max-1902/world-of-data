@@ -10,3 +10,5 @@ e2e/screenshots/
 .claude/settings.local.json
 CLAUDE.md
 TODO.md
+dist-desktop/
+release/

@@ -41,6 +41,7 @@ import { AskAnalystContext } from './components/AskAnalyst'
 import { setAnalystDraft } from './utils/analystDraft'
 import { GROUP_ORDER, PANEL_MAP, layersForGroup } from './panels/registry'
 import { decodeHash, encodeHash, enabledLayers, isViewMode, layersToPanelState, type DecodedState } from './utils/urlState'
+import { MAPBOX_TOKEN } from './runtimeEnv'
 
 // Rarely-open surfaces: keep their code (and the datasets CountryDrawer pulls in) out of the first load.
 const SettingsModal = lazy(() => import('./components/SettingsModal'))
@@ -48,7 +49,7 @@ const CountryPage = lazy(() => import('./components/countryPage/CountryPage'))
 const CountryDrawer = lazy(() => import('./components/CountryDrawer'))
 const CountriesLanding = lazy(() => import('./components/countryPage/CountriesLanding'))
 
-const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || ''
+const TOKEN = MAPBOX_TOKEN
 
 /** Layers that belong to the INFRA overlay — toggling INFRA switches all of them together. */
 const INFRA_GROUP: (keyof PanelState)[] = ['nuclear', 'pipelines', 'datacenters', 'ports']

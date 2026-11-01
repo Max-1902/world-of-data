@@ -1,0 +1,36 @@
+# Desktop installers (npm run desktop:dist → release/). Everything the app runs is bundled into
+# dist-desktop/ by scripts/build-desktop.mjs, so no node_modules ship.
+appId: app.worldofdata.desktop
+productName: World of Data
+directories:
+  output: release
+  buildResources: desktop/build
+files:
+  - dist-desktop/**/*
+  - package.json
+  - "!node_modules/**/*"
+asar: true
+# Packaged apps can't be turned into a general Node runtime or have code injected through env vars or flags.
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  onlyLoadAppFromAsar: true
+  enableEmbeddedAsarIntegrityValidation: true
+publish: null
+mac:
+  target: [dmg]
+  category: public.app-category.education
+  # Ad-hoc signature only: there is no paid Apple Developer ID, so macOS asks once
+  # (System Settings → Privacy & Security → Open Anyway) on first launch.
+  identity: "-"
+  # Hardened runtime needs a real signing identity; with an ad-hoc one it can stop the app launching.
+  hardenedRuntime: false
+win:
+  target: [nsis]
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+linux:
+  target: [AppImage]
+  category: Education

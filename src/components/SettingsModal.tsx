@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import type { MapViewMode, PanelState } from '../types'
 import { LAYER_IDS, VIEW_MODES } from './layerCatalogue'
+import { AISSTREAM_KEY, MAPBOX_TOKEN, NEWSAPI_KEY, desktopBridge } from '../runtimeEnv'
 
 const TABS = ['GENERAL', 'LAYERS', 'DATA SOURCES', 'API KEYS', 'DISPLAY', 'ABOUT'] as const
 type Tab = typeof TABS[number]
@@ -90,15 +91,15 @@ const DATA_SOURCES: { category: string; items: { label: string; source: string; 
 // this (lazy-loaded) modal into the main bundle.
 export { LAYER_IDS, VIEW_MODES }
 
-// Client-visible keys — Vite bundles these, so their status can be read directly.
-// NOTE: each `isSet` is a static `import.meta.env.VITE_X` reference (not a dynamic
+// Client-visible keys — Vite bundles these (or the desktop app hands them over), so their status can be read directly.
+// NOTE: runtimeEnv.ts reads each one with a static `import.meta.env.VITE_X` reference (not a dynamic
 // `env[key]` lookup) so Vite's build-time replacement only inlines these specific
-// booleans, not the entire .env object (a dynamic lookup would bundle every
+// values, not the entire .env object (a dynamic lookup would bundle every
 // VITE_-prefixed value, including ones never meant to reach the client).
 const CLIENT_API_KEYS = [
-  { label: 'Mapbox', required: true, desc: 'Map rendering and geocoding', isSet: !!import.meta.env.VITE_MAPBOX_TOKEN },
-  { label: 'NewsAPI', required: false, desc: 'General news search', isSet: !!import.meta.env.VITE_NEWSAPI_KEY },
-  { label: 'AISStream', required: false, desc: 'Live vessel tracking (WebSocket)', isSet: !!import.meta.env.VITE_AISSTREAM_KEY },
+  { label: 'Mapbox', required: true, desc: 'Map rendering and geocoding', isSet: !!MAPBOX_TOKEN },
+  { label: 'NewsAPI', required: false, desc: 'General news search', isSet: !!NEWSAPI_KEY },
+  { label: 'AISStream', required: false, desc: 'Live vessel tracking (WebSocket)', isSet: !!AISSTREAM_KEY },
 ]
 
 // Server-only keys — held by api/*.ts serverless functions, never bundled into
@@ -312,11 +313,20 @@ function DataSourcesTab() {
 function ApiKeysTab() {
   return (
     <div>
-      <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 12, marginBottom: 10 }}>
-        Client-visible keys are stored in .env (VITE_ prefix). Server-only keys are
-        held by the api/*.ts serverless functions and configured in your deploy
-        host's environment variables — see .env.example.
-      </div>
+      {desktopBridge ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, marginBottom: 10 }}>
+          <div style={{ flex: 1, fontSize: 11, color: 'var(--text2)' }}>
+            The desktop app keeps your keys on this computer, encrypted with the system keychain where available.
+          </div>
+          <button className="cy-btn bordered" onClick={() => desktopBridge?.openKeys()}>Edit keys</button>
+        </div>
+      ) : (
+        <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 12, marginBottom: 10 }}>
+          Client-visible keys are stored in .env (VITE_ prefix). Server-only keys are
+          held by the api/*.ts serverless functions and configured in your deploy
+          host's environment variables — see .env.example.
+        </div>
+      )}
       {CLIENT_API_KEYS.map(k => (
         <div key={k.label} style={{ ...s.row, gap: 14 }}>
           <div style={{ flex: 1 }}>

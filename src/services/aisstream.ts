@@ -6,7 +6,8 @@
  * Requires VITE_AISSTREAM_KEY in .env
  */
 
-const AISSTREAM_KEY = import.meta.env.VITE_AISSTREAM_KEY || ''
+import { AISSTREAM_KEY } from '../runtimeEnv'
+
 // WebSocket handshakes aren't subject to fetch/CORS restrictions, so the
 // browser can connect straight to AISStream's public endpoint — this also
 // means it works the same in `vite dev` and in any production deployment,
