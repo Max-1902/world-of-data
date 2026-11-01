@@ -816,7 +816,7 @@ input::placeholder { color: var(--text3); opacity: 1; }
 .ai-head-btn { display: flex; flex-shrink: 0; align-items: center; padding: 6px 7px; border: 1px solid var(--border-strong); border-radius: var(--r-sm); color: var(--text2); background: var(--surface); cursor: pointer; transition: all .12s; }
 .ai-head-btn:hover { color: var(--accent); border-color: var(--accent); }
 
-/* ── Floating panel windows (Windows/WindowLayer.tsx, PanelWindow.tsx) ── */
+/* ── Floating panel windows (WindowManager/WindowLayer.tsx, PanelWindow.tsx) ── */
 .pw {
   position: fixed;
   display: flex; flex-direction: column;
@@ -925,7 +925,7 @@ body.pw-dragging iframe { pointer-events: none; }
 .tb-save-row input:focus { border-color: var(--accent); }
 .tb-arrange { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 0 4px 6px; }
 .tb-arrange .pw-btn.wide { justify-content: flex-start; height: 26px; }
-/* ── Panel library (Windows/PanelLibrary.tsx) ── */
+/* ── Panel library (WindowManager/PanelLibrary.tsx) ── */
 .lib-backdrop { position: fixed; z-index: 900; inset: 0; display: flex; align-items: flex-start; justify-content: center; padding-top: 9vh; background: var(--scrim); }
 .lib {
   display: flex; flex-direction: column; width: min(860px, calc(100vw - 32px)); max-height: 78vh; overflow: hidden;

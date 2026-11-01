@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MapViewMode, PanelState } from '../types'
 import { rankItems, type PaletteItem } from '../utils/paletteSearch'
 import { buildSearchCatalogue } from './searchCatalogue'
-import type { Screen } from './Windows/screens'
+import type { Screen } from './WindowManager/screens'
 
 interface Props {
   open: boolean

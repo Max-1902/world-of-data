@@ -20,12 +20,12 @@ import TopBar       from './components/TopBar'
 import Sidebar, { navSection } from './components/Sidebar'
 import { DEFAULT_VIEW, viewOf, type DockView } from './panels/destinations'
 import PanelDock    from './components/PanelDock/PanelDock'
-import WindowLayer from './components/Windows/WindowLayer'
-import Taskbar from './components/Windows/Taskbar'
-import PanelLibrary from './components/Windows/PanelLibrary'
+import WindowLayer from './components/WindowManager/WindowLayer'
+import Taskbar from './components/WindowManager/Taskbar'
+import PanelLibrary from './components/WindowManager/PanelLibrary'
 import HomeDashboard from './components/HomeDashboard'
-import { useWindowLayout } from './components/Windows/useWindowLayout'
-import { useScreens } from './components/Windows/useScreens'
+import { useWindowLayout } from './components/WindowManager/useWindowLayout'
+import { useScreens } from './components/WindowManager/useScreens'
 import CommandPalette from './components/CommandPalette'
 import NewsTicker   from './components/NewsTicker'
 import OutlookCard from './components/OutlookCard'
@@ -180,7 +180,7 @@ export default function App() {
     setSelectedPlace(place)
   }, [])
 
-  // Panels popped out of the dock into floating windows (Windows/WindowLayer)
+  // Panels popped out of the dock into floating windows (WindowManager/WindowLayer)
   const windows = useWindowLayout()
   const poppedOut = windows.ids
   // Search bar / command palette picked a panel: bring its window forward if it has one, else find it in the dock.
