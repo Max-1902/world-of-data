@@ -14,6 +14,9 @@ import { pathToFileURL } from 'node:url'
 import { handleApi } from './apiBridge'
 import { KEY_FIELDS, applyServerEnv, clientEnv, parseEnvFile, sanitizeKeys, type KeyValues } from './keys'
 
+// Names the data folder (~/Library/Application Support/World of Data on macOS) instead of the npm package name.
+app.setName('World of Data')
+
 const SCHEME = 'app'
 const ORIGIN = `${SCHEME}://world-of-data`
 const WEB_ROOT = path.join(app.getAppPath(), 'dist-desktop', 'web')
@@ -32,7 +35,12 @@ let keys: KeyValues = {}
 function loadKeys(): KeyValues {
   try {
     if (fs.existsSync(encryptedFile())) return sanitizeKeys(JSON.parse(safeStorage.decryptString(fs.readFileSync(encryptedFile()))))
-    if (fs.existsSync(plainFile())) return sanitizeKeys(JSON.parse(fs.readFileSync(plainFile(), 'utf8')))
+    if (fs.existsSync(plainFile())) {
+      const values = sanitizeKeys(JSON.parse(fs.readFileSync(plainFile(), 'utf8')))
+      // A plain file (saved where the keychain was missing, or placed by hand) moves into the keychain once one is available.
+      if (safeStorage.isEncryptionAvailable()) saveKeys(values)
+      return values
+    }
     // Unpackaged only: an installed app never looks for a .env of its own.
     const repoEnv = path.join(app.getAppPath(), '.env')
     if (!app.isPackaged && fs.existsSync(repoEnv)) return parseEnvFile(fs.readFileSync(repoEnv, 'utf8'))
