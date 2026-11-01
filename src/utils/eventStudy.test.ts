@@ -17,10 +17,11 @@ function series(n: number, shock: Record<number, number> = {}): DailyReturn[] {
 
 describe('alignReturns', () => {
   it('uses only days both series traded and returns simple daily returns', () => {
-    const fund: [number, number][] = [[1, 100], [2, 110], [3, 99], [4, 99]]
-    const market: [number, number][] = [[1, 50], [3, 55], [4, 66]]
+    const d = (n: number, h = 13.5) => n * DAY + h * 3600
+    const fund: [number, number][] = [[d(1), 100], [d(2), 110], [d(3), 99], [d(4), 99]]
+    const market: [number, number][] = [[d(1), 50], [d(3, 14.5), 55], [d(4), 66]] // day 3 stamped an hour apart still matches
     const r = alignReturns(fund, market)
-    expect(r.map(x => x.t)).toEqual([3, 4])
+    expect(r.map(x => x.t)).toEqual([d(3), d(4)])
     expect(r[0].fund).toBeCloseTo(-0.01)
     expect(r[0].market).toBeCloseTo(0.1)
     expect(r[1].market).toBeCloseTo(0.2)

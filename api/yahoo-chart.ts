@@ -26,23 +26,39 @@ export interface ChartPayload { symbol: string; name: string; currency: string; 
 interface RawChart {
   chart?: {
     result?: {
-      meta?: { symbol?: string; longName?: string; shortName?: string; currency?: string }
+      meta?: {
+        symbol?: string; longName?: string; shortName?: string; currency?: string
+        currentTradingPeriod?: { regular?: { start?: number; end?: number } }
+      }
       timestamp?: unknown[]
       indicators?: { adjclose?: { adjclose?: unknown[] }[] }
     }[] | null
   }
 }
 
-/** Yahoo's chart JSON → the compact payload; days without a valid close are dropped, not filled. */
-export function parseChart(json: unknown, symbol: string): ChartPayload | null {
+/**
+ * Yahoo's chart JSON → the compact payload; days without a valid close are dropped, not filled. Historical bars are
+ * stamped at the session open; the current session's bar is stamped with its latest trade instead, and until the
+ * session closes its "close" is a live price. So that bar is dropped while the session is open and re-stamped to the
+ * session open once it has closed, keeping one timestamp convention for every bar.
+ */
+export function parseChart(json: unknown, symbol: string, nowS = Date.now() / 1000): ChartPayload | null {
   const r = (json as RawChart | null)?.chart?.result?.[0]
   const ts = r?.timestamp
   const closes = r?.indicators?.adjclose?.[0]?.adjclose
   if (!r || !Array.isArray(ts) || !Array.isArray(closes)) return null
+  const session = r.meta?.currentTradingPeriod?.regular
+  const start = session?.start, end = session?.end
   const points: [number, number][] = []
   for (let i = 0; i < ts.length; i++) {
-    const t = ts[i], c = closes[i]
-    if (typeof t === 'number' && Number.isFinite(t) && typeof c === 'number' && Number.isFinite(c) && c > 0) points.push([t, c])
+    const raw = ts[i], c = closes[i]
+    if (typeof raw !== 'number' || !Number.isFinite(raw) || typeof c !== 'number' || !Number.isFinite(c) || c <= 0) continue
+    let t = raw
+    if (typeof start === 'number' && typeof end === 'number' && t >= start) {
+      if (nowS < end) continue
+      t = start
+    }
+    points.push([t, c])
   }
   if (points.length === 0) return null
   return { symbol, name: r.meta?.longName || r.meta?.shortName || symbol, currency: r.meta?.currency ?? '', points }

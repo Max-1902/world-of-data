@@ -7,8 +7,8 @@ import type { PanelDef, PanelGroup } from './types'
 
 /** Forecasts: the GDP-growth forecast and the quarter's nowcast, each with its backtest. */
 export const FORECAST_PANELS: ReadonlySet<string> = new Set(['predictions', 'nowcast'])
-/** Drivers: the tested predictors, and the trade links a shock travels along. */
-export const DRIVER_PANELS: ReadonlySet<string> = new Set(['drivers', 'exposure', 'tradePartnersByCountry', 'tradeProductsByCountry'])
+/** Drivers: the tested predictors, the trade links a shock travels along, and how markets met past disasters. */
+export const DRIVER_PANELS: ReadonlySet<string> = new Set(['drivers', 'exposure', 'disasterMarkets', 'tradePartnersByCountry', 'tradeProductsByCountry'])
 
 export type DockView = 'forecasts' | 'drivers' | 'explore'
 

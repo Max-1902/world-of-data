@@ -31,6 +31,7 @@ export const PANEL_ALIASES: Record<string, string> = {
   military: 'bases military',
   nuclear: 'reactors weapons',
   disasters: 'gdacs earthquake cyclone flood',
+  disasterMarkets: 'earthquake hurricane typhoon cyclone flood volcano disaster stock market stocks etf index reaction event study crash',
   outages: 'internet ioda cloudflare radar outages shutdown',
   humanitarian: 'refugees unhcr displacement',
   infraIndicators: 'electricity power energy',

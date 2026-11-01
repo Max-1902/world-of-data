@@ -13,6 +13,12 @@ describe('parseChart', () => {
       symbol: 'EWJ', name: 'iShares MSCI Japan ETF', currency: 'USD', points: [[1, 10], [4, 12]],
     })
   })
+  it('drops the current session\'s bar while it trades (its close is a live price) and re-stamps it to the open once closed', () => {
+    const OPEN = 1_000_000, CLOSE = OPEN + 23_400
+    const live = { chart: { result: [{ meta: { currentTradingPeriod: { regular: { start: OPEN, end: CLOSE } } }, timestamp: [OPEN - 86_400, OPEN + 5000], indicators: { adjclose: [{ adjclose: [10, 11] }] } }] } }
+    expect(parseChart(live, 'EWJ', OPEN + 6000)?.points).toEqual([[OPEN - 86_400, 10]])
+    expect(parseChart(live, 'EWJ', CLOSE + 60)?.points).toEqual([[OPEN - 86_400, 10], [OPEN, 11]])
+  })
   it('returns null for an error payload or an empty series', () => {
     expect(parseChart({ chart: { result: null, error: { code: 'Not Found' } } }, 'X')).toBeNull()
     expect(parseChart(chart([], []), 'EWJ')).toBeNull()

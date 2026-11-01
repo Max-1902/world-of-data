@@ -9,7 +9,7 @@ describe('dock destinations', () => {
     expect(ids('analysis', 'forecasts').sort()).toEqual(['nowcast', 'predictions'])
   })
   it('Drivers shows the tested predictors and the trade links only, none of the wider Economy set', () => {
-    expect(ids('markets', 'drivers').sort()).toEqual(['drivers', 'exposure', 'tradePartnersByCountry', 'tradeProductsByCountry'])
+    expect(ids('markets', 'drivers').sort()).toEqual(['disasterMarkets', 'drivers', 'exposure', 'tradePartnersByCountry', 'tradeProductsByCountry'])
     expect(ids('markets', 'explore')).toContain('markets')
     expect(ids('markets', 'explore')).not.toContain('drivers')
   })

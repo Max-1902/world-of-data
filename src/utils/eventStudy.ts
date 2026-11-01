@@ -34,13 +34,15 @@ const POOL_GAP = 30
 /** a window counts as "unusual" when fewer than this share of ordinary windows were as large */
 export const UNUSUAL = 0.05
 
-/** Daily returns on the days both series have a close, oldest first. */
+const utcDay = (t: number) => Math.floor(t / 86_400)
+
+/** Daily returns on the days both series have a close (matched by UTC date), oldest first. */
 export function alignReturns(fund: [number, number][], market: [number, number][]): DailyReturn[] {
-  const m = new Map(market)
+  const m = new Map(market.map(([t, c]) => [utcDay(t), c]))
   const out: DailyReturn[] = []
   let prev: [number, number, number] | null = null
   for (const [t, c] of fund) {
-    const mc = m.get(t)
+    const mc = m.get(utcDay(t))
     if (mc === undefined) continue
     if (prev) out.push({ t, fund: c / prev[1] - 1, market: mc / prev[2] - 1 })
     prev = [t, c, mc]

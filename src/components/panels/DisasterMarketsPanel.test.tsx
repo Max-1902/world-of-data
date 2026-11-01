@@ -40,7 +40,7 @@ describe('DisasterMarketsPanel', () => {
     fireEvent.click(screen.getByText(/Earthquake in Japan/))
     expect(screen.getByText(/stands in for Japan's stock market/)).toBeTruthy()
     expect(screen.getByText(/not that the disaster caused it/)).toBeTruthy()
-    expect(screen.getByText(/Past Red earthquake alerts since 2009: 1 of 20/)).toBeTruthy()
+    expect(screen.getByText(/Earlier Red earthquake alerts, 2009 to 30 days ago: 1 of 20/)).toBeTruthy()
   })
 
   it('says when past alerts were followed by unusual moves no more often than chance', async () => {

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useDisasterMarkets } from '../../hooks/useDisasterMarkets'
 import { DISASTER_LABELS } from '../../services/gdacs'
 import { BENCHMARK, COUNTRY_FUNDS, FUNDS_CHECKED } from '../../services/countryFunds'
-import { baseRates, completed, MERGE_DAYS, RECENT_DAYS, type BaseRate, type Reaction } from '../../services/disasterMarkets'
+import { baseRates, completed, eventSeconds, MERGE_DAYS, RECENT_DAYS, type BaseRate, type Reaction } from '../../services/disasterMarkets'
 import { HORIZONS, summarise, UNUSUAL, type GroupSummary, type Horizon, type WindowResult } from '../../utils/eventStudy'
 import type { EvidenceKind } from '../../utils/evidence'
 import { EvidenceTag, SourceLine, StatusLabel, type Tone } from '../DataLabels'
@@ -28,7 +28,7 @@ function chanceLine(s: GroupSummary, h: Horizon) {
   return `${s.unusual} of ${s.n} followed by an unusual ${h}-day move; chance alone would give about ${s.expected.toFixed(1)}`
 }
 
-/** The headline window for a reaction: 5 days once complete, else the longest it has. */
+/** The headline window for a reaction: 5 days (or as many as have traded so far), else the 1-day one. */
 function mainWindow(r: Reaction): WindowResult | undefined {
   const w = r.study.windows
   return w[5] ?? w[1]
@@ -47,6 +47,13 @@ function Path({ steps }: { steps: { kind: EvidenceKind; text: string; source?: s
   )
 }
 
+/** a fund's ordinary windows start where both it and the benchmark have prices */
+const sinceYear = (r: Reaction) => (r.fund.since > BENCHMARK.since ? r.fund.since : BENCHMARK.since).slice(0, 4)
+
+function Retry({ onClick }: { onClick: () => void }) {
+  return <button className="cy-btn" onClick={onClick} style={{ marginTop: 4 }}>Retry</button>
+}
+
 function ReactionPath({ r, rate }: { r: Reaction; rate?: BaseRate }) {
   const w = mainWindow(r)!
   const past = rate?.byHorizon[5]
@@ -58,10 +65,10 @@ function ReactionPath({ r, rate }: { r: Reaction; rate?: BaseRate }) {
         { kind: 'observed', text: `${r.fund.symbol} returned ${pc(w.raw)} over the first ${daysText(w.days)} after the alert (from the close of ${new Date(r.study.baseT * 1000).toISOString().slice(0, 10)}).`, source: 'Yahoo Finance daily closes, dividend-adjusted' },
         { kind: 'statistical', text: `Compared with what the world market (${BENCHMARK.symbol}) predicts for it: ${pc(w.car)}. Fitted on the ${r.study.estDays} trading days before the alert (β ${r.study.beta.toFixed(2)}: it usually moves ${r.study.beta.toFixed(2)}× the world market).`, source: 'Computed in your browser' },
         { kind: 'statistical', text: isUnusual(w)
-          ? `Larger than ${share(1 - w.extremeShare)} of this fund's ordinary ${w.days}-day periods since 2008. That says the move was rare, not that the disaster caused it.`
-          : `${share(w.extremeShare)} of this fund's ordinary ${w.days}-day periods since 2008 moved as much or more, so nothing here stands out from normal market noise.`, source: 'Computed in your browser' },
+          ? `Larger than ${share(1 - w.extremeShare)} of this fund's ordinary ${w.days}-day periods since ${sinceYear(r)}. That says the move was rare, not that the disaster caused it.`
+          : `${share(w.extremeShare)} of this fund's ordinary ${w.days}-day periods since ${sinceYear(r)} moved as much or more, so nothing here stands out from normal market noise.`, source: 'Computed in your browser' },
       ]} />
-      {past && <p className="viz-foot">Past {groupLabel(r)} alerts since 2009: {chanceLine(past, 5)}.</p>}
+      {past && <p className="viz-foot">Earlier {groupLabel(r)} alerts, 2009 to {RECENT_DAYS} days ago: {chanceLine(past, 5)}.</p>}
       {r.merged.length > 0 && <p className="viz-foot">Folded in (same fund within {MERGE_DAYS} days): {r.merged.join(', ')}.</p>}
     </>
   )
@@ -81,7 +88,7 @@ function RecentCard({ recent, rates }: { recent: Markets['recent']; rates: Map<s
         </div>
       </header>
       {recent.loading && !data && <StatusLabel status="loading">GDACS alerts and Yahoo Finance prices…</StatusLabel>}
-      {recent.error && <StatusLabel status="error">{recent.error}</StatusLabel>}
+      {recent.error && <StatusLabel status="error">{recent.error} <Retry onClick={() => void recent.refresh()} /></StatusLabel>}
       {data && data.reactions.length === 0 && <StatusLabel status="empty">No recent alert hit a country with a US-listed fund.</StatusLabel>}
       {data && data.reactions.length > 0 && (
         <div className="viz-table-wrap ex-table-wrap">
@@ -137,7 +144,7 @@ function HistoryCard({ history, rates }: { history: Markets['history']; rates: B
         </div>
       </header>
       {history.loading && !data && <StatusLabel status="loading">GDACS alert archive since 2009 and fund histories (about 20 requests)…</StatusLabel>}
-      {history.error && <StatusLabel status="error">{history.error}</StatusLabel>}
+      {history.error && <StatusLabel status="error">{history.error} <Retry onClick={() => void history.refresh()} /></StatusLabel>}
       {overall && (
         <p className="dm-headline">
           <EvidenceTag kind="statistical" /> {chanceLine(overall, h)}
@@ -206,7 +213,13 @@ function HistoryCard({ history, rates }: { history: Markets['history']; rates: B
 export function DisasterMarketsPanel() {
   const { recent, history } = useDisasterMarkets()
   const rates = useMemo(() => (history.data ? baseRates(history.data.reactions, r => ({ key: groupKey(r), label: groupLabel(r) })) : []), [history.data])
-  const rateMap = useMemo(() => new Map(rates.map(g => [g.key, g])), [rates])
+  // a recent alert is compared only with alerts before the recent window, so it is never part of its own base rate
+  const rateMap = useMemo(() => {
+    if (!history.data) return new Map<string, BaseRate>()
+    const cutoff = Date.now() / 1000 - RECENT_DAYS * 86_400
+    const earlier = history.data.reactions.filter(r => eventSeconds(r.event.from) < cutoff)
+    return new Map(baseRates(earlier, r => ({ key: groupKey(r), label: groupLabel(r) })).map(g => [g.key, g]))
+  }, [history.data])
   return (
     <div className="ex-panel">
       <RecentCard recent={recent} rates={rateMap} />
