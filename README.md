@@ -33,6 +33,10 @@ Statistical projections with the backtest that decides whether each is shown. No
 
 **How shocks spread.** Pick a shock ("China buys less", "supply from Russia is cut", "Hormuz closes") and see which economies it reaches, through which link, and how much as a share of their GDP. Each step is shown with its source and year. Shares outside a country's reported top partners become ranges, never guesses. With an assumed shock size, the implied change in GDP growth is added as a statistical step, with its interval. Results are first-order: goods only, no rerouting.
 
+![Disasters and markets: recent GDACS Orange and Red alerts with how each affected country's stock-market fund moved against the world market, and the base rate for the same kind of alert since 2009](docs/screenshots/11-disasters-markets.png)
+
+**Disasters and markets.** For each recent GDACS Orange or Red alert, how the affected country's US-listed stock-market fund moved against the world market (ACWI), compared with its own ordinary weeks. Below it, every past alert of the same kind since 2009, measured the same way, with how many unusual moves chance alone would give. The event study runs in the browser, and every step is labelled as observed, statistical or an assumption.
+
 ## Countries, map and comparisons
 
 | | |
